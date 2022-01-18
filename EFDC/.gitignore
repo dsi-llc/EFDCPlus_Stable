@@ -1,0 +1,34 @@
+# build directories
+
+
+# files
+*.dll
+
+# build directories
+/DebugDP64
+/DebugSP64
+/x64/64DP_R_MPI
+/x64/64DP_D_MPI
+/64SP_R_MPI
+/64SP_D_MPI
+/64DP_R_MPI
+/64DP_D_MPI
+/x64
+/64**
+/SGL
+/MPI_64
+/MPI_SP_64_DEBUG
+/ReleaseDP64
+/ReleaseSP64
+/DebugDP
+/DebugSP
+/ReleaseSP
+/ReleaseDP
+/build
+/MPI_SP_64
+/64DP_D_MPI
+
+# testing & debug
+/My Advisor Results *
+/My Inspector Results *
+/delme

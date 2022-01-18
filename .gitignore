@@ -1,0 +1,36 @@
+
+
+# Visual studio 
+.vscode/
+.vs/
+*.bak
+*.db3
+*.suo
+*.u2d
+*.user
+*.obj
+*.o
+
+# testing & debug
+\EFDC_Test_Harness\SimpleTestHarness\SimpleTestHarness
+/x64_Runtimes.txt
+
+# build directories
+DebugSP/
+ReleaseSP/
+ReleaseDP/
+build/
+MPI_SP_64/
+64DP_D_MPI/
+
+# executables & archives
+*.x
+*.exe
+*.rar
+
+# misc
+delme
+delme*
+EFDC/fort.8
+ZanderDevelopment/
+/EFDC/#output
