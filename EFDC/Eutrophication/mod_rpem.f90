@@ -683,7 +683,7 @@ SUBROUTINE CAL_RPEM
       DO LP = 1,NLRPEM(ND)
         L = LLRPEM(LP,ND)
         K = KSZ(L)
-        DTDHWQ = DTWQ/(DZC(L,K)*HWQ(L))                                       ! DELME?? ACCORDING TO (37B), IT'S NOT SMHSED(1)!
+        DTDHWQ = DTWQ/(DZC(L,K)*HWQ(L))                                   
         SM2PO4(L) = SM2PO4(L)-DTDHWQ*RPRPC*(1.-FRPSPW(L))*PRPS(L)*WQRPS(L)    ! EQ. (37B), COMPLETED
         SM2PO4(L) = MAX(SM2PO4(L), 1.E-12)
       ENDDO                                                                                                                  

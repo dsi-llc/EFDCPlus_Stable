@@ -785,13 +785,11 @@ Module Variables_WQ
       Call AllocateDSI(ALGAES(NAL).WQKMVE,   NWQZM, 0.0)
     Enddo 
     
-    Call AllocateDSI(LAYERBOT, NALGAEM, LCM,  1)
-    Call AllocateDSI(LAYERTOP, NALGAEM, LCM, KC)
-   ! Call AllocateDSI(HEIGHT_MAC,   LCM, NALGAEM, 0.)    ! DELME - CHANGE ALLOCATTEDSI TO HANDLE 0:DIM  (pmc reverted for 10.4 release.  implement in 10.5)
-    allocate(HEIGHT_MAC(lcm,0:NALGAEM))                  ! delme
-    HEIGHT_MAC = 0.                                      ! delme 
-    Call AllocateDSI(DIAMETER_MAC, LCM, NALGAEM, 0.)
-    Call AllocateDSI(LayerRatio_MAC, LCM, KCM, NALGAEM, 0.)
+    Call AllocateDSI(LAYERBOT,       NALGAEM,  LCM,      1)
+    Call AllocateDSI(LAYERTOP,       NALGAEM,  LCM,      KC)
+    Call AllocateDSI(HEIGHT_MAC,     LCM,     -NALGAEM,  0.)
+    Call AllocateDSI(DIAMETER_MAC,   LCM,      NALGAEM,  0.)
+    Call AllocateDSI(LayerRatio_MAC, LCM,      KCM,     NALGAEM,  0.)
     
     Call AllocateDSI(IWQKA,    NWQZM,    0)
     Call AllocateDSI(IBENMAP,  LCM,   2, 0)

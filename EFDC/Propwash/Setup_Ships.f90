@@ -132,14 +132,11 @@ subroutine Setup_Ships(test_on)
               new_position.power = 0.0
               new_position.rps   = 0.0
             else
-              ! *** Compute applied power from ship data  delme !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! delme
+              ! *** Compute applied power from ship data     
               new_position.power = -0.35       ! *** For now, just use 35% of max RPS if underway
               new_position.rps = new_position.power*new_ship.ship.max_rps
             endif
-            ! delme
-            ! delme
-            ! delme
-            ! delme
+            ! Note - Add approach here...   delme
           endif
         endif
         if( k == 2 )then

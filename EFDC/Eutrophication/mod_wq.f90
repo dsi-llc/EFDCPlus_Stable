@@ -1456,7 +1456,7 @@ MODULE WATERQUALITY
   Call Map_WQ_PointSource
   
   ! **************************************************************************
-  ! *** Set up look-up table for temperature dependency over -10 °C to 50 °C
+  ! *** Set up look-up table for temperature dependency over -10 ï¿½C to 50 ï¿½C
   WQTDMIN =-10
   WQTDMAX = 50
   WTEMP = WQTDMIN
@@ -1611,15 +1611,8 @@ MODULE WATERQUALITY
     ENDDO
   ENDDO
   
-  ! *** Initialize biota.  Units are in g C/m^3, - delme
+  ! *** Initialize biota.  Units are in g C/m^3
   ! *** Fixed biota can be converted to biomass density by dividing by bottom layer thickness
-  !DO NAL = 1,NALGAE
-  !  TVARWQ = WQV(1,1,19+NAL)  
-  !  DO L = 1,LCM
-  !    WQV(L,KSZ(L),19+NAL)  = TVARWQ
-  !    WQVO(L,KSZ(L),19+NAL) = TVARWQ
-  !  ENDDO
-  !ENDDO
   
   ! *** C47 SPATIALLY/TEMPORALLY CONSTANT BENTHIC FLUXES
   Call Broadcast_Array(WQBFPO4D,   master_id)
@@ -1932,7 +1925,6 @@ MODULE WATERQUALITY
         Call fson_get(item, "hydro_feedback.stemdensity",                   ALGAES(NAL).STEMDENSITY)    ! *** As growth occurs, stemdensity is constant (# stems/m2)
 
         ! *** Apply QC and special conditions
-        !IF( ALGAES(NAL).THRESHOLD <= 0 ) ALGAES(NAL).THRESHOLD = 1.E6           delme                        ! *** Set to a very large number to essentially disable growth between layers
       ENDIF      
     ENDDO   
     
@@ -3002,8 +2994,6 @@ MODULE WATERQUALITY
   
   Call STOPP('BAD KINETICS OPTION: ISWQLVL = 0 Does not work!  Contact DSI')   ! delme
   
-  ! delme - Kien , the WQV variable numbers are all mixed up now.  Should just convert to IDOX, etc...
-  
   
   
   CNS1 = 2.718
@@ -3097,17 +3087,15 @@ MODULE WATERQUALITY
       WQTT1 = WQKHN / (WQKHN+RNH4NO3_+ 1.E-18) * WQOBT0T
       
       IF( RNH4NO3_ == 0.0 )THEN
-        DO NAL = 1,NALGAE   !< Loop for all alage groups  - DKT
+        DO NAL = 1,NALGAE
           WQPN(L,NAL) = 0.0      
         ENDDO
       ELSE
-        DO NAL = 1,NALGAE   !< Loop for all alage groups  - DKT
+        DO NAL = 1,NALGAE
           WQTTA = RNH4WQ_/(ALGAES(NAL).WQKHNA+RNO3WQ_+ 1.E-18)
           WQPN(L,NAL) = (RNO3WQ_/(ALGAES(NAL).WQKHNA+RNH4WQ_+ 1.E-18) + ALGAES(NAL).WQKHNA/(RNH4NO3_+ 1.E-18)) * WQTTA
         ENDDO
       ENDIF
-    ! WQNIT(L) = O2WQ(L) * WQTDNIT(IWQT(L)) / ( (WQKHNDO+O2WQ(L))          *             (WQKHNN + RNH4WQ(L)) + 1.E-18)   GVC 2010-12-20       DELME
-    ! WQNIT(L) = O2WQ(L) * WQTDNIT(IWQT(L)) / (WQKHNDO + O2WQ(L) + 1.E-18) * RNH4WQ(L) / (WQKHNN + RNH4WQ(L) + 1.E-18)    GVC 2010 EE RELEASE  DELME
       WQNIT(L) = WQTDNIT(IWQT(L)) * (O2WQ(L) / (WQKHNDO + O2WQ(L) + 1.E-18)) * (RNH4WQ_ / (WQKHNN + RNH4WQ_ + 1.E-18))
         
       WQDOS(L) = DO_SAT(L)
@@ -3343,7 +3331,6 @@ MODULE WATERQUALITY
   REAL PPCDO, TMP22, WQA22, WQA22C, WQA22D, WQA22G, WQCDDOC
   REAL WQCDREA, WQCDSUM, ALGCOUNT
   REAL WQKESS, EXPA0, EXPA1, WQISM                         ! VARIABLES FOR LIGHT EXTINCTION
-  REAL PMC1, PMC2, PMC3, PMC4, PMC5, PMC6, PMC7, PMC8      ! delme
   REAL(RKD), STATIC :: AVGNEXT, AVGLAST
   
   REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: WQIS
@@ -3655,7 +3642,7 @@ MODULE WATERQUALITY
         ENDDO  
       ENDIF  
  
-      ! *** SET CURRENT LAYER WQ ZONE FOR LAYERS ABOVE AND BELOW                                delme - IMWQZT1 and IMWQZT2 should be a 2D array so can set once and use every iteration...
+      ! *** SET CURRENT LAYER WQ ZONE FOR LAYERS ABOVE AND BELOW                                Note - IMWQZT1 and IMWQZT2 should be a 2D array so can set once and use every iteration...
       DO LP = 1,LLWET(K,ND)
         L = LKWET(LP,K,ND)  
         IF( K /= KC )THEN 
@@ -3965,7 +3952,7 @@ MODULE WATERQUALITY
           ALGCOUNT =  ALGCOUNT + 1.
         ENDIF
       ENDDO
-      IF( ALGCOUNT > 0. ) WQKHP = WQKHP/ALGCOUNT   ! delme - better if mass weighted
+      IF( ALGCOUNT > 0. ) WQKHP = WQKHP/ALGCOUNT   ! *** Note - better if mass weighted
       
       DO LP = 1,LLWET(K,ND)
         L = LKWET(LP,K,ND)  
@@ -3976,7 +3963,7 @@ MODULE WATERQUALITY
         WQKDOP(L) = (WQKDP + WQKDPALG*WQTT1) * WQTDMNL(IWQT(L))         ! *** Mineralization: DOP --> PO4
       ENDDO
   
-      ! *** PHOSPHATE SETTLING   DELME - THIS COULD BE SPED UP BY CHECKING OPTIONS OUTSIDE OF THE L LOOP
+      ! *** PHOSPHATE SETTLING   Note - THIS COULD BE SPED UP BY CHECKING OPTIONS OUTSIDE OF THE L LOOP
       DO LP = 1,LLWET(K,ND)
         L = LKWET(LP,K,ND)  
         IF( IWQSRP == 1 )THEN  
@@ -4012,7 +3999,7 @@ MODULE WATERQUALITY
           ALGCOUNT =  ALGCOUNT + 1.
         ENDIF
       ENDDO
-      IF( ALGCOUNT > 0. ) WQKHN = WQKHN/ALGCOUNT   ! delme - better if mass weighted
+      IF( ALGCOUNT > 0. ) WQKHN = WQKHN/ALGCOUNT   ! *** Note - better if mass weighted
       
       DO LP = 1,LLWET(K,ND)
         L = LKWET(LP,K,ND)  
@@ -4030,8 +4017,6 @@ MODULE WATERQUALITY
           WQTTA = RNH4WQ(L)/(ALGAES(NAL).WQKHNA + RNO3WQ(L) + 1.E-18)
           WQPN(L,NAL) = ( RNO3WQ(L)/(ALGAES(NAL).WQKHNA + RNH4WQ(L) + 1.E-18) + ALGAES(NAL).WQKHNA/(RNH4NO3(L) + 1.E-18) ) * WQTTA   ! *** Ammonium preference
         ENDDO
-      ! WQNIT(L) = O2WQ(L) * WQTDNIT(IWQT(L)) / ( (WQKHNDO+O2WQ(L))          *             (WQKHNN + RNH4WQ(L)) + 1.E-18)   GVC 2010-12-20       DELME
-      ! WQNIT(L) = O2WQ(L) * WQTDNIT(IWQT(L)) / (WQKHNDO + O2WQ(L) + 1.E-18) * RNH4WQ(L) / (WQKHNN + RNH4WQ(L) + 1.E-18)    GVC 2010 EE RELEASE
         WQNIT(L) = WQTDNIT(IWQT(L)) * O2WQ(L) / (WQKHNDO + O2WQ(L) + 1.E-18) * RNH4WQ(L) / (WQKHNN + RNH4WQ(L) + 1.E-18)
       ENDDO
       
@@ -4570,7 +4555,7 @@ MODULE WATERQUALITY
 
         DO LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          IF( K == KSZ(L) )THEN         ! *** DELME - CAN ADD A PER CELL ARRAY OF 1 TO KC WHERE K=KSZ IS 1.0 AND ALL OTHER LAYERS = 0.0
+          IF( K == KSZ(L) )THEN                       ! *** Note - CAN ADD A PER CELL ARRAY OF 1 TO KC WHERE K=KSZ IS 1.0 AND ALL OTHER LAYERS = 0.0
             WQRR(L) = WQRR(L) + WQBFPO4D(L)*HPKI(L,K) ! *** Add in Benthic Flux
           ENDIF
         ENDDO  
@@ -4586,12 +4571,10 @@ MODULE WATERQUALITY
 
         DO LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)
-         !WQRR(L) = WQVO(L,K,10)   + DTWQ*WQRR(L)                           + DTWQO2*(WQKK(L) + WQKRPP(L)*WQVO(L,K,7) + WQKDOP(L)*WQVO(L,K,9) + WQH10(L)*WQVO(L,K,10) ) 
-         !WQRR(L) = WQVO(L,K,10)   + DTWQ*WQRR(L)                           + DTWQO2*(WQKK(L) + WQKDOP(L)*WQVO(L,K,9) + WQH10(L)*WQVO(L,K,10) )
           WQRR(L) = WQVO(L,K,IP4D) + DTWQ*WQRR(L) + WQH10(L)*WQVO(L,K,IP4D) + DTWQO2*(WQKK(L) + WQKDOP(L)*WQO(L,IDOP))
         ENDDO  
   
-        IF( K /= KC )THEN               ! delme - no settling if IWQSRP = 0
+        IF( K /= KC )THEN                              ! *** Note - no settling if IWQSRP = 0
           ! *** Add in settling from above
           DO LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
@@ -4738,14 +4721,13 @@ MODULE WATERQUALITY
           ! ***    PT_SRC_LOADS    VOLUME  
           WQR13 = WQWPSL(L,K,IDON) * VOLWQ(L)
           
-         !WQRR(L) = WQVO(L,K,13)   + DTWQ*WQR13                        + DTWQO2*(WQA13 + WQKRPN(L)*WQVO(L,K,11) + WQKLPN(L)*WQVO(L,K,12) - WQKDON(L)*WQVO(L,K,13) )    DELME
           WQRR(L) = WQVO(L,K,IDON) + DTWQ*WQR13 + WQF13*WQVO(L,K,IDON) + DTWQO2*(WQA13 + WQKRPN(L)*WQO(L,IRON)  + WQKLPN(L)*WQO(L,ILON))
            
           ! *** Coupling to zooplankton - DKT
           IF( IWQZPL > 0 ) WQRR(L) = WQRR(L) + DTWQ*SDONZ(L,K)
         ENDDO
         
-        IF( K == KC )THEN    ! delme - add a check to see of the deposition concentrations are > 0.  Do this for all constituents
+        IF( K == KC )THEN                          ! *** Note - add a check to see of the deposition concentrations are > 0.  Do this for all constituents
           DO LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
             ! ***     ATM DRY DEP        ATM WET DEP        VOLUME  
@@ -4764,7 +4746,7 @@ MODULE WATERQUALITY
       ! ****  PARAM 11  NHX - ammonia nitrogen
       IF( ISKINETICS(11) == 1 )THEN 
         IF( IWQPSL < 2 )THEN
-          DO LP = 1,LLWET(K,ND)            ! DELME - SKIP IF IWQPSL = 2
+          DO LP = 1,LLWET(K,ND)                      ! *** Note - SKIP IF IWQPSL = 2
             L = LKWET(LP,K,ND)  
             ! ***      PT_SRC_LOADS     VOLUME  
             WQRR(L) = WQWPSL(L,K,INHX) * VOLWQ(L)  
@@ -4777,7 +4759,7 @@ MODULE WATERQUALITY
           ENDDO   
         ENDIF
 
-        DO LP = 1,LLWET(K,ND)         ! *** DELME - CAN ADD A PER CELL ARRAY OF 1 TO KC WHERE K=KSZ IS 1.0 AND ALL OTHER LAYERS = 0.0
+        DO LP = 1,LLWET(K,ND)                        ! *** Note - CAN ADD A PER CELL ARRAY OF 1 TO KC WHERE K=KSZ IS 1.0 AND ALL OTHER LAYERS = 0.0
           L = LKWET(LP,K,ND)  
           IF( K == KSZ(L) )THEN
             WQRR(L) = WQRR(L) + WQBFNH4(L)*HPKI(L,K)   ! *** Add in Benthic Flux
@@ -4813,7 +4795,6 @@ MODULE WATERQUALITY
             ENDIF
           ENDDO
  
-         !WQRR(L) = WQVO(L,K,14)  + DTWQ*WQRR(L)                        + DTWQO2*(WQA14 + WQKDON(L)*WQVO(L,K,13) - WQNIT(L)*WQVO(L,K,14) )    delme
           WQRR(L) = WQV(L,K,INHX) + DTWQ*WQRR(L) + WQF14*WQVO(L,K,INHX) + DTWQO2*(WQA14 + WQKDON(L)*WQO(L,IDON))
 
           ! *** Coupling to zooplankton - DKT
@@ -4873,7 +4854,6 @@ MODULE WATERQUALITY
             ENDIF
           ENDDO
   
-    !WQV(L,K,15)= WQVO(L,K,15)  + DTWQ*WQRR(L) + DTWQO2*( WQA15 - WQANDC*WQDENIT(L)*WQVO(L,K,6) + WQNIT(L)*WQVO(L,K,14) ) ) + (1.-SCB(L))*WQVO(L,K,15)   DELME
           WQB15 = WQV(L,K,INOX) + DTWQ*WQRR(L) + DTWQO2*( WQA15 - WQANDC*WQDENIT(L)*WQO(L,IDOC) + WQNIT(L)*WQO(L,INHX))
 
           WQV(L,K,INOX) = WQB15
