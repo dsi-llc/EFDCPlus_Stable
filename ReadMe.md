@@ -65,7 +65,7 @@ mpiexec -n <number of nodes> path/to/efdc.x -NT<number of omp threads>
 [Intel OneApi Base Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html)  
 [Intel OneApi HPC Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html)
 
-* Clone the EFDC_Plus repository: https://github.com/dsi-llc/EFDC_Plus.git
+* Clone the EFDC_Plus repository: https://github.com/dsi-llc/EFDCPlus.git
 * Open the .sln file at the root of the repository.
 
 ## Contribute
