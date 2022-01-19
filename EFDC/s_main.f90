@@ -63,7 +63,7 @@ SUBROUTINE SEDZLJ_MAIN
     ! *** **********************************************************************************!
     !   SEDZLJ Sediment Transport
     !
-    !$OMP PARALLEL DEFAULT(SHARED)elme
+    !$OMP PARALLEL DEFAULT(SHARED)
     
 
     !$OMP DO PRIVATE(ND,NS,K,LP,L,WVEL,CLEFT,CRIGHT)
