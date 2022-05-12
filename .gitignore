@@ -26,6 +26,10 @@ MPI_SP_64
 64DP_Rel_OneApi_MPI
 64SP_Rel_OneApi_MPI
 
+# build files
+*.mod
+*.o
+
 # executables & archives
 *.x
 *.exe
