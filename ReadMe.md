@@ -68,5 +68,9 @@ mpiexec -n <number of nodes> path/to/efdc.x -NT<number of omp threads>
 * Clone the EFDC_Plus repository: https://github.com/dsi-llc/EFDCPlus.git
 * Open the .sln file at the root of the repository.
 
+#### NetCDF
+
+If compiled with the NETCDF flag, you will need to get the NetCDF dlls to run EFDC+. The installer can be found [here](https://docs.unidata.ucar.edu/netcdf-c/current/winbin.html). Once installed, locate the bin directory (e.g. - C:\Program Files\netCDF 4.8.1\bin) and copy the dlls to your EFDC+ executable directory.
+
 ## Contribute
 The open source availability of this code will make it easier for scientists, researchers, and developers to contribute to the code and build more trust in their models. We welcome all the opportunities to collaborate. If you would like to contribute to the source code development, please clone the repository and submit pull requests as needed. For more active contribution and role, please email admin@ds-intl.biz
