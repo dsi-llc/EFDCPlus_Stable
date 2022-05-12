@@ -67,11 +67,7 @@ Module Mod_Position
           L = -1
         endif
         
-        if(present(counter) )then
-            write(unit_num,'(a,i8, 4f15.5,I8)') 'i | (x,y,z,v,L) ',counter, self.x_pos, self.y_pos, self.z_pos, self.var(1), L
-        else
-            write(unit_num,'(4f15.5,I8)') self.x_pos, self.y_pos, self.z_pos, self.var(1), L
-        end if
+        write(unit_num,'(a,4f15.5,I8)') 'i | (x,y,z,v,L) ', self.x_pos, self.y_pos, self.z_pos, self.var(1), L
         
     end subroutine write_out
     

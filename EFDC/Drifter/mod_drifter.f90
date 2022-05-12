@@ -839,13 +839,13 @@ SUBROUTINE DRIFTER_INP
 
   ! NG      : Order number of group
   ! ISOILSPI: = 1 for oil spill; = 0 for normal drifter as usual
-  ! SVel    : Settling velocity of drifter [m/s]
+  ! GRPWS   : Settling velocity of drifter [m/s]
   ! GVOL    : Total volume of oil spill for a group [m^3]
-  ! GDEN    : Density of an oil dritfer    [kg/m^3]
-  ! GRAT    : First order biodegradation rate of an oil drifter [1/day,>=0]
-  ! GTEM    : Biodegradation Rate Reference Temperature [deg C]
-  ! GVAP    : Vapor pressure of an oil drifter     [Pa]
-  ! GVMO    : Molar volume of an oil drifter at STP [m^3/mol]
+  ! DDEN    : Density of an oil dritfer    [kg/m^3]
+  ! DRAT    : First order biodegradation rate of an oil drifter [1/day,>=0]
+  ! DTEM    : Biodegradation Rate Reference Temperature [deg C]
+  ! DVAP    : Vapor pressure of an oil drifter     [Pa]
+  ! DVMO    : Molar volume of an oil drifter at STP [m^3/mol]
 
   ! *** ALLOCATE THE DRIFTER ARRAYS
   ALLOCATE(XLA(NPD), YLA(NPD), ZLA(NPD), DLA(NPD))
@@ -926,9 +926,6 @@ SUBROUTINE DRIFTER_INP
   end if
 
   ! *** Broadcast arrays just read in by the master process
-  Call Broadcast_Array(ISOILSPI, master_id)
-  Call Broadcast_Array(GRPWS   , master_id)
-  Call Broadcast_Array(BEDFIX  , master_id)
   Call Broadcast_Array(ISOILSPI, master_id)
   Call Broadcast_Array(GRPWS   , master_id)
   Call Broadcast_Array(BEDFIX  , master_id)
@@ -2084,7 +2081,8 @@ SUBROUTINE WIND_DRIFT(L,K,NP)
   
     XLA(NP) = XLA(NP) + COEF * WNDVELE(L) * DELTD 
     YLA(NP) = YLA(NP) + COEF * WNDVELN(L) * DELTD
-  ELSEIF (IOSWD == 2 )THEN
+    
+  ELSEIF( IOSWD == 2 )THEN
     XCOEF = OSWDA * WNDVELE(L) + OSWDB
     YCOEF = OSWDA * WNDVELN(L) + OSWDB
   

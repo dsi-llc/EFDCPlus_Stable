@@ -907,6 +907,7 @@
     type(nc_var),intent(in) :: ncvar(:)
     integer,intent(in) ::   i
     integer :: id, xtype, lyr_dim, cmp_dim, status
+    integer(2), parameter :: ZERO = 0
 
     lyr_dim = ncvar(i).layer_dim
     cmp_dim = ncvar(i).comp_dim
@@ -967,7 +968,7 @@
         endif
         status = nf90_put_att(nc.id, id, 'type', ncvar(i).dim_type)
         if ( ncvar(i).data_type == 1 ) then
-            status = nf90_put_att(nc.id, id, '_FillValue', 0)
+            status = nf90_put_att(nc.id, id, '_FillValue', ZERO)
         else
             status = nf90_put_att(nc.id, id, '_FillValue', MISSING_VALUE)
         endif
@@ -1241,6 +1242,7 @@
             values(ip) = factor * array2d(L,k)
         enddo
     else
+        count = LA_Global-1
         cnt2d = (/count, 1/)
         allocate(values(count))
         do i=1, count
@@ -1279,6 +1281,7 @@
             enddo
         enddo
     else
+        count = LA_Global-1
         cnt3d = (/ count, ncmp, 1/)
         allocate(values(count, ncmp))
         do i=1, count
@@ -1321,6 +1324,7 @@
             enddo
         enddo
     else
+        count = LA_Global-1
         cnt3d = (/ count, nk, ncmp, 1/)
         allocate(values(count, nk, ncmp))
         do i=1, count

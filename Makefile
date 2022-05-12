@@ -4,10 +4,13 @@ FC=/opt/intel/oneapi/mpi/latest/bin/mpiifort
 
 # Compiler options
 #FFLAGS=-g -traceback -fpp -DENABLE_MPI -D_MPI -nofixed -qopenmp -DNCOUT
-FFLAGS=-g -traceback -O3 -fpic -fpp -DENABLE_MPI -D_MPI -real-size 64 -init=zero -nofixed -qopenmp -fpe0 -fp-speculation=safe -multiple-processes=8
+FFLAGS=-g -traceback -qopenmp -O3 -fpp -DENABLE_MPI -D_MPI -DLINUX -m64 -real-size 32 -fpe0 -fp-speculation=safe -multiple-processes=12
+# Compilation options for debug mode
+#FFLAGS=-g -traceback -qopenmp -debug all -check all -fpp -DENABLE_MPI -D_MPI -DDEBUGGING -fpic -real-size 64 -fpe0 -fp-speculation=safe -multiple-processes=8
 
 # Setup the OpenMP compiler options
-OMPFLAGS=-qopenmp
+OMPFLAGS=#-qopenmp
+FPPFLAGS= 
 
 # Preprocessor
 
@@ -22,9 +25,9 @@ PROJHOME= ..
 # Suffix rules
 .SUFFIXES: .f90 .F90 .for .FOR .o
 
-INCLUD   =   -L/usr/local/include
+INCLUD   =   -L/usr/local/include -LWASP 
 CDFDIR   =   -L/usr/local/lib
-CDFLIBS  =  -lnetcdf -lnetcdff -lhdf5_hl -lhdf5
+CDFLIBS  =   #-Bstatic -lnetcdf -lnetcdff -lhdf5_hl -lhdf5
 
 # Include dependency list created by makedepf90
 #include .depend 
@@ -39,7 +42,7 @@ OBJS= EFDC/Propwash/Setup_Ships.o  EFDC/aaefdc.o EFDC/csedress.o EFDC/fsedmode.o
       EFDC/budget.o EFDC/welcome.o \
 	  EFDC/subchan.o EFDC/rsalpltv.o EFDC/calvegser.o EFDC/caltox_kinetics.o \
 	  EFDC/caldiff.o EFDC/bankerosed.o EFDC/Propwash/Propwash_Calc_Sequence.o EFDC/MPI_Out/Write_Array_Sizes.o EFDC/bal2t.o EFDC/MPI_Utilities/Report_Max_Min_Timing.o EFDC/MPI_Communication/Communicate_Groups.o \
-	  EFDC/varzeroint.o EFDC/s_slope.o  EFDC/s_bedload.o EFDC/caltox.o \
+	  EFDC/s_slope.o  EFDC/s_bedload.o EFDC/caltox.o \
 	  EFDC/calsnd.o EFDC/caldisp2.o EFDC/MPI_Mapping/Setup_MapBackToGlobal.o EFDC/MPI_Domain_Decomp/Scan_Cell.o \
 	  EFDC/s_sedic.o EFDC/rcahq.o EFDC/cbalod.o EFDC/calpuv2c.o EFDC/calbuoy.o EFDC/MPI_Domain_Decomp/Scan_JSON_Decomp.o EFDC/MPI_Mapping/Calculate_Local_Shear.o \
 	  EFDC/wavebl.o EFDC/showval.o EFDC/out3d.o \
@@ -47,7 +50,7 @@ OBJS= EFDC/Propwash/Setup_Ships.o  EFDC/aaefdc.o EFDC/csedress.o EFDC/fsedmode.o
 	  EFDC/wasp4.o EFDC/varinit.o EFDC/rsurfplt.o EFDC/cellmap.o \
 	  EFDC/calfqc.o EFDC/Propwash/Det_Adjacent_Cells.o EFDC/Eutrophication/wwqnc.o EFDC/calbed9.o EFDC/MPI_Utilities/Setup_MPI_Topology.o \
 	  EFDC/MPI_Mapping/Map_Connectors.o \
-	  EFDC/setopenbc2.o EFDC/lsqharm.o EFDC/caltran_ad.o EFDC/caltoxb.o \
+	  EFDC/lsqharm.o EFDC/caltran_ad.o EFDC/caltoxb.o \
 	  EFDC/calpser.o EFDC/calbed.o EFDC/wasp6.o \
 	  EFDC/ceqicm.o EFDC/calhdmf3.o EFDC/calblay.o EFDC/MPI_Utilities/Initialize_MPI.o \
 	  EFDC/MPI_Domain_Decomp/Child_Grid.o EFDC/MPI_Communication/Communicate_3D_0.o \
@@ -67,7 +70,7 @@ OBJS= EFDC/Propwash/Setup_Ships.o  EFDC/aaefdc.o EFDC/csedress.o EFDC/fsedmode.o
 	  EFDC/rsalplth.o EFDC/calexp.o EFDC/calconc.o EFDC/wavesxy.o \
 	  EFDC/setopenbc.o EFDC/rvelpltv.o EFDC/congrad.o EFDC/calsft.o EFDC/calavb.o EFDC/Utilities/dstime.o \
 	  EFDC/MPI_Utilities/Setup_MPI_Debug_File.o \
-	  EFDC/input.o EFDC/MPI_Mapping/Setup_Local_to_Global.o EFDC/varzeroreal.o \
+	  EFDC/input.o EFDC/MPI_Mapping/Setup_Local_to_Global.o \
 	  EFDC/s_shear.o EFDC/rout3d.o EFDC/foodchain.o EFDC/caltran.o \
 	  EFDC/wasp8hydro.o \
 	  EFDC/partmix.o EFDC/congradc.o EFDC/caltbxy.o  EFDC/calpuv9c.o \
@@ -79,7 +82,7 @@ OBJSLINK= Setup_Ships.o aaefdc.o csedress.o fsedmode.o fdstrse.o FormatOutputMPI
        welcome.o \
 	  subchan.o rsalpltv.o calvegser.o caltox_kinetics.o \
 	  caldiff.o bankerosed.o Propwash_Calc_Sequence.o Write_Array_Sizes.o bal2t.o Report_Max_Min_Timing.o Communicate_Groups.o \
-	  varzeroint.o s_slope.o s_bedload.o caltox.o \
+	  s_slope.o s_bedload.o caltox.o \
 	  calsnd.o caldisp2.o Setup_MapBackToGlobal.o Scan_Cell.o \
 	  s_sedic.o rcahq.o cbalod.o calpuv2c.o calbuoy.o Scan_JSON_Decomp.o Calculate_Local_Shear.o \
 	  wavebl.o showval.o out3d.o \
@@ -87,7 +90,7 @@ OBJSLINK= Setup_Ships.o aaefdc.o csedress.o fsedmode.o fdstrse.o FormatOutputMPI
 	  wasp4.o varinit.o rsurfplt.o cellmap.o \
 	  calfqc.o Det_Adjacent_Cells.o wwqnc.o calbed9.o Setup_MPI_Topology.o \
 	  Map_Connectors.o \
-	  setopenbc2.o lsqharm.o caltran_ad.o caltoxb.o \
+		lsqharm.o caltran_ad.o caltoxb.o \
 	  calpser.o calbed.o wasp6.o \
 	  ceqicm.o calhdmf3.o calblay.o Initialize_MPI.o \
 	  Child_Grid.o Communicate_3D_0.o \
@@ -107,7 +110,7 @@ OBJSLINK= Setup_Ships.o aaefdc.o csedress.o fsedmode.o fdstrse.o FormatOutputMPI
 	  rsalplth.o calexp.o calconc.o wavesxy.o \
 	  setopenbc.o rvelpltv.o congrad.o calsft.o calavb.o dstime.o \
 	  Setup_MPI_Debug_File.o \
-	  input.o Setup_Local_to_Global.o varzeroreal.o \
+	  input.o Setup_Local_to_Global.o \
 	  s_shear.o rout3d.o foodchain.o caltran.o wasp8hydro.o \
 	  partmix.o congradc.o caltbxy.o calpuv9c.o \
 	  caldisp3.o \
@@ -176,7 +179,7 @@ $(OBJS)              : $(MODS)
 $(MAIN)              : $(OBJS)
  
 clean:
-	rm -f *.o *.mod *.x
+	rm -f *.o *.mod
 
 # Make dependency list
 #depend .depend :

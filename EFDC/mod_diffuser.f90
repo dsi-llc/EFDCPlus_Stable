@@ -16,31 +16,33 @@ MODULE DIFFUSER_MODULE
   USE GLOBAL
   Use Variables_WQ
   
+  Use Variables_MPI
+  
   IMPLICIT NONE
 
   REAL :: SALA
   REAL :: SFLA
   REAL :: TEMA
 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)   :: UAGD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)   :: VAGD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)   :: WAGD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: UAGD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: VAGD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: WAGD
 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)     :: DYEA
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:,:) :: DYEAD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)   :: SALAD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)     :: SEDA
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:,:) :: SEDAD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)   :: SFLAD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)     :: SNDA
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:,:) :: SNDAD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)   :: TAD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)   :: TEMAD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)     :: TOXA
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:,:) :: TOXAD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)     :: WQVA
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:,:) :: WQVAD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)   :: ZAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: DYEA
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: DYEAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: SALAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: SEDA
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: SEDAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: SFLAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: SNDA
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: SNDAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: TAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: TEMAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXA
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: TOXAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: WQVA
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: WQVAD
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: ZAD
   LOGICAL :: LDEBUG
   
   CONTAINS
@@ -57,30 +59,32 @@ SUBROUTINE JPEFDC
   
   IMPLICIT NONE
 
-  INTEGER,PARAMETER :: NJELM = 2,NATDM = 1
-  INTEGER           :: NJP,K,LJP,KJP,KFLAG,ISAMB,ISJPD,ISTOP,ISOUT,NPRTE,NIMAX,ITMP,JTMPVAL,KL
-  INTEGER           :: NT,NV,NX,NS,NZ,L,LU,KU,LE,LW,LN,LS,ITVAL,NE,NJE,NJPS,NM,NI,ISHEAR,IFORCE
-  INTEGER           :: NSV,KTMP,KZERO,IFILE,MD
-  INTEGER,SAVE      :: NPRT
+  INTEGER,PARAMETER :: NJELM = 2, NATDM = 1
+  INTEGER           :: NJP, K, LJP, KJP, KFLAG, ISAMB, ISJPD, ISTOP, ISOUT, NPRTE, NIMAX, ITMP, JTMPVAL, KL
+  INTEGER           :: NT, NV, NX, NS, L, LU, KU, LE, LW, LN, LS, N2, NJE, N1, NI, ISHEAR, IFORCE
+  INTEGER           :: KTMP, KZERO, IFILE, MD, NW
+  INTEGER IPMC ! DELME
+  INTEGER,SAVE      :: NPRT(10)
   
-  REAL :: TIME,RPI,RADDEG,ZTMP,ALPHA,ALPH2,TUJP,XERRM,YERRM,ZERRM,RRERM,RKC
-  REAL :: RLERM,DMRERM,XJET,YJET,RJET,AJET,QVJET,QSERTAVG,QVJET0,QJET,WTC
-  REAL :: WTV,TMPVAL,SALJET,TEMJET,SFLJET,ZBOT,ZSUR,DZPRT,ZJPRT
-  REAL :: DTJP,UJ0,VJ0,WJ0,SEDJETT,UTMP,VTMP,TMPEXP,QA,QAH,SEDATT,RHOA
-  REAL :: FRD2I,EBOT,ETOP,ENTS,QJTOT,QJTOTO,RLSCL,SALJETI,TEMJETI,SFLJETI
-  REAL :: THAG,SINPHJ,DVEL,DRHO,FTOP,DJETI,XJGNE,YJGNE,ZJGNE,RADJNE,SIGNE
-  REAL :: RLEJNE,SALJNE,TEMJNE,SFLJNE,DRMAJ,COSPHJ,COSPHJM,SINTHJL,COSTHJL
-  REAL :: COSTHJLM,XJOLD,YJOLD,ZJOLD,RLOLD,RROLD,DRMAJSO,DRMAJSA,DRMAJFO,ENTF1
-  REAL :: DELSIG,ENTF2,ENTF3,ENTF,DRMAJFA,RMAJI,DXTMP,DYTMP,DZTMP,DS,SEDAA
-  REAL :: DRMAJSE,DRMAJFE,ZJGTOP,ZJGBOT,DRHOT,ZLOWER,ZUPPER,RDUM,QUJ0,QVJ0,QWJ0
-  REAL :: QENTTMP,QUAG,QVAG,QWAG,ZVAL
-  REAL :: UAG,VAG,WAG
+  REAL :: TIME, RADDEG, ZTMP, ALPHA, ALPH2, TUJP, XERRM, YERRM, ZERRM, RRERM, RKC
+  REAL :: RLERM, DMRERM, XJET, YJET, RJET, AJET, QVJET, QSERTAVG, QVJET0, VJET, WTC
+  REAL :: WTV, TMPVAL, SALJET, TEMJET, SFLJET, ZBOT, ZSUR, DZPRT, ZJPRT
+  REAL :: DTJP, UJ0, VJ0, WJ0, SEDJETT, UTMP, VTMP, TMPEXP, VA, VAH, SEDATT
+  REAL :: FRD2I, EBOT, ETOP, ENTS, QJTOT, QJTOTO, RLSCL, SALJETI, TEMJETI, SFLJETI
+  REAL :: THAG, SINPHJ, DVEL, DRHO, FTOP, DJETI, XJGNE, YJGNE, ZJGNE, RADJNE, SIGNE
+  REAL :: RLEJNE, SALJNE, TEMJNE, SFLJNE, DRMAJ, COSPHJ, COSPHJM, SINTHJL, COSTHJL
+  REAL :: COSTHJLM, DRMAJSO, DRMAJSA, DRMAJFO, ENTF1
+  REAL :: PTINI, RHO_INI, RHO_ELE , DELTEM, DELRHO, EXITTEM, EXITRHO, RHO_DELTA, RHO_DELTA2
+  ! REAL :: XJOLD, YJOLD, ZJOLD   ! DELME
+  REAL :: DELSIG, ENTF2, ENTF3, ENTF, DRMAJFA, RMAJI, DXTMP, DYTMP, DZTMP, DS, SEDAA, TOTTIME
+  REAL :: DRMAJSE, DRMAJFE, ZJGTOP, ZJGBOT, DRHOT, ZLOWER, ZUPPER, RDUM, QUJ0, QVJ0, QWJ0
+  REAL :: QENTTMP, QUAG, QVAG, QWAG, ZVAL, RADLAST, VJET0
+  REAL :: UAG, VAG, WAG
   REAL,SAVE :: CURDAY
   
   !REAL,EXTERNAL :: FUNDEN
   
-  CHARACTER*11 FNJPGEO,FNJPVEL,FNJPCON,FNJPTOX,FNJPTPF,FNJPLOG, FNNRFLD,FNNRFLB
-  CHARACTER*2  FNNUM(25)
+  CHARACTER :: FNNUM*3, PROCNUM*3, FNJPLOG*40
 
   LOGICAL*4,SAVE :: LOUTJET
   
@@ -94,13 +98,15 @@ SUBROUTINE JPEFDC
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: DYEJNE
   REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: DYEJNS
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: PHJ
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: QJ
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: QJH
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: VJ
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: VJH
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: QJNS
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RADJ
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RADJNS
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RADJOLD
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RDQA
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RDQANS
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RHOA
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RHOJ
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RLEJ
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RLEJNS
@@ -155,107 +161,113 @@ SUBROUTINE JPEFDC
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: WQVJNE
   REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: WQVJNS
   REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: RPORTS
-
+  
+  LDEBUG = DEBUG
+  !LDEBUG = .TRUE.   ! delme
+  
+  ! **************************************************************************************************
+  ! **************************************************************************************************
+  ! *** Allocation Block
   IF(  .NOT. ALLOCATED(DRHONS) )THEN
     WRITE(*,'(A,I8)')'JET/PLUME COMPUTATIONS STARTED.  NQJPIJ = ',NQJPIJ
     
     ! *** MODULE LEVEL VARIABLES FIRST
-    Call AllocateDSI(DYEA,     NDYM, 0.0)
-    Call AllocateDSI(DYEAD,    KCM,    NDYM, 1, 0.0)
-    Call AllocateDSI(SALAD,    KCM,    1,       0.0)
-    Call AllocateDSI(SEDA,     NSED, 0.0)       
-    Call AllocateDSI(SEDAD,    KCM,    NSED, 1, 0.0)
-    Call AllocateDSI(SFLAD,    KCM,    1,       0.0)
-    Call AllocateDSI(SNDA,     NSND, 0.0)    
-    Call AllocateDSI(SNDAD,    KCM,    NSND, 1, 0.0)
-    Call AllocateDSI(TEMAD,    KCM,    1,       0.0)
-    Call AllocateDSI(TAD,      KCM,    1,       0.0)
-    Call AllocateDSI(TOXA,     NTXM, 0.0)   
-    Call AllocateDSI(TOXAD,    KCM,    NTXM, 1, 0.0)
-    Call AllocateDSI(UAGD,     KCM,    1,       0.0)
-    Call AllocateDSI(VAGD,     KCM,    1,       0.0)
-    Call AllocateDSI(WAGD,     KCM,    1,       0.0)
-    Call AllocateDSI(ZAD,      KCM,    1,       0.0)
-    
-    Call AllocateDSI(DRHONS,   NJPSM,  0.0)      
-    Call AllocateDSI(DRMAJF,   NJELM,  0.0)      
-    Call AllocateDSI(DRMAJNS,  NJPSM,  0.0)      
-    Call AllocateDSI(DRMAJS,   NJELM,  0.0)      
-    Call AllocateDSI(DYEJ,     NJELM,  NDYM,   0.0)
-    Call AllocateDSI(DYEJET,   NDYM,   0.0)      
-    Call AllocateDSI(DYEJETI,  NDYM,   0.0)      
-    Call AllocateDSI(DYEJNE,   NDYM,   0.0)      
-    Call AllocateDSI(DYEJNS,   NDYM,   NJPSM,  0.0)
-    Call AllocateDSI(PHJ,      NJELM,  0.0)      
-    Call AllocateDSI(QJ,       NJELM,  0.0)      
-    Call AllocateDSI(QJH,      NJELM,  0.0)      
-    Call AllocateDSI(QJNS,     NJPSM,  0.0)      
-    Call AllocateDSI(RADJ,     NJELM,  0.0)      
-    Call AllocateDSI(RADJNS,   NJPSM,  0.0)      
-    Call AllocateDSI(RDQA,     NJELM,  0.0)      
-    Call AllocateDSI(RDQANS,   NJPSM,  0.0)      
-    Call AllocateDSI(RHOJ,     NJELM,  0.0)      
-    Call AllocateDSI(RLEJ,     NJELM,  0.0)      
-    Call AllocateDSI(RLEJNS,   NJPSM,  0.0)      
-    !Call AllocateDSI(RMAJP,   NJELM,  0.0)      
-    ALLOCATE(RMAJP(0:NJELM))           
-    Call AllocateDSI(RMAJPNS,  NJPSM,  0.0)      
-    Call AllocateDSI(SALJ,     NJELM,  0.0)      
-    Call AllocateDSI(SALJNS,   NJPSM,  0.0)      
-    Call AllocateDSI(SEDJ,     NJELM,  NSCM,   0.0)
-    Call AllocateDSI(SEDJET,   NSCM,   0.0)      
-    Call AllocateDSI(SEDJETI,  NSCM,   0.0)      
-    Call AllocateDSI(SEDJNE,   NSCM,   0.0)      
-    Call AllocateDSI(SEDJNS,   NSCM,   NJPSM,  0.0)
-    Call AllocateDSI(SFLJ,     NJELM,  0.0)      
-    Call AllocateDSI(SIG,      NJELM,  0.0)      
-    Call AllocateDSI(SIGNS,    NJPSM,  0.0)      
-    Call AllocateDSI(SNDJ,     NJELM,  NSNM,   0.0)
-    Call AllocateDSI(SNDJET,   NSNM,   0.0)      
-    Call AllocateDSI(SNDJETI,  NSNM,   0.0)      
-    Call AllocateDSI(SNDJNE,   NSNM,   0.0)      
-    Call AllocateDSI(SNDJNS,   NSNM,   NJPSM,  0.0)
-    Call AllocateDSI(TEMJ,     NJELM,  0.0)      
-    Call AllocateDSI(TEMJNS,   NJPSM,  0.0)      
-    Call AllocateDSI(THJG,     NJELM,  0.0)      
-    Call AllocateDSI(THJL,     NJELM,  0.0)      
-    Call AllocateDSI(TIMJP,    NJPSM,  0.0)      
-    Call AllocateDSI(TOXJ,     NJELM,  NTXM,   0.0)
-    Call AllocateDSI(TOXJET,   NTXM,   0.0)      
-    Call AllocateDSI(TOXJETI,  NTXM,   0.0)      
-    Call AllocateDSI(TOXJNE,   NTXM,   0.0)      
-    Call AllocateDSI(TOXJNS,   NTXM,   NJPSM,  0.0)
-    Call AllocateDSI(TOXPFJP,  NJELM,  NSTM,   NTXM, 0.0)
-    Call AllocateDSI(TOXPFTJP, NJELM,  NTXM,   0.0)
-    Call AllocateDSI(TOXPFTNS, NTXM,   NJPSM,  0.0)
-    Call AllocateDSI(UJG,      NJELM,  0.0)
-    Call AllocateDSI(UJGNS,    NJPSM,  0.0)
-    Call AllocateDSI(UJPAVG,   KCM,    NJPSM,  0.0)
-    Call AllocateDSI(VJG,      NJELM,  0.0)    
-    Call AllocateDSI(VJGNS,    NJPSM,  0.0)    
-    Call AllocateDSI(VJPAVG,   KCM,    NJPSM,  0.0)
-    Call AllocateDSI(WJG,      NJELM,  0.0)    
-    Call AllocateDSI(WJGNS,    NJPSM,  0.0)    
-    Call AllocateDSI(WJPAVG,   KCM,    NJPSM,  0.0)
-    Call AllocateDSI(XJG,      NJELM,  0.0)
-    Call AllocateDSI(XJGNS,    NJPSM,  0.0)
-    Call AllocateDSI(YJG,      NJELM,  0.0)
-    Call AllocateDSI(YJGNS,    NJPSM,  0.0)
-    Call AllocateDSI(ZJG,      NJELM,  0.0)
-    Call AllocateDSI(ZJGNS,    NJPSM,  0.0)
-    Call AllocateDSI(RPORTS,   NQJPIJ, 0.0)
+    Call AllocateDSI( DYEA,     NDYM,   0.0)
+    Call AllocateDSI( DYEAD,    KCM,    NDYM,   0.0)
+    Call AllocateDSI( SALAD,    KCM,    0.0)    
+    Call AllocateDSI( SEDA,     NSED,  0.0)      
+    Call AllocateDSI( SEDAD,    KCM,    NSCM,  0.0)
+    Call AllocateDSI( SFLAD,    KCM,    0.0)    
+    Call AllocateDSI( SNDA,     NSND,   0.0)    
+    Call AllocateDSI( SNDAD,    KCM,    NSND,   0.0)
+    Call AllocateDSI( TEMAD,    KCM,    0.0)    
+    Call AllocateDSI( TAD,      KCM,    0.0)    
+    Call AllocateDSI( TOXA,     NTXM,   0.0)    
+    Call AllocateDSI( TOXAD,    KCM,    NTXM,   0.0)
+    Call AllocateDSI( UAGD,     KCM,    0.0)
+    Call AllocateDSI( VAGD,     KCM,    0.0)
+    Call AllocateDSI( WAGD,     KCM,    0.0)
+    Call AllocateDSI( ZAD,      KCM,    0.0)
+                      
+    Call AllocateDSI( DRHONS,   NJPSM,  0.0)      
+    Call AllocateDSI( DRMAJF,   NJELM,  0.0)      
+    Call AllocateDSI( DRMAJNS,  NJPSM,  0.0)      
+    Call AllocateDSI( DRMAJS,   NJELM,  0.0)      
+    Call AllocateDSI( DYEJ,     NJELM,  NDYM,   0.0)
+    Call AllocateDSI( DYEJET,   NDYM,   0.0)      
+    Call AllocateDSI( DYEJETI,  NDYM,   0.0)      
+    Call AllocateDSI( DYEJNE,   NDYM,   0.0)      
+    Call AllocateDSI( DYEJNS,   NDYM,   NJPSM,  0.0)
+    Call AllocateDSI( PHJ,      NJELM,  0.0)      
+    Call AllocateDSI( VJ,       NJELM,  0.0)      
+    Call AllocateDSI( VJH,      NJELM,  0.0)      
+    Call AllocateDSI( QJNS,     NJPSM,  0.0)      
+    Call AllocateDSI( RADJ,     NJELM,  0.0)   
+    Call AllocateDSI( RADJNS,   NJPSM,  0.0)      
+    Call AllocateDSI( RADJOLD,  NJELM,  0.0)   
+    Call AllocateDSI( RDQA,     NJELM,  0.0)      
+    Call AllocateDSI( RDQANS,   NJPSM,  0.0)      
+    Call AllocateDSI( RHOA,     NJELM,  0.0)      
+    Call AllocateDSI( RHOJ,     NJELM,  0.0)      
+    Call AllocateDSI( RLEJ,     NJELM,  0.0)      
+    Call AllocateDSI( RLEJNS,   NJPSM,  0.0)      
+    Call AllocateDSI( RMAJP,   -NJELM,  0.0)      
+    Call AllocateDSI( RMAJPNS,  NJPSM,  0.0)      
+    Call AllocateDSI( SALJ,     NJELM,  0.0)      
+    Call AllocateDSI( SALJNS,   NJPSM,  0.0)      
+    Call AllocateDSI( SEDJ,     NJELM,  NSCM,   0.0)
+    Call AllocateDSI( SEDJET,   NSCM2,  0.0)      
+    Call AllocateDSI( SEDJETI,  NSCM2,  0.0)      
+    Call AllocateDSI( SEDJNE,   NSCM2,  0.0)      
+    Call AllocateDSI( SEDJNS,   NSCM2,  NJPSM,  0.0)
+    Call AllocateDSI( SFLJ,     NJELM,  0.0)      
+    Call AllocateDSI( SIG,      NJELM,  0.0)      
+    Call AllocateDSI( SIGNS,    NJPSM,  0.0)      
+    Call AllocateDSI( SNDJ,     NJELM,  NSNM,   0.0)
+    Call AllocateDSI( SNDJET,   NSNM,   0.0)      
+    Call AllocateDSI( SNDJETI,  NSNM,   0.0)      
+    Call AllocateDSI( SNDJNE,   NSNM,   0.0)      
+    Call AllocateDSI( SNDJNS,   NSNM,   NJPSM,  0.0)
+    Call AllocateDSI( TEMJ,     NJELM,  0.0)      
+    Call AllocateDSI( TEMJNS,   NJPSM,  0.0)      
+    Call AllocateDSI( THJG,     NJELM,  0.0)      
+    Call AllocateDSI( THJL,     NJELM,  0.0)      
+    Call AllocateDSI( TIMJP,    NJPSM,  0.0)      
+    Call AllocateDSI( TOXJ,     NJELM,  NTXM,   0.0)
+    Call AllocateDSI( TOXJET,   NTXM,   0.0)      
+    Call AllocateDSI( TOXJETI,  NTXM,   0.0)      
+    Call AllocateDSI( TOXJNE,   NTXM,   0.0)      
+    Call AllocateDSI( TOXJNS,   NTXM,   NJPSM,  0.0)
+    Call AllocateDSI( TOXPFJP,  NJELM,  NSTM,   NTXM, 0.0)
+    Call AllocateDSI( TOXPFTJP, NJELM,  NTXM,   0.0)
+    Call AllocateDSI( TOXPFTNS, NTXM,   NJPSM,  0.0)
+    Call AllocateDSI( UJG,      NJELM,  0.0)
+    Call AllocateDSI( UJGNS,    NJPSM,  0.0)
+    Call AllocateDSI( UJPAVG,   KCM,    NJPSM,  0.0)
+    Call AllocateDSI( VJG,      NJELM,  0.0)    
+    Call AllocateDSI( VJGNS,    NJPSM,  0.0)    
+    Call AllocateDSI( VJPAVG,   KCM,    NJPSM,  0.0)
+    Call AllocateDSI( WJG,      NJELM,  0.0)    
+    Call AllocateDSI( WJGNS,    NJPSM,  0.0)    
+    Call AllocateDSI( WJPAVG,   KCM,    NJPSM,  0.0)
+    Call AllocateDSI( XJG,      NJELM,  0.0)
+    Call AllocateDSI( XJGNS,    NJPSM,  0.0)
+    Call AllocateDSI( YJG,      NJELM,  0.0)
+    Call AllocateDSI( YJGNS,    NJPSM,  0.0)
+    Call AllocateDSI( ZJG,      NJELM,  0.0)
+    Call AllocateDSI( ZJGNS,    NJPSM,  0.0)
+    Call AllocateDSI( RPORTS,   NQJPIJ, 0.0)
 
     IF( ISTRAN(8) > 0 )THEN
-      Call AllocateDSI(WQVJ,     NJELM,  NWQV,   0.0)
-      Call AllocateDSI(WQVAD,    KCM,    NWQV, 1, 0.0)
-      Call AllocateDSI(WQVJET,   NWQV,   0.0)      
-      Call AllocateDSI(WQVJETI,  NWQV,   0.0)      
-      Call AllocateDSI(WQVJNE,   NWQV,   0.0)      
-      Call AllocateDSI(WQVJNS,   NWQV,   NJPSM,  0.0)
+      Call AllocateDSI( WQVJ,     NJELM, -NWQV,   0.0)
+      Call AllocateDSI( WQVA,    -NWQV,   0.0)
+      Call AllocateDSI( WQVAD,    KCM,   -NWQV,   0.0)
+      Call AllocateDSI( WQVJET,  -NWQV,   0.0)      
+      Call AllocateDSI( WQVJETI, -NWQV,   0.0)      
+      Call AllocateDSI( WQVJNE,  -NWQV,   0.0)      
+      Call AllocateDSI( WQVJNS,  -NWQV,   NJPSM,  0.0)
     ENDIF
     
-    ! *** INITIALIZE MODULE VARIABLES
-
     ! *** INITIALIZE LOCAL ARRAYS
     NPRT = 0
     CURDAY = TIMEDAY + 1./24.
@@ -263,9 +275,40 @@ SUBROUTINE JPEFDC
 
     LOUTJET = .FALSE.
     DO NJP = 1,NQJPIJ
-      IF( IOUTJP(NJP) > 0 )LOUTJET = .TRUE.
+      IF( IOUTJP(NJP) > 0 ) LOUTJET = .TRUE.
       RPORTS(NJP) = FLOAT(NPORTJP(NJP))  
     ENDDO
+    
+    IF( LOUTJET )THEN
+      OPEN(88,FILE = OUTDIR//'JPBUG.DIA', STATUS = 'UNKNOWN')
+      CLOSE(88,STATUS = 'DELETE')
+    
+      DO NJP = 1,NQJPIJ
+        IF( IOUTJP(NJP) > 0 )THEN
+          WRITE(FNNUM,'(I3.3)') NJP
+          WRITE(PROCNUM,'(I3.3)') process_id
+          FNJPLOG = OUTDIR//'JPLOG' // FNNUM // '_' // PROCNUM // '.OUT'
+          OPEN(10,FILE = FNJPLOG, STATUS = 'UNKNOWN')
+          CLOSE(10,STATUS = 'DELETE')
+          
+          IF( IOUTJP(NJP) > 1 )THEN
+            OPEN(10,FILE = FNJPLOG, STATUS = 'UNKNOWN')
+            WRITE(10,630) 'NITER', 'TIMEDAY', 'NJE', 'NI', 'TOTTIME', 'LENGTH',                                                          &
+                          'XJG(', 'YJG', 'ZJG', 'DIA', 'QVJET', 'SUM QJPENT', 'QJTOT', 'RHOA', 'RHOJ', 'TEMJ', 'VJ', 'VJH', 'WJG',       &
+                          'WAG', 'RHOJ-RHOA', 'RHO_DELTA', 'RHO_DELTA2', 'TEMA', 'VA', 'VAH', 'RMAJP', 'DRMAJS', 'DRMAJF'
+            CLOSE(10)
+          ENDIF
+        ENDIF
+      ENDDO
+630   FORMAT(A10,A15,A8,A5,2A9,2A12,A10,A8,3A12,8A10,10A12)  
+      
+    ENDIF
+
+    IF( LDEBUG )THEN
+      OPEN(88,FILE = OUTDIR//'JPBUG.DIA', STATUS = 'UNKNOWN')
+      CLOSE(88,STATUS = 'DELETE')
+    ENDIF
+    
   ENDIF   ! *** END OF INITIALIZATION
 
   ! *** SET CONSTANTS
@@ -275,79 +318,67 @@ SUBROUTINE JPEFDC
   ELSE
     TIME = TIMESEC/TCON
   ENDIF
+  
   IF( CURDAY < TIMEDAY )THEN
     CURDAY = CURDAY + 1./24.
     NPRT = 0
   ENDIF
 
+  ! *** G   = EFDC+ global constant for acceleration due to gravity
+  ! *** RPI = 3.14159
+  RADDEG = PI/180.
+  
   IFILE = -1
-  
-  RPI    = 3.14159
-  G      = 9.80665
-  RADDEG = RPI/180.
-  IF( LOUTJET )THEN
-    FNNUM( 1)= '01'
-    FNNUM( 2)= '02'
-    FNNUM( 3)= '03'
-    FNNUM( 4)= '04'
-    FNNUM( 5)= '05'
-    FNNUM( 6)= '06'
-    FNNUM( 7)= '07'
-    FNNUM( 8)= '08'
-    FNNUM( 9)= '09'
-    FNNUM(10)= '10'
-    FNNUM(11)= '11'
-    FNNUM(12)= '12'
-    FNNUM(13)= '13'
-    FNNUM(14)= '14'
-    FNNUM(15)= '15'
-    FNNUM(16)= '16'
-    FNNUM(17)= '17'
-    FNNUM(18)= '18'
-    FNNUM(19)= '19'
-    FNNUM(20)= '20'
-    FNNUM(21)= '21'
-    FNNUM(22)= '22'
-    FNNUM(23)= '23'
-    FNNUM(24)= '24'
-    FNNUM(25)= '25'
-    OPEN(88,FILE = OUTDIR//'JPBUG.DIA',POSITION = 'APPEND')
+  IF( LDEBUG )THEN
+    OPEN(88,FILE = OUTDIR//'JPBUG.DIA',STATUS = 'UNKNOWN',POSITION = 'APPEND')
     CLOSE(88,STATUS = 'DELETE')
+    WRITE(88,*) TIMEDAY
   ENDIF
-  LDEBUG = DEBUG
-  LDEBUG = .TRUE.   ! delme
   
+  ! **************************************************************************************************
+  ! **************************************************************************************************
+  ! *** Prepare for plume calculations
+
   ! *** LOOP OVER ALL JET/PLUME LOCATIONS
   DO NJP = 1,NQJPIJ
+    ! *** Inititalize and prepare for the plume calculatopn for the current jet NJP
     DO K = 1,KC
       QJPENT(K,NJP) = 0.0
       UJPAVG(K,NJP) = 0.0
       VJPAVG(K,NJP) = 0.0
       WJPAVG(K,NJP) = 0.0
     ENDDO
-    IF( LDEBUG )THEN
-      FNJPLOG = OUTDIR//'JPLOG' // FNNUM(NJP) // '.OUT'
-      IF( NITER == 1 ) OPEN(10,FILE = FNJPLOG,STATUS = 'UNKNOWN')
-      IF( NITER == 1 ) CLOSE(10,STATUS = 'DELETE')
-      OPEN(10,FILE = FNJPLOG,STATUS = 'UNKNOWN',POSITION = 'APPEND')
-      WRITE(10,134)NJP,TIME
+
+    IF( NITER == 1 )THEN
+      KEFFJP(NJP) = KQJP(NJP)               ! *** Initialize the plume discharge elevation to the nominal elevation
     ENDIF
     
-    IF( NITER == 1 ) KEFFJP(NJP) = KQJP(NJP)
-    LJP  = LIJ(IQJP(NJP),JQJP(NJP))
-    KL = KSZ(LJP)
-    RKC = FLOAT(KC - KL + 1)
-    KJP = KQJP(NJP)
+    IF( IOUTJP(NJP) > 0 )THEN
+      WRITE(FNNUM,'(I3.3)') NJP
+      WRITE(PROCNUM,'(I3.3)') process_id
+      FNJPLOG = OUTDIR//'JPLOG' // FNNUM // '_' // PROCNUM // '.OUT'
+      OPEN(10,FILE = FNJPLOG,STATUS = 'UNKNOWN',POSITION = 'APPEND')
+      IF( IOUTJP(NJP) > 1 ) WRITE(10,134) NJP, TIMEDAY
+    ENDIF
+    
+    IF( LDEBUG )THEN
+      OPEN(88,FILE = OUTDIR//'JPBUG.DIA', STATUS = 'UNKNOWN',POSITION = 'APPEND')      
+      WRITE(88,134) NJP, TIMEDAY
+    ENDIF
+    
+    LJP   = LIJ(IQJP(NJP),JQJP(NJP))         ! *** L index of the receiving/returning water
+    KL    = KSZ(LJP)                         ! *** Current layer
+    RKC   = FLOAT(KC - KL + 1)               ! *** Number of layers from surface
+    KJP   = KQJP(NJP)                        ! *** Default/initial discharge layer
     KFLAG = 0
     
-    ZTMP = (ZJET(NJP) - BELV(LJP))/HP(LJP)
+    ZTMP = (ZJET(NJP) - BELV(LJP))/HP(LJP)   ! *** Fraction of the water column from the bottom to the port elevation
     KJP  = NINT(RKC*ZTMP)
     IF( KJP < KSZ(LJP) ) KJP = KSZ(LJP)
     IF( KJP > KC ) KJP = KC
     
-    ! *** ICAL > 0 - JET/PLUME BC ACTIVATED
+    ! *** ICAL > 0 - JET/PLUME BC ACTIVATED, OTHERWISE IGNORED
     IF( ICALJP(NJP) > 0 )THEN
-
       !    NJEL     MAXIMUM NUMBER OF ELEMENTS ALONG JET/PLUME LENGTH
       !    ISAMB  0 FOR SPATIALLY AND TEMPORALLY CONSTANT AMBIENT CONDITIONS
       !           1 FOR SPATIALLY VARYING AND TEMPORALLY CONSTANT CONDITIONS
@@ -362,59 +393,41 @@ SUBROUTINE JPEFDC
       !    ISOUT  0 DIMENSIONAL OUTPUT,
       !           1 NONDIM OUTPUT LENGTH SCALED BY DJET
       !           2 NONDIM OUTPUT LENGTH SCALED BY SQRT(PI)*RJET
-      !    NPRTE    ELEMENT OUTPUT PRINT FREQUENCY
-      !    CFRD     ADJUSTMENT FACTOR FOR FROUDE NUMBER
-      !    TUJP     TEMPORAL FREQUENCY FOR UPDATING JET/PLUME (SEC)
-      !             IF ISJPD = 1
-      !             CONDITIONS
-
-      ISAMB = 1
-      ISJPD = 0
+      ISAMB = 1         
+      ISJPD = 0         
       ISTOP = ISTJP(NJP)
-      ISOUT = 0
-      NPRTE = 0
-      ALPHA = CFRD(NJP)
+      ISOUT = 0         
+      NPRTE = 0              ! *** NPRTE    Element output print frequency
+      ALPHA = CFRD(NJP)      ! *** CFRD     Adjustment factor for froude number
       ALPH2 = ALPHA*ALPHA
-      TUJP = 0
-
-      !    NIMAX    MAXIMUM NUMEBER OF ITERATION
-      !    XYERR    HORIZONTAL TRAJECTORY ERROR CRITERA (M)
-      !    ZERR     VERTICAL TRAJECTORY ERROR CRITERA (M)
-      !    RRER     HORIZONTAL TRAJECTORY ERROR CRITERA (M)
-      !    RLER     VERTICAL TRAJECTORY ERROR CRITERA (M)
-      !    DMRERR   ENTRAINMENT ERROR CRITERIA
-      NIMAX = NJPMX(NJP)
-      XERRM = 1000.
-      YERRM = 1000.
-      ZERRM = 1000.
-      RRERM = 1000.
-      RLERM = 1000.
-      DMRERM = DJPER(NJP)
-
-      !    WSET   SEDIMENT SETTLING VELOCITY (M/S)
-      !    TPAR   PARTITION COEFFICIENT (L/MG OR M**3/GM)
-      !    TDCY   CONTAMINANT DECAY RATE (1./SEC)
-      !    WSET,TPAR,TDCY NOT USED IN EMBEDDED VERSION.  APPROPRIATE EFDC VARIABLES ARE USED INSTEAD
-
-      !    XJET   EAST COORDINATE OF DISCHARGE (M)   (Not Used)
-      !    YJET   NORTH COORDINATE OF DISCHARGE (M)  (Not Used)
-      !    ZJET   ELEVATION OF DISCHARGE (M)
-      !    PHJET  VERTICAL JET ANGLE POSITIVE FROM HORIZONTAL (DEGREES)
-      !    THJET  HORIZONTAL JET ANGLE POS COUNTER CLOCKWISE FROM EAST (DEGREE
-      !    DJET   DIAMETER OF DISCHARGE PORT (M)
-      !    RJET   RADIUS OF DISCHARGE PORT (M)
-      !    AJET   AREA OF THE JET (M2)
-      !    QJET   CONSTANT PORT (JET AT PORT) VELOCITY (M/S)
-      !           (NEGATIVE VALUE INDICATES CALCULATE FROM QVJET)
-      !    QQCJP  CONSTANT DISCHARGE RATE (CMS)
-      !           (NEGATIVE VALUE INDICATES CALCULATE FROM QJET)
-      !    QVJET  TOTAL FLOW (CONSTANT + TIME VARIABLE)
-      ! QSERTAVG  TOTAL TIME VARIABLE FLOW
+      TUJP = 0               ! *** TUJP     Temporal frequency for updating jet/plume (sec) if ISJPD = 1
       
-      XJET = 0.
-      YJET = 0.
-      RJET = 0.5*DJET(NJP)
-      AJET = RPI*RJET*RJET    ! *** THIS IS AREA OF 1 PORT BUT THE FLOWS USED BELOW ARE TOTAL FLOW INTO THE CELL
+      NIMAX = NJPMX(NJP)     ! *** NIMAX    Maximum numeber of iteration
+      XERRM = 1000.          ! *** XYERR    Horizontal trajectory error critera (m)
+      YERRM = 1000.           
+      ZERRM = 1000.          ! *** ZERR     Vertical trajectory error critera (m)
+      RRERM = 1000.          ! *** RRER     Horizontal trajectory error critera (m)
+      RLERM = 1000.          ! *** RLER     Vertical trajectory error critera (m)
+      DMRERM = DJPER(NJP)    ! *** DMRERR   Entrainment error criteria
+      
+      ! ***    TDCY   Contaminant decay rate (1./sec)
+      ! ***    WSET,TPAR,TDCY not used in embedded version.  Appropriate efdc variables are used instead
+      ! ***    XJET   East coordinate of discharge (m)   (not used)
+      ! ***    YJET   North coordinate of discharge (m)  (not used)
+      ! ***    ZJET   Elevation of discharge (m)
+      ! ***    PHJET  Vertical jet angle positive from horizontal (degrees)
+      ! ***    THJET  Horizontal jet angle pos counter clockwise from east (degrees)
+      ! ***    AJET   Area of the jet (m2)
+      ! ***    VJET   Constant port (jet at port) velocity (m/s)   (negative value indicates withdrawal)
+      ! ***    QQCJP  Constant discharge rate (cms)                (negative value indicates withdrawal)
+      ! ***    QVJET  Total flow (constant + time variable)
+      ! *** QSERTAVG  Total time variable flow
+      
+      XJET = 0.               ! *** WSET   Sediment settling velocity (m/s)
+      YJET = 0.               ! *** TPAR   Partition coefficient (l/mg or m**3/gm)
+      RJET = 0.5*DJET(NJP)    ! *** RJET   Radius of discharge port (m),   
+                              ! *** DJET   Diameter of discharge port (m)
+      AJET = PI*RJET*RJET     ! *** This is area of 1 port but the flows used below are total flow into the cell
 
       ! *** Total Flow over all layers (QSER Type, ICAL = 1 )
       IF( ICALJP(NJP) == 1 )THEN
@@ -430,25 +443,26 @@ SUBROUTINE JPEFDC
       IF( ICALJP(NJP) == 2 )THEN
         QVJET = QWRCJP(NJP) + QWRSERT(NQWRSERJP(NJP))
       ENDIF
-      IF( QVJET <= 1.E-16) GOTO 9000   ! *** NO FLOW, SKIP CALCS
+      IF( QVJET <= 1.E-16 ) GOTO 9000   ! *** NO FLOW, SKIP CALCS
       
       ! *** THE QSER OR NQWRSERJP FLOWS ARE ON A PER PORT BASIS.  CALQVS ADJUSTS PORT FLOWS FOR NUMBER OF PORTS IN CELL.  [ ALTERNATE: QVJET = QVJET/RPORTS(NJP) ]
       QVJET0 = QVJET      
-      QJET = QVJET/AJET   ! *** VELOCITY OF JET IN PORT (M/S)
-
-      ! *** GET JET/PLUME MASS LOADING
+      VJET = QVJET/AJET   ! *** Velocity of jet in port (m/s)
+      
+      ! *** Get jet/plume mass loading from QSER or W/R 
       !    SALJET   SALINITY (PPT)
-      !    SEDJET   SEDIMENT (MG/L OR GM/M**3)
+      !    SEDJET   SEDIMENT (MG/L OR G/M^3)
       !    TEMJET   TEMPERATURE
       !    TOXJET   CONTAMINANT CONCENTRATION (UG/L OR MG/M**3)
+      !    WQVJET   WATER QUALITY CONCENTRATION (G/M3)
       
       ! *** STANDARD FLOW (QSER) TYPE (ICAL = 1)
       IF( ICALJP(NJP) == 1 )THEN
-        WTC = QQCJP(NJP)
-        WTV = QSERTAVG
+        WTC = QQCJP(NJP)              ! *** Constant flow component
+        WTV = QSERTAVG                ! *** Variable flow component
         TMPVAL = WTC + WTV
-        WTC = WTC/TMPVAL
-        WTV = WTV/TMPVAL
+        WTC = WTC/TMPVAL              ! *** Fraction of total flow for constant flows
+        WTV = WTV/TMPVAL              ! *** Fraction of total flow for variable flows
 
         ! ***      Constant                   Series
         SALJET = WTC*CQCJP(1,NJP,1) + WTV*CSERT(1,NCSERJP(NJP,1),1)
@@ -476,23 +490,20 @@ SUBROUTINE JPEFDC
         ENDDO
         DO NX = 1,NWQV
           NV = MSVWQV(NX)
-          SNDJET(NX) = WTC*CQCJP(1,NJP,NV) + WTV*CSERT(1,NCSERJP(NJP,8),NV)
+          WQVJET(NX) = WTC*CQCJP(1,NJP,NV) + WTV*CSERT(1,NCSERJP(NJP,8),NV)
         ENDDO
-
-        !NS = MSVWQV(MW)
-        !NCSTMP = NCSERQ(NS,MVAR) 
       ENDIF
       
       ! *** WITHDRAWAL/RETURN TYPE (ICAL = 2)
       IF( ICALJP(NJP) == 2 )THEN
-        WTC = QWRCJP(NJP)
-        WTV = QWRSERT(NQWRSERJP(NJP))
+        WTC = QWRCJP(NJP)                  ! *** Current withdrawal/return flow
+        WTV = QWRSERT(NQWRSERJP(NJP))      ! *** Times series number
         TMPVAL = WTC + WTV
-        WTC = WTC/TMPVAL
-        WTV = WTV/TMPVAL
+        WTC = WTC/TMPVAL                   ! *** Fraction of total flow for constant flows
+        WTV = WTV/TMPVAL                   ! *** Fraction of total flow for variable flows
         NS = NQWRSERJP(NJP)
-        LU = LIJ(IUPCJP(NJP),JUPCJP(NJP))
-        KU = KUPCJP(NJP)
+        LU = LIJ(IUPCJP(NJP),JUPCJP(NJP))  ! *** L Index at the withdrawal cell
+        KU = KUPCJP(NJP)                   ! *** Layer at withdrawal cell
         
         ! ***      Constant                   Series
         SALJET = WTC*CWRCJP(NJP,1) + WTV*CQWRSERT(NS,1) + SAL1(LU,KU)
@@ -518,196 +529,141 @@ SUBROUTINE JPEFDC
           NV = MSVSND(NX)
           SNDJET(NX) = WTC*CWRCJP(NJP,NV) + WTV*CQWRSERT(NS,NV) + SND1(LU,KU,NX)
         ENDDO
-        DO MD = 1,NWQV
-          NV = MSVWQV(MD)
-          WQVJET(MD) = WTC*CWRCJP(NJP,NV) + WTV*CQWRSERT(NS,NV) + WQV(LU,KU,MD)
+        DO NW = 1,NWQV
+          NV = MSVWQV(NW)
+          WQVJET(NW) = WTC*CWRCJP(NJP,NV) + WTV*CQWRSERT(NS,NV) + WQV(LU,KU,NW)
         ENDDO
       ENDIF
-
-      !    ZBOT   BOTTOM ELEVATION (M)
-      !    ZSUR   SURFACE ELEVATION (M)
-      !    NAZD   NUMBER OF AMBIENT DATA IN VERTICAL
-      !    NATD   NUMBER OF AMBIENT DATA IN TIME
-      ZBOT = BELV(LJP)
-      ZSUR = BELV(LJP) + HP(LJP)
-      NAZD = KC
-      NATD = 1
+      
+      ZBOT = BELV(LJP)              ! *** ZBOT   BOTTOM ELEVATION (M)
+      ZSUR = BELV(LJP) + HP(LJP)    ! *** ZSUR   SURFACE ELEVATION (M)
+                                    ! *** KC     NUMBER OF AMBIENT DATA IN VERTICAL
+      NATD = 1                      ! *** NATD   NUMBER OF AMBIENT DATA IN TIME
 
       !    SPATIAL PRINT/SAVE INTERVAL IN VERTICAL
       DZPRT = HP(LJP)/FLOAT(NZPRJP(NJP) - 2)
       ZJPRT = ZJET(NJP) + DZPRT
 
-      !    ZA     ELEVATION OF AMBIENT DATA (M)
-      !    TA     TIME OF AMBIENT DATA (SEC, HR, OR DAY FOR OUTPUT REFERENCE)
-      !    UAG    EAST VELOCITY (M/S)
-      !    VAG    NORTH VELOCITY (M/S)
-      !    WAG    VERTICAL VELOCITY (M/S)
-      !    SALA   AMBIENT SALINITY (PPT)
-      !    SEDA   AMBIENT SEDIMENT CONCENTRATION (MG/L OR GM/M**3)
-      !    TEMA   AMBIENT TEMPERATURE (DEG C)
-      !    TOXA   AMBIENT TOXIC CONTAMINANT CONCENTRATION (UG/L OR MG/M**3)
+      ! *** ZA     Elevation of ambient data (m)
+      ! *** TA     Time of ambient data (sec, hr, or day for output reference)
+      ! *** UAG    East velocity (m/s)
+      ! *** VAG    North velocity (m/s)
+      ! *** WAG    Vertical velocity (m/s)
+      ! *** SALA   Ambient salinity (ppt)
+      ! *** SEDA   Ambient sediment concentration (mg/l or gm/m**3)
+      ! *** TEMA   Ambient temperature (deg c)
+      ! *** TOXA   Ambient toxic contaminant concentration (ug/l or mg/m**3)
       
-      !    ZAD IS THE LAYER MIDPOINT ELEVATION FOR EACH LAYER
-      ZAD(1,1) = BELV(LJP) + 0.5*HP(LJP)*DZC(LJP,KSZ(LJP))
-      DO NZ = 2,NAZD
-        ZAD(NZ,1) = ZAD(NZ - 1,1) + 0.5*HP(LJP)*( DZC(LJP,NZ - 1) + DZC(LJP,NZ) )
+      ! *** ZAD is the layer midpoint elevation for each layer
+      ZAD(1) = BELV(LJP) + 0.5*HPK(LJP,KSZ(LJP))
+      DO K = KSZ(LJP)+1,KC
+        ZAD(K) = ZAD(K-1) + 0.5*(HPK(LJP,K-1) + HPK(LJP,K))
       ENDDO
       
-      ! *** GET LAYER SPECIFIC CELL CENTROID VELOCITIES
-      DO NZ = 1,NAZD
-        K = NZ
+      ! *** Get layer specific cell centroid velocities
+      DO K = 1,KC
         L = LJP
         LE = LEC(L)
         LW = LWC(L)
         LN = LNC(L)
         LS = LSC(L)
-        UTMP = 0.5*(U(LE,NZ) + U(L,NZ))             ! *** CELL CENTROID U VELOCITY
-        VTMP = 0.5*(V(LN,NZ) + V(L,NZ))             ! *** CELL CENTROID V VELOCITY
-        UAGD(NZ,1) = CUE(L)*UTMP + CVE(L)*VTMP    ! *** ROTATING TO WORLD COORDINATES
-        VAGD(NZ,1) = CUN(L)*UTMP + CVN(L)*VTMP    ! *** ROTATING TO WORLD COORDINATES
-        WAGD(NZ,1) = 0.5*(W(L,K) + W(L,K - 1)) + GI*ZZ(L,K)*( DTI*(P(L) - P1(L)) &                      ! DELME-WHY ARE WE DOING THIS?
-                    +0.5*( U(LE,K)*(P(LE) - P(L))*DXIU(LE)                    + U(L,K)*(P(L) - P(LW))*DXIU(L) &
-                          +V(LN,K)*(P(LN) - P(L))*DYIV(LN)       + V(L,K)*(P(L) - P(LS))*DYIV(L) ) ) &
-                    +0.5*(1. - ZZ(L,K))*( U(LE,K)*(BELV(LE) - BELV(L))*DXIU(LE) + U(L,K)*(BELV(L) - BELV(LW))*DXIU(L) &
-                          +V(LN,K)*(BELV(LN) - BELV(L))*DYIV(LN) + V(L,K)*(BELV(L) - BELV(LS))*DYIV(L) )
-        IF( LDEBUG )THEN
-          OPEN(88,FILE = OUTDIR//'JPBUG.DIA',POSITION = 'APPEND')
-          WRITE(88,889)NZ,K,L,LN,LS,SALAD(NZ,1),TEMAD(NZ,1),TOXAD(NZ,1,1)
-          CLOSE(88)
-        ENDIF
+        UTMP = 0.5*(U(LE,K) + U(L,K))                   ! *** Cell centroid U velocity
+        VTMP = 0.5*(V(LN,K) + V(L,K))                   ! *** Cell centroid V velocity
+        UAGD(K) = CUE(L)*UTMP + CVE(L)*VTMP             ! *** Rotating to world coordinates
+        VAGD(K) = CUN(L)*UTMP + CVN(L)*VTMP             ! *** Rotating to world coordinates
+        
+        ! *** Vertical velocities must be computed because W includes artificial velocities to account for plume entrainment.
+        ! *** For a rising or falling plume, the entrainment flows come from the sides, not vertically         
+        !WAGD(K) = 0.5*(W(L,K) + W(L,K - 1)) +    *** Revised                                                         &
+        WAGD(K) =  GI*ZZ(L,K)*( DTI*(P(L) - P1(L)) +                                                     &
+                               0.5*( U(LE,K)*(P(LE)-P(L))*DXIU(LE) + U(L,K)*(P(L)-P(LW))*DXIU(L) +       &
+                                     V(LN,K)*(P(LN)-P(L))*DYIV(LN) + V(L,K)*(P(L)-P(LS))*DYIV(L) ) ) +   &
+                  0.5*(1.-ZZ(L,K))*( U(LE,K)*(BELV(LE)-BELV(L)) *DXIU(LE) +                              &
+                                     U(L,K) *(BELV(L) -BELV(LW))*DXIU(L)  +                              &
+                                     V(LN,K)*(BELV(LN)-BELV(L)) *DYIV(LN) +                              &
+                                     V(L,K)* (BELV(L) -BELV(LS))*DYIV(L) )
       ENDDO
 889   FORMAT(5I6,3E14.5)
       
-      ! *** INITIALIZE CELL WATER COLUMN CONCENTRATIONS
-      DO NZ = 1,KC
-        SALAD(NZ,1) = SAL(LJP,NZ)
-        TEMAD(NZ,1) = TEM(LJP,NZ)
-        SFLAD(NZ,1) = SFL(LJP,NZ)
+      ! *** Initialize cell water column concentrations (xxxAD) for receiving/returning water cell
+      DO K = 1,KC
+        SALAD(K) = SAL(LJP,K)
+        TEMAD(K) = TEM(LJP,K)
+        SFLAD(K) = SFL(LJP,K)
       ENDDO
       DO MD = 1,NDYE
-        DO NZ = 1,NAZD
-          DYEAD(NZ,NT,1) = DYE(LJP,NZ,MD)
+        DO K = 1,KC
+          DYEAD(K,NT) = DYE(LJP,K,MD)
         ENDDO
       ENDDO
       DO NT = 1,NTOX
-        DO NZ = 1,NAZD
-          TOXAD(NZ,NT,1) = TOX(LJP,NZ,NT)
+        DO K = 1,KC
+          TOXAD(K,NT) = TOX(LJP,K,NT)
         ENDDO
       ENDDO
       DO NS = 1,NSED
-        DO NZ = 1,NAZD
-          SEDAD(NZ,NS,1) = SED(LJP,NZ,NS)
+        DO K = 1,KC
+          SEDAD(K,NS) = SED(LJP,K,NS)
         ENDDO
       ENDDO
       DO NX = 1,NSND
-        DO NZ = 1,NAZD
-          SNDAD(NZ,NX,1) = SND(LJP,NZ,NX)
+        DO K = 1,KC
+          SNDAD(K,NX) = SND(LJP,K,NX)
         ENDDO
       ENDDO
-      DO MD = 1,NWQV
-        DO NZ = 1,NAZD
-          WQVAD(NZ,NT,1) = WQV(LJP,NZ,MD)
+      DO NW = 1,NWQV
+        DO K = 1,KC
+          WQVAD(K,NT) = WQV(LJP,K,NW)
         ENDDO
-      ENDDO
-      
-      ! *** OPEN OUTPUT FILES
-      IF( LOUTJET )THEN
-        FNJPGEO = OUTDIR//'JPGEO' // FNNUM(NJP) // '.OUT'
-        FNJPVEL = OUTDIR//'JPVEL' // FNNUM(NJP) // '.OUT'
-        FNJPCON = OUTDIR//'JPCON' // FNNUM(NJP) // '.OUT'
-        FNJPTOX = OUTDIR//'JPTOX' // FNNUM(NJP) // '.OUT'
-        FNJPTPF = OUTDIR//'JPTPF' // FNNUM(NJP) // '.OUT'
-        FNNRFLD = OUTDIR//'NRFLD' // FNNUM(NJP) // '.OUT'
-        FNNRFLB = OUTDIR//'NRFLD' // FNNUM(NJP) // '.BIN'
-        IF( NITER == 1 ) OPEN(1,FILE = FNJPGEO,STATUS = 'UNKNOWN')
-        IF( NITER == 1 ) CLOSE(1,STATUS = 'DELETE')
-        IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-          OPEN(1,FILE = FNJPGEO,STATUS = 'UNKNOWN',POSITION = 'APPEND')
-        IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-            WRITE(1,111)
-        IF( NITER == 1 ) OPEN(2,FILE = FNJPVEL,STATUS = 'UNKNOWN')
-        IF( NITER == 1 ) CLOSE(2,STATUS = 'DELETE')
-        IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-          OPEN(2,FILE = FNJPVEL,STATUS = 'UNKNOWN',POSITION = 'APPEND')
-        IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-          WRITE(2,112)
-        IF( NITER == 1 ) OPEN(3,FILE = FNJPCON,STATUS = 'UNKNOWN')
-        IF( NITER == 1 ) CLOSE(3,STATUS = 'DELETE')
-        IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-          OPEN(3,FILE = FNJPCON,STATUS = 'UNKNOWN',POSITION = 'APPEND')
-        IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-          WRITE(3,113)
-        IF( ISTRAN(5) >= 1 )THEN
-          IF( NITER == 1 ) OPEN(4,FILE = FNJPTOX,STATUS = 'UNKNOWN')
-          IF( NITER == 1 ) CLOSE(4,STATUS = 'DELETE')
-          IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-            OPEN(4,FILE = FNJPTOX,STATUS = 'UNKNOWN',POSITION = 'APPEND')
-          IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-            WRITE(4,114)
-        ENDIF
-        IF( ISTRAN(5) >= 1 )THEN
-          IF( NITER == 1 ) OPEN(14,FILE = FNJPTPF,STATUS = 'UNKNOWN')
-          IF( NITER == 1 ) CLOSE(14,STATUS = 'DELETE')
-          IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-            OPEN(14,FILE = FNJPTPF,STATUS = 'UNKNOWN',POSITION = 'APPEND')
-          IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) &
-            WRITE(14,124)
-        ENDIF
-      ENDIF
+      ENDDO  
 
-      IF( LDEBUG )THEN
-        IF( NITER == 1 )THEN
-          OPEN(11,FILE = OUTDIR//'JPMOMENT.OUT')
-          CLOSE(11,STATUS = 'DELETE')
-          OPEN(11,FILE = OUTDIR//'JPMOMENT.OUT')
-        ELSE
-          OPEN(11,FILE = OUTDIR//'JPMOMENT.OUT',POSITION = 'APPEND')
-        ENDIF
-      ENDIF
-
-      ! *** SET INITIAL CONDITIONS 
-      DTJP = 0.1*RJET/QJET    ! *** 1/S
+      ! *** Set initial conditions for current plume
+      DTJP = 0.1*RJET/VJET    ! *** 1/S
 
       ! ***  JET/PLUME DISCHARGE, GLOBAL COORDINATES
-      XJG(1) = XJET
-      YJG(1) = YJET
-      ZJG(1) = ZJET(NJP)
-      XJG(2) = XJET
-      YJG(2) = YJET
-      ZJG(2) = ZJET(NJP)
-      SIG(1) = 0.
-      SIG(2) = 0.
+      XJG(1) = XJET          ! *** X coordinate of starting location   - Element 1
+      YJG(1) = YJET          ! *** Y coordinate of starting location   - Element 1
+      ZJG(1) = ZJET(NJP)     ! *** Elevation of starting location      - Element 1
+      XJG(2) = XJET          ! *** X coordinate of starting location   - Element 2
+      YJG(2) = YJET          ! *** Y coordinate of starting location   - Element 2
+      ZJG(2) = ZJET(NJP)     ! *** Elevation of starting location      - Element 2
+      SIG(1) = 0.            ! *** Total plume centerline displacement - Element 1
+      SIG(2) = 0.            ! *** Total plume centerline displacement - Element 2
 
       ! ***  INITIALIZE JET DISCHARGE GEOMENTRY FOR THE COMPUTATIONAL ELEMENTS
-      RADJ(1) = RJET     
-      RLEJ(1) = 0.1*RJET
-      RADJ(2) = RJET
-      RLEJ(2) = 0.1*RJET
-
-      ! ***  JET DISCHARGE VELOCITY MAGNITUDE AND COMPONENTS
+      RADJ(1) = RJET         ! *** Radius of the jet - Element 1
+      RADJ(2) = RJET         ! *** Radius of the jet - Element 2
+      RADJOLD(1) = RJET      ! *** Radius of the jet of previous iteration - Element 1
+      RADJOLD(2) = RJET      ! *** Radius of the jet of previous iteration - Element 2
+      RLEJ(1) = 0.1*RJET     ! *** 0.1*Radius = Element length of the plume - Element 1
+      RLEJ(2) = 0.1*RJET     ! *** 0.1*Radius = Element length of the plume - Element 2
+      RADLAST = RJET         ! *** Initializes write tolerance
+      
+      ! *** JET DISCHARGE VELOCITY MAGNITUDE AND COMPONENTS
       ! *** PHJET IS THE VERTICAL ANGLE FROM HORIZONTAL
       ! *** THJET IS THE HORIZONTAL ANGLE
-      AJET = RPI*RJET*RJET
+      AJET = PI*RJET*RJET
 
       ! *** INITIALIZE ELEMENT 1 VELOCITIES
-      QJ(1)  = QVJET/AJET                       ! *** JET CENTERLINE VELOCITY - TOTAL
-      QJH(1) = QJ(1)*COS(0.0175*PHJET(NJP))     ! *** JET CENTERLINE VELOCITY - HORIZONTAL ONLY
-      UJG(1) = QJ(1)*COS(0.0175*PHJET(NJP))*COS(0.0175*THJET(NJP))
-      VJG(1) = QJ(1)*COS(0.0175*PHJET(NJP))*SIN(0.0175*THJET(NJP))
-      WJG(1) = QJ(1)*SIN(0.0175*PHJET(NJP))
-      UJ0 = UJG(1)
-      VJ0 = VJG(1)
-      WJ0 = WJG(1)
-      
+      VJ(1)  = QVJET/AJET                       ! *** Jet centerline velocity - Total
+      VJH(1) = VJ(1)*COS(0.0175*PHJET(NJP))     ! *** Jet centerline velocity - Horizontal only
+      UJG(1) = VJ(1)*COS(0.0175*PHJET(NJP))*COS(0.0175*THJET(NJP))
+      VJG(1) = VJ(1)*COS(0.0175*PHJET(NJP))*SIN(0.0175*THJET(NJP))
+      WJG(1) = VJ(1)*SIN(0.0175*PHJET(NJP))
+      UJ0   = UJG(1)
+      VJ0   = VJG(1)
+      WJ0   = WJG(1)
+      VJET0 = VJ(1)
+            
       ! *** INITIALIZE ELEMENT 2 VELOCITIES
-      QJ(2) = QVJET/AJET
-      QJH(2) = QJ(2)*COS(0.0175*PHJET(NJP))
-      UJG(2) = QJ(2)*COS(0.0175*PHJET(NJP))*COS(0.0175*THJET(NJP))
-      VJG(2) = QJ(2)*COS(0.0175*PHJET(NJP))*SIN(0.0175*THJET(NJP))
-      WJG(2) = QJ(2)*SIN(0.0175*PHJET(NJP))
-
-      ! *** INITIALIZE TIME STEP
-      DTJP = RLEJ(1)/QJ(1)
+      VJ(2) = QVJET/AJET
+      VJH(2) = VJ(2)*COS(0.0175*PHJET(NJP))
+      UJG(2) = VJ(2)*COS(0.0175*PHJET(NJP))*COS(0.0175*THJET(NJP))
+      VJG(2) = VJ(2)*COS(0.0175*PHJET(NJP))*SIN(0.0175*THJET(NJP))
+      WJG(2) = VJ(2)*SIN(0.0175*PHJET(NJP))
+      
+      DTJP = RLEJ(1)/VJ(1)                    ! *** Initialize time step (s)
+      TOTTIME = 0.                            ! *** Initialize total elapsed time of plume development
 
       ! ***  INITIAL JET DENSITY AND MASS
       SEDJETT = 0.
@@ -717,8 +673,8 @@ SUBROUTINE JPEFDC
       DO NX = 1,NSND
         SEDJETT = SEDJETT + SNDJET(NX)
       ENDDO
-      RHOJ(1) = FUNDEN(SALJET,SEDJETT,TEMJET)         ! *** JET DENSITY
-      RMAJP(1) = RPI*RHOJ(1)*RADJ(1)*RADJ(1)*RLEJ(1)  ! *** JET MASS
+      RHOJ(1) = FUNDEN(SALJET,SEDJETT,TEMJET)         ! *** Jet density
+      RMAJP(1) = PI*RHOJ(1)*RADJ(1)*RADJ(1)*RLEJ(1)   ! *** Jet mass
 
       ! ***  INITIAL JET CONCENTRATIONS
       SALJ(1) = SALJET
@@ -736,8 +692,8 @@ SUBROUTINE JPEFDC
       DO NX = 1,NSND
         SNDJ(1,NX) = SNDJET(NX)
       ENDDO
-      DO NX = 1,NWQV
-        WQVJ(1,NX) = WQVJET(NX)
+      DO NW = 1,NWQV
+        WQVJ(1,NW) = WQVJET(NW)
       ENDDO
 
       ! ***  INITIAL JET TOXIC CONTAMINANT PARTICULATE FRACTIONS
@@ -790,10 +746,12 @@ SUBROUTINE JPEFDC
       ENDDO
 
       ! ***  INITIALIZE JET ELEMENT 2 VALUE TO ELEMENT 1 VALUES
-      RHOJ(2) = FUNDEN(SALJET,SEDJETT,TEMJET)            ! DENSITY 
-      RMAJP(2) = RPI*RHOJ(2)*RADJ(2)*RADJ(2)*RLEJ(2)     ! MASS
+      RHOJ(2) = FUNDEN(SALJET,SEDJETT,TEMJET)            ! *** Density 
+      RMAJP(2) = PI*RHOJ(2)*RADJ(2)*RADJ(2)*RLEJ(2)      ! *** Mass (density * volume)
       SALJ(2) = SALJ(1)
       TEMJ(2) = TEMJ(1)
+      RHO_INI = RHOJ(1)                                  ! *** Initial plume density
+      PTINI = TEMJ(1)                                    ! *** Initial plume temperature
       DO MD = 1,NDYE
         DYEJ(2,MD) = DYEJ(1,MD)
       ENDDO
@@ -815,44 +773,44 @@ SUBROUTINE JPEFDC
       DO NX = 1,NSND
         SNDJ(2,NX) = SNDJ(1,NX)
       ENDDO
-      DO MD = 1,NWQV
-        WQVJ(2,MD) = WQVJ(1,MD)
+      DO NW = 1,NWQV
+        WQVJ(2,NW) = WQVJ(1,NW)
       ENDDO
 
       ! ***  INITIALIZE AMBIENT CONDITIONS
       IF( ISAMB == 0 )THEN
-        ! *** CONSTANT AMBIENT CONDITIONS (LAYER = 1)
-        UAG = UAGD(1,1)
-        VAG = VAGD(1,1)
-        WAG = WAGD(1,1)
-        SALA = SALAD(1,1)
-        TEMA = TEMAD(1,1)
+        ! *** CONSTANT AMBIENT CONDITIONS (LAYER = KQJP(NJP))
+        K = KQJP(NJP)
+        UAG = UAGD(K)
+        VAG = VAGD(K)
+        WAG = WAGD(K)
+        SALA = SALAD(K)
+        TEMA = TEMAD(K)
         DO MD = 1,NDYE
-          DYEA(MD) = DYEAD(1,MD,1)
+          DYEA(MD) = DYEAD(K,MD)
         ENDDO
-        SFLA = SFLAD(1,1)
+        SFLA = SFLAD(K)
         DO NT = 1,NTOX
-          TOXA(NT) = TOXAD(1,NT,1)
+          TOXA(NT) = TOXAD(K,NT)
         ENDDO
         DO NS = 1,NSED
-          SEDA(NS) = SEDAD(1,NS,1)
+          SEDA(NS) = SEDAD(K,NS)
         ENDDO
         DO NX = 1,NSND
-          SNDA(NX) = SNDAD(1,NX,1)
+          SNDA(NX) = SNDAD(K,NX)
         ENDDO
-        DO MD = 1,NWQV
-          WQVA(MD) = WQVAD(1,MD,1)
+        DO NW = 1,NWQV
+          WQVA(NW) = WQVAD(K,NW)
         ENDDO
       ELSEIF( ISAMB >= 1 )THEN
         ! *** SPATIALLY VARIABLE AMBIENT CONDITIONS
         ZVAL = ZJG(1)
-        ITVAL = 1
-        CALL JPACON(ITVAL,ZVAL,UAG,VAG,WAG)
+        CALL JPACON(KSZ(LJP),ZVAL,UAG,VAG,WAG)
       ENDIF
 
       ! ***  AMBIENT VELOCITY MAGNITUDES
-      QA = SQRT(UAG*UAG + VAG*VAG + WAG*WAG)
-      QAH = SQRT(UAG*UAG + VAG*VAG)
+      VA = SQRT(UAG*UAG + VAG*VAG + WAG*WAG)
+      VAH = SQRT(UAG*UAG + VAG*VAG)
 
       ! ***  AMBIENT DENSITY
       SEDATT = 0.
@@ -862,46 +820,52 @@ SUBROUTINE JPEFDC
       DO NX = 1,NSND
         SEDATT = SEDATT + SNDA(NX)
       ENDDO
-      RHOA = FUNDEN(SALA,SEDATT,TEMA)
+      RHOA(1) = FUNDEN(SALA,SEDATT,TEMA)
+      RHOA(2) = RHOA(1)
+      RHO_ELE = RHOA(1)
+      DELTEM = PTINI - TEMA
+      DELRHO = RHO_INI - RHO_ELE
+      EXITTEM = 0.05*ABS(DELTEM)          ! *** Exit criteria based on initial temperature delta
+      EXITRHO = 0.05*ABS(DELRHO)          ! *** Exit criteria based on initial density delta
 
-      ! ***  GLOBAL AMBIENT AND JET ORIENTATIONS
+      ! ***  Global Ambient and Jet orientations
       PHJ(1) = PHJET(NJP)
       THJG(1) = THJET(NJP)
       PHJ(2) = PHJET(NJP)
       THJG(2) = THJET(NJP)
       THAG = 57.2958*ATAN2(VAG,UAG)
 
-      ! ***  LOCAL JET HORIZONTAL ORIENTATION
-      THJL(1) = THJG(1) - THAG
-      THJL(2) = THJG(2) - THAG
+      ! *** Local jet horizontal orientation
+      THJL(1) = THJG(1) - THAG            ! *** Jet - ambient
+      THJL(2) = THJG(2) - THAG            ! *** Jet - ambient
 
-      ! ***  PROJECTION OF AMBIENT CURRENT TO JET DIRECTION
-      RDQA(1) = COS(0.0175*PHJ(1))*COS(0.0175*THJL(1))*QAH
-      RDQA(2) = COS(0.0175*PHJ(2))*COS(0.0175*THJL(2))*QAH
+      ! *** Projection of ambient current to jet direction
+      RDQA(1) = COS(0.0175*PHJ(1))*COS(0.0175*THJL(1))*VAH       ! *** VAH is only horizontal flow
+      RDQA(2) = RDQA(1)                                          ! *** VAH is only horizontal flow
 
-      ! ***  INITIAL SHEAR ENTRAINMENT
-      SINPHJ = SIN(0.0175*PHJ(1))
-      DVEL = ABS(QJ(1) - RDQA(1))    ! *** M/S
-      DRHO = (RHOA - RHOJ(1))/RHOA
+      ! *** Initial shear entrainment
+      DVEL = ABS(VJ(1) - RDQA(1))                                ! *** Difference in velocities (m/s)
+      DRHO = (RHOA(1) - RHOJ(1))/RHOA(1)
       FTOP = G*ABS(DRHO)*RADJ(1)
       FRD2I = 0.
       EBOT = 1.
       ETOP = 0.057
       ENTS = 0.
       IF( DVEL > 0. )THEN
-        FRD2I = FTOP/(ALPH2*DVEL*DVEL)
+        SINPHJ = SIN(0.0175*PHJ(1))
+        FRD2I = FTOP/(ALPH2*DVEL*DVEL)                         ! *** Relative density Froude Number
         EBOT = 1. + 5.*RDQA(1)/DVEL
         ETOP = 0.057 + 0.554*SINPHJ*FRD2I
         ENTS = 1.414*ETOP/EBOT
       ENDIF
       
-      ! ***        1/S     KG/M3       M/S   M       M
-      DRMAJS(1) = 2.*DTJP*RPI*RHOA*ENTS*DVEL*RADJ(1)*RLEJ(1)
-      DRMAJS(2) = DRMAJS(1)
-
-      ! *** INITIALIZE FORCED ENTRAINMENT
-      DRMAJF(1) = 0.
-      DRMAJF(2) = 0.
+      ! ***           s      kg/m3     -   m/s   m       m
+      DRMAJS(1) = 2.*DTJP*PI*RHOA(1)*ENTS*DVEL*RADJ(1)*RLEJ(1) ! *** Initialize shear entranment - Element 1
+      DRMAJS(2) = DRMAJS(1)                                    ! *** Initialize shear entranment - Element 2
+      
+      DRMAJF(1) = 0.                                           ! *** Initialize forced entranment - Element 1
+      DRMAJF(2) = 0.                                           ! *** Initialize forced entranment - Element 2
+      DRMAJFO = 0.5*(DRMAJF(2) + DRMAJF(1))
 
       ! *** INITIALIZE VOLUMETRIC ENTRAINMENT
       QJTOT = QVJET
@@ -910,7 +874,7 @@ SUBROUTINE JPEFDC
       ! *** OUTPUT INITIAL CONDITIONS
       RLSCL = 1.
       IF( ISOUT == 1 ) RLSCL = DJET(NJP)
-      IF( ISOUT == 2 ) RLSCL = RJET*SQRT(RPI)
+      IF( ISOUT == 2 ) RLSCL = RJET*SQRT(PI)
       SALJETI = 1.
       TEMJETI = 1.
       DO MD = 1,NDYE
@@ -926,8 +890,8 @@ SUBROUTINE JPEFDC
       DO NX = 1,NSND
         SNDJETI(NX) = 1.
       ENDDO
-      DO MD = 1,NWQV
-        WQVJETI(MD) = 1.
+      DO NW = 1,NWQV
+        WQVJETI(NW) = 1.
       ENDDO
       
       ! *** APPLY SCALING FACTOR 
@@ -947,176 +911,104 @@ SUBROUTINE JPEFDC
         DO NX = 1,NSND
           IF( SNDJET(NX) > 0.) SNDJETI(NX) = 1./SNDJET(NX)
         ENDDO
-        DO MD = 1,NWQV
-          IF( WQVJET(MD) > 0.) WQVJETI(MD) = 1./WQVJET(MD)
+        DO NW = 1,NWQV
+          IF( WQVJET(NW) > 0.) WQVJETI(NW) = 1./WQVJET(NW)
         ENDDO
       ENDIF
-      NE = 1
+      N2 = 1
       NJE = 1
       DJETI = 1./RLSCL
+      RHO_DELTA = 999.                  ! *** Initialize exit criteria
+      RHO_DELTA2 = -999.                ! *** Initialize exit criteria
       
-      XJGNE = DJETI*XJG(NE)  ! ZERO
-      YJGNE = DJETI*YJG(NE)  ! ZERO
-      ZJGNE = DJETI*ZJG(NE)
-      SIGNE = DJETI*SIG(NE)  ! ZERO
-      RADJNE = DJETI*RADJ(NE)
-      RLEJNE = DJETI*RLEJ(NE)
-      SALJNE = SALJETI*SALJ(NE)
-      TEMJNE = TEMJETI*TEMJ(NE)
+      XJGNE = DJETI*XJG(N2)  ! ZERO
+      YJGNE = DJETI*YJG(N2)  ! ZERO
+      ZJGNE = DJETI*ZJG(N2)
+      SIGNE = DJETI*SIG(N2)  ! ZERO
+      RADJNE = DJETI*RADJ(N2)
+      RLEJNE = DJETI*RLEJ(N2)
+      SALJNE = SALJETI*SALJ(N2)
+      TEMJNE = TEMJETI*TEMJ(N2)
       DO MD = 1,NDYE
-        DYEJNE(MD) = DYEJETI(MD)*DYEJ(NE,MD)
+        DYEJNE(MD) = DYEJETI(MD)*DYEJ(N2,MD)
       ENDDO
-      SFLJNE = TEMJETI*SFLJ(NE)
+      SFLJNE = TEMJETI*SFLJ(N2)
       DO NT = 1,NTOX
-        TOXJNE(NT) = TOXJETI(NT)*TOXJ(NE,NT)
+        TOXJNE(NT) = TOXJETI(NT)*TOXJ(N2,NT)
       ENDDO
       DO NS = 1,NSED
-        SEDJNE(NS) = SEDJETI(NS)*SEDJ(NE,NS)
+        SEDJNE(NS) = SEDJETI(NS)*SEDJ(N2,NS)
       ENDDO
       DO NX = 1,NSND
-        SNDJNE(NX) = SNDJETI(NX)*SNDJ(NE,NX)
+        SNDJNE(NX) = SNDJETI(NX)*SNDJ(N2,NX)
       ENDDO
-      DO MD = 1,NWQV
-        WQVJNE(MD) = WQVJETI(MD)*WQVJ(NE,MD)
+      DO NW = 1,NWQV
+        WQVJNE(NW) = WQVJETI(NW)*WQVJ(N2,NW)
       ENDDO
       
-      DRMAJ = RMAJP(NE) - RMAJP(NE-1)
-      ! *** RELATIVE DENSITY DIFFFERENCE BETWEEN AMBIENT CONDITIONS AND PLUME
-      DRHO = (RHOA - RHOJ(NE))/RHOA
-
-      IF( LOUTJET .AND. (IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) )THEN
-        WRITE(1,101)NJP,NJE,TIME,XJGNE,YJGNE,ZJGNE,SIGNE,RADJNE,RLEJNE,QJTOT
-        WRITE(2,101)NJP,NJE,TIME,QJ(NE),UJG(NE),VJG(NE),WJG(NE),RDQA(NE),RMAJP(NE),DRMAJ,DRHO
-        IF( ISTRAN(6) == 0 .AND. ISTRAN(7) == 0 )THEN
-          WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE)
-        ENDIF
-        IF( ISTRAN(6) == 1 .AND. ISTRAN(7) == 0 )THEN
-          WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE),(SEDJNE(NS),NS = 1,NSED)
-        ENDIF
-        IF( ISTRAN(6) == 0 .AND. ISTRAN(7) == 1 )THEN
-          WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE),(SNDJNE(NX),NX = 1,NSND)
-        ENDIF
-        IF( ISTRAN(6) == 1 .AND. ISTRAN(7) == 1 )THEN
-          WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE),(SEDJNE(NS),NS = 1,NSED),(SNDJNE(NX),NX = 1,NSND)
-        ENDIF
-        ! *** DELME-ADD WQ TO THESE DIAGNOSTICS
-        IF( ISTRAN(5) >= 1 )THEN
-          IF( NTOX <= 8 )THEN
-            WRITE(4,101)NJP,NJE,TIME,(TOXJNE(NT),NT = 1,NTOX)
-            WRITE(14,101)NJP,NJE,TIME,(TOXPFTJP(NE,NT),NT = 1,NTOX)
-          ELSE
-            WRITE(4,101)NJP,NJE,TIME,(TOXJNE(NT),NT = 1,8)
-            WRITE(14,101)NJP,NJE,TIME,(TOXPFTJP(NE,NT),NT = 1,8)
-            WRITE(4,101)NJP,NJE,TIME,(TOXJNE(NT),NT = 9,NTOX)
-            WRITE(14,101)NJP,NJE,TIME,(TOXPFTJP(NE,NT),NT = 9,NTOX)
-          ENDIF
-        ENDIF
-      ENDIF
-
-      IF( LOUTJET .AND. IOUTJP(NJP) >= 2 )THEN
-        NJPS = 1
-        TIMJP(NJPS) = TIME
-        XJGNS(NJPS) = XJGNE
-        YJGNS(NJPS) = YJGNE
-        ZJGNS(NJPS) = ZJGNE
-        SIGNS(NJPS) = SIGNE
-        RADJNS(NJPS) = RADJNE
-        RLEJNS(NJPS) = RLEJNE
-        QJNS(NJPS) = QJ(NE)
-        UJGNS(NJPS) = UJG(NE)
-        VJGNS(NJPS) = VJG(NE)
-        WJGNS(NJPS) = WJG(NE)
-        RDQANS(NJPS) = RDQA(NE)
-        RMAJPNS(NJPS) = RMAJP(NE)
-        DRMAJNS(NJPS) = DRMAJ
-        DRHONS(NJPS) = DRHO
-        SALJNS(NJPS) = SALJNE
-        TEMJNS(NJPS) = TEMJNE
-        DO MD = 1,NDYE
-          DYEJNS(MD,NJPS) = DYEJNE(MD)
-        ENDDO
-        DO NT = 1,NTOX
-          TOXJNS(NT,NJPS) = TOXJNE(NT)
-          TOXPFTNS(NT,NJPS) = TOXPFTJP(NE,NT)
-        ENDDO
-        DO NS = 1,NSED
-          SEDJNS(NS,NJPS) = SEDJNE(NS)
-        ENDDO
-        DO NX = 1,NSND
-          SNDJNS(NX,NJPS) = SNDJNE(NX)
-        ENDDO
-        DO MD = 1,NWQV
-          WQVJNS(MD,NJPS) = WQVJNE(MD)
-        ENDDO
-      ENDIF
+      DRMAJ = RMAJP(2) - RMAJP(1)                ! *** Mass of newly entrained water at the current iteration
+      DRHO = (RHOA(1) - RHOJ(N2))/RHOA(1)        ! *** Relative density diffference between ambient conditions and plume
 
       ! **************************************************************************************************
-      ! *** PLUME ENTRAINMENT LOOP FOR NJEL ELEMENTS
-      ! *** START INTEGRATION
+      ! **************************************************************************************************
+      ! *** Plume entrainment loop for NJEL elements until either max elements or plume hits end point
       DO NJE = 2,NJEL(NJP)
 
-        ! ***  ESTIMATE NEW CONDITIONS FOR ENTRAINMENT
-        NE = 2
-        NM = 1
+        N2 = 2   ! *** Time element at end of current element
+        N1 = 1   ! *** Time element at start of current element
         
-        ! *** INITIALIZING THE END ELEMENT VARIABLES
-        RADJ(NE) = RADJ(NM)
-        PHJ(NE) = PHJ(NM)
-        THJG(NE) = THJG(NM)
-        THJL(NE) = THJL(NM)
-        SINPHJ = SIN(0.0175*PHJ(NM))
-        COSPHJ = COS(0.0175*PHJ(NM))
-        COSPHJM = COS(0.0175*PHJ(NM))
-        SINTHJL = SIN(0.0175*THJL(NM))
-        COSTHJL = COS(0.0175*THJL(NM))
-        COSTHJLM = COS(0.0175*THJL(NM))
-        XJOLD = XJG(NM)
-        YJOLD = YJG(NM)
-        ZJOLD = ZJG(NM)
-        RLOLD = RLEJ(NM)
-        RROLD = RADJ(NM)
-        DTJP = RLEJ(NM)/QJ(NM)
-
-        ! *** LOOP OVER MASS CHANGE FOR THE CURRENT ELEMENT
+        ! *** Setup plume conditions and trajectory
+        SINPHJ = SIN(0.0175*PHJ(N1))        ! *** 
+        COSPHJ = COS(0.0175*PHJ(N1))        ! *** 
+        COSPHJM = COS(0.0175*PHJ(N1))       ! *** 
+        SINTHJL = SIN(0.0175*THJL(N1))      ! *** 
+        COSTHJL = COS(0.0175*THJL(N1))      ! *** 
+        COSTHJLM = COS(0.0175*THJL(N1))     ! *** 
+        DTJP = RLEJ(N1)/VJ(N1)              ! *** Current time step (element length/velocity) (s)
+        
+        TOTTIME = TOTTIME + DTJP
+        
+        ! *** Loop over mass change due to entrainment for the current element
         NI = 1
-   1000 CONTINUE
+1000    CONTINUE
 
-        ! ***  CALCULATE SHEAR ENTRAINMENT
-        DRMAJSO = 0.5*(DRMAJS(NE) + DRMAJS(NM))
-        DVEL = ABS(QJ(NE) - RDQA(NE))
-        DRHO = (RHOA - RHOJ(NE))/RHOA
-        FTOP = G*ABS(DRHO)*RADJ(NE)
+        ! *** Calculate shear entrainment
+        DRMAJSO = 0.5*(DRMAJS(N2) + DRMAJS(N1))      ! *** Average shear between N2 and N1
+        DVEL = ABS(VJ(N2) - RDQA(N2))                ! *** Velocity shear (m/s):  VJ (3D centerline velocity)  RDQA (difference between jet and ambient velocities)
+        DRHO = (RHOA(N2) - RHOJ(N2))/RHOA(N2)        ! *** Relative density between the jet and the ambient waters
+        FTOP = G*ABS(DRHO)*RADJ(N2)                  ! *** Density momentum
         FRD2I = 0.
         EBOT = 1.
         ETOP = 0.057
         ENTS = 0.
         IF( DVEL > 0. )THEN
           FRD2I = FTOP/(ALPH2*DVEL*DVEL)
-          EBOT = 1. + 5.*RDQA(1)/DVEL
+          EBOT = 1. + 5.*RDQA(1)/DVEL 
           ETOP = 0.057 + 0.554*SINPHJ*FRD2I
           ENTS = 1.414*ETOP/EBOT
         ENDIF
-        DRMAJS(NE) = 2.*DTJP*RPI*RHOA*ENTS*DVEL*RADJ(NE)*RLEJ(NE)
-        DRMAJSA = 0.5*(DRMAJS(NE) + DRMAJS(NM))
+        
+        ! ***             s     kg/m3    (-)   m/s    m       m
+        DRMAJS(N2) = 2.*DTJP*PI*RHOA(N2)*ENTS*DVEL*RADJ(N2)*RLEJ(N2)     ! *** Shear at the end of the current element time step (DTJP) (kg)
+        DRMAJSA = 0.5*(DRMAJS(N2) + DRMAJS(N1))                          ! *** New average shear between N2 and N1
 
-        ! ***  CALCULATE FORCED ENTRAINMENT
-        DRMAJFO = 0.5*(DRMAJF(NE) + DRMAJF(NM))
+        ! ***  Calculate forced entrainment (hardwired)
+        DRMAJFO = 0.5*(DRMAJF(N2) + DRMAJF(N1))
 
-        !ENTF1 = 2.*SQRT( SINPHJ*SINPHJ + SINTHJL*SINTHJL
         ENTF1 = 2.*SQRT( 1. - COSPHJ*COSPHJ*COSTHJL*COSTHJL )
-        DELSIG = SIG(NE) - SIG(NM)
+        DELSIG = SIG(N2) - SIG(N1)
         ENTF2 = 0.
         ENTF3 = 0.
         IF( DELSIG > 0. )THEN
-          ENTF2 = RPI*COSPHJ*COSTHJL*(RADJ(NE) - RADJ(NM))/(DELSIG)
-          ENTF3 = 0.5*RPI*RADJ(NE)*(COSPHJ*COSTHJL - COSPHJM*COSTHJLM)/(DELSIG)
+          ENTF2 = PI*COSPHJ*COSTHJL*(RADJ(N2) - RADJ(N1))/(DELSIG)
+          ENTF3 = 0.5*PI*RADJ(N2)*(COSPHJ*COSTHJL - COSPHJM*COSTHJLM)/(DELSIG)
         ENDIF
         ENTF = ENTF1 + ENTF2 + ENTF3
         ENTF = MAX(ENTF,0.)
-        DRMAJF(NE) = DTJP*RHOA*RADJ(NE)*RLEJ(NE)*QAH*ENTF
-        IF( NJE == 2 .AND. NI == 1 )DRMAJF(NE) = 0.
-        DRMAJFA = 0.5*(DRMAJF(NE) + DRMAJF(NM))
-
+        DRMAJF(N2) = DTJP*RHOA(N2)*RADJ(N2)*RLEJ(N2)*VAH*ENTF
+        IF( NJE == 2 .AND. NI == 1 )DRMAJF(N2) = 0.
+        DRMAJFA = 0.5*(DRMAJF(N2) + DRMAJF(N1))
+        
         ISHEAR = 0
         IFORCE = 0
         IF( ISENT(NJP) == 0 )THEN
@@ -1129,28 +1021,28 @@ SUBROUTINE JPEFDC
         IF( DRMAJSA > DRMAJFA) ISHEAR = 1
         IF( DRMAJFA > DRMAJSA) IFORCE = 1
 
-        ! ***  ADVANCE MASS
-        RMAJP(NE) = RMAJP(NM) + DRMAJ
-        RMAJI = 1./RMAJP(NE)
+        ! *** Preparations for mass entrainment
+        RMAJP(N2) = RMAJP(N1) + DRMAJ       ! *** Total volume at the end of the current time step
+        RMAJI = 1./RMAJP(N2)
 
-        ! ***  ADVANCE CONCENTRATION AND DENSITY BASED ON PLUME ENTRAINMENT
-        SALJ(NE)      = RMAJI*( RMAJP(NM)*SALJ(NM)    + DRMAJ*SALA )
-        TEMJ(NE)      = RMAJI*( RMAJP(NM)*TEMJ(NM)    + DRMAJ*TEMA )
+        ! *** Entrain mass based on the total shear (DRMAJ) and compute new concentrations
+        SALJ(N2)      = RMAJI*( RMAJP(N1)*SALJ(N1)    + DRMAJ*SALA )
+        TEMJ(N2)      = RMAJI*( RMAJP(N1)*TEMJ(N1)    + DRMAJ*TEMA )
         DO MD = 1,NDYE
-          DYEJ(NE,MD) = RMAJI*( RMAJP(NM)*DYEJ(NM,MD) + DRMAJ*DYEA(MD) )
+          DYEJ(N2,MD) = RMAJI*( RMAJP(N1)*DYEJ(N1,MD) + DRMAJ*DYEA(MD) )
         ENDDO           
-        SFLJ(NE)      = RMAJI*( RMAJP(NM)*SFLJ(NM)    + DRMAJ*TEMA )
+        SFLJ(N2)      = RMAJI*( RMAJP(N1)*SFLJ(N1)    + DRMAJ*TEMA )
         DO NT = 1,NTOX    
-          TOXJ(NE,NT) = RMAJI*( RMAJP(NM)*TOXJ(NM,NT) + DRMAJ*TOXA(NT) )
+          TOXJ(N2,NT) = RMAJI*( RMAJP(N1)*TOXJ(N1,NT) + DRMAJ*TOXA(NT) )
         ENDDO           
-        DO NS = 1,NSED    
-          SEDJ(NE,NS) = RMAJI*( RMAJP(NM)*SEDJ(NM,NS) + DRMAJ*SEDA(NS) )
+        DO NS = 1,NSED   
+          SEDJ(N2,NS) = RMAJI*( RMAJP(N1)*SEDJ(N1,NS) + DRMAJ*SEDA(NS) )
         ENDDO           
         DO NX = 1,NSND    
-          SNDJ(NE,NX) = RMAJI*( RMAJP(NM)*SNDJ(NM,NX) + DRMAJ*SNDA(NX))
+          SNDJ(N2,NX) = RMAJI*( RMAJP(N1)*SNDJ(N1,NX) + DRMAJ*SNDA(NX))
         ENDDO           
-        DO MD = 1,NWQV    
-          WQVJ(NE,MD) = RMAJI*( RMAJP(NM)*WQVJ(NM,MD) + DRMAJ*WQVA(MD) )
+        DO NW = 1,NWQV    
+          WQVJ(N2,NW) = RMAJI*( RMAJP(N1)*WQVJ(N1,NW) + DRMAJ*WQVA(NW) )
         ENDDO
 
         ! *** ADVANCE TOXIC PARTICULATE FRACTION
@@ -1161,9 +1053,9 @@ SUBROUTINE JPEFDC
                 TMPEXP = CONPARW(NS,NT)
                 IF( ITXPARW(NS,NT) == 0 ) TMPVAL = 1.
                 IF( ITXPARW(NS,NT) == 1 )THEN
-                  IF( SEDJ(NE,NS) > 0.) TMPVAL = SEDJ(NE,NS)**TMPEXP
+                  IF( SEDJ(N2,NS) > 0.) TMPVAL = SEDJ(N2,NS)**TMPEXP
                 ENDIF
-                TOXPFJP(NE,NS,NT) = TMPVAL*SEDJ(NE,NS)*TOXPARW(NS,NT)
+                TOXPFJP(N2,NS,NT) = TMPVAL*SEDJ(N2,NS)*TOXPARW(NS,NT)
               ENDDO
             ENDIF
             IF( ISTRAN(7) >= 1 )THEN
@@ -1172,127 +1064,124 @@ SUBROUTINE JPEFDC
                 TMPEXP = CONPARW(NS,NT)
                 IF( ITXPARW(NS,NT) == 0 ) TMPVAL = 1.
                 IF( ITXPARW(NS,NT) == 1 )THEN
-                  IF( SNDJ(NE,NX) > 0.) TMPVAL = SNDJ(NE,NX)**TMPEXP
+                  IF( SNDJ(N2,NX) > 0.) TMPVAL = SNDJ(N2,NX)**TMPEXP
                 ENDIF
-                TOXPFJP(NE,NS,NT) = TMPVAL*SNDJ(NE,NX)*TOXPARW(NS,NT)
+                TOXPFJP(N2,NS,NT) = TMPVAL*SNDJ(N2,NX)*TOXPARW(NS,NT)
               ENDDO
             ENDIF
           ENDDO
           DO NT = 1,NTOX
-            TOXPFTJP(NE,NT) = 0.
+            TOXPFTJP(N2,NT) = 0.
           ENDDO
           DO NT = 1,NTOX
             IF( ISTRAN(6) >= 1 )THEN
               DO NS = 1,NSED
-                TOXPFTJP(NE,NT) = TOXPFTJP(NE,NT) + TOXPFJP(NE,NS,NT)
+                TOXPFTJP(N2,NT) = TOXPFTJP(N2,NT) + TOXPFJP(N2,NS,NT)
               ENDDO
             ENDIF
             IF( ISTRAN(7) >= 1 )THEN
               DO NX = 1,NSND
                 NS = NX + NSED
-                TOXPFTJP(NE,NT) = TOXPFTJP(NE,NT) + TOXPFJP(NE,NS,NT)
+                TOXPFTJP(N2,NT) = TOXPFTJP(N2,NT) + TOXPFJP(N2,NS,NT)
               ENDDO
             ENDIF
           ENDDO
           DO NT = 1,NTOX
             DO NS = 1,NSED + NSND
-            TOXPFJP(NE,NS,NT) = TOXPFJP(NE,NS,NT)/(1. + TOXPFTJP(NE,NT))
+            TOXPFJP(N2,NS,NT) = TOXPFJP(N2,NS,NT)/(1. + TOXPFTJP(N2,NT))
             ENDDO
           ENDDO
           DO NT = 1,NTOX
-            TOXPFTJP(NE,NT) = TOXPFTJP(1,NT)/(1. + TOXPFTJP(NE,NT))
+            TOXPFTJP(N2,NT) = TOXPFTJP(1,NT)/(1. + TOXPFTJP(N2,NT))
           ENDDO
         ENDIF
         
         ! *** ADVANCE DENSITY
         SEDJETT = 0.
         DO NS = 1,NSED
-          SEDJETT = SEDJETT + SEDJ(NE,NS)
+          SEDJETT = SEDJETT + SEDJ(N2,NS)
         ENDDO
         DO NX = 1,NSND
-          SEDJETT = SEDJETT + SNDJ(NE,NX)
+          SEDJETT = SEDJETT + SNDJ(N2,NX)
         ENDDO
-        RHOJ(NE) = FUNDEN(SALJ(NE),SEDJETT,TEMJ(NE))
-        DRHO = (RHOA - RHOJ(NE))/RHOA
+        RHOJ(N2) = FUNDEN(SALJ(N2),SEDJETT,TEMJ(N2))
+        DRHO = (RHOA(N2) - RHOJ(N2))/RHOA(N2)
 
         ! ***  ADVANCE VELOCITY COMPONENTS
-        UJG(NE) = RMAJI*( RMAJP(NM)*UJG(NM) + DRMAJ*UAG )
-        VJG(NE) = RMAJI*( RMAJP(NM)*VJG(NM) + DRMAJ*VAG )
-        WJG(NE) = RMAJI*( RMAJP(NM)*WJG(NM) + DRMAJ*WAG ) + G*DRHO*DTJP
+        VJG(N2) = RMAJI*( RMAJP(N1)*VJG(N1) + DRMAJ*VAG )                   ! *** 
+        UJG(N2) = RMAJI*( RMAJP(N1)*UJG(N1) + DRMAJ*UAG )                   ! ***
+        WJG(N2) = RMAJI*( RMAJP(N1)*WJG(N1) + DRMAJ*WAG ) + G*DRHO*DTJP     ! ***
 
         ! ***  NEW JET COORDINATES
-        DXTMP = DTJP*UJG(NE)
-        DYTMP = DTJP*VJG(NE)
-        DZTMP = DTJP*WJG(NE)
-        XJG(NE) = XJG(NM) + DXTMP
-        YJG(NE) = YJG(NM) + DYTMP
-        ZJG(NE) = ZJG(NM) + DZTMP
-        DS = SQRT( DXTMP*DXTMP + DYTMP*DYTMP + DZTMP*DZTMP )
-        SIG(NE) = SIG(NM) + DS
-
-        ! ***  RESET AMBIENT CONDITIONS
+        DXTMP = DTJP*UJG(N2)
+        DYTMP = DTJP*VJG(N2)
+        DZTMP = DTJP*WJG(N2)
+        XJG(N2) = XJG(N1) + DXTMP                             ! *** New X location  delme - can be used to update cell location
+        YJG(N2) = YJG(N1) + DYTMP                             ! *** New Y location
+        ZJG(N2) = ZJG(N1) + DZTMP                             ! *** New Elevation
+        DS = SQRT( DXTMP*DXTMP + DYTMP*DYTMP + DZTMP*DZTMP )  ! *** 3D movement
+        SIG(N2) = SIG(N1) + DS                                ! *** Cumulative plume movement
+        
+        ! ***  Reset ambient conditions
         SEDAA = 0.0
         IF( ISAMB == 0 )THEN
-          UAG = UAGD(1,1)
-          VAG = VAGD(1,1)
-          WAG = WAGD(1,1)
-          SALA = SALAD(1,1)
-          TEMA = TEMAD(1,1)
+          K = KQJP(NJP)
+          UAG = UAGD(K)
+          VAG = VAGD(K)
+          WAG = WAGD(K)
+          SALA = SALAD(K)
+          TEMA = TEMAD(K)
           DO MD = 1,NDYE
-            DYEA(MD) = DYEAD(1,MD,1)
+            DYEA(MD) = DYEAD(K,MD)
           ENDDO
-          SFLA = SFLAD(1,1)
+          SFLA = SFLAD(K)
           DO NT = 1,NTOX
-            TOXA(NT) = TOXAD(1,NT,1)
+            TOXA(NT) = TOXAD(K,NT)
           ENDDO
           DO NS = 1,NSED
-            SEDA(NS) = SEDAD(1,NS,1)
+            SEDA(NS) = SEDAD(K,NS)
             SEDAA = SEDAA + SEDA(NS)
           ENDDO
           DO NX = 1,NSND
-            SNDA(NX) = SNDAD(1,NX,1)
+            SNDA(NX) = SNDAD(K,NX)
             SEDAA = SEDAA + SEDA(NX)
           ENDDO
-          DO MD = 1,NWQV
-            WQVA(MD) = WQVAD(1,MD,1)
+          DO NW = 1,NWQV
+            WQVA(NW) = WQVAD(K,NW)
           ENDDO
         ENDIF
         IF( ISAMB >= 1 )THEN
-          ZVAL = ZJG(NE)
-          ITVAL = 1
-          CALL JPACON(ITVAL,ZVAL,UAG,VAG,WAG)
+          ! *** Get ambient conditions from the current plume conditions
+          ZVAL = ZJG(N2)
+          CALL JPACON(KSZ(LJP),ZVAL,UAG,VAG,WAG)
         ENDIF
         
-        ! ***  AMBIENT VELOCITY MAGNITUDES
-        QA  = SQRT(UAG*UAG + VAG*VAG + WAG*WAG)
-        QAH = SQRT(UAG*UAG + VAG*VAG)
+        VA  = SQRT(UAG*UAG + VAG*VAG + WAG*WAG)     ! *** 3D water velocity
+        VAH = SQRT(UAG*UAG + VAG*VAG)               ! *** 2DH water velocity
+        RHOA(N2) = FUNDEN(SALA,SEDAA,TEMA)          ! *** Ambient density
 
-        ! ***  AMBIENT DENSITY
-        RHOA = FUNDEN(SALA,SEDAA,TEMA)
+        VJ(N2)  = SQRT(UJG(N2)*UJG(N2) + VJG(N2)*VJG(N2) + WJG(N2)*WJG(N2))   ! *** 3D jet velocity
+        VJH(N2) = SQRT(UJG(N2)*UJG(N2) + VJG(N2)*VJG(N2))                     ! *** 2DH jet velocity
 
-        ! ***  CALCULATE NEW GLOBAL JET VELOCITY PARAMETERS
-        QJ(NE)  = SQRT(UJG(NE)*UJG(NE) + VJG(NE)*VJG(NE) + WJG(NE)*WJG(NE))
-        QJH(NE) = SQRT(UJG(NE)*UJG(NE) + VJG(NE)*VJG(NE))
+        ! ***  Calculate global jet discharge orientation
+        PHJ(N2)  = 57.2958*ATAN2(WJG(N2),VJH(N2))                             ! *** Azimuth or vertical angle (PHI) (degrees)
+        THJG(N2) = 57.2958*ATAN2(VJG(N2),UJG(N2))                             ! *** Horizontal angle of the jet
+        THAG     = 57.2958*ATAN2(VAG,UAG)                                     ! *** Horizontal angle of the ambient velocities
+        THJL(N2) = THJG(N2) - THAG                                            ! *** Difference in ambient and jet angles
+        SINPHJ   = SIN(0.0175*PHJ(N2))                                        ! *** Convert back to radians and get SIN of vertical angle
+        COSPHJ   = COS(0.0175*PHJ(N2))                                        ! *** Convert back to radians and get COS of vertical angle 
+        SINTHJL  = SIN(0.0175*THJL(N2))                                       ! *** Convert back to radians and get SIN of jet/ambient difference
+        COSTHJL  = COS(0.0175*THJL(N2))                                       ! *** Convert back to radians and get COS of jet/ambient difference
 
-        ! ***  CALCULATE GLOBAL JET DISCHARGE ORIENTATIONS
-        PHJ(NE)  = 57.2958*ATAN2(WJG(NE),QJH(NE))
-        THJG(NE) = 57.2958*ATAN2(VJG(NE),UJG(NE))
-        THAG     = 57.2958*ATAN2(VAG,UAG)
-        THJL(NE) = THJG(NE) - THAG
-        SINPHJ   = SIN(0.0175*PHJ(NE))
-        COSPHJ   = COS(0.0175*PHJ(NE))
-        SINTHJL  = SIN(0.0175*THJL(NE))
-        COSTHJL  = COS(0.0175*THJL(NE))
-
-        ! ***  PROJECTION OF AMBIENT ON JET
-        RDQA(NE) = COS(0.0175*PHJ(NE))*COS(0.0175*THJL(NE))*QAH
+        RDQA(N2) = COS(0.0175*PHJ(N2))*COS(0.0175*THJL(N2))*VAH               ! *** Projection of ambient on jet
 
         ! ***  CALCULATE NEW RADIUS AND ELEMENT LENGTH
-        RLEJ(NE) = QJ(NE)*RLEJ(NM)/QJ(NM)
-        RADJ(NE) = SQRT( RMAJP(NE)/(RPI*RHOJ(NE)*RLEJ(NE)) )
+        RLEJ(N2) = VJ(N2)*RLEJ(N1)/VJ(N1)                                     ! *** New element length
+        RADJ(N2) = SQRT( RMAJP(N2)/(PI*RHOJ(N2)*RLEJ(N2)) )                   ! *** New plume radius (RMAJP - Total mass, RHOJ - Plume density, RLEJ - Element length)
 
-        ! *** CHECK FOR CONVERGENCE  
-        ! *** DRMAJSE AND DRMAJFE ARE RELATIVE DIFFERENCES IN ENTRAINMENT DUE TO SHEAR AND FORCED, RESPECITVELY, AT THE BEGINNING AND END OF THE NI LOOP
+        ! *** Check for convergence  
+        ! ***
+        ! *** DRMAJSE and DRMAJFE are relative differences in entrainment due to shear and forced, respecitvely, at the beginning and end of the NI loop
         DRMAJSE = ABS(DRMAJSA - DRMAJSO)
         DRMAJFE = ABS(DRMAJFA - DRMAJFO)
         IF( DRMAJSO > 0. ) DRMAJSE = DRMAJSE/DRMAJSO
@@ -1302,12 +1191,12 @@ SUBROUTINE JPEFDC
         IF( DRMAJSE > DMRERM ) ITMP = 1
         
         IF( LDEBUG )THEN
-          IF( NJE == 2 )WRITE(10,620)NJP,NJE,NI,ITMP,DRMAJSA,DRMAJSO,DRMAJFA,DRMAJFO
+          IF( NJE == 2 ) WRITE(88,620)NJP, NJE, NI, ITMP, DRMAJSA, DRMAJSO, DRMAJFA, DRMAJFO
           IF( ISDJP(NJP) == 1 )THEN
             ! *** ISDJP > 0 write diagnostics
             JTMPVAL = MOD(NJE,100)
             IF( JTMPVAL == 0 )THEN
-              WRITE(10,620)NJP,NJE,NI,ITMP,DRMAJSA,DRMAJSO,DRMAJFA,DRMAJFO
+              WRITE(88,620)NJP, NJE, NI, ITMP, DRMAJSA, DRMAJSO, DRMAJFA, DRMAJFO
             ENDIF
           ENDIF
         ENDIF
@@ -1315,190 +1204,187 @@ SUBROUTINE JPEFDC
         ! ***  STOP IF MAXIMUM ITERATIONS EXCEEDED
         IF( NI > NIMAX )THEN
           KFLAG = 1
-          IF( LDEBUG )WRITE(10,620)NJP,NJE,NI,ITMP,DRMAJSA,DRMAJSO,DRMAJFA,DRMAJFO
-          IF( LDEBUG )WRITE(10,601)TIMEDAY,NJE,NI,LJP,HP(LJP)
-          WRITE(6,'(A,3I6,F8.3)' ) ' JET/PLUME ITERATIONS EXCEEDED NE,NI @ L,HP = ',NJE,NI,LJP,HP(LJP)
-          ! *** OPEN LOF FILE
-          IF( IFILE == -1 )THEN
-            IFILE = 8
-            OPEN(8,FILE = OUTDIR//'EFDCLOG.OUT',POSITION = 'APPEND')
+          IF( LDEBUG )WRITE(88,620)NJP, NJE, NI, ITMP, DRMAJSA, DRMAJSO, DRMAJFA, DRMAJFO
+          IF( LDEBUG )WRITE(88,601)TIMEDAY, NJE, NI, LJP, HP(LJP)
+          
+          WRITE(6,'(A,3I6,F8.3)' ) ' JET/PLUME ITERATIONS EXCEEDED N2,NI @ L,HP = ',NJE,NI,LJP,HP(LJP)
+          
+          IF( LOUTJET )THEN
+            WRITE(10,'(A,I10,F15.5,3I6,F8.3)' ) ' JET/PLUME ITERATIONS EXCEEDED N2,NI @ L,HP = ',NITER,TIMEDAY,NJE,NI,LJP,HP(LJP)
           ENDIF
-          WRITE(8,601)TIMEDAY,NJE,NI,LJP,HP(LJP)
-          GOTO 2000
-        ENDIF
 
-        ! ***  STOP IF JET CENTERLINE PENETRATES SURFACE
-        IF( ISTOP == 1 )THEN
-          ZJGTOP = ZJG(NE)
-          IF( ZJGTOP > ZSUR )THEN
-            WRITE(6,6050)NJP,NJE,NI,ZJGTOP,ZSUR
-            IF( LDEBUG )WRITE(10,605)NJP,NJE,NI,ZJGTOP,ZSUR
-            IF( LDEBUG )WRITE(10,899)NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
-            ! *** OPEN LOF FILE
-            IF( IFILE == -1 )THEN
-              IFILE = 8
-              OPEN(8,FILE = OUTDIR//'EFDCLOG.OUT',POSITION = 'APPEND')
-            ENDIF
-            WRITE(8,605)NJP,NJE,NI,ZJGTOP,ZSUR
-            GOTO 2000
-          ENDIF
+          GOTO 1500
         ENDIF
-
-        ! ***  STOP IF JET CENTERLINE PENETRATES BOTTOM
-        IF( ISTOP == 1 )THEN
-          ZJGBOT = ZJG(NE)
-          IF( ZJGBOT < ZBOT )THEN
-            WRITE(6,6060)NJP,NJE,NI,ZJGBOT,ZBOT
-            IF( LDEBUG )WRITE(10,606)NJP,NJE,NI,ZJGBOT,ZBOT
-            IF( LDEBUG )WRITE(10,899)NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
-            ! *** OPEN LOF FILE
-            IF( IFILE == -1 )THEN
-              IFILE = 8
-              OPEN(8,FILE = OUTDIR//'EFDCLOG.OUT',POSITION = 'APPEND')
-            ENDIF
-            WRITE(8,606)NJP,NJE,NI,ZJGBOT,ZBOT
-            GOTO 2000
-          ENDIF
-        ENDIF
-
-        ! ***  STOP IF JET BOUNDARY PENETRATES SURFACE
-        IF( ISTOP == 2 )THEN
-          ZJGTOP = ZJG(NE) + RADJ(NE)*COS(0.0175*PHJ(NE))
-          IF( ZJGTOP > ZSUR )THEN
-            WRITE(6,6020)NJP,NJE,NI,ZJGTOP,ZSUR
-            IF( LDEBUG )WRITE(10,602)NJP,NJE,NI,ZJGTOP,ZSUR
-            IF( LDEBUG )WRITE(10,899)NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
-            ! *** OPEN LOF FILE
-            IF( IFILE == -1 )THEN
-              IFILE = 8
-              OPEN(8,FILE = OUTDIR//'EFDCLOG.OUT',POSITION = 'APPEND')
-            ENDIF
-            WRITE(8,602)NJP,NJE,NI,ZJGTOP,ZSUR
-            GOTO 2000
-          ENDIF
-        ENDIF
-
-        ! ***  STOP IF JET BOUNDARY PENETRATES BOTTOM
-        IF( ISTOP == 2 )THEN
-          ZJGBOT = ZJG(NE) - RADJ(NE)*COS(0.0175*PHJ(NE))
-          IF( ZJGBOT < ZBOT )THEN
-            WRITE(6,6030)NJP,NJE,NI,ZJGBOT,ZBOT
-            IF( LDEBUG )WRITE(10,603)NJP,NJE,NI,ZJGBOT,ZBOT
-            IF( LDEBUG )WRITE(10,899)NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
-            ! *** OPEN LOF FILE
-            IF( IFILE == -1 )THEN
-              IFILE = 8
-              OPEN(8,FILE = OUTDIR//'EFDCLOG.OUT',POSITION = 'APPEND')
-            ENDIF
-            WRITE(8,603)NJP,NJE,NI,ZJGBOT,ZBOT
-            GOTO 2000
-          ENDIF
-        ENDIF
-
-        ! ***  STOP IF NEUTRAL LEVEL IS REACHED
         
-        ! ***  RISING PLUME
-        IF( RHOJ(NE) >= RHOJ(NM) )THEN
-          DRHOT = (RHOA - RHOJ(NE))/RHOA
-          IF( DRHOT < 0. )THEN
-            NPRT = NPRT + 1
-            IF( NPRT < 10 )THEN
-              WRITE(6,6040) "R",NJP,NJE,NI,ZJG(NE),BELV(LJP),ZSUR
+        ! *** Add criteria to exit entraiment calculations based on stagnant plume growth
+        IF( NI > 5 .AND. RADJ(N2) <= RADJOLD(N2) .AND. RADJ(N1) <= RADJOLD(N1) )THEN
+          ITMP = 0          ! *** Flag causes loop to exit below
+        ENDIF
+
+        ! *** Check for exit conditions based on current centerline or boundary
+        ! ***  STOP if jet centerline penetrates surface
+        IF( ISTOP == 1 )THEN
+          ZJGTOP = ZJG(N2)
+          IF( ZJGTOP > ZSUR )THEN
+            NPRT(5) = NPRT(5) + 1
+            IF( NPRT(5) < 10 )THEN
+              WRITE(6,605) NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             ENDIF
-            IF( LDEBUG ) WRITE(10,604) "R",NJP,NJE,NI,ZJG(NE),BELV(LJP),ZSUR
-            IF( LDEBUG ) WRITE(10,899)     NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
-            ! *** OPEN LOG FILE
-            IF( NPRT < 100 .OR. LDEBUG )THEN
-              IF( IFILE == -1 )THEN
-                IFILE = 8
-                OPEN(8,FILE = OUTDIR//'EFDCLOG.OUT',POSITION = 'APPEND')
-              ENDIF
-              WRITE(8,604)NJP,NJE,NI,ZJG(NE)
+            
+            IF( LOUTJET )THEN
+              WRITE(10,615) TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             ENDIF
-            GOTO 2000
+
+            EXIT
           ENDIF
         ENDIF
 
-        ! ***  FALLING PLUME
-        IF( RHOJ(NE) < RHOJ(NM) )THEN
-          DRHOT = (RHOA - RHOJ(NE))/RHOA
+        ! ***  STOP if jet centerline penetrates bottom
+        IF( ISTOP == 1 )THEN
+          ZJGBOT = ZJG(N2)
+          IF( ZJGBOT < ZBOT )THEN
+            NPRT(6) = NPRT(6) + 1
+            IF( NPRT(6) < 10 )THEN
+              WRITE(6,606) NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+            ENDIF
+            
+            IF( LOUTJET )THEN
+              WRITE(10,616) TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+            ENDIF
+            
+            EXIT
+          ENDIF
+        ENDIF
+
+        ! ***  STOP if jet boundary penetrates surface
+        IF( ISTOP == 2 )THEN
+          ZJGTOP = ZJG(N2) + RADJ(N2)*COS(0.0175*PHJ(N2))
+          IF( ZJGTOP > ZSUR )THEN
+            NPRT(6) = NPRT(6) + 1
+            IF( NPRT(6) < 10 )THEN
+              WRITE(6,602) NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+            ENDIF
+            
+            IF( LOUTJET )THEN
+              WRITE(10,612) TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+            ENDIF
+            
+            EXIT
+          ENDIF
+        ENDIF
+
+        ! ***  STOP if jet boundary penetrates bottom
+        IF( ISTOP == 2 )THEN
+          ZJGBOT = ZJG(N2) - RADJ(N2)*COS(0.0175*PHJ(N2))
+          IF( ZJGBOT < ZBOT )THEN
+            NPRT(7) = NPRT(7) + 1
+            IF( NPRT(7) < 10 )THEN
+              WRITE(6,603) NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+            ENDIF
+            
+            IF( LOUTJET )THEN
+              WRITE(10,613) TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+            ENDIF
+            
+            EXIT
+          ENDIF
+        ENDIF
+
+        ! ***  STOP if neutral level is reached
+        ! ***  Rising plume
+        IF( NJE > 4 .AND. RHOJ(N2) >= RHO_INI )THEN
+          DRHOT = (RHOA(N2) - RHOJ(N2))/RHOA(N2)
+          IF( DRHOT < 0. )THEN
+            NPRT(1) = NPRT(1) + 1
+            IF( NPRT(1) < 10 )THEN
+              WRITE(6,604) "R", NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+            ENDIF
+            
+            IF( LOUTJET )THEN
+              WRITE(10,614)  "R", TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+            ENDIF
+            
+            EXIT
+          ENDIF
+        ENDIF
+
+        ! ***  Falling plume
+        IF( NJE > 4 .AND. RHOJ(N2) < RHO_INI )THEN
+          DRHOT = (RHOA(N2) - RHOJ(N2))/RHOA(N2)
           IF( DRHOT > 0. )THEN
-            NPRT = NPRT + 1
-            IF( NPRT < 10 )THEN
-              WRITE(6,6040) "F",NJP,NJE,NI,ZJG(NE),BELV(LJP),ZSUR
+            NPRT(2) = NPRT(2) + 1
+            IF( NPRT(2) < 10 )THEN
+              WRITE(6,604) "R", NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             ENDIF
-            IF( LDEBUG ) WRITE(10,604) "F",NJP,NJE,NI,ZJG(NE),BELV(LJP),ZSUR
-            IF( LDEBUG ) WRITE(10,899)     NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
-            ! *** OPEN LOG FILE
-            IF( NPRT < 100 .OR. LDEBUG )THEN
-              IF( IFILE == -1 )THEN
-                IFILE = 8
-                OPEN(8,FILE = OUTDIR//'EFDCLOG.OUT',POSITION = 'APPEND')
-              ENDIF
-              WRITE(8,604)"F",NJP,NJE,NI,ZJG(NE)
+            
+            IF( LOUTJET )THEN
+              WRITE(10,614)  "R", TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             ENDIF
-            GOTO 2000
+            
+            EXIT
           ENDIF
         ENDIF
 
         ! ***  RETURN FOR ANOTHER ITERATION
         IF( ITMP == 1 .OR. NI == 1 )THEN
-          XJOLD = XJG(NE)
-          YJOLD = YJG(NE)
-          ZJOLD = ZJG(NE)
-          RLOLD = RLEJ(NE)
-          RROLD = RADJ(NE)
+          ! XJOLD = XJG(N2)
+          ! YJOLD = YJG(N2)
+          ! ZJOLD = ZJG(N2)
+          ! RLOLD = RLEJ(N2)
+          RADJOLD = RADJ
           NI = NI + 1
           GOTO 1000
         ENDIF
-        ! *** ENTRAINMENT ITERATIONS COMPLETE
+        
+        ! *************************************
+        ! *** Entrainment iterations complete
+1500    CONTINUE        
         
         ! ***  WRITE OUTPUT AND PROCEED TO NEXT JET ELEMENT
-        IF( ZJG(NE) >= ZJPRT )THEN
+        IF( ZJG(N2) >= ZJPRT )THEN
           NPRTE = 1
           ZJPRT = ZJPRT + DZPRT
         ELSE
           NPRTE = 0
         ENDIF
         DJETI = 1./RLSCL
-        XJGNE = DJETI*XJG(NE)
-        YJGNE = DJETI*YJG(NE)
-        ZJGNE = DJETI*ZJG(NE)
-        SIGNE = DJETI*SIG(NE)
-        RADJNE = DJETI*RADJ(NE)
-        RLEJNE = DJETI*RLEJ(NE)
-        SALJNE = SALJETI*SALJ(NE)
-        TEMJNE = TEMJETI*TEMJ(NE)
+        XJGNE = DJETI*XJG(N2)
+        YJGNE = DJETI*YJG(N2)
+        ZJGNE = DJETI*ZJG(N2)
+        SIGNE = DJETI*SIG(N2)
+        RADJNE = DJETI*RADJ(N2)
+        RLEJNE = DJETI*RLEJ(N2)
+        SALJNE = SALJETI*SALJ(N2)
+        TEMJNE = TEMJETI*TEMJ(N2)
         DO MD = 1,NDYE
-          DYEJNE(MD) = DYEJETI(MD)*DYEJ(NE,MD)
+          DYEJNE(MD) = DYEJETI(MD)*DYEJ(N2,MD)
         ENDDO
-        SFLJNE = SFLJETI*SFLJ(NE)
+        SFLJNE = SFLJETI*SFLJ(N2)
         DO NT = 1,NTOX
-          TOXJNE(NT) = TOXJETI(NT)*TOXJ(NE,NT)
+          TOXJNE(NT) = TOXJETI(NT)*TOXJ(N2,NT)
         ENDDO
         DO NS = 1,NSED
-          SEDJNE(NS) = SEDJETI(NS)*SEDJ(NE,NS)
+          SEDJNE(NS) = SEDJETI(NS)*SEDJ(N2,NS)
         ENDDO
         DO NX = 1,NSND
-          SNDJNE(NX) = SNDJETI(NX)*SNDJ(NE,NX)
+          SNDJNE(NX) = SNDJETI(NX)*SNDJ(N2,NX)
         ENDDO
-        DO MD = 1,NWQV
-          WQVJNE(MD) = DYEJETI(MD)*WQVJ(NE,MD)
+        DO NW = 1,NWQV
+          WQVJNE(NW) = WQVJETI(NW)*WQVJ(N2,NW)
         ENDDO
 
         ! *** CALCULATE ENTRAINMENT
         QJTOTO = QJTOT
-        QJTOT = QJTOT*RMAJP(NE)/RMAJP(NM)
+        QJTOT = QJTOT*RMAJP(N2)/RMAJP(N1)
         DO K = KSZ(L),KC
           ZLOWER = Z(L,K-1)*HP(LJP) + BELV(LJP)
           ZUPPER = ZLOWER + DZC(L,K)*HP(LJP)
-          IF( ZJG(NE) >= ZLOWER .AND. ZJG(NE) < ZUPPER )THEN
+          IF( ZJG(N2) >= ZLOWER .AND. ZJG(N2) < ZUPPER )THEN
             QJPENT(K,NJP) = QJPENT(K,NJP) + (QJTOT - QJTOTO)
-            PRINT '(4I5,3F8.3,2F10.5,2(E12.4,F8.2))', NITER, NJP, NE, K, ZLOWER, ZJG(NE), ZUPPER, QVJET, QJPENT(K,NJP), TEMJ(NE), tem(l,k), DYEJ(NE,1), dye(l,k,1)      ! delme
             IF( RMAJI > 0.0 )THEN
-              UJPAVG(K,NJP) = UJG(NE)/RMAJI
-              VJPAVG(K,NJP) = VJG(NE)/RMAJI
-              WJPAVG(K,NJP) = WJG(NE)/RMAJI
+              UJPAVG(K,NJP) = UJG(N2)/RMAJI
+              VJPAVG(K,NJP) = VJG(N2)/RMAJI
+              WJPAVG(K,NJP) = WJG(N2)/RMAJI
             ENDIF
             EXIT
           ENDIF
@@ -1509,136 +1395,76 @@ SUBROUTINE JPEFDC
         DO K = KSZ(L),KC
           QJPENTT(NJP) = QJPENTT(NJP) + QJPENT(K,NJP)
         ENDDO
-        
-        ! *** DIAGNOSTIC OUPUT
-        IF( LOUTJET .AND. NPRTE == 1 )THEN
-          IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 )THEN
-            WRITE(1,101)NJP,NJE,TIME,XJGNE,YJGNE,ZJGNE,SIGNE,RADJNE,RLEJNE,QJTOT
-            DRMAJ = RMAJP(NE) - RMAJP(NE-1)
-            DRHO = (RHOA - RHOJ(NE))/RHOA
-            WRITE(2,101)NJP,NJE,TIME,QJ(NE),UJG(NE),VJG(NE),WJG(NE),RDQA(NE),RMAJP(NE),DRMAJ,DRHO
-            IF( ISTRAN(6) == 0 .AND. ISTRAN(7) == 0 )THEN
-              WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE)
-            ENDIF
-            IF( ISTRAN(6) == 1 .AND. ISTRAN(7) == 0 )THEN
-              WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE),(SEDJNE(NS),NS = 1,NSED)
-            ENDIF
-            IF( ISTRAN(6) == 0 .AND. ISTRAN(7) == 1 )THEN
-              WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE),(SNDJNE(NX),NX = 1,NSND)
-            ENDIF
-            IF( ISTRAN(6) == 1 .AND. ISTRAN(7) == 1 )THEN
-              WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE),(SEDJNE(NS),NS = 1,NSED),(SNDJNE(NX),NX = 1,NSND)
-            ENDIF
-            IF( ISTRAN(5) >= 1 )THEN
-              IF( NTOX <= 8 )THEN
-                WRITE(4,101)NJP,NJE,TIME,(TOXJNE(NT),NT = 1,NTOX)
-               WRITE(14,101)NJP,NJE,TIME,(TOXPFTJP(NE,NT),NT = 1,NTOX)
-              ELSE
-                WRITE(4,101)NJP,NJE,TIME,(TOXJNE(NT),NT = 1,8)
-                WRITE(14,101)NJP,NJE,TIME,(TOXPFTJP(NE,NT),NT = 1,8)
-                WRITE(4,101)NJP,NJE,TIME,(TOXJNE(NT),NT = 9,NTOX)
-               WRITE(14,101)NJP,NJE,TIME,(TOXPFTJP(NE,NT),NT = 9,NTOX)
-              ENDIF
-            ENDIF
+
+        ! *** Write to file when diameter changes by 0.1 m
+        IPMC = 0
+        IF( IOUTJP(NJP) > 1 )THEN
+          IF(  NJE == 1 .OR. RADJ(N2)-RADLAST > 0.05 )THEN
+            WRITE(10,631) NITER, TIMEDAY, NJE, NI, TOTTIME, SIG(N2),                                                                          &
+                          XJG(N2), YJG(N2), ZJG(N2), 2.*RADJ(N2), QVJET, SUM(QJPENT(:,NJP)), QJTOT, RHOA(N2), -999., RHOJ(N2), TEMJ(N2),      &
+                          VJ(N2), VJH(N2), WJG(N2), WAG, RHOJ(N2)-RHOA(N2), RHO_DELTA, RHO_DELTA2, TEMA, VA, VAH, -999., RMAJP(N2), DRMAJS(N2), DRMAJF(N2)
+            RADLAST = RADJ(N2)
+            IPMC = 1
           ENDIF
         ENDIF
         
-        ! *** DIAGNOSTIC OUPUT
-        IF( NPRTE == 1 )THEN
-          IF( IOUTJP(NJP) >= 2 )THEN
-            NJPS = NJPS + 1
-            TIMJP(NJPS) = TIME
-            XJGNS(NJPS) = XJGNE
-            YJGNS(NJPS) = YJGNE
-            ZJGNS(NJPS) = ZJGNE
-            SIGNS(NJPS) = SIGNE
-            RADJNS(NJPS) = RADJNE
-            RLEJNS(NJPS) = RLEJNE
-            QJNS(NJPS) = QJ(NE)
-            UJGNS(NJPS) = UJG(NE)
-            VJGNS(NJPS) = VJG(NE)
-            WJGNS(NJPS) = WJG(NE)
-            RDQANS(NJPS) = RDQA(NE)
-            RMAJPNS(NJPS) = RMAJP(NE)
-            DRMAJNS(NJPS) = DRMAJ
-            DRHONS(NJPS) = DRHO
-            SALJNS(NJPS) = SALJNE
-            TEMJNS(NJPS) = TEMJNE
-            DO MD = 1,NDYE
-              DYEJNS(MD,NJPS) = DYEJNE(MD)
-            ENDDO
-            DO NS = 1,NSED
-              SEDJNS(NS,NJPS) = SEDJNE(NS)
-            ENDDO
-            DO NX = 1,NSND
-              SNDJNS(NX,NJPS) = SNDJNE(NX)
-            ENDDO
-            DO NT = 1,NTOX
-              TOXJNS(NT,NJPS) = TOXJNE(NT)
-              TOXPFTNS(NT,NJPS) = TOXPFTJP(NE,NT)
-            ENDDO
-            DO MD = 1,NWQV
-              WQVJNS(MD,NJPS) = WQVJNE(MD)
-            ENDDO
-          ENDIF
-        ENDIF
-        
-        ! *** ADVANCE VARIABLES
-        XJG(NM) = XJG(NE)
-        YJG(NM) = YJG(NE)
-        ZJG(NM) = ZJG(NE)
-        SIG(NM) = SIG(NE)
-        RADJ(NM) = RADJ(NE)
-        RLEJ(NM) = RLEJ(NE)
-        UJG(NM) = UJG(NE)
-        VJG(NM) = VJG(NE)
-        WJG(NM) = WJG(NE)
-        QJ(NM) = QJ(NE)
-        QJH(NM) = QJH(NE)
-        RMAJP(NM) = RMAJP(NE)
-        DRMAJS(NM) = DRMAJS(NE)
-        DRMAJF(NM) = DRMAJF(NE)
-        PHJ(NM) = PHJ(NE)
-        THJG(NM) = THJG(NE)
-        THJL(NM) = THJL(NE)
-        RDQA(NM) = RDQA(NE)
-        SALJ(NM) = SALJ(NE)
-        TEMJ(NM) = TEMJ(NE)
+        ! *** Advance the variables
+        XJG(N1)    = XJG(N2)                  ! *** X coordinate of plume face
+        YJG(N1)    = YJG(N2)                  ! *** Y coordinate of plume face 
+        ZJG(N1)    = ZJG(N2)                  ! *** Z coordinate of plume face 
+        RADJ(N1)   = RADJ(N2)                 ! *** Radius of jet
+        RLEJ(N1)   = RLEJ(N2)                 ! *** Element length
+        SIG(N1)    = SIG(N2)                  ! *** Cumulative distance traveled along plume centerline
+        UJG(N1)    = UJG(N2)                  ! *** Jet velocity - u component
+        VJG(N1)    = VJG(N2)                  ! *** Jet velocity - v component
+        WJG(N1)    = WJG(N2)                  ! *** Jet velocity - w component
+        VJ(N1)     = VJ(N2)                   ! *** 
+        VJH(N1)    = VJH(N2)                  ! *** 
+        RMAJP(N1)  = RMAJP(N2)                ! *** Jet mass
+        DRMAJS(N1) = DRMAJS(N2)               ! *** 
+        DRMAJF(N1) = DRMAJF(N2)               ! *** 
+        PHJ(N1)    = PHJ(N2)                  ! *** Vertical angle of jet
+        THJG(N1)   = THJG(N2)                 ! *** Angle of jet
+        THJL(N1)   = THJL(N2)                 ! *** Difference in angle of jet - ambient
+        RDQA(N1)   = RDQA(N2)                 ! *** 
+        SALJ(N1)   = SALJ(N2)                 ! *** 
+        TEMJ(N1)   = TEMJ(N2)                 ! *** 
         DO MD = 1,NDYE
-          DYEJ(NM,MD) = DYEJ(NE,MD)
+          DYEJ(N1,MD) = DYEJ(N2,MD)
         ENDDO
-        SFLJ(NM) = SFLJ(NE)
+        SFLJ(N1) = SFLJ(N2)
         DO NT = 1,NTOX
-          TOXJ(NM,NT) = TOXJ(NE,NT)
+          TOXJ(N1,NT) = TOXJ(N2,NT)
         ENDDO
         DO NS = 1,NSED
-          SEDJ(NM,NS) = SEDJ(NE,NS)
+          SEDJ(N1,NS) = SEDJ(N2,NS)
         ENDDO
         DO NX = 1,NSND
-          SNDJ(NM,NX) = SNDJ(NE,NX)
+          SNDJ(N1,NX) = SNDJ(N2,NX)
         ENDDO
-        DO MD = 1,NWQV
-          WQVJ(NM,MD) = WQVJ(NE,MD)
+        DO NW = 1,NWQV
+          WQVJ(N1,NW) = WQVJ(N2,NW)
         ENDDO
        
-      ENDDO  ! *** END NJEL ELEMENT INTEGRATION
+      ENDDO  ! *** End NJEL element integration
 
-      ! *** FINAL OUTPUT OF RESULTS
-      2000 CONTINUE
-      
+      ! *** Output results for last element
+      IF( IPMC == 1 )THEN
+            WRITE(10,631) NITER, TIMEDAY, NJE, NI, TOTTIME, SIG(N2),                                                                          &
+                          XJG(N2), YJG(N2), ZJG(N2), 2.*RADJ(N2), QVJET, SUM(QJPENT(:,NJP)), QJTOT, RHOA(N2), -999., RHOJ(N2), TEMJ(N2),      &
+                          VJ(N2), VJH(N2), WJG(N2), WAG, RHOJ(N2)-RHOA(N2), RHO_DELTA, RHO_DELTA2, TEMA, VA, VAH, -999., RMAJP(N2), DRMAJS(N2), DRMAJF(N2)
+      ENDIF
+631   FORMAT(I10,F15.4,I8,I5,2F9.3,2F12.4,F10.3,F8.2,3E12.4,8f10.3,10E12.4)  
+    
       ! *** COMPUTE THE LAYER SPECIFIC JET/PLUME ENTRAINMENT
       QJTOTO = QJTOT
-      QJTOT = QJTOT*RMAJP(NE)/RMAJP(NM)
+      QJTOT = QJTOT*RMAJP(N2)/RMAJP(N1)
       DO K = KSZ(L),KC
         ZLOWER = Z(L,K - 1)*HP(LJP) + BELV(LJP)
         ZUPPER = ZLOWER + DZC(L,K)*HP(LJP)
-        IF( ZJG(NE) >= ZLOWER .AND. ZJG(NE) < ZUPPER )THEN
+        IF( ZJG(N2) >= ZLOWER .AND. ZJG(N2) < ZUPPER )THEN
           ! *** Found Layer
           QJPENT(K,NJP) = QJPENT(K,NJP) + (QJTOT - QJTOTO)
-          PRINT '(4I5,3F8.3,2F10.5,2(E12.4,F8.2))', NITER, NJP, NE, K, ZLOWER, ZJG(NE), ZUPPER, QVJET, QJPENT(K,NJP), TEMJ(NE), tem(l,k), DYEJ(NE,1), dye(l,k,1)      ! delme
-          IF( MOD(NITER,10) == 0 )THEN
-            QJPENTT(NJP) = 0.0  ! DELME
-          ENDIF
           EXIT
         ENDIF
       ENDDO
@@ -1656,191 +1482,46 @@ SUBROUTINE JPEFDC
           OPEN(8,FILE = OUTDIR//'EFDCLOG.OUT',POSITION = 'APPEND')
         ENDIF
         WRITE(8,898)NJP,TIME,(QJPENT(K,NJP),K = 1,KC),QJPENTT(NJP)
-        WRITE(10,898)NJP,TIME,(QJPENT(K,NJP),K = 1,KC),QJPENTT(NJP)
+        WRITE(88,898)NJP,TIME,(QJPENT(K,NJP),K = 1,KC),QJPENTT(NJP)
       ENDIF
       DJETI = 1./RLSCL
-      XJGNE = DJETI*XJG(NE)
-      YJGNE = DJETI*YJG(NE)
-      ZJGNE = DJETI*ZJG(NE)
-      SIGNE = DJETI*SIG(NE)
-      RADJNE = DJETI*RADJ(NE)
-      RLEJNE = DJETI*RLEJ(NE)
-      SALJNE = SALJETI*SALJ(NE)
-      TEMJNE = TEMJETI*TEMJ(NE)
+      XJGNE = DJETI*XJG(N2)
+      YJGNE = DJETI*YJG(N2)
+      ZJGNE = DJETI*ZJG(N2)
+      SIGNE = DJETI*SIG(N2)
+      RADJNE = DJETI*RADJ(N2)
+      RLEJNE = DJETI*RLEJ(N2)
+      SALJNE = SALJETI*SALJ(N2)
+      TEMJNE = TEMJETI*TEMJ(N2)
       DO MD = 1,NDYE
-        DYEJNE(MD) = DYEJETI(MD)*DYEJ(NE,MD)
+        DYEJNE(MD) = DYEJETI(MD)*DYEJ(N2,MD)
       ENDDO
-      SFLJNE = SFLJETI*SFLJ(NE)
+      SFLJNE = SFLJETI*SFLJ(N2)
       DO NT = 1,NTOX
-        TOXJNE(NT) = TOXJETI(NT)*TOXJ(NE,NT)
+        TOXJNE(NT) = TOXJETI(NT)*TOXJ(N2,NT)
       ENDDO
       DO NS = 1,NSED
-        SEDJNE(NS) = SEDJETI(NS)*SEDJ(NE,NS)
+        SEDJNE(NS) = SEDJETI(NS)*SEDJ(N2,NS)
       ENDDO
       DO NX = 1,NSND
-        SNDJNE(NX) = SNDJETI(NX)*SNDJ(NE,NX)
+        SNDJNE(NX) = SNDJETI(NX)*SNDJ(N2,NX)
       ENDDO
-      DO MD = 1,NWQV
-        WQVJNE(MD) = WQVJETI(MD)*WQVJ(NE,MD)
+      DO NW = 1,NWQV
+        WQVJNE(NW) = WQVJETI(NW)*WQVJ(N2,NW)
       ENDDO
-      DRMAJ = RMAJP(NE) - RMAJP(NE-1)
-      DRHO = (RHOA - RHOJ(NE))/RHOA
+      DRMAJ = RMAJP(N2) - RMAJP(N2-1)
+      DRHO = (RHOA(N2) - RHOJ(N2))/RHOA(N2)
 
       ! *** DIAGNOSTIC OUPUT
       IF( LOUTJET .AND. (IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) )THEN
-        WRITE(1,101)NJP,NJE,TIME,XJGNE,YJGNE,ZJGNE,SIGNE,RADJNE,RLEJNE,QJTOT
-        WRITE(2,101)NJP,NJE,TIME,QJ(NE),UJG(NE),VJG(NE),WJG(NE),RDQA(NE),RMAJP(NE),DRMAJ,DRHO
-        IF( ISTRAN(6) == 0 .AND. ISTRAN(7) == 0 )THEN
-          WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE)
-        ENDIF
-        IF( ISTRAN(6) == 1 .AND. ISTRAN(7) == 0 )THEN
-          WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE),(SEDJNE(NS),NS = 1,NSED)
-        ENDIF
-        IF( ISTRAN(6) == 0 .AND. ISTRAN(7) == 1 )THEN
-          WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE),(SNDJNE(NX),NX = 1,NSND)
-        ENDIF
-        IF( ISTRAN(6) == 1 .AND. ISTRAN(7) == 1 )THEN
-          WRITE(3,101)NJP,NJE,TIME,SALJNE,TEMJNE,(DYEJNE(MD),MD = 1,NDYE),(SEDJNE(NS),NS = 1,NSED),(SNDJNE(NX),NX = 1,NSND)
-        ENDIF
-        IF( ISTRAN(5) >= 1 )THEN
-          IF( NTOX <= 8 )THEN
-            WRITE(4,101)NJP,NJE,TIME,(TOXJNE(NT),NT = 1,NTOX)
-            WRITE(14,101)NJP,NJE,TIME,(TOXPFTJP(NE,NT),NT = 1,NTOX)
-          ELSE
-            WRITE(4,101)NJP,NJE,TIME,(TOXJNE(NT),NT = 1,8)
-            WRITE(14,101)NJP,NJE,TIME,(TOXPFTJP(NE,NT),NT = 1,8)
-            WRITE(4,101)NJP,NJE,TIME,(TOXJNE(NT),NT = 9,NTOX)
-            WRITE(14,101)NJP,NJE,TIME,(TOXPFTJP(NE,NT),NT = 9,NTOX)
-          ENDIF
-        ENDIF
+
       ENDIF
 
       ! *** DIAGNOSTIC OUPUT
-      IF( IOUTJP(NJP) >= 2 )THEN
-        NJPS = NJPS + 1
-        TIMJP(NJPS) = TIME
-        XJGNS(NJPS) = XJGNE
-        YJGNS(NJPS) = YJGNE
-        ZJGNS(NJPS) = ZJGNE
-        SIGNS(NJPS) = SIGNE
-        RADJNS(NJPS) = RADJNE
-        RLEJNS(NJPS) = RLEJNE
-        QJNS(NJPS) = QJ(NE)
-        UJGNS(NJPS) = UJG(NE)
-        VJGNS(NJPS) = VJG(NE)
-        WJGNS(NJPS) = WJG(NE)
-        RDQANS(NJPS) = RDQA(NE)
-        RMAJPNS(NJPS) = RMAJP(NE)
-        DRMAJNS(NJPS) = DRMAJ
-        DRHONS(NJPS) = DRHO
-        SALJNS(NJPS) = SALJNE
-        TEMJNS(NJPS) = TEMJNE
-        DO MD = 1,NDYE
-          DYEJNS(MD,NJPS) = DYEJNE(MD)
-        ENDDO
-        DO NS = 1,NSED
-          SEDJNS(NS,NJPS) = SEDJNE(NS)
-        ENDDO
-        DO NX = 1,NSND
-          SNDJNS(NX,NJPS) = SNDJNE(NX)
-        ENDDO
-        DO NT = 1,NTOX
-          TOXJNS(NT,NJPS) = TOXJNE(NT)
-          TOXPFTNS(NT,NJPS) = TOXPFTJP(NE,NT)
-        ENDDO
-        DO MD = 1,NWQV
-          WQVJNS(MD,NJPS) = WQVJNE(MD)
-        ENDDO
-        DO MD = 1,NWQV
-          WQVJNS(MD,NJPS) = WQVJNE(MD)
-        ENDDO
-      ENDIF
-      IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 )  CLOSE(1)
-      IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 )  CLOSE(2)
-      IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 )  CLOSE(3)
-      IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 )  CLOSE(4)
-      IF( IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 )  CLOSE(14)
-
-      ! *** WRITE OUT SAVED RESULTS IN COMPACT ASCII FORMAT
-      IF( LOUTJET .AND. (IOUTJP(NJP) == 2 .OR. IOUTJP(NJP) == 3 ) )THEN
-        IF( NITER == 1 ) OPEN(1,FILE = FNNRFLD,STATUS = 'UNKNOWN')
-        IF( NITER == 1 ) CLOSE(1,STATUS = 'DELETE')
-        OPEN(1,FILE = FNNRFLD,STATUS = 'UNKNOWN',POSITION = 'APPEND')
-        WRITE(1,101)NJP,NJPS,TIME
-        DO NSV = 1,NJPS
-          WRITE(1,104)XJGNS(NSV),YJGNS(NSV),ZJGNS(NSV),SIGNS(NSV),RADJNS(NSV),UJGNS(NSV),VJGNS(NSV),WJGNS(NSV),QJTOT
-          IF( ISTRAN(6) == 0 .AND. ISTRAN(7) == 0 )THEN
-            WRITE(1,104)SALJNS(NSV),TEMJNS(NSV),(DYEJNS(MD,NSV),MD = 1,NDYE)
-          ENDIF
-          IF( ISTRAN(6) >= 1 .AND. ISTRAN(7) == 0 )THEN
-            WRITE(1,104)SALJNS(NSV),TEMJNS(NSV),(DYEJNS(MD,NSV),MD = 1,NDYE),(SEDJNS(NS,NSV),NS = 1,NSED)
-          ENDIF
-          IF( ISTRAN(6) == 0 .AND. ISTRAN(7) >= 1 )THEN
-            WRITE(1,104)SALJNS(NSV),TEMJNS(NSV),(DYEJNS(MD,NSV),MD = 1,NDYE),(SNDJNS(NX,NSV),NX = 1,NSND)
-          ENDIF
-          IF( ISTRAN(6) >= 1 .AND. ISTRAN(7) >= 1 )THEN
-            WRITE(1,104)SALJNS(NSV),TEMJNS(NSV),(DYEJNS(MD,NSV),MD = 1,NDYE),(SEDJNS(NS,NSV),NS = 1,NSED),(SNDJNS(NX,NSV),NX = 1,NSND)
-          ENDIF
-          IF( ISTRAN(5) >= 1 )THEN
-            IF( NTOX <= 8 )THEN
-              WRITE(1,104)(TOXJNS(NT,NSV),NT = 1,NTOX)
-            ELSE
-              WRITE(1,104)(TOXJNS(NT,NSV),NT = 1,8)
-              WRITE(1,104)(TOXJNS(NT,NSV),NT = 9,NTOX)
-            ENDIF
-            IF( NTOX <= 8 )THEN
-              WRITE(1,104)(TOXPFTNS(NT,NSV),NT = 1,NTOX)
-            ELSE
-              WRITE(1,104)(TOXPFTNS(NT,NSV),NT = 1,8)
-              WRITE(1,104)(TOXPFTNS(NT,NSV),NT = 8,NTOX)
-            ENDIF
-          ENDIF
-        ENDDO
-        CLOSE(1)
-      ENDIF
-
-      ! *** WRITE OUT SAVED RESULTS IN BINARY FORMAT
-      IF( IOUTJP(NJP) == 4 )THEN
-        IF( NITER == 1 ) OPEN(1,FILE = FNNRFLB,FORM = 'UNFORMATTED')
-        IF( NITER == 1 ) CLOSE(1,STATUS = 'DELETE')
-        OPEN(1,FILE = FNNRFLB,POSITION = 'APPEND',FORM = 'UNFORMATTED')
-        WRITE(1)NJP,NJPS,TIME
-        WRITE(1)XJGNS
-        WRITE(1)YJGNS
-        WRITE(1)ZJGNS
-        WRITE(1)SIGNS
-        WRITE(1)RADJNS
-        WRITE(1)UJGNS
-        WRITE(1)VJGNS
-        WRITE(1)WJGNS
-        IF( ISTRAN(1) >= 1 )THEN
-          WRITE(1)SALJNS
-        ENDIF
-        IF( ISTRAN(2) >= 1 )THEN
-          WRITE(1)TEMJNS
-        ENDIF
-        IF( ISTRAN(3) >= 1 )THEN
-          WRITE(1)DYEJNS
-        ENDIF
-        IF( ISTRAN(6) >= 1 )THEN
-          WRITE(1)SEDJNS
-        ENDIF
-        IF( ISTRAN(7) >= 1 )THEN
-          WRITE(1)SNDJNS
-        ENDIF
-        IF( ISTRAN(5) >= 1 )THEN
-          WRITE(1)TOXJNS
-        ENDIF
-        IF( ISTRAN(5) >= 1 )THEN
-          WRITE(1)TOXPFTNS
-        ENDIF
-        CLOSE(1)
-      ENDIF
 
       ! *** RELOCATE VOLUME SOURCE
       ZTMP = ( ZJGNE-BELV(LJP) )/HP(LJP)
       ZTMP = RKC*ZTMP
-      !KTMP = NINT(ZTMP) + KL - 1   DELME
       KTMP = INT(ZTMP) + KL 
       KTMP = MAX(KL,KTMP)
       KTMP = MIN(KC,KTMP)
@@ -1851,7 +1532,8 @@ SUBROUTINE JPEFDC
       9000 CONTINUE
       KEFFJP(NJP) = KQJP(NJP)
       
-      9001 CONTINUE
+9001  CONTINUE
+      
       IF( LDEBUG )THEN
         ! *** OPEN LOF FILE
         IF( IFILE == -1 )THEN
@@ -1860,8 +1542,8 @@ SUBROUTINE JPEFDC
         ENDIF
         WRITE(8 ,899)NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
         WRITE(8 ,135)NJP,TIME,KFLAG,KEFFJP(NJP),KQJP(NJP),QVJET,QJTOT
-        WRITE(10,899)NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
-        WRITE(10,135)NJP,TIME,KFLAG,KEFFJP(NJP),KQJP(NJP),QVJET,QJTOT
+        WRITE(88,899)NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
+        WRITE(88,135)NJP,TIME,KFLAG,KEFFJP(NJP),KQJP(NJP),QVJET,QJTOT
       ENDIF
 
       ! *** CALCULATION MOMENT INTERFACE QUANTITIES
@@ -1880,78 +1562,81 @@ SUBROUTINE JPEFDC
           QVAG = VAG*QJPENT(K,NJP)
           QWAG = WAG*QJPENT(K,NJP)
           WRITE(11,1111)K,UJPAVG(K,NJP),VJPAVG(K,NJP),WJPAVG(K,NJP), &
-            QENTTMP,QUAG,QVAG,QWAG,QJPENT(K,NJP)
+                        QENTTMP,QUAG,QVAG,QWAG,QJPENT(K,NJP)
         ENDDO
       ENDIF
 
       ! *** END LOOP OVER ALL JET/PLUME LOCATIONS
-    ENDIF
-  ENDDO  ! *** END NQJPIJ LOOP
+    ENDIF   ! *** End of active jet/plume BC flag
+  ENDDO     ! *** End of NQJPIJ loop
 
   ! *** CLOSE LOG FILE
   IF( IFILE == 8 ) CLOSE(8)
   
-  IF( LDEBUG )THEN
+  IF( LOUTJET )THEN
     CLOSE(10)
-    CLOSE(11)
   ENDIF
-  
-   1110 FORMAT(/,'NJP,N = ',I5,I10,/)
-   1111 FORMAT(I5,50E14.5)
-    899 FORMAT(' JPENT ',I5,F12.6,50E12.4)
-    898 FORMAT(' FINAL JPENT ',I5,F12.6,50E12.4)
-    100 FORMAT(120X)
-    101 FORMAT(2I6,50E12.4)
-    104 FORMAT(50E12.4)
-    111 FORMAT('    NJ    NE     TIME         XJ          YJ          ZJ         SIG         RAD         LEN')
-    112 FORMAT('    NJ    NE     TIME         QJ          UJ          VJ          WJ         RDQ         RMA         DRM         DRHO')
-    113 FORMAT('    NJ    NE     TIME        SAL         TEM      SED(1,NSD)  SND(1,NSN)')
-    114 FORMAT('    NJ    NE     TIME     TOX(1,NTX)')
-    124 FORMAT('    NJ    NE     TIME    TOXPF(1,NTX)')
-    134 FORMAT(' BEGIN JET/PLUME NJP,TIME = ',I6,F12.5)
-    135 FORMAT(' END JET/PLUME NJP,TIME,KFLAG,KEFFJP,KQJP,QVJET,QVJTOT',' = ',I6,F13.5,3I4,2E12.4)
-    600 FORMAT(' ELEMENT, # INTERATIONS = ',2I6)
-    601 FORMAT(' MAXIMUM ITERATIONS EXCEEDED TIMEDAY NE,NI @ L,HP = ',F10.3,3I6,F8.3,' !!')
-    602 FORMAT(' JET/PLUME BNDRY PEN SURF NJ,NE,NI,Z,ZS = ',3I6,2F10.2)
-   6020 FORMAT(' JP BDRY PEN SURF NJ,NE,NI,Z,ZS= ',3I5,2F8.2)
-    603 FORMAT(' JET/PLUME BNDRY PEN BOTT NJ,NE,NI,Z,ZB = ',3I6,2F10.2)
-   6030 FORMAT(' JP BDRY PEN BOTT NJ,NE,NI,Z,ZB= ',3I5,2F8.2)
-    604 FORMAT(' JET/PLUME AT NEUTRAL LEVEL NJ,NE,NI,Z  = ',A,3I6,2F10.2)
-   6040 FORMAT(' JP @ NEUTRAL LEVEL NJ,NE,NI,Z = ',A,3I5,4F10.2)
-    605 FORMAT(' JET/PLUME CTRLN PEN SURF NJ,NE,NI,Z,ZS = ',3I6,2F10.2)
-   6050 FORMAT(' JP CTLN PEN SURF NJ,NE,NI,Z,ZS= ',3I5,2F8.2)
-    606 FORMAT(' JET/PLUME CTRLN PEN BOTT NJ,NE,NI,Z,ZB = ',3I6,2F10.2)
-   6060 FORMAT(' JP CTLN PEN BOTT NJ,NE,NI,Z,ZS= ',3I5,2F8.2)
-    888 FORMAT(A80,/)
-    620 FORMAT('NJ,NE,NI,IT,DS,DSO,DF,DFO = ',4I6,6E13.4)
+  IF( LDEBUG )THEN
+    CLOSE(88)
+  ENDIF
+    
+1110 FORMAT(/,'NJP,N = ',I5,I10,/)
+1111 FORMAT(I5,50E14.5)
+ 899 FORMAT(' JPENT ',I5,F12.6,50E12.4)
+ 898 FORMAT(' FINAL JPENT ',I5,F12.6,50E12.4)
+ 100 FORMAT(120X)
+
+ 134 FORMAT(' BEGIN JET/PLUME NJP,TIME = ',I6,F12.5)
+ 135 FORMAT(' END JET/PLUME NJP,TIME,KFLAG,KEFFJP,KQJP,QVJET,QVJTOT',' = ',I6,F13.5,3I4,2E12.4)
+       
+ 601 FORMAT(' MAXIMUM ITERATIONS EXCEEDED TIMEDAY N2,NI @ L,HP = ',F10.3,3I6,F8.3,' !!')
+ 602 FORMAT(' JET/PLUME BOUNDARY PENETRATES SURFACE @ IJ,NE,NI,ZBOT,ZJET,ZSURF = ',I5,I8,I5,3F10.3)
+ 603 FORMAT(' JET/PLUME BOUNDARY PENETRATES BOTTOM @ IJ,NE,NI,ZBOT,ZJET,ZSURF = ',I5,I8,I5,3F10.3)
+ 604 FORMAT(' JET/PLUME AT NEUTRAL LEVEL @ IJ,NE,NI,ZBOT,ZJET,ZSURF = ',A,I5,I8,I5,3F10.3)
+ 605 FORMAT(' JET/PLUME CENTERLINE PENETRATES SURFACE @ IJ,NE,NI,ZBOT,ZJET,ZSURF = ',I5,I8,I5,3F10.3)
+ 606 FORMAT(' JET/PLUME CENTERLINE PENETRATES BOTTOM @ IJ,NE,NI,ZBOT,ZJET,ZSURF = ',I5,I8,I5,3F10.3)
+       
+ ! *** Write to log file formats
+ 612 FORMAT(' JET/PLUME BOUNDARY PENETRATES SURFACE @ DAY,IJ,NE,NI,ZBOT,ZJET,ZSURF = ',F15.5,I5,I8,I5,3F10.3)
+ 613 FORMAT(' JET/PLUME BOUNDARY PENETRATES BOTTOM @ DAY,IJ,NE,NI,ZBOT,ZJET,ZSURF = ',F15.5,I5,I8,I5,3F10.3)
+ 614 FORMAT(' JET/PLUME AT NEUTRAL LEVEL @ DAY,IJ,NE,NI,ZBOT,ZJET,ZSURF = ',A,F15.5,I5,I8,I5,3F10.3)
+ 615 FORMAT(' JET/PLUME CENTERLINE PENETRATES SURFACE @ DAY,IJ,NE,NI,ZBOT,ZJET,ZSURF = ',F15.5,I5,I8,I5,3F10.3)
+ 616 FORMAT(' JET/PLUME CENTERLINE PENETRATES BOTTOM @ DAY,IJ,NE,NI,ZBOT,ZJET,ZSURF = ',F15.5,I5,I8,I5,3F10.3)
+       
+ 888 FORMAT(A80,/)
+ 620 FORMAT('NJ,N2,NI,IT,DS,DSO,DF,DFO = ',4I6,6E13.4)
   
   RETURN
   
 END
 
-FUNCTION FUNDEN(SALIN,SEDIN,TEMIN)
+FUNCTION FUNDEN(SALIN, SEDIN, TEMIN)
 
   ! **  FUNDEN CALCULATED DENSITY AS A FUNCTION OF SAL,TEM,AND SED
   ! CHANGE RECORD
-  !      IMPLICIT REAL*8 (A - H,O - Z)
+  !  2022-04 Szu-Ting Lee & Paul M. Craig 
+  !             Updated funciton to Millero & Huang (2008) to allow for broader salinity and temperature ranges
 
   IMPLICIT NONE
 
-  REAL, INTENT(IN) :: SALIN,SEDIN,TEMIN
-  REAL             :: FUNDEN,TTMP,SSG,SDEN,SSTMP,RHTMP,RHO
+  REAL, INTENT(IN) :: SALIN, SEDIN, TEMIN
+  REAL             :: FUNDEN, TTMP, SSG, SDEN, SSTMP, RHTMP, RHO, RHOCA, RHOCB, RHOCC 
 
   SSG = 2.5
   SDEN = 1./2500000.
 
   ! **  DENSITY AT GIVEN VALUES OF SAL AND TEM
-  SSTMP = MIN(MAX(SALIN,0.),45.)
-  TTMP =MIN(MAX(TEMIN,0.),50.)
+  SSTMP = MIN(MAX(SALIN,0.),70.)
+  TTMP  = MIN(MAX(TEMIN,0.),90.)
   RHTMP = 999.842594
   
-  RHTMP = RHTMP + 6.793952E-2*TTMP - 9.095290E-3*TTMP*TTMP +1.001685E-4*TTMP*TTMP*TTMP - 1.120083E-6*TTMP*TTMP*TTMP*TTMP + 6.536332E-9*TTMP*TTMP*TTMP*TTMP*TTMP
-
-  RHO= RHTMP + SSTMP*(0.824493 - 4.0899E-3*TTMP + 7.6438E-5*TTMP*TTMP - 8.2467E-7*TTMP*TTMP*TTMP + 5.3875E-9*TTMP*TTMP*TTMP*TTMP) &
-              + SQRT(SSTMP)*SSTMP*( - 5.72466E-3 + 1.0227E-4*TTMP - 1.6546E-6*TTMP*TTMP) + 4.8314E-4*SSTMP*SSTMP
+  RHTMP = RHTMP + 6.793952E-2*TTMP - 9.095290E-3*TTMP*TTMP + 1.001685E-4*TTMP*TTMP*TTMP - 1.120083E-6*TTMP*TTMP*TTMP*TTMP + 6.536332E-9*TTMP*TTMP*TTMP*TTMP*TTMP
+  
+  RHOCA = 0.8174451 - 3.638577E-3*TTMP + 6.480811E-5*TTMP*TTMP - 7.312404E-7*TTMP*TTMP*TTMP + 5.330431E-9*TTMP*TTMP*TTMP*TTMP - 1.657628E-11*TTMP*TTMP*TTMP*TTMP*TTMP
+  RHOCB = -5.481436E-3 + 3.486075E-5*TTMP - 3.049727E-7*TTMP*TTMP
+  RHOCC = 5.346196E-4
+  
+  RHO = RHTMP + SSTMP*RHOCA + SQRT(SSTMP)*SSTMP*RHOCB + SSTMP*SSTMP*RHOCC
   
   ! **  CORRECTION FOR SEDIMENT
   RHO = RHO*( (1. - SDEN*SEDIN) + (SSG - 1.)*SDEN*SEDIN )
@@ -1962,7 +1647,7 @@ FUNCTION FUNDEN(SALIN,SEDIN,TEMIN)
 END FUNCTION
   
   
-SUBROUTINE JPACON(ITVAL,ZVAL,UAG,VAG,WAG)
+SUBROUTINE JPACON(KBOT, ZVAL, UAG, VAG, WAG)
 
   ! *** JET/PLUME SUB - MODEL SUBROUTINE
   ! *** RETURNS THE AMBIENT CONDITIONS FOR VARIABLE WQ CONDITIONS BASED 
@@ -1971,99 +1656,103 @@ SUBROUTINE JPACON(ITVAL,ZVAL,UAG,VAG,WAG)
   
   USE GLOBAL
   IMPLICIT NONE   
-                                                                                                       
-  INTEGER :: ITVAL,NT,NS,NX,NZ,NZP,MD                                                                             
-  REAL    :: WTNZP,WTNZ,ZVAL                                                                                                
-  REAL    :: UAG,VAG,WAG,DZK
+  
+  INTEGER,INTENT(IN) :: KBOT                                                                                                     
+  INTEGER :: K, NT, NS, NX, NZP, MD, NW                                                                        
+  REAL    :: WTNZP, WTNZ, ZVAL                                                                                                
+  REAL    :: UAG, VAG, WAG, DZK
 
-  IF( ZVAL < ZAD(1,ITVAL) )THEN
-    UAG = UAGD(1,ITVAL)
-    VAG = VAGD(1,ITVAL)
-    WAG = WAGD(1,ITVAL)
-    SALA = SALAD(1,ITVAL)
-    TEMA = TEMAD(1,ITVAL)
+  K = KBOT
+
+  IF( ZVAL < ZAD(K) )THEN
+    ! *** Jet/Plume is below the bottom layer
+    UAG = UAGD(K)
+    VAG = VAGD(K)
+    WAG = WAGD(K)
+    SALA = SALAD(K)
+    TEMA = TEMAD(K)
     DO MD = 1,NDYE
-      DYEA(MD) = DYEAD(1,MD,ITVAL)
+      DYEA(MD) = DYEAD(K,MD)
     ENDDO
-    SFLA = SFLAD(1,ITVAL)
+    SFLA = SFLAD(K)
     DO NT = 1,NTOX
-      TOXA(NT) = TOXAD(1,NT,ITVAL)
+      TOXA(NT) = TOXAD(K,NT)
     ENDDO
     DO NS = 1,NSED
-      SEDA(NS) = SEDAD(1,NS,ITVAL)
+      SEDA(NS) = SEDAD(K,NS)
     ENDDO
     DO NX = 1,NSND
-      SNDA(NX) = SNDAD(1,NX,ITVAL)
+      SNDA(NX) = SNDAD(K,NX)
     ENDDO
-    DO MD = 1,NWQV
-      WQVA(MD) = WQVAD(1,MD,ITVAL)
+    DO NW = 1,NWQV
+      WQVA(NW) = WQVAD(K,NW)
     ENDDO
     RETURN
   ENDIF
 
-  ! *** GET CONCENTRATIONS BASED ON PLUME ELEVATION (ZVAL) (NAZD = KC)
-  IF( ZVAL >= ZAD(NAZD,ITVAL) )THEN
-    ! JET/PLUME ELEVATION IS ABOVE THE TOP LAYER MIDPOINT
-    UAG = UAGD(NAZD,ITVAL)
-    VAG = VAGD(NAZD,ITVAL)
-    WAG = WAGD(NAZD,ITVAL)
-    SALA = SALAD(NAZD,ITVAL)
-    TEMA = TEMAD(NAZD,ITVAL)
+  ! *** GET CONCENTRATIONS BASED ON PLUME ELEVATION (ZVAL)
+  IF( ZVAL >= ZAD(KC) )THEN
+    ! Jet/plume elevation is above the top layer midpoint
+    UAG = UAGD(KC)
+    VAG = VAGD(KC)
+    WAG = WAGD(KC)
+    SALA = SALAD(KC)
+    TEMA = TEMAD(KC)
     DO MD = 1,NDYE
-      DYEA(MD) = DYEAD(NAZD,MD,ITVAL)
+      DYEA(MD) = DYEAD(KC,MD)
     ENDDO
-    SFLA = SFLAD(NAZD,ITVAL)
+    SFLA = SFLAD(KC)
     DO NT = 1,NTOX
-      TOXA(NT) = TOXAD(NAZD,NT,ITVAL)
+      TOXA(NT) = TOXAD(KC,NT)
     ENDDO
     DO NS = 1,NSED
-      SEDA(NS) = SEDAD(NAZD,NS,ITVAL)
+      SEDA(NS) = SEDAD(KC,NS)
     ENDDO
     DO NX = 1,NSND
-      SNDA(NX) = SNDAD(NAZD,NX,ITVAL)
+      SNDA(NX) = SNDAD(KC,NX)
     ENDDO
-    DO MD = 1,NWQV
-      WQVA(MD) = WQVAD(NAZD,MD,ITVAL)
+    DO NW = 1,NWQV
+      WQVA(NW) = WQVAD(KC,NW)
     ENDDO
     RETURN
   ENDIF
 
-  ! *** DETERMINE WHICH LAYER TO EXTRACT THE AMBIENT CONDITIONS FROM
-  NZ = 1
-  ! *** LOOP OVER LAYERS
+  ! *** Determine which layer to extract the ambient conditions from
+  
+  ! *** Loop over layers
    1000 CONTINUE
 
   ! *** NZP = LAYER ABOVE
-  NZP = NZ + 1
-  IF( ZVAL >= ZAD(NZ,ITVAL) .AND. ZVAL < ZAD(NZP,ITVAL) )THEN
+  NZP = K + 1
+  IF( ZVAL >= ZAD(K) .AND. ZVAL < ZAD(NZP) )THEN
     ! *** INTERPOLATE AMBIENT CONDITIONS FROM LAYER INTERVAL
-    DZK =1./(ZAD(NZP,ITVAL) - ZAD(NZ,ITVAL))
-    WTNZ = DZK*(ZAD(NZP,ITVAL) - ZVAL)
-    WTNZP = DZK*(ZVAL - ZAD(NZ,ITVAL))
-    UAG = WTNZ*UAGD(NZ,ITVAL) + WTNZP*UAGD(NZP,ITVAL)
-    VAG = WTNZ*VAGD(NZ,ITVAL) + WTNZP*VAGD(NZP,ITVAL)
-    WAG = WTNZ*WAGD(NZ,ITVAL) + WTNZP*WAGD(NZP,ITVAL)
-    SALA = WTNZ*SALAD(NZ,ITVAL) + WTNZP*SALAD(NZP,ITVAL)
-    TEMA = WTNZ*TEMAD(NZ,ITVAL) + WTNZP*TEMAD(NZP,ITVAL)
+    DZK =1./(ZAD(NZP) - ZAD(K))
+    WTNZ = DZK*(ZAD(NZP) - ZVAL)
+    WTNZP = DZK*(ZVAL - ZAD(K))
+    UAG = WTNZ*UAGD(K) + WTNZP*UAGD(NZP)
+    VAG = WTNZ*VAGD(K) + WTNZP*VAGD(NZP)
+    WAG = WTNZ*WAGD(K) + WTNZP*WAGD(NZP)
+    SALA = WTNZ*SALAD(K) + WTNZP*SALAD(NZP)
+    TEMA = WTNZ*TEMAD(K) + WTNZP*TEMAD(NZP)
     DO MD = 1,NDYE
-      DYEA(MD) = WTNZ*DYEAD(NZ,MD,ITVAL) + WTNZP*DYEAD(NZP,MD,ITVAL)
+      DYEA(MD) = WTNZ*DYEAD(K,MD) + WTNZP*DYEAD(NZP,MD)
     ENDDO
-    SFLA = WTNZ*SFLAD(NZ,ITVAL) + WTNZP*SFLAD(NZP,ITVAL)
+    SFLA = WTNZ*SFLAD(K) + WTNZP*SFLAD(NZP)
     DO NT = 1,NTOX
-      TOXA(NT) = WTNZ*TOXAD(NZ,NT,ITVAL) + WTNZP*TOXAD(NZP,NT,ITVAL)
+      TOXA(NT) = WTNZ*TOXAD(K,NT) + WTNZP*TOXAD(NZP,NT)
     ENDDO
     DO NS = 1,NSED
-      SEDA(NS) = WTNZ*SEDAD(NZ,NS,ITVAL) + WTNZP*SEDAD(NZP,NS,ITVAL)
+      SEDA(NS) = WTNZ*SEDAD(K,NS) + WTNZP*SEDAD(NZP,NS)
     ENDDO
     DO NX = 1,NSND
-      SNDA(NX) = WTNZ*SNDAD(NZ,NX,ITVAL) + WTNZP*SNDAD(NZP,NX,ITVAL)
+      SNDA(NX) = WTNZ*SNDAD(K,NX) + WTNZP*SNDAD(NZP,NX)
     ENDDO
-    DO MD = 1,NWQV
-      WQVA(MD) = WTNZ*WQVAD(NZ,MD,ITVAL) + WTNZP*WQVAD(NZP,MD,ITVAL)
+    DO NW = 1,NWQV
+      WQVA(NW) = WTNZ*WQVAD(K,NW) + WTNZP*WQVAD(NZP,NW)
     ENDDO
     RETURN
   ELSE
-    NZ = NZ + 1
+    K = K + 1
     GOTO 1000
   ENDIF
   RETURN

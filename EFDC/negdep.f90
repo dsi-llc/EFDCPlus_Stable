@@ -6,7 +6,7 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-  SUBROUTINE NEGDEP(NOPTIMAL,LDMOPT,QCHANUT,QCHANVT,ISTL_,SUB1,SVB1,NNEGFLG)
+  SUBROUTINE NEGDEP(NOPTIMAL, LDMOPT, QCHANUT, QCHANVT, ISTL_, SUB1, SVB1, NNEGFLG)
 
   ! ** SUBROUTINE NEGDEP CHECK EXTERNAL SOLUTION FOR NEGATIVE DEPTHS
 
@@ -32,13 +32,13 @@
   REAL,INTENT(IN),DIMENSION(:) :: SUB1(LCM)
   REAL,INTENT(IN),DIMENSION(:) :: SVB1(LCM)
 
-  INTEGER :: INEGFLG,ISTL_,L,NMD,LHOST,IHOST,JHOST,LCHNU,LCHNV,ICHNU,JCHNU,ICHNV,JCHNV,K,ND,LF,LL,LS,LN,LW,LE
-  REAL    :: QCHANUT(NCHANM),QCHANVT(NCHANM),SRFCHAN,SRFHOST,SRFCHAN1,SRFHOST1,SURFTMP,DELTD2
+  INTEGER :: INEGFLG, ISTL_, L, NMD, LHOST, IHOST, JHOST, LCHNU, LCHNV, ICHNU, JCHNU, ICHNV, JCHNV, K, ND, LF, LL, LS, LN, LW, LE
+  REAL    :: QCHANUT(NCHANM), QCHANVT(NCHANM), SRFCHAN, SRFHOST, SRFCHAN1, SRFHOST1, SURFTMP, DELTD2, HDRY10
   INTEGER, SAVE :: NEEOUT
 
   IF( NITER < 2 ) NEEOUT = 0
   INEGFLG = 0
-
+  
   ! **  CHECK FOR NEGATIVE DEPTHS
   !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L)
   DO ND=1,NOPTIMAL
@@ -60,12 +60,12 @@
     OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
 
     DO L=2,LA
-      IF( HP(L) <=  0. )THEN
+      IF( HP(L) <= 0.0 )THEN
         LN=LNC(L)
         LS=LSC(L)
         LW=LWC(L)
         LE=LEC(L)
-        WRITE(6,1111) TIMEDAY, NITER, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, process_id
+        WRITE(6,1111) TIMEDAY, NITER, ISTL_, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, process_id
         WRITE (6,6060) Map2Global(L).IG, Map2Global(L).JG, HP(L), H1P(L), H2P(L)
         WRITE (6,6061) Map2Global(L).IG, Map2Global(L).JG, HU(L), H1U(L)
         WRITE (6,6062) Map2Global(L).IG, Map2Global(L).JG, HU(LE), H1U(LE)
@@ -74,10 +74,10 @@
         WRITE (6,6065) Map2Global(L).IG, Map2Global(L).JG, QSUME(L), QSUM1E(L)
         WRITE (6,6066) Map2Global(L).IG, Map2Global(L).JG, SUB(L), SUB(LE), SVB(L), SVB(LN)
         IF( IEVAP > 0 )THEN
-          WRITE (6,6067) Map2Global(L).IG,Map2Global(L).JG,RAINT(L),EVAPT(L)
+          WRITE (6,6067) Map2Global(L).IG, Map2Global(L).JG,RAINT(L),EVAPT(L)
         ENDIF
         IF( ISICE > 0 )THEN
-          WRITE (6,6068)Map2Global(L).IG, Map2Global(L).JG, ICETHICK(L), ICETHICK1(L), TEM(L,KC), TATMT(L), SOLSWRT(L)
+          WRITE (6,6068) Map2Global(L).IG, Map2Global(L).JG, ICETHICK(L), ICETHICK1(L), TEM(L,KC), TATMT(L), SOLSWRT(L)
         ENDIF
 
         IF( ISDYNSTP == 0 )THEN
@@ -88,14 +88,14 @@
           DELTD2=0.5*DTDYN
         ENDIF
 
-        WRITE(mpi_log_unit,1111) TIMEDAY, NITER, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, process_id
+        WRITE(mpi_log_unit,1111) TIMEDAY, NITER, ISTL_, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, process_id
 
         ! *** EE7.2 DIAGNOSTICS
         WRITE (mpi_log_unit,'(2X,A14,5I14)')'L  CWESN', Map2Global(L).LG, Map2Global(LW).LG, Map2Global(LE).LG, Map2Global(LS).LG, Map2Global(LN).LG
         WRITE (mpi_log_unit,'(A)')'DEPTHS'
         WRITE (mpi_log_unit,'(2X,A14,5E14.6)')'HP CWESN',  HP(L), HP(LW), HP(LE), HP(LS), HP(LN)
-        WRITE (mpi_log_unit,'(2X,A14,5E14.6)')'H1P CWESN', H1P(L),H1P(LW),H1P(LE),H1P(LS),H1P(LN)
-        WRITE (mpi_log_unit,'(2X,A14,5E14.6)')'H2P CWESN', H2P(L),H2P(LW),H2P(LE),H2P(LS),H2P(LN)
+        WRITE (mpi_log_unit,'(2X,A14,5E14.6)')'H1P CWESN', H1P(L), H1P(LW), H1P(LE), H1P(LS), H1P(LN)
+        WRITE (mpi_log_unit,'(2X,A14,5E14.6)')'H2P CWESN', H2P(L), H2P(LW), H2P(LE), H2P(LS), H2P(LN)
 
         WRITE (mpi_log_unit,'(A)')'WATER SURFACE ELEVATIONS'
         WRITE (mpi_log_unit,'(2X,A14,5E14.6)')'WS CWESN',  BELV(L)+HP(L), BELV(LW)+HP(LW), BELV(LE)+HP(LE), BELV(LS)+HP(LS), BELV(LN)+HP(LN)
@@ -172,11 +172,12 @@
         WRITE(mpi_log_unit,*) 'NEGDEP: WRITING EE LINKAGE',TIMEDAY
         CALL EE_LINKAGE(-1)  
       endif
-        
+    
       NEEOUT = NEEOUT + 1
-      IF( NEEOUT > 10 )THEN
-        STOP ' ABORTING RUN DUE TO TOO MANY NEGATIVE DEPTHS'
-      ENDIF
+    ENDIF
+    
+    IF( NEEOUT > 10 )THEN
+      STOP ' ABORTING RUN DUE TO TOO MANY NEGATIVE DEPTHS'
     ENDIF
 
     DO L=2,LA
@@ -184,20 +185,20 @@
         INEGFLG=2
         LN=LNC(L)
         WRITE(6,1112)
-        WRITE (6,6060)Map2Global(L).IG,Map2Global(L).JG,HP(L),H1P(L),H2P(L)
-        WRITE (6,6061)Map2Global(L).IG,Map2Global(L).JG,HU(L),H1U(L)
-        WRITE (6,6062)Map2Global(L).IG,Map2Global(L).JG,HU(LEC(L)),H1U(LEC(L))
-        WRITE (6,6063)Map2Global(L).IG,Map2Global(L).JG,HV(L),H1V(L)
-        WRITE (6,6064)Map2Global(L).IG,Map2Global(L).JG,HV(LN),H1V(LN)
-        WRITE (6,6065)Map2Global(L).IG,Map2Global(L).JG,QSUME(L),QSUM1E(L)
+        WRITE (6,6060) Map2Global(L).IG, Map2Global(L).JG, HP(L), H1P(L), H2P(L)
+        WRITE (6,6061) Map2Global(L).IG, Map2Global(L).JG, HU(L), H1U(L)
+        WRITE (6,6062) Map2Global(L).IG, Map2Global(L).JG, HU(LEC(L)), H1U(LEC(L))
+        WRITE (6,6063) Map2Global(L).IG, Map2Global(L).JG, HV(L), H1V(L)
+        WRITE (6,6064) Map2Global(L).IG, Map2Global(L).JG, HV(LN), H1V(LN)
+        WRITE (6,6065) Map2Global(L).IG, Map2Global(L).JG, QSUME(L), QSUM1E(L)
         
         WRITE(mpi_log_unit,1112)
-        WRITE (mpi_log_unit,6060)Map2Global(L).IG,Map2Global(L).JG,HP(L),H1P(L),H2P(L)
-        WRITE (mpi_log_unit,6061)Map2Global(L).IG,Map2Global(L).JG,HU(L),H1U(L)
-        WRITE (mpi_log_unit,6062)Map2Global(L).IG,Map2Global(L).JG,HU(LEC(L)),H1U(LEC(L))
-        WRITE (mpi_log_unit,6063)Map2Global(L).IG,Map2Global(L).JG,HV(L),H1V(L)
-        WRITE (mpi_log_unit,6064)Map2Global(L).IG,Map2Global(L).JG,HV(LN),H1V(LN)
-        WRITE (mpi_log_unit,6065)Map2Global(L).IG,Map2Global(L).JG,QSUME(L),QSUM1E(L)
+        WRITE (mpi_log_unit,6060) Map2Global(L).IG, Map2Global(L).JG, HP(L), H1P(L), H2P(L)
+        WRITE (mpi_log_unit,6061) Map2Global(L).IG, Map2Global(L).JG, HU(L), H1U(L)
+        WRITE (mpi_log_unit,6062) Map2Global(L).IG, Map2Global(L).JG, HU(LEC(L)), H1U(LEC(L))
+        WRITE (mpi_log_unit,6063) Map2Global(L).IG, Map2Global(L).JG, HV(L), H1V(L)
+        WRITE (mpi_log_unit,6064) Map2Global(L).IG, Map2Global(L).JG, HV(LN), H1V(LN)
+        WRITE (mpi_log_unit,6065) Map2Global(L).IG, Map2Global(L).JG, QSUME(L), QSUM1E(L)
       ENDIF
     ENDDO
     DO L=2,LA
@@ -205,20 +206,20 @@
         INEGFLG=3
         LN=LNC(L)
         WRITE(6,1113)
-        WRITE (6,6060)Map2Global(L).IG,Map2Global(L).JG,HP(L),H1P(L),H2P(L)
-        WRITE (6,6061)Map2Global(L).IG,Map2Global(L).JG,HU(L),H1U(L)
-        WRITE (6,6062)Map2Global(L).IG,Map2Global(L).JG,HU(LEC(L)),H1U(LEC(L))
-        WRITE (6,6063)Map2Global(L).IG,Map2Global(L).JG,HV(L),H1V(L)
-        WRITE (6,6064)Map2Global(L).IG,Map2Global(L).JG,HV(LN),H1V(LN)
-        WRITE (6,6065)Map2Global(L).IG,Map2Global(L).JG,QSUME(L),QSUM1E(L)
+        WRITE (6,6060) Map2Global(L).IG, Map2Global(L).JG, HP(L), H1P(L), H2P(L)
+        WRITE (6,6061) Map2Global(L).IG, Map2Global(L).JG, HU(L), H1U(L)
+        WRITE (6,6062) Map2Global(L).IG, Map2Global(L).JG, HU(LEC(L)), H1U(LEC(L))
+        WRITE (6,6063) Map2Global(L).IG, Map2Global(L).JG, HV(L), H1V(L)
+        WRITE (6,6064) Map2Global(L).IG, Map2Global(L).JG, HV(LN), H1V(LN)
+        WRITE (6,6065) Map2Global(L).IG, Map2Global(L).JG, QSUME(L), QSUM1E(L)
         
         WRITE(mpi_log_unit,1113)
-        WRITE (mpi_log_unit,6060)Map2Global(L).IG,Map2Global(L).JG,HP(L),H1P(L),H2P(L)
-        WRITE (mpi_log_unit,6061)Map2Global(L).IG,Map2Global(L).JG,HU(L),H1U(L)
-        WRITE (mpi_log_unit,6062)Map2Global(L).IG,Map2Global(L).JG,HU(LEC(L)),H1U(LEC(L))
-        WRITE (mpi_log_unit,6063)Map2Global(L).IG,Map2Global(L).JG,HV(L),H1V(L)
-        WRITE (mpi_log_unit,6065)Map2Global(L).IG,Map2Global(L).JG,QSUME(L),QSUM1E(L)
-        WRITE (mpi_log_unit,6064)Map2Global(L).IG,Map2Global(L).JG,HV(LN),H1V(LN)
+        WRITE (mpi_log_unit,6060) Map2Global(L).IG, Map2Global(L).JG, HP(L), H1P(L), H2P(L)
+        WRITE (mpi_log_unit,6061) Map2Global(L).IG, Map2Global(L).JG, HU(L), H1U(L)
+        WRITE (mpi_log_unit,6062) Map2Global(L).IG, Map2Global(L).JG, HU(LEC(L)), H1U(LEC(L))
+        WRITE (mpi_log_unit,6063) Map2Global(L).IG, Map2Global(L).JG, HV(L), H1V(L)
+        WRITE (mpi_log_unit,6065) Map2Global(L).IG, Map2Global(L).JG, QSUME(L), QSUM1E(L)
+        WRITE (mpi_log_unit,6064) Map2Global(L).IG, Map2Global(L).JG, HV(LN), H1V(LN)
       ENDIF
     ENDDO
 
@@ -240,8 +241,8 @@
             SRFHOST=HP(LHOST)+BELV(LHOST)
             SRFCHAN1=H1P(LCHNU)+BELV(LCHNU)
             SRFHOST1=H1P(LHOST)+BELV(LHOST)
-            WRITE(mpi_log_unit,8001)N,NMD,MDCHTYP(NMD),ICHNU,JCHNU,ISCDRY(LCHNU),SRFCHAN,HP(LCHNU),P1(LCHNU),H1P(LCHNU)
-            WRITE(mpi_log_unit,8002)IHOST,JHOST,ISCDRY(LHOST),SRFHOST,HP(LHOST),P1(LHOST),H1P(LHOST)
+            WRITE(mpi_log_unit,8001)N,NMD,MDCHTYP(NMD),ICHNU,JCHNU,ISCDRY(LCHNU),SRFCHAN,HP(LCHNU),P1(LCHNU), H1P(LCHNU)
+            WRITE(mpi_log_unit,8002)IHOST,JHOST,ISCDRY(LHOST),SRFHOST,HP(LHOST),P1(LHOST), H1P(LHOST)
             WRITE(mpi_log_unit,8003)QCHANU(NMD),QCHANUT(NMD),CCCCHU(NMD),CCCCHV(NMD)
           ENDIF
           !
@@ -270,7 +271,7 @@
       WRITE(1,1001)NITER,ISTL_
       DO L=2,LA
         SURFTMP=GI*P(L)
-        WRITE(1,1001)Map2Global(L).IG,Map2Global(L).JG,CCS(L),CCW(L),CCC(L),CCE(L),CCN(L),FPTMP(L),SURFTMP
+        WRITE(1,1001) Map2Global(L).IG, Map2Global(L).JG,CCS(L),CCW(L),CCC(L),CCE(L),CCN(L),FPTMP(L),SURFTMP
       ENDDO
       CLOSE(1)
       OPEN(1,FILE=OUTDIR//'EQTERM.OUT',STATUS='UNKNOWN')
@@ -278,14 +279,14 @@
       OPEN(1,FILE=OUTDIR//'EQTERM.OUT',POSITION='APPEND',STATUS='UNKNOWN')
       WRITE(1,1001)NITER,ISTL_
       DO L=2,LA
-        WRITE(1,1001)Map2Global(L).IG,Map2Global(L).JG,SUB(L),SVB(L),HRUO(L),HRVO(L),HU(L),HV(L)
+        WRITE(1,1001) Map2Global(L).IG, Map2Global(L).JG,SUB(L),SVB(L), HRUO(L), HRVO(L), HU(L), HV(L)
       ENDDO
       CLOSE(1)
       OPEN(1,FILE=OUTDIR//'CFLMAX.OUT')
       CLOSE(1,STATUS='DELETE')
       OPEN(1,FILE=OUTDIR//'CFLMAX.OUT')
       DO L=2,LA
-        WRITE(1,1991)Map2Global(L).IG,Map2Global(L).JG,(CFLUUU(L,K),K=1,KC)
+        WRITE(1,1991) Map2Global(L).IG, Map2Global(L).JG,(CFLUUU(L,K),K=1,KC)
         WRITE(1,1992)(CFLVVV(L,K),K=1,KC)
         WRITE(1,1992)(CFLWWW(L,K),K=1,KC)
         WRITE(1,1992)(CFLCAC(L,K),K=1,KC)
@@ -307,7 +308,7 @@
 1992 FORMAT(10X,12F8.3)
 1111 FORMAT(' *************************************************************************************',/, &
             ' *************************************************************************************',/, &
-            ' NEG DEPTH AT CELL CENTER: Timeday = ',F14.6,'  N = ',I12,'  L, I, J = '3I10,'  Rank = ',I5)
+            ' NEG DEPTH AT CELL CENTER: Timeday = ',F14.6,'  N = ',I12,'  ISTL, L, I, J = '4I10,'  Rank = ',I5)
 1112 FORMAT(' NEG DEPTH AT WEST FACE')
 1113 FORMAT(' NEG DEPTH AT SOUTH FACE')
 6060 FORMAT('  NEG DEPTH AT I,J =',2I4,'  HP,H1P,H2P   =',3(2X,E12.4))

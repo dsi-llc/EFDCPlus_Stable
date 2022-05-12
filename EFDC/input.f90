@@ -93,19 +93,14 @@ SUBROUTINE INPUT(TITLE)
   REAL,ALLOCATABLE,DIMENSION(:) :: CONINIT
   REAL,ALLOCATABLE,DIMENSION(:) :: CONBINIT
 
-  ALLOCATE(RMULADS(NSTM))
-  ALLOCATE(ADDADS(NSTM))
-  ALLOCATE(QSERSM(NDQSER,KCM))
-  ALLOCATE(PFX2(NPFORM,MTM))
-  ALLOCATE(IPARTSP(NTXM))
-  ALLOCATE(CONINIT(KCM), CONBINIT(KBM))
+  Call AllocateDSI(RMULADS,  NSTM,   0.0)      
+  Call AllocateDSI(ADDADS,   NSTM,   0.0)      
+  Call AllocateDSI(QSERSM,   NDQSER, KCM, 0.0)
+  Call AllocateDSI(PFX2,     NPFORM, MTM, 0.0)
+  Call AllocateDSI(IPARTSP,  NTXM,     0)
+  Call AllocateDSI(CONINIT,  KCM,    0.0)
+  Call AllocateDSI(CONBINIT, KBM,    0.0)
 
-  RMULADS=0.
-  ADDADS=0.
-  QSERSM=0.
-  CONINIT = 0.
-  CONBINIT = 0.
-  
   G=9.81
   PI=3.1415926535898
   PI2=2.*PI
@@ -930,9 +925,9 @@ SUBROUTINE INPUT(TITLE)
       IF( NPFORT == 0 )THEN
         DO L=1,NPBS
           ! *** Added global arrays for MPI
-          READ(1,*,IOSTAT=ISO) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), NPFORS, NPSERS_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L)
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), NPFORS, NPSERS_GL(L)
+          WRITE(7,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L)
           IF( ISO > 0 ) GOTO 100
 
           DO M=1,MTIDE
@@ -946,10 +941,10 @@ SUBROUTINE INPUT(TITLE)
         
       ELSEIF( NPFORT == 1 )THEN
         DO L=1,NPBS
-          READ(1,*,IOSTAT=ISO) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
+          WRITE(7,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORS == 0) EXIT
@@ -966,10 +961,10 @@ SUBROUTINE INPUT(TITLE)
         
       ELSEIF( NPFORT == 2 )THEN
         DO L=1,NPBS
-          READ(1,*,IOSTAT=ISO) IPBS_GL(L),JPBS_GL(L),ISPBS_GL(L),NPFORS,NPSERS_GL(L),NPSERS1_GL(L), TPCOORDS_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBS_GL(L),JPBS_GL(L),ISPBS_GL(L), ISPRS_GL(L), NPFORS,NPSERS_GL(L),NPSERS1_GL(L), TPCOORDS_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
+          WRITE(7,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORS == 0) EXIT
@@ -999,31 +994,16 @@ SUBROUTINE INPUT(TITLE)
 
     endif
     
-    IF( NPFORT == 0 )THEN
-      Call Broadcast_Array(IPBS_GL,     master_id)
-      Call Broadcast_Array(JPBS_GL,     master_id)
-      Call Broadcast_Array(ISPBS_GL,    master_id)
-      Call Broadcast_Array(NPSERS_GL,   master_id)
-      Call Broadcast_Array(PCBS_GL,     master_id)
-      Call Broadcast_Array(PSBS_GL,     master_id)
-    ELSEIF( NPFORT == 1 )THEN
-      Call Broadcast_Array(IPBS_GL,     master_id)
-      Call Broadcast_Array(JPBS_GL,     master_id)
-      Call Broadcast_Array(ISPBS_GL,    master_id)
-      Call Broadcast_Array(NPSERS_GL,   master_id)
+    Call Broadcast_Array(IPBS_GL,     master_id)
+    Call Broadcast_Array(JPBS_GL,     master_id)
+    Call Broadcast_Array(ISPBS_GL,    master_id)
+    Call Broadcast_Array(ISPRS_GL,    master_id)
+    Call Broadcast_Array(NPSERS_GL,   master_id)
+    Call Broadcast_Array(PCBS_GL,     master_id)
+    Call Broadcast_Array(PSBS_GL,     master_id)
+    IF( NPFORT > 0 )THEN
       Call Broadcast_Array(NPSERS1_GL,  master_id)
       Call Broadcast_Array(TPCOORDS_GL, master_id)
-      Call Broadcast_Array(PCBS_GL,     master_id)
-      Call Broadcast_Array(PSBS_GL,     master_id)
-    ELSEIF( NPFORT == 2 )THEN
-      Call Broadcast_Array(IPBS_GL,     master_id)
-      Call Broadcast_Array(JPBS_GL,     master_id)
-      Call Broadcast_Array(ISPBS_GL,    master_id)
-      Call Broadcast_Array(NPSERS_GL,   master_id)
-      Call Broadcast_Array(NPSERS1_GL,  master_id)
-      Call Broadcast_Array(TPCOORDS_GL, master_id)
-      Call Broadcast_Array(PCBS_GL,     master_id)
-      Call Broadcast_Array(PSBS_GL,     master_id)
     ENDIF
   ENDIF
 
@@ -1036,9 +1016,9 @@ SUBROUTINE INPUT(TITLE)
       CALL SEEK('C19')
       IF( NPFORT == 0 )THEN
         DO L=1,NPBW
-          READ(1,*,IOSTAT=ISO) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), NPFORW, NPSERW_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L)
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), NPFORW, NPSERW_GL(L)
+          WRITE(7,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORW == 0) EXIT
@@ -1051,10 +1031,10 @@ SUBROUTINE INPUT(TITLE)
         
       ELSEIF( NPFORT == 1 )THEN
         DO L=1,NPBW
-          READ(1,*,IOSTAT=ISO) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
+          WRITE(7,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORW == 0) EXIT
@@ -1072,10 +1052,10 @@ SUBROUTINE INPUT(TITLE)
         
       ELSEIF( NPFORT == 2 )THEN
         DO L=1,NPBW
-          READ(1,*,IOSTAT=ISO) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
+          WRITE(7,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORW == 0) EXIT
@@ -1103,31 +1083,16 @@ SUBROUTINE INPUT(TITLE)
       ENDIF
     endif  
     
-    IF( NPFORT == 0 )THEN
-      Call Broadcast_Array(IPBW_GL,     master_id)
-      Call Broadcast_Array(JPBW_GL,     master_id)
-      Call Broadcast_Array(ISPBW_GL,    master_id)
-      Call Broadcast_Array(NPSERW_GL,   master_id)
-      Call Broadcast_Array(PCBW_GL,     master_id)
-      Call Broadcast_Array(PSBW_GL,     master_id)
-    ELSEIF( NPFORT == 1 )THEN
-      Call Broadcast_Array(IPBW_GL,     master_id)
-      Call Broadcast_Array(JPBW_GL,     master_id)
-      Call Broadcast_Array(ISPBW_GL,    master_id)
-      Call Broadcast_Array(NPSERW_GL,   master_id)
+    Call Broadcast_Array(IPBW_GL,     master_id)
+    Call Broadcast_Array(JPBW_GL,     master_id)
+    Call Broadcast_Array(ISPBW_GL,    master_id)
+    Call Broadcast_Array(ISPRW_GL,    master_id)
+    Call Broadcast_Array(NPSERW_GL,   master_id)
+    Call Broadcast_Array(PCBW_GL,     master_id)
+    Call Broadcast_Array(PSBW_GL,     master_id)
+    IF( NPFORT > 0 )THEN
       Call Broadcast_Array(NPSERW1_GL,  master_id)
       Call Broadcast_Array(TPCOORDW_GL, master_id)
-      Call Broadcast_Array(PCBW_GL,     master_id)
-      Call Broadcast_Array(PSBW_GL,     master_id)
-    ELSEIF( NPFORT == 2 )THEN
-      Call Broadcast_Array(IPBW_GL,     master_id)
-      Call Broadcast_Array(JPBW_GL,     master_id)
-      Call Broadcast_Array(ISPBW_GL,    master_id)
-      Call Broadcast_Array(NPSERW_GL,   master_id)
-      Call Broadcast_Array(NPSERW1_GL,  master_id)
-      Call Broadcast_Array(TPCOORDW_GL, master_id)
-      Call Broadcast_Array(PCBW_GL,     master_id)
-      Call Broadcast_Array(PSBW_GL,     master_id)
     ENDIF
   ENDIF
 
@@ -1139,10 +1104,10 @@ SUBROUTINE INPUT(TITLE)
       CALL SEEK('C20')
       IF( NPFORT == 0 )THEN
         DO L=1,NPBE
-          READ(1,*,IOSTAT=ISO) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), NPFORE, NPSERE_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), NPFORE, NPSERE_GL(L)
+          WRITE(7,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORE == 0) EXIT
@@ -1155,10 +1120,10 @@ SUBROUTINE INPUT(TITLE)
         
       ELSEIF( NPFORT == 1 )THEN
         DO L=1,NPBE
-          READ(1,*,IOSTAT=ISO) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
+          WRITE(7,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORE == 0) EXIT
@@ -1176,10 +1141,10 @@ SUBROUTINE INPUT(TITLE)
         
       ELSEIF( NPFORT == 2 )THEN
         DO L=1,NPBE
-          READ(1,*,IOSTAT=ISO) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
+          WRITE(7,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORE == 0) EXIT
@@ -1207,31 +1172,16 @@ SUBROUTINE INPUT(TITLE)
       ENDIF
     endif
 
-    IF( NPFORT == 0 )THEN
-      Call Broadcast_Array(IPBE_GL,     master_id)
-      Call Broadcast_Array(JPBE_GL,     master_id)
-      Call Broadcast_Array(ISPBE_GL,    master_id)
-      Call Broadcast_Array(NPSERE_GL,   master_id)
-      Call Broadcast_Array(PCBE_GL,     master_id)
-      Call Broadcast_Array(PSBE_GL,     master_id)
-    ELSEIF( NPFORT == 1 )THEN
-      Call Broadcast_Array(IPBE_GL,     master_id)
-      Call Broadcast_Array(JPBE_GL,     master_id)
-      Call Broadcast_Array(ISPBE_GL,    master_id)
-      Call Broadcast_Array(NPSERE_GL,   master_id)
+    Call Broadcast_Array(IPBE_GL,     master_id)
+    Call Broadcast_Array(JPBE_GL,     master_id)
+    Call Broadcast_Array(ISPBE_GL,    master_id)
+    Call Broadcast_Array(ISPRE_GL,    master_id)
+    Call Broadcast_Array(NPSERE_GL,   master_id)
+    Call Broadcast_Array(PCBE_GL,     master_id)
+    Call Broadcast_Array(PSBE_GL,     master_id)
+    IF( NPFORT > 0 )THEN
       Call Broadcast_Array(NPSERE1_GL,  master_id)
       Call Broadcast_Array(TPCOORDE_GL, master_id)
-      Call Broadcast_Array(PCBE_GL,     master_id)
-      Call Broadcast_Array(PSBE_GL,     master_id)
-    ELSEIF( NPFORT == 2 )THEN
-      Call Broadcast_Array(IPBE_GL,     master_id)
-      Call Broadcast_Array(JPBE_GL,     master_id)
-      Call Broadcast_Array(ISPBE_GL,    master_id)
-      Call Broadcast_Array(NPSERE_GL,   master_id)
-      Call Broadcast_Array(NPSERE1_GL,  master_id)
-      Call Broadcast_Array(TPCOORDE_GL, master_id)
-      Call Broadcast_Array(PCBE_GL,     master_id)
-      Call Broadcast_Array(PSBE_GL,     master_id)
     ENDIF
   ENDIF
 
@@ -1244,10 +1194,10 @@ SUBROUTINE INPUT(TITLE)
       CALL SEEK('C21')
       IF( NPFORT == 0 )THEN
         DO L=1,NPBN
-          READ(1,*,IOSTAT=ISO) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), NPFORN, NPSERN_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), NPFORN, NPSERN_GL(L)
+          WRITE(7,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORN == 0) EXIT
@@ -1260,10 +1210,10 @@ SUBROUTINE INPUT(TITLE)
         
       ELSEIF( NPFORT >= 1 )THEN
         DO L=1,NPBN
-          READ(1,*,IOSTAT=ISO) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBN_GL(L),JPBN_GL(L),ISPBN_GL(L),NPFORN,NPSERN_GL(L),NPSERN1_GL(L),TPCOORDN_GL(L)
+          WRITE(7,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORN == 0) EXIT
@@ -1281,10 +1231,10 @@ SUBROUTINE INPUT(TITLE)
         
       ELSEIF( NPFORT == 2 )THEN
         DO L=1,NPBN
-          READ(1,*,IOSTAT=ISO) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
+          READ(1,*,IOSTAT=ISO) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
 
           WRITE(7,1002)NCARD
-          WRITE(7,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
+          WRITE(7,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
           IF( ISO > 0 ) GOTO 100
           DO M=1,MTIDE
             IF( NPFORN == 0) EXIT
@@ -1312,31 +1262,16 @@ SUBROUTINE INPUT(TITLE)
       ENDIF
     endif
 
-    IF( NPFORT == 0 )THEN
-      Call Broadcast_Array(IPBN_GL,     master_id)
-      Call Broadcast_Array(JPBN_GL,     master_id)
-      Call Broadcast_Array(ISPBN_GL,    master_id)
-      Call Broadcast_Array(NPSERN_GL,   master_id)
-      Call Broadcast_Array(PCBN_GL,     master_id)
-      Call Broadcast_Array(PSBN_GL,     master_id)
-    ELSEIF( NPFORT == 1 )THEN
-      Call Broadcast_Array(IPBN_GL,     master_id)
-      Call Broadcast_Array(JPBN_GL,     master_id)
-      Call Broadcast_Array(ISPBN_GL,    master_id)
-      Call Broadcast_Array(NPSERN_GL,   master_id)
+    Call Broadcast_Array(IPBN_GL,     master_id)
+    Call Broadcast_Array(JPBN_GL,     master_id)
+    Call Broadcast_Array(ISPBN_GL,    master_id)
+    Call Broadcast_Array(ISPRN_GL,    master_id)
+    Call Broadcast_Array(NPSERN_GL,   master_id)
+    Call Broadcast_Array(PCBN_GL,     master_id)
+    Call Broadcast_Array(PSBN_GL,     master_id)
+    IF( NPFORT > 0 )THEN
       Call Broadcast_Array(NPSERN1_GL,  master_id)
       Call Broadcast_Array(TPCOORDN_GL, master_id)
-      Call Broadcast_Array(PCBN_GL,     master_id)
-      Call Broadcast_Array(PSBN_GL,     master_id)
-    ELSEIF( NPFORT == 2 )THEN
-      Call Broadcast_Array(IPBN_GL,     master_id)
-      Call Broadcast_Array(JPBN_GL,     master_id)
-      Call Broadcast_Array(ISPBN_GL,    master_id)
-      Call Broadcast_Array(NPSERN_GL,   master_id)
-      Call Broadcast_Array(NPSERN1_GL,  master_id)
-      Call Broadcast_Array(TPCOORDN_GL, master_id)
-      Call Broadcast_Array(PCBN_GL,     master_id)
-      Call Broadcast_Array(PSBN_GL,     master_id)
     ENDIF
   ENDIF
 
@@ -1609,6 +1544,9 @@ SUBROUTINE INPUT(TITLE)
       CALL SEEK('C31')
       MMIN=MMAX+1
       MMAX=MMAX+NSED+NSND
+      IF( ISTRAN(8) > 0 )THEN
+        MMAX = MMAX + NWQV
+      ENDIF
       DO L=1,NQJPIJ
         READ(1,*,IOSTAT=ISO) (CQSE(M),M=MMIN,MMAX)
         
@@ -1616,12 +1554,15 @@ SUBROUTINE INPUT(TITLE)
         WRITE(7,*) (CQSE(M),M=MMIN,MMAX)
         IF( ISO > 0 ) GOTO 100
         
+        MS = MAX(MMIN-1, 0)
         IF( ICALJP(L) == 1 )THEN
-          DO MS=MMIN,MMAX
-            CWRCJP(L,MS)=0.
-            DO K=1,KC
-              CQCJP(K,L,MS)=CQSE(MS)
-            ENDDO
+          DO M = 1,NWQV
+            IF( ISKINETICS(M) > 0 )THEN
+              MS = MS + 1
+              DO K=1,KC
+                CQCJP(K,L,MS) = CQSE(M + MMIN - 1)        ! *** Only used constituents that will be simulated
+              ENDDO
+            ENDIF
           ENDDO
         ELSE
           DO MS=MMIN,MMAX
@@ -2320,10 +2261,10 @@ SUBROUTINE INPUT(TITLE)
     if( process_id == master_id )THEN
       CALL SEEK('C44')
       DO NT=1,NTOX
-        READ(1,*,IOSTAT=ISO)NDUM,ISTOC(NT),DIFTOX(NT),DIFTOXS(NT),PDIFTOX(NT),DPDIFTOX(NT)
+        READ(1,*,IOSTAT=ISO) NDUM, ISTOC(NT), DIFTOX(NT), DIFTOXS(NT), PDIFTOX(NT), DPDIFTOX(NT)
 
         WRITE(7,1002)NCARD
-        WRITE(7,*)NDUM,ISTOC(NT),DIFTOX(NT),DIFTOXS(NT),PDIFTOX(NT),DPDIFTOX(NT)
+        WRITE(7,* )NDUM, ISTOC(NT), DIFTOX(NT), DIFTOXS(NT), PDIFTOX(NT), DPDIFTOX(NT)
         IF( ISO > 0 ) GOTO 100
       ENDDO
     endif

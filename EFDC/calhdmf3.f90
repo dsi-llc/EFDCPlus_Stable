@@ -131,11 +131,11 @@ SUBROUTINE CALHDMF3(ISTL_)
         
         ! *** HORIZONTAL X COMPONENT SHEAR AT SW CORNER
         DYU1(L,K) = 2.*SUB(LS)*(U1(L,K)-U1(LS,K))/(DYU(L)+DYU(LS))
-        IF( SVB(L) < 0.5 )DYU1(L,K) = 2.0*U1(L,K)/DYU(L)
+        IF( SVB(L) < 0.5 ) DYU1(L,K) = 2.0*U1(L,K)/DYU(L)
 
         ! *** HORIZONTAL Y COMPONENT SHEAR AT SW CORNER
         DXV1(L,K) = 2.*SVB(LW)*(V1(L,K)-V1(LW,K))/(DXV(L)+DXV(LW))
-        IF( SUB(L) < 0.5 )DXV1(L,K) = 2.0*V1(L,K)/DXV(L)
+        IF( SUB(L) < 0.5 ) DXV1(L,K) = 2.0*V1(L,K)/DXV(L)
 
       ENDDO
     ENDDO

@@ -13,6 +13,7 @@ MODULE SCANINPMOD
   Use Allocate_Initialize
   Use Variables_WQ
   USE HYDSTRUCMOD
+  Use Variables_Propwash
 
   Use Variables_MPI
   Use Variables_MPI_Write_Out
@@ -40,7 +41,6 @@ SUBROUTINE SCANEFDC(NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
   REAL    :: DIFTOXNT, DIFTOXSNT
   REAL    :: PDIFTOXNT, DPDIFTOXNT, R, TC1, TAV1
   REAL    :: R1TMP, R2TMP, R3TMP, R4TMP, R5TMP, PMIXSF
-
 
   ! *** ********************************************
   if( process_id == master_id )THEN
@@ -231,19 +231,20 @@ SUBROUTINE SCANEFDC(NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
 
   if( process_id == master_id )THEN
     CALL SEEK('C14')
-    READ(1,*,ERR=10,END=30)MTIDE,NWSER,NASER,ISGWIT,ISCHAN,ISWAVE,ITIDASM,ISPERC,ISBODYF,ISPNHYDS
+    READ(1,*,ERR=10,END=30) MTIDE, NWSER, NASER, ISGWIT, ISCHAN, ISWAVE, ITIDASM, ISPERC, ISBODYF, ISPNHYDS, ISPROPWASH
   end if
 
-  Call Broadcast_Scalar(MTIDE,    master_id)
-  Call Broadcast_Scalar(NWSER,    master_id)
-  Call Broadcast_Scalar(NASER,    master_id)
-  Call Broadcast_Scalar(ISGWIT,   master_id)
-  Call Broadcast_Scalar(ISCHAN,   master_id)
-  Call Broadcast_Scalar(ISWAVE,   master_id)
-  Call Broadcast_Scalar(ITIDASM,  master_id)
-  Call Broadcast_Scalar(ISPERC,   master_id)
-  Call Broadcast_Scalar(ISBODYF,  master_id)
-  Call Broadcast_Scalar(ISPNHYDS, master_id)
+  Call Broadcast_Scalar(MTIDE,      master_id)
+  Call Broadcast_Scalar(NWSER,      master_id)
+  Call Broadcast_Scalar(NASER,      master_id)
+  Call Broadcast_Scalar(ISGWIT,     master_id)
+  Call Broadcast_Scalar(ISCHAN,     master_id)
+  Call Broadcast_Scalar(ISWAVE,     master_id)
+  Call Broadcast_Scalar(ITIDASM,    master_id)
+  Call Broadcast_Scalar(ISPERC,     master_id)
+  Call Broadcast_Scalar(ISBODYF,    master_id)
+  Call Broadcast_Scalar(ISPNHYDS,   master_id)
+  Call Broadcast_Scalar(ISPROPWASH, master_id)
 
   MTM=MAX(1,MTIDE)+1
   NWSERM=MAX(1,NWSER)
@@ -312,7 +313,6 @@ SUBROUTINE SCANEFDC(NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
   Call Broadcast_Scalar(NCSER5, master_id)
   Call Broadcast_Scalar(NCSER6, master_id)
   Call Broadcast_Scalar(NCSER7, master_id)
-
 
   ALLOCATE(TSSAL(NCSER1),TSTEM(NCSER2),TSDYE(NCSER3,NDYE),TSSFL(NCSER4))
   ALLOCATE(TSTOX(NCSER5,NTOX),TSSED(NCSER6,NSED),TSSND(NCSER7,NSND))
@@ -964,12 +964,13 @@ SUBROUTINE SCANGWSR
   RETURN
 
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: GWSER.INP IN SERIES:',NS,', POINT:',I
-  WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: GWSER.INP IN SERIES:',NS,', POINT:',I
-  CALL STOPP('.')
+   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: GWSER.INP IN SERIES:',NS,', POINT:',I
+   CALL STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: GWSER.INP'
-  WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: GWSER.INP'
-  CALL STOPP('.')
+   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: GWSER.INP'
+   CALL STOPP('.')
+   
 END SUBROUTINE
 
 SUBROUTINE SCANASER
@@ -1043,15 +1044,16 @@ SUBROUTINE SCANASER
   RETURN
 
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: ASER.INP IN SERIES:',NS,', POINT:',I
-  WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: ASER.INP IN SERIES:',NS,', POINT:',I
-  CALL STOPP('.')
+   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: ASER.INP IN SERIES:',NS,', POINT:',I
+   CALL STOPP('.')
+  
 30 WRITE(6,'(A)') '  READ ERROR IN INPUT FILE'
-  WRITE(8,'(A)') '  READ ERROR IN INPUT FILE'
-  CALL STOPP('.')
+   WRITE(8,'(A)') '  READ ERROR IN INPUT FILE'
+   CALL STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE'
-  WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE'
-  CALL STOPP('.')
+   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE'
+   CALL STOPP('.')
 
 END SUBROUTINE
 
@@ -1100,16 +1102,15 @@ SUBROUTINE SCANSSER
   endif!***End on master process
 
   RETURN
-  ! *** ****************************
-  if( process_id == master_id )THEN
-20  WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SSER.INP IN SERIES:',NS,', POINT:',J
-    WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SSER.INP IN SERIES:',NS,', POINT:',J
-    CALL STOPP('.')
+  
+   ! *** ****************************
+20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SSER.INP IN SERIES:',NS,', POINT:',J
+   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SSER.INP IN SERIES:',NS,', POINT:',J
+   CALL STOPP('.')
 
-40  WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: SSER.INP'
-    WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: SSER.INP'
-    CALL STOPP('.')
-  endif
+40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: SSER.INP'
+   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: SSER.INP'
+   CALL STOPP('.')
 
 END SUBROUTINE
 
@@ -1264,12 +1265,13 @@ SUBROUTINE SCANDSER
   RETURN
 
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: DSER.INP IN SERIES:',NS,', POINT:',I
-  WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: DSER.INP IN SERIES:',NS,', POINT:',I
-  CALL STOPP('.')
+   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: DSER.INP IN SERIES:',NS,', POINT:',I
+   CALL STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: DSER.INP'
-  WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: DSER.INP'
-  CALL STOPP('.')
+   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: DSER.INP'
+   CALL STOPP('.')
+   
 END SUBROUTINE
 
 SUBROUTINE SCANSFSR
@@ -1317,12 +1319,13 @@ SUBROUTINE SCANSFSR
   RETURN
 
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SFSER.INP IN SERIES:',NS,', POINT:',J
-  WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SFSER.INP IN SERIES:',NS,', POINT:',J
-  CALL STOPP('.')
+   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SFSER.INP IN SERIES:',NS,', POINT:',J
+   CALL STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: SFSER.INP'
-  WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: SFSER.INP'
-  CALL STOPP('.')
+   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: SFSER.INP'
+   CALL STOPP('.')
+   
 END SUBROUTINE
 
 SUBROUTINE SCANQSER
@@ -1372,12 +1375,13 @@ SUBROUTINE SCANQSER
   RETURN
 
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QSER.INP IN SERIES:',NS,', POINT:',J
-  WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QSER.INP IN SERIES:',NS,', POINT:',J
-  CALL STOPP('.')
+   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QSER.INP IN SERIES:',NS,', POINT:',J
+   CALL STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: QSER.INP'
-  WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: QSER.INP'
-  CALL STOPP('.')
+   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: QSER.INP'
+   CALL STOPP('.')
+   
 END SUBROUTINE
 
 SUBROUTINE SCANQWSER
@@ -1434,11 +1438,11 @@ SUBROUTINE SCANQWSER
   RETURN
 
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QWRS.INP IN SERIES:',NS,', POINT:',J
-  WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QWRS.INP IN SERIES:',NS,', POINT:',J
+   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QWRS.INP IN SERIES:',NS,', POINT:',J
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: QWRS.INP'
-  WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: QWRS.INP'
-  CALL STOPP('.')
+   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: QWRS.INP'
+   CALL STOPP('.')
 
 END SUBROUTINE
 
@@ -1470,12 +1474,13 @@ SUBROUTINE SCANPSER
   RETURN
 
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: PSER.INP IN SERIES:',NS,', POINT:',I
-  WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: PSER.INP IN SERIES:',NS,', POINT:',I
-  CALL STOPP('.')
+   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: PSER.INP IN SERIES:',NS,', POINT:',I
+   CALL STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: PSER.INP'
-  WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: PSER.INP'
-  CALL STOPP('.')
+   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: PSER.INP'
+   CALL STOPP('.')
+   
 END SUBROUTINE
 
 SUBROUTINE SCANWSER
@@ -1521,12 +1526,13 @@ SUBROUTINE SCANWSER
   RETURN
 
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: WSER.INP IN SERIES:',NS,', POINT:',I
-  WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: WSER.INP IN SERIES:',NS,', POINT:',I
-  CALL STOPP('.')
+   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: WSER.INP IN SERIES:',NS,', POINT:',I
+   CALL STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: WSER.INP'
-  WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: WSER.INP'
-  CALL STOPP('.')
+   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: WSER.INP'
+   CALL STOPP('.')
+   
 END SUBROUTINE
 
 SUBROUTINE SCANQCTL
@@ -1582,8 +1588,8 @@ SUBROUTINE SCANQCTL
   RETURN
 
 20 WRITE(6,'(A)') ' READ ERROR IN FILE: '//TRIM(CFILE)
-  WRITE(8,'(A)') ' READ ERROR IN FILE: '//TRIM(CFILE)
-  CALL STOPP('.')
+   WRITE(8,'(A)') ' READ ERROR IN FILE: '//TRIM(CFILE)
+   CALL STOPP('.')
 
 END SUBROUTINE
 
@@ -1609,6 +1615,7 @@ SUBROUTINE SCANWQ
 
   ! *** ****************************
   if( process_id == master_id )THEN 
+    write(*,'(A)') 'SCANNING EUTROPHICATION CONTROL FILE'
     
     json_data => fson_parse("wq_3dwc.jnp")
     
@@ -1854,6 +1861,8 @@ SUBROUTINE SCANWQ
   MACDRAG = 0
   if( process_id == master_id .and. NALGAE > 0 )THEN  ! *** Only read wq_biota when model simulates algae - DKT
     ! *** SCAN WQ_BIOTA.JNP FILE
+    write(*,'(A)') 'SCANNING EUTROPHICATION BIOTA CONFIGURATION'
+
     json_data => fson_parse("wq_biota.jnp")
     CALL fson_get(json_data, "groups", algaegroups)
     DO NAL = 1, fson_value_count(algaegroups)
@@ -2009,6 +2018,7 @@ SUBROUTINE SCANWQ
   ! *** Sediment Diagenesis
   IF( IWQBEN == 1 )THEN
     if( process_id == master_id )THEN
+      write(*,'(A)') 'SCANNING SEDIMENT DIAGENESIS CONFIGURATION'
       json_data => fson_parse("wq_3dsd.jnp")
 
       Call fson_get(json_data, "initial_condition_option", ISMICI)
@@ -2190,18 +2200,36 @@ SUBROUTINE SCNTXSED
   ENDDO
   RETURN
 
+   ! *** ****************************
+20 WRITE(6,'(A)') '*** READ ERROR IN FILE: '//CFILE
+   WRITE(8,'(A)')    '*** READ ERROR IN FILE: '//CFILE
+   CALL STOPP('.')
+
+40 WRITE(6,'(A)') '*** UNEXPECTED END OF FILE: '//CFILE
+   WRITE(8,'(A)')    '*** UNEXPECTED END OF FILE: '//CFILE
+   CALL STOPP('.')
+
+END SUBROUTINE SCNTXSED
+
+SUBROUTINE SCANPROPWASH
+
+  Use fson
+  Use fson_value_m, Only: fson_value_count, fson_value_get
+
+  Type(fson_value), Pointer :: json_data
+  
   ! *** ****************************
-  if( process_id == master_id )THEN
-20  WRITE(6,'(A)') '*** READ ERROR IN FILE: '//CFILE
-    WRITE(8,'(A)')    '*** READ ERROR IN FILE: '//CFILE
-    CALL STOPP('.')
+  IF( process_id == master_id )THEN
+    ! *** Scan the propwash config file
+    write(*,'(A)') 'SCANNING PROPWASH CONFIGURATION'
 
-40  WRITE(6,'(A)') '*** UNEXPECTED END OF FILE: '//CFILE
-    WRITE(8,'(A)')    '*** UNEXPECTED END OF FILE: '//CFILE
-    CALL STOPP('.')
-  end if!***End on master process
+    ! *** Open the propwash ship data file
+    json_data => fson_parse("propwash_config.jnp")
+    
+  ENDIF
 
-END SUBROUTINE
+
+END SUBROUTINE SCANPROPWASH
 
 SUBROUTINE OPENFILE(INFILE)
 

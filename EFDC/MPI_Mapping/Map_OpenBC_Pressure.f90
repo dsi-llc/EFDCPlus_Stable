@@ -47,7 +47,6 @@
 
   ii = 0
   DO LL=1,NPBW_GL
-
     I = IG2IL(IPBW_GL(LL))
     J = JG2JL(JPBW_GL(LL))
 
@@ -57,13 +56,15 @@
           II = II + 1
           IPBW(II) = I
           JPBW(II) = J
-          NPSERW(II)  = NPSERW_GL(LL)
-          IF( NPFORT >= 1 ) NPSERW1(II) = NPSERW1_GL(LL)
-          ISPBW(II)   = ISPBW_GL(LL)
           DO M = 1,MTIDE
             PCBW(II,M) = PCBW_GL(LL,M)
             PSBW(II,M) = PSBW_GL(LL,M)
           END DO
+          ISPRW(II)   = ISPRW_GL(LL)
+          NPSERW(II)  = NPSERW_GL(LL)
+          IF( NPFORT >= 1 ) NPSERW1(II) = NPSERW1_GL(LL)
+          ISPBW(II)   = ISPBW_GL(LL)
+          
           NPBW = NPBW + 1
         END IF
       END IF
@@ -85,9 +86,10 @@
             PCBS(II,M) = PCBS_GL(LL,M)
             PSBS(II,M) = PSBS_GL(LL,M)
           END DO
+          ISPRS(II)   = ISPRS_GL(LL)
           NPSERS(II)  = NPSERS_GL(LL)
           ISPBS(II)   = ISPBS_GL(LL)
-          IF( NPFORT >= 1 ) NPSERS1(II) = NPSERS1_GL(LL) !***Added Z.M.
+          IF( NPFORT >= 1 ) NPSERS1(II) = NPSERS1_GL(LL)
 
           NPBS = NPBS  + 1
         END IF
@@ -100,19 +102,22 @@
   DO LL = 1,NPBE_GL
     I = IG2IL(IPBE_GL(LL))
     J = JG2JL(JPBE_GL(LL))
+
     IF(  I > 0 .AND. I <= IC )THEN
       IF(  J > 0 .AND. J <= JC )THEN
         IF(  IJCT(I,J)  >  0 .AND. IJCT(I,J).LT.9 )THEN
           II = II + 1
           IPBE(II) = I
           JPBE(II) = J
-          NPSERE(II) = NPSERE_GL(LL)
-          ISPBE(II)  = ISPBE_GL(LL)
-          IF( NPFORT >= 1 ) NPSERE1(II) = NPSERE1_GL(LL) !***Added Z.M.
           DO M = 1, MTIDE
             PCBE(II,M) = PCBE_GL(LL,M)
             PSBE(II,M) = PSBE_GL(LL,M)
           END DO
+          ISPRE(II)  = ISPRE_GL(LL)
+          NPSERE(II) = NPSERE_GL(LL)
+          ISPBE(II)  = ISPBE_GL(LL)
+          IF( NPFORT >= 1 ) NPSERE1(II) = NPSERE1_GL(LL)
+        
           NPBE = NPBE  + 1
         END IF
       END IF
@@ -129,13 +134,15 @@
           II = II + 1
           IPBN(II) = I
           JPBN(II) = J
-          NPSERN(II) = NPSERN_GL(LL)
-          ISPBN(II)  = ISPBN_GL(LL)
-          IF( NPFORT >= 1 ) NPSERN1(II) = NPSERN1_GL(LL) !***Added Z.M.
           DO M = 1,MTIDE
             PCBN(II,M) = PCBN_GL(LL,M)
             PSBN(II,M) = PSBN_GL(LL,M)
           END DO
+          ISPRN(II)  = ISPRN_GL(LL)
+          NPSERN(II) = NPSERN_GL(LL)
+          ISPBN(II)  = ISPBN_GL(LL)
+          IF( NPFORT >= 1 ) NPSERN1(II) = NPSERN1_GL(LL)
+
           NPBN = NPBN  + 1
         END IF
       END IF

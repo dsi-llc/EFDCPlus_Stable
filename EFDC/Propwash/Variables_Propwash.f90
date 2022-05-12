@@ -6,7 +6,21 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-Module Variables_Propwash
+!-------------------------------------------------------------------------------------------!
+
+! Module: Propeller Wash: Variables_Propwash
+!
+!> @authors Paul M. Craig with Zander Mausolff and Luis Bastidas
+!-------------------------------------------------------------------------------------------!
+! CHANGE RECORD
+! DATE MODIFIED   BY                DESCRIPTION
+!-------------------------------------------------------------------------------------------!
+!    2020-01      Zander Mausolff   Initially added basic propwash structure
+!    2020-12      Paul M. Craig     Finished propeller wash with linkage to the SEDZLJ
+!                                   and toxics module
+!    2021-12      Paul M. Craig     Added propeller jet efflux momentum to EFDC+ flow field
+!-------------------------------------------------------------------------------------------!
+  Module Variables_Propwash
 
   Use GLOBAL    
     

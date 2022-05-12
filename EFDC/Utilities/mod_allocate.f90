@@ -6,7 +6,7 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-! @details Performs allocation with initialization
+! @details Performs array allocation with initialization
 ! @author Paul M. Craig
 ! @date 2020-10-31
 Module Allocate_Initialize
@@ -37,12 +37,19 @@ Module Allocate_Initialize
   Contains
  
 ! *****************************************************************************************
+! *** Number and size of arrays are defined by the integer variables: size1,size2,size3, size4
+! *** If a size is < 0, then that dimension is defined as ranging from 0 to ABS(size)
+  
 SUBROUTINE AllocateDSI_Integer1(ArrIn, size1, iVal)
 
   Integer, Allocatable, Intent(inout) :: ArrIn(:)
   Integer, Intent(in)    :: size1, ival
   
-  Allocate(ArrIn(size1))
+  if( size1 < 0 )then
+    Allocate(ArrIn(0:abs(size1)))
+  else
+    Allocate(ArrIn(size1))
+  endif
   
   ArrIn = iVal
   
@@ -53,7 +60,15 @@ SUBROUTINE AllocateDSI_Integer2(ArrIn, size1, size2, iVal)
   Integer, Allocatable, Intent(inout) :: ArrIn(:,:)
   Integer, Intent(in)    :: size1, size2, ival
   
-  Allocate(ArrIn(size1,size2))
+  if( size1 > 0 .and. size2 > 0 )then
+    Allocate(ArrIn(size1, size2))
+  elseif( size1 < 0 .and. size2 > 0 )then
+    Allocate(ArrIn(0:abs(size1), size2))
+  elseif( size1 > 0 .and. size2 < 0 )then
+    Allocate(ArrIn(size1, 0:abs(size2)))
+  else
+    Allocate(ArrIn(0:abs(size1), 0:abs(size2)))
+  endif
   
   ArrIn = iVal
   
@@ -64,7 +79,17 @@ SUBROUTINE AllocateDSI_Integer3(ArrIn, size1, size2, size3, iVal)
   Integer, Allocatable, Intent(inout) :: ArrIn(:,:,:)
   Integer, Intent(in)    :: size1, size2, size3, ival
   
-  Allocate(ArrIn(size1,size2,size3))
+  if( size1 > 0 .and. size2 > 0  .and. size3 > 0 )then
+    Allocate(ArrIn(size1, size2, size3))
+  elseif( size1 < 0 .and. size2 > 0 .and. size3 > 0 )then
+    Allocate(ArrIn(0:abs(size1), size2, size3))
+  elseif( size1 > 0 .and. size2 < 0 .and. size3 > 0 )then
+    Allocate(ArrIn(size1, 0:abs(size2), size3))
+  elseif( size1 > 0 .and. size2 > 0 .and. size3 < 0 )then
+    Allocate(ArrIn(size1, size2, 0:abs(size3)))
+  else
+    Allocate(ArrIn(0:abs(size1), 0:abs(size2), 0:abs(size3)))
+  endif
   
   ArrIn = iVal
   
@@ -77,7 +102,11 @@ SUBROUTINE AllocateDSI_Logical1(ArrIn, size1, lVal)
   Integer, Intent(in)    :: size1
   Logical, Intent(in)    :: lval
   
-  Allocate(ArrIn(size1))
+  if( size1 < 0 )then
+    Allocate(ArrIn(0:abs(size1)))
+  else
+    Allocate(ArrIn(size1))
+  endif
   
   ArrIn = lVal
   
@@ -89,7 +118,15 @@ SUBROUTINE AllocateDSI_Logical2(ArrIn, size1, size2, lval)
   Integer, Intent(in)    :: size1, size2
   Logical,    Intent(in)    :: lval
   
-  Allocate(ArrIn(size1,size2))
+  if( size1 > 0 .and. size2 > 0 )then
+    Allocate(ArrIn(size1, size2))
+  elseif( size1 < 0 .and. size2 > 0 )then
+    Allocate(ArrIn(0:abs(size1), size2))
+  elseif( size1 > 0 .and. size2 < 0 )then
+    Allocate(ArrIn(size1, 0:abs(size2)))
+  else
+    Allocate(ArrIn(0:abs(size1), 0:abs(size2)))
+  endif
   
   ArrIn = lval
   
@@ -102,7 +139,11 @@ SUBROUTINE AllocateDSI_Real1(ArrIn, size1, val)
   Integer, Intent(in) :: size1
   Real,    Intent(in) :: val
   
-  Allocate(ArrIn(size1))
+  if( size1 < 0 )then
+    Allocate(ArrIn(0:abs(size1)))
+  else
+    Allocate(ArrIn(size1))
+  endif
   
   ArrIn = Val
   
@@ -114,7 +155,15 @@ SUBROUTINE AllocateDSI_Real2(ArrIn, size1, size2, val)
   Integer, Intent(in)    :: size1, size2
   Real,    Intent(in)    :: val
   
-  Allocate(ArrIn(size1,size2))
+  if( size1 > 0 .and. size2 > 0 )then
+    Allocate(ArrIn(size1, size2))
+  elseif( size1 < 0 .and. size2 > 0 )then
+    Allocate(ArrIn(0:abs(size1), size2))
+  elseif( size1 > 0 .and. size2 < 0 )then
+    Allocate(ArrIn(size1, 0:abs(size2)))
+  else
+    Allocate(ArrIn(0:abs(size1), 0:abs(size2)))
+  endif
   
   ArrIn = Val
   
@@ -126,7 +175,17 @@ SUBROUTINE AllocateDSI_Real3(ArrIn, size1, size2, size3, val)
   Integer, Intent(in)    :: size1, size2, size3
   Real,    Intent(in)    :: val
   
-  Allocate(ArrIn(size1,size2,size3))
+  if( size1 > 0 .and. size2 > 0  .and. size3 > 0 )then
+    Allocate(ArrIn(size1, size2, size3))
+  elseif( size1 < 0 .and. size2 > 0 .and. size3 > 0 )then
+    Allocate(ArrIn(0:abs(size1), size2, size3))
+  elseif( size1 > 0 .and. size2 < 0 .and. size3 > 0 )then
+    Allocate(ArrIn(size1, 0:abs(size2), size3))
+  elseif( size1 > 0 .and. size2 > 0 .and. size3 < 0 )then
+    Allocate(ArrIn(size1, size2, 0:abs(size3)))
+  else
+    Allocate(ArrIn(0:abs(size1), 0:abs(size2), 0:abs(size3)))
+  endif
   
   ArrIn = Val
   
@@ -151,7 +210,11 @@ SUBROUTINE AllocateDSI_RKD1(ArrIn, size1, val)
   Integer, Intent(in) :: size1
   Real,    Intent(in) :: val
   
-  Allocate(ArrIn(size1))
+  if( size1 < 0 )then
+    Allocate(ArrIn(0:abs(size1)))
+  else
+    Allocate(ArrIn(size1))
+  endif
   
   ArrIn = Val
   
@@ -163,7 +226,15 @@ SUBROUTINE AllocateDSI_RKD2(ArrIn, size1, size2, val)
   Integer, Intent(in)    :: size1, size2
   Real,    Intent(in)    :: val
   
-  Allocate(ArrIn(size1,size2))
+  if( size1 > 0 .and. size2 > 0 )then
+    Allocate(ArrIn(size1, size2))
+  elseif( size1 < 0 .and. size2 > 0 )then
+    Allocate(ArrIn(0:abs(size1), size2))
+  elseif( size1 > 0 .and. size2 < 0 )then
+    Allocate(ArrIn(size1, 0:abs(size2)))
+  else
+    Allocate(ArrIn(0:abs(size1), 0:abs(size2)))
+  endif
   
   ArrIn = Val
   
@@ -175,7 +246,17 @@ SUBROUTINE AllocateDSI_RKD3(ArrIn, size1, size2, size3, val)
   Integer, Intent(in)    :: size1, size2, size3
   Real,    Intent(in)    :: val
   
-  Allocate(ArrIn(size1,size2,size3))
+  if( size1 > 0 .and. size2 > 0  .and. size3 > 0 )then
+    Allocate(ArrIn(size1, size2, size3))
+  elseif( size1 < 0 .and. size2 > 0 .and. size3 > 0 )then
+    Allocate(ArrIn(0:abs(size1), size2, size3))
+  elseif( size1 > 0 .and. size2 < 0 .and. size3 > 0 )then
+    Allocate(ArrIn(size1, 0:abs(size2), size3))
+  elseif( size1 > 0 .and. size2 > 0 .and. size3 < 0 )then
+    Allocate(ArrIn(size1, size2, 0:abs(size3)))
+  else
+    Allocate(ArrIn(0:abs(size1), 0:abs(size2), 0:abs(size3)))
+  endif
   
   ArrIn = Val
   

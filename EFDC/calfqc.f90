@@ -57,7 +57,7 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
 
   ! *** SELECTIVE ZEROING
   IF( KC > 1 )THEN
-    IF( NGWSER > 0 .OR. ISGWIT/=0 )THEN
+    IF( NGWSER > 0 .OR. ISGWIT /= 0 )THEN
       DO L=1,LC  
         FQC(L,KSZ(L),IT) = 0.  
       ENDDO  
@@ -134,7 +134,7 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
   ! *** CONQ INITIALIZATION: 3TL STANDARD TIME STEP
   IF( ISTL_ == 3 )THEN  
     ! *** INITIALIZE BOTTOM LAYER FOR GW INTERACTIONS
-    IF( NGWSER > 0 .OR. ISGWIT/=0 )THEN
+    IF( NGWSER > 0 .OR. ISGWIT /= 0 )THEN
       DO L=1,LC  
         CONQ(L,KSZ(L),IT) = CON(L,KSZ(L))  
       ENDDO  
@@ -159,7 +159,7 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
   ! *** CONQ INITIALIZATION: 3TL CORRECTION STEP
   IF( ISTL_ == 2 .AND. IS2TL_ == 0 )THEN  
     ! *** INITIALIZE BOTTOM LAYER FOR GW INTERACTIONS
-    IF( NGWSER > 0 .OR. ISGWIT/=0 )THEN
+    IF( NGWSER > 0 .OR. ISGWIT /= 0 )THEN
       DO L=1,LC  
         CONQ(L,KSZ(L),IT) = 0.5*(CON(L,KSZ(L))+CON1(L,KSZ(L)))  
       ENDDO  
@@ -250,27 +250,28 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
         RPORTS=FLOAT(NPORTJP(NJP))  
         LJP=LIJ(IQJP(NJP),JQJP(NJP))  
         KTMP=KEFFJP(NJP)  
-        ! ***  QVJPTMP=TIME SERIES DISCHARGE FROM JET-PLUME  
-        QVJPTMP=0.  
+        
+        ! ***  QVJPTMP = Time series discharge from jet-plume  
+        QVJPTMP = 0.  
         DO K=KSZ(LJP),KC  
-          QVJPTMP=QVJPTMP+QSERT(K,NQSERJP(NJP))
+          QVJPTMP = QVJPTMP + QSERT(K,NQSERJP(NJP))
         ENDDO  
 
-        ! **QCJPTMP=ENTRAINMENT FLUX  
+        ! *** Remove mass due to plume
         QCJPTMP=0.  
         QVJPENT=0.  
-        ! *** REMOVE ENTRAINMENT FLUX AND CALCULATE TOTAL ENTRAIMENT FLUX  
+        ! *** Remove entrainment flux and calculate total entraiment flux  
         DO K=KSZ(LJP),KC  
-          FQC(LJP,K,IT)  = FQC(LJP,K,IT) - QJPENT(K,NJP)*CONQ(LJP,K,IT)*RPORTS 
-          QCJPTMP        = QCJPTMP       + QJPENT(K,NJP)*CONQ(LJP,K,IT)  
-          QVJPENT        = QVJPENT       + QJPENT(K,NJP)  
+          FQC(LJP,K,IT)  = FQC(LJP,K,IT) - QJPENT(K,NJP)*CONQ(LJP,K,IT)*RPORTS    ! *** Remove mass due to entrainment into the plume (includes actual discharge flow)
+          QCJPTMP        = QCJPTMP       + QJPENT(K,NJP)*CONQ(LJP,K,IT)           ! *** Sum the total mass removed for each port
+          QVJPENT        = QVJPENT       + QJPENT(K,NJP)                          ! *** Sum the total flows
           !QSUMNAD(LJP,K,IT)=QSUMNAD(LJP,K,IT)-RPORTS*QJPENT(K,NJP)  
         ENDDO  
 
-        ! *** PLACE JET FLUX AND ENTRAINMENT FLUX IS EFFECTIVE LAYER  
-        FQC(LJP,KTMP,IT)     =     FQC(LJP,KTMP,IT) + RPORTS*QCJPTMP+RPORTS*QQCJP(NJP)*CQCJP(1,NJP,M)+RPORTS*QVJPTMP*CSERT(1,NCSERJP(NJP,MVAR),M)  
-        FQCPAD(LJP,KTMP,IT)  =  FQCPAD(LJP,KTMP,IT) + RPORTS*QCJPTMP+RPORTS*QQCJP(NJP)*CQCJP(1,NJP,M)+RPORTS*QVJPTMP*CSERT(1,NCSERJP(NJP,MVAR),M)  
-        QSUMPAD(LJP,KTMP,IT) = QSUMPAD(LJP,KTMP,IT) + RPORTS*QVJPENT+RPORTS*QQCJP(NJP)+RPORTS*QVJPTMP  
+        ! *** Place jet flux and entrainment flux is effective layer  
+        FQC(LJP,KTMP,IT)     =     FQC(LJP,KTMP,IT) + RPORTS*QCJPTMP + RPORTS*QQCJP(NJP)*CQCJP(1,NJP,M) + RPORTS*QVJPTMP*CSERT(1,NCSERJP(NJP,MVAR),M)   ! *** Add entrained mass plus discharge mass into the effective layer 
+        FQCPAD(LJP,KTMP,IT)  =  FQCPAD(LJP,KTMP,IT) + RPORTS*QCJPTMP + RPORTS*QQCJP(NJP)*CQCJP(1,NJP,M) + RPORTS*QVJPTMP*CSERT(1,NCSERJP(NJP,MVAR),M)  
+        QSUMPAD(LJP,KTMP,IT) = QSUMPAD(LJP,KTMP,IT) + RPORTS*QVJPENT + RPORTS*QQCJP(NJP)+RPORTS*QVJPTMP  
       ENDIF  
       
       IF( ICALJP(NJP) == 2 )THEN  
@@ -404,8 +405,8 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
       END DO
     ENDIF
 
-    ! *** COMPUTE IN/OUT FLUXES BUT BYPASS SEDIMENT LOADS
-    IF( MVAR /= 6 .AND. MVAR /= 7 )THEN
+    ! *** Compute in/out fluxes but bypass sediment AND chemical loads.  Chemical loads handled in CALTOXB.
+    IF( MVAR /= 5 .AND. MVAR /= 6 .AND. MVAR /= 7 )THEN
       DO L=2,LA
         IF( QGW(L) < 0. )THEN        ! *** 2018-10-24 PMC CHANGED SIGN CONVENTION FOR SEEPAGE +(IN), -(OUT) 
           FQC(L,KSZ(L),IT) = FQC(L,KSZ(L),IT) + QGW(L)*CONQ(L,KSZ(L),IT)  

@@ -59,12 +59,10 @@ SUBROUTINE CONGRAD_MPI(NOPTIMAL,LDMOPT)
   TMPCOMM = 0.
   TMPALLREDUCE = 0.
   
-  !$OMP SIMD
   DO L=2,LA
     RCG(L) = FPTMP(L) - CCC(L)*P(L) - CCN(L)*P(LNC(L)) - CCS(L)*P(LSC(L)) - CCW(L)*P(LWC(L)) - CCE(L)*P(LEC(L))
   ENDDO
 
-  !$OMP SIMD
   DO L=2,LA
     PCG(L) = RCG(L)*CCCI(L)
   ENDDO
@@ -75,7 +73,6 @@ SUBROUTINE CONGRAD_MPI(NOPTIMAL,LDMOPT)
   TMPCOMM = TMPCOMM + (DSTIME(0)-TTDS2)
   
   RPCG = 0.0
-  !$OMP SIMD REDUCTION(+:RPCG)
   DO L=2,LA 
     RPCG = RPCG + GhostMask(L)*RCG(L)*PCG(L)  
   ENDDO
@@ -95,12 +92,10 @@ SUBROUTINE CONGRAD_MPI(NOPTIMAL,LDMOPT)
     RPCGN = 0.
     RSQ   = 0.
     
-    !$OMP SIMD
     DO L=2,LA
       APCG(L) = CCC(L)*PCG(L) + CCS(L)*PCG(LSC(L)) + CCN(L)*PCG(LNC(L)) + CCW(L)*PCG(LWC(L)) + CCE(L)*PCG(LEC(L))
     ENDDO
 
-    !$OMP SIMD REDUCTION(+:PAPCG)
     DO L=2,LA
       PAPCG = PAPCG + GhostMask(L)*APCG(L)*PCG(L)  
     ENDDO    
@@ -113,19 +108,16 @@ SUBROUTINE CONGRAD_MPI(NOPTIMAL,LDMOPT)
     ALPHA = RPCG/PAPCG
 
     ! *** RPCGN and RSQ
-    !$OMP SIMD
     DO L=2,LA
       P(L)     = P(L) + ALPHA*PCG(L)
       RCG(L)   = RCG(L) - ALPHA*APCG(L)
       TMPCG(L) = CCCI(L)*RCG(L)
     ENDDO
 
-    !$OMP SIMD REDUCTION(+:RPCGN)
     DO L=2,LA
       RPCGN = RPCGN + GhostMask(L)*RCG(L)*TMPCG(L)  
     ENDDO  
     
-    !$OMP SIMD REDUCTION(+:RSQ)
     DO L=2,LA
       RSQ   = RSQ   + GhostMask(L)*RCG(L)*RCG(L)  
     ENDDO  
@@ -144,7 +136,6 @@ SUBROUTINE CONGRAD_MPI(NOPTIMAL,LDMOPT)
     
     IF( RSQ > RSQM )THEN
       ! *** PREPARE THE NEXT ITERATION
-      !$OMP SIMD
       DO L=2,LA
         PCG(L) = TMPCG(L) + BETA*PCG(L)
       ENDDO
@@ -163,30 +154,29 @@ SUBROUTINE CONGRAD_MPI(NOPTIMAL,LDMOPT)
   ENDDO  ! *** END OF ITERATION LOOP
 
   IF( RSQ > RSQM )THEN
-    WRITE(6,600) 
+    L = MAXLOC(RCG,DIM=1 )
+    WRITE(6,600) Map2Global(L).LG, process_id
  
     ! *** Write to unique log per process 
     Open(unit_efdc_out, FILE=OUTDIR//filename_out,STATUS='OLD')
     WRITE(unit_efdc_out,610)
 
     DO L=2,LA  
-      WRITE(unit_efdc_out,800)IL(L),JL(L),CCS(L),CCW(L),CCC(L),CCE(L),CCN(L),FPTMP(L)  
+      WRITE(unit_efdc_out,800) L, IL(L), JL(L), CCS(L), CCW(L), CCC(L), CCE(L), CCN(L), FPTMP(L), RCG(L)
     ENDDO
     CLOSE(unit_efdc_out)
 
     CALL STOPP('')
 
-600 FORMAT('  MAXIMUM ITERATIONS EXCEEDED IN EXTERNAL SOLUTION')
-610 FORMAT('   I    J     CCS     CCW      CCC      CCE      CCN     FPTMP')
-800 FORMAT(2I6,6E13.4)
+600 FORMAT('  MAXIMUM ITERATIONS EXCEEDED IN EXTERNAL SOLUTION.  MAX ERROR AT L = ',I6,', PROCESS ID = ',I4)
+610 FORMAT('     L     I     J          CCS          CCW          CCC          CCE          CCN       FPTMP          RCG')
+800 FORMAT(3I6,8E13.4)
 
   ENDIF
 
   TCONG = TCONG + (DSTIME(0)-TTDS1) - TMPCOMM - TMPALLREDUCE
   DSITIMING(1)  = DSITIMING(1)  + TMPCOMM
   DSITIMING(12) = DSITIMING(12) + TMPALLREDUCE
-
-  IDRYTBP = ITER
 
   RETURN
 

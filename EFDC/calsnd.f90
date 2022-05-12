@@ -24,6 +24,7 @@ SUBROUTINE CALSND
   !**********************************************************************!
   
   USE GLOBAL  
+  Use Allocate_Initialize
   Use MPI
   Use Variables_MPI
   USE Variables_Propwash
@@ -46,7 +47,7 @@ SUBROUTINE CALSND
 
   ! *** FIRST CALL ALLOCATIONS AND ASSIGNMENTS
   IF( .NOT. ALLOCATED(SEDPHI) )THEN
-    ALLOCATE(SEDPHI(NSTM))
+    Call AllocateDSI(SEDPHI, NSTM, 0.0)      
 
     ! *** GP - CONVERT SEDIMENT DIAMETERS IN M TO MM AND SET PHI SIZE  
     DO NX = 1,NSND  

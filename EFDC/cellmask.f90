@@ -168,8 +168,10 @@
             TEM1(L,K) = TEMO
             DYE(L,K,1:NDYE) = 0.
             DYE1(L,K,1:NDYE) = 0.
-            SED(L,K,1) = 0.
-            SED1(L,K,1) = 0.
+            SED(L,K,1:NSED) = 0.
+            SED1(L,K,1:NSED) = 0.
+            SND(L,K,1:NSND) = 0.
+            SND1(L,K,1:NSND) = 0.
             QQ(L,K) = 0.
             QQ1(L,K) = 0.
             QQL(L,K) = 0.

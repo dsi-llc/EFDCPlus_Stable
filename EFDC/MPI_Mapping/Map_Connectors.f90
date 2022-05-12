@@ -157,12 +157,12 @@ Subroutine Map_Connectors
       STR=READSTR(1)
       
       READ(1,*,IOSTAT=ISO) NPNSBP_Global
-      IF( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE MAPPGEW.INP')
+      IF( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE MAPPGNS.INP')
       
       DO NP=1,NPNSBP_Global
         !READ(1,*,IOSTAT=ISO) ISPNS_Global(NP), JSPNS_Global(NP), INPNS_Global(NP), JNPNS_Global(NP)
         READ(1,*,IOSTAT=ISO) (I2D_Global(NP,K),K=1,4)
-        IF( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE MAPPGEW.INP')
+        IF( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE MAPPGNS.INP')
       ENDDO
       CLOSE(1)
     endif

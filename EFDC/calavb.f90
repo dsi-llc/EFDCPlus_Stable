@@ -137,7 +137,7 @@ SUBROUTINE CALAVB ()
     
     !----------------------------------------------------------------------C
     IF( ISFAVB == 0 .OR. N == 1 )THEN
-      ! *** VERTICAL DIFFUSVITY TIME FILTERING - NONE
+      ! *** VERTICAL DIFFUSIVITY TIME FILTERING - NONE
       !$OMP DO PRIVATE(ND,K,LP,L,RIQ,SFAV,SFAB) 
       DO ND=1,NDM  
     
@@ -160,7 +160,7 @@ SUBROUTINE CALAVB ()
 
     !----------------------------------------------------------------------C
     ELSEIF( ISFAVB == 1 .AND. N > 1 )THEN
-      ! *** VERTICAL DIFFUSVITY TIME FILTERING - AVERAGE
+      ! *** VERTICAL DIFFUSIVITY TIME FILTERING - AVERAGE
       !$OMP DO PRIVATE(ND,K,LP,L,RIQ,SFAV,SFAB,AVTMP,ABTMP) 
       DO ND=1,NDM  
     
@@ -183,7 +183,7 @@ SUBROUTINE CALAVB ()
 
     !----------------------------------------------------------------------C
     ELSEIF( ISFAVB == 2 .AND. N > 1 )THEN
-      ! *** VERTICAL DIFFUSVITY TIME FILTERING - SQRT
+      ! *** VERTICAL DIFFUSIVITY TIME FILTERING - SQRT
       !$OMP DO PRIVATE(ND,K,LP,L,RIQ,SFAV,SFAB,AVTMP,ABTMP) 
       DO ND=1,NDM  
     

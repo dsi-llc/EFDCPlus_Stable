@@ -60,7 +60,6 @@ SUBROUTINE CONGRADC()
     PNORTH(L)=P(LNC(L))
     PSOUTH(L)=P(LSC(L))
   ENDDO
-  !DIR$ SIMD
   DO L=2,LA
     RCG(L) = FPTMP(L) - CCC(L)*P(L) - CCN(L)*PNORTH(L) - CCS(L)*PSOUTH(L) &
                                     - CCW(L)*P(LWC(L)) - CCE(L)*P(LEC(L))

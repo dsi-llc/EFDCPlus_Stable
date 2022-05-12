@@ -1891,7 +1891,7 @@
       DO K=1,KB
         IF( TSED0(K,L) > 0. )THEN
           KBT(L) = K
-          CYCLE
+          EXIT
         ENDIF
       ENDDO
       IF( KBT(L) == -1 ) KBT(L) = KB

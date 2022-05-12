@@ -24,34 +24,36 @@ SUBROUTINE CALTOXB
   ! *** *******************************************************************!
 
   USE GLOBAL
+  Use Allocate_Initialize
 
   IMPLICIT NONE
 
-  INTEGER :: ND,LF,LL,LP,L,NT,K,KBTM1
-  INTEGER :: NFD,KM,KK,KBTP1,KBOT,KINC,KBOT2
-  REAL   :: CELLMASS,DEPINBED,DIFBWFAC,BETTMP
-  REAL   :: ERRT,ERRB,ERRW,HBEDMIN0,SORBMIN,TOXTIMEI
+  INTEGER   :: ND, LF, LL, LP, L, NT, K, KBTM1
+  INTEGER   :: NFD, KM, KK, KBTP1, KBOT, KINC, KBOT2
+  REAL      :: DEPINBED, DIFBWFAC, BETTMP
+  REAL      :: HBEDMIN0, SORBMIN, TOXTIMEI
+  REAL(RKD) :: CELLMASS, ERRT, ERRB, ERRW
   REAL,SAVE :: TOXTIME
   
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: DIFTOXBW
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: PARTDIF
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: DERRB
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXBBALN
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXBBALO
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:,:) :: DERRB
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:)        :: DIFTOXBW
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)      :: PARTDIF     ! *** Sediment particle mixing and diffusion between layers
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXBBALN    ! *** Total toxic mass in bed   after  advection/diffusion calculations
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXBBALO    ! *** Total toxic mass in bed   before advection/diffusion calculations
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXWBALN    ! *** Total toxic mass in water after  advection/diffusion calculations
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXWBALO    ! *** Total toxic mass in water before advection/diffusion calculations
 
-  IF(  .NOT. ALLOCATED(DIFTOXBW) )THEN
-    ALLOCATE(DIFTOXBW(LCM))
-    ALLOCATE(PARTDIF(LCM,KBM))
-    ALLOCATE(DERRB(KBM,NDM))  
-    ALLOCATE(TOXBBALN(LCM))  
-    ALLOCATE(TOXBBALO(LCM))  
-    DIFTOXBW=0.0
-    PARTDIF=0.0
-    DERRB=0.0
-    TOXBBALN=0.0
-    TOXBBALO=0.0
+  IF( .NOT. ALLOCATED(DIFTOXBW) )THEN
+    Call AllocateDSI( DERRB,    KBM, NDM, 0.0)
+    Call AllocateDSI( DIFTOXBW, LCM, 0.0)
+    Call AllocateDSI( PARTDIF,  LCM, KBM, 0.0)
+    Call AllocateDSI( TOXBBALN, LCM, 0.0)
+    Call AllocateDSI( TOXBBALO, LCM, 0.0)
+    Call AllocateDSI( TOXWBALN, LCM, 0.0)
+    Call AllocateDSI( TOXWBALO, LCM, 0.0)
+    
     TOXTIME = 0.0
-    TOXSTEPB = TOXSTEPB - DTSED/10.
+    TOXSTEPB = TOXSTEPB - DTSED/10.         ! *** Add a tolerance to prevent machine precision impacting update frequencies
   ENDIF
   NFD = NSED + NSND + 1
 
@@ -258,12 +260,13 @@ SUBROUTINE CALTOXB
         L=LSED(LP)
         IF( HBED(L,KBT(L)) < HBEDMIN0 .OR. ABS(BMNN(L,KBOT)) < 1.0E-10) CYCLE
         CELLMASS = TOXBBALN(L) + TOXWBALN(L)
-        ERRT     = CELLMASS - (TOXBBALO(L) + TOXWBALO(L))
+        ERRT     = CELLMASS - (TOXBBALO(L) + TOXWBALO(L))                        ! *** Difference in bed mass at the start and end of calculations
+        ERRT     = ERRT - MAX(QWTRBED(L,0),0.)*CONGW(L,NT+4)*TOXTIME             ! *** Remove the external mass loading
         
         ! *** HANDLE ZERO SEDIMENT AND/OR WATER CONCENTRATIONS
         IF( TOXBBALN(L) > 1.E-12 .AND. ERRT /= 0. )THEN
           ERRB = ERRT*TOXBBALN(L)/CELLMASS
-          ERRW = ERRT-ERRB
+          ERRW = ERRT - ERRB
           TOX(L,KSZ(L),NT) = TOX(L,KSZ(L),NT) - ERRW/HPK(L,KSZ(L))
           DO K=KBOT,KBT(L),-KINC
             DERRB(K,ND) = TOXB(L,K,NT)/TOXBBALN(L)
@@ -276,8 +279,8 @@ SUBROUTINE CALTOXB
           TADFLUX(L,NT) = 0.
         ENDIF
       ENDDO
-    ENDDO
-  ENDDO   ! *** END OF DOMAIN LOOP
+    ENDDO ! *** End of contaminant class
+  ENDDO   ! *** End of domain loop
   !$OMP END DO
   !$OMP END PARALLEL
 

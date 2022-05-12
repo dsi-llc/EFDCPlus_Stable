@@ -120,6 +120,15 @@ SUBROUTINE Restart_Out(IRSTYP)
         WRITE(99,906) (SEDB1_Global(LG,K,NS),K=1,KB)
         WRITE(99,906) (SED1_Global(LG,K,NS),K=1,KC)
       ENDDO
+      IF( NSCM2 > NSCM )THEN
+        IF( LG == 2 )THEN
+          WRITE(99,908) NSCM, NSCM2                 ! *** Make NSCM2 available before propwash read in
+        ENDIF
+        DO NS=NSCM+1,NSCM2
+          WRITE(99,906) (SED_Global(LG,K,NS),K=1,KC)
+          WRITE(99,906) (SED1_Global(LG,K,NS),K=1,KC)
+        ENDDO
+      ENDIF
     ENDIF
     IF( ISTRAN(7) >= 1 .AND. ISCO(7) == 1 )THEN
       DO NS=1,NSNM
@@ -519,7 +528,7 @@ SUBROUTINE Restart_In(OPT)
         READ(UINP,*,ERR=1001) HP_Global(LG), H1P_Global(LG), HWQ_Global(LG), H2WQ_Global(LG), BELV_Global(LG)
       ELSE
         ! *** Allow the bathymetry to use the values in BELV_Global.INP instead of the restart file
-        READ(UINP,*,ERR=1002)HP_Global(LG), H1P_Global(LG), HWQ_Global(LG), H2WQ_Global(LG),BELTMP
+        READ(UINP,*,ERR=1002)HP_Global(LG), H1P_Global(LG), HWQ_Global(LG), H2WQ_Global(LG), BELTMP
         IF( BELTMP /= BELV_Global(LG) )THEN
           ISBELVC = 1
           WRITE(6,600) IL_GL(LG), IL_GL(LG), BELTMP, BELV_Global(LG)
@@ -538,6 +547,7 @@ SUBROUTINE Restart_In(OPT)
         HP_Global(LG)    = HDRY*0.9
         H1P_Global(LG) = HDRY*0.9
       ENDIF
+      
       READ(UINP,*,ERR=1003) UHDYE_Global(LG), UHDY1E_Global(LG), VHDXE_Global(LG), VHDX1E_Global(LG)
 
       IF( Restart_In_Ver > 1000 )THEN
@@ -643,6 +653,15 @@ SUBROUTINE Restart_In(OPT)
             READ(UINP,*,ERR=1019) (SEDB1_Global(LG,K,NS),K=1,KB)
             READ(UINP,*,ERR=1019) (SED1_Global(LG,K,NS),K=1,KC)
           ENDDO
+          IF( NSCM2 > NSCM )THEN
+            IF( LG == 2 )THEN
+              READ(UINP,*,ERR=1019) NSCM, NSCM2                 ! *** Make NSCM2 available before propwash read in
+            ENDIF
+            DO NS=NSCM+1,NSCM2
+              READ(UINP,*,ERR=1019) (SED_Global(LG,K,NS),K=1,KC)
+              READ(UINP,*,ERR=1019) (SED1_Global(LG,K,NS),K=1,KC)
+            ENDDO
+          ENDIF
         ELSE
           DO NS=1,NSCM
             READ(UINP,*,ERR=1019) (TMPVAL,K=1,KB)
@@ -650,6 +669,15 @@ SUBROUTINE Restart_In(OPT)
             READ(UINP,*,ERR=1020) (TMPVAL,K=1,KB)
             READ(UINP,*,ERR=1020) (TMPVAL,K=1,KC)
           ENDDO
+          IF( NSCM2 > NSCM )THEN
+            IF( LG == 2 )THEN
+              READ(UINP,*,ERR=1019) III, III                 ! *** Make NSCM2 available before propwash read in
+            ENDIF
+            DO NS=NSCM+1,NSCM2
+              READ(UINP,*,ERR=1019) (TMPVAL,K=1,KC)
+              READ(UINP,*,ERR=1019) (TMPVAL,K=1,KC)
+            ENDDO
+          ENDIF
         ENDIF
         IDFLAG = 1
       ENDIF
@@ -687,6 +715,27 @@ SUBROUTINE Restart_In(OPT)
         ENDIF
       ENDIF
     ENDDO   ! *** END OF MAIN DOMAIN LOOP
+    
+    ! *** Check minimums
+    DO LG=2,LA_Global
+      DO K=1,KC
+        IF( QQ_GLOBAL(LG,K) < QQMIN )THEN
+          QQ_GLOBAL(LG,K) = QQMIN
+        ENDIF
+        IF( QQ1_GLOBAL(LG,K) < QQMIN )THEN
+          QQ1_GLOBAL(LG,K) = QQMIN
+        ENDIF
+      ENDDO
+      DO K=1,KS
+        IF( QQL_GLOBAL(LG,K) < QQLMIN )THEN
+          QQL_GLOBAL(LG,K) = QQLMIN
+        ENDIF
+        IF( DML_GLOBAL(LG,K) < DMLMIN )THEN
+          DML_GLOBAL(LG,K) = DMLMIN
+        ENDIF
+      ENDDO
+    ENDDO
+
   endif     ! *** End of master_id block
 
   ! *****************************************************************************************************
@@ -807,11 +856,11 @@ SUBROUTINE Restart_In(OPT)
         V1(LL,K) = V1_Global(LG,K)
       ENDDO
       DO K = 0,KC
-        QQ(LL,K)   = QQ_Global(LG,K)
-        QQ1(LL,K)  = QQ1_Global(LG,K)
-        QQL(LL,K)  = QQL_Global(LG,K)
-        QQL1(LL,K) = QQL1_Global(LG,K)
-        DML(LL,K)  = DML_Global(LG,K)
+        QQ(LL,K)   = MAX(QQ_Global(LG,K),QQMIN)
+        QQ1(LL,K)  = MAX(QQ1_Global(LG,K),QQMIN)
+        QQL(LL,K)  = MAX(QQL_Global(LG,K),QQLMIN)
+        QQL1(LL,K) = MAX(QQL1_Global(LG,K),QQLMIN)
+        DML(LL,K)  = MAX(DML_Global(LG,K),DMLMIN)
       ENDDO
 
       IF( ISTRAN(2) > 0 .AND. ISCI(2) > 0 .AND. ISCOCHK(2) == 1 .AND. ISICE > 2 )THEN
@@ -861,6 +910,12 @@ SUBROUTINE Restart_In(OPT)
             SEDB1(LL,1:KB,NS) = SEDB1_Global(LG,1:KB,NS)
           ENDIF
         ENDDO
+        IF( NSCM2 > NSCM )THEN
+          DO NS=NSCM+1,NSCM2
+            SED(LL,1:KC,NS)   = SED_Global(LG,1:KC,NS)
+            SED1(LL,1:KC,NS)  = SED1_Global(LG,1:KC,NS)
+          ENDDO
+        ENDIF
         IDFLAG = 1
       ENDIF
 
@@ -2069,8 +2124,8 @@ SUBROUTINE Gather_Restart_Arrays
                                       size(SEDB_Global,1), size(SEDB_Global,2), size(SEDB_Global,3), SEDB_Global)
 
     j = j + 1
-    Call Assign_Loc_Glob_For_Write(j, size(SEDB1,1), size(SEDB1,2), size(SEDB1,3), SEDB1, &
-      size(SEDB1_Global,1), size(SEDB1_Global,2), size(SEDB1_Global,3), SEDB1_Global)
+    Call Assign_Loc_Glob_For_Write(j, size(SEDB1,1),        size(SEDB1,2),        size(SEDB1,3),        SEDB1, &
+                                      size(SEDB1_Global,1), size(SEDB1_Global,2), size(SEDB1_Global,3), SEDB1_Global)
   ENDIF
 
   IF( ISTRAN(7) >= 1 .AND. ISCO(7) == 1 )THEN

@@ -196,7 +196,7 @@ subroutine interp_track(self, track_id, prev_pos_id, next_pos_id, debug)
   self.course  =  interp_angle(self.tracks(track_id).track_pos(prev_pos_id).course, &
                                self.tracks(track_id).track_pos(next_pos_id).course, ratio)
 
-  !  delme - this is a test
+  ! *** Deceleration
   if( self.tracks(track_id).track_pos(prev_pos_id).power < -1  .or. self.tracks(track_id).track_pos(next_pos_id).power < -1 )then
     self.heading = self.heading + pi                         !< Deceleration - Reverse heading to reflect propeller reversing
     
@@ -1080,6 +1080,7 @@ subroutine calc_erosive_flux(self, debug)
           ! *** Gather erosion and put it into the cell the propwash component exists
           prop_ero(cell,1:nscm) = prop_ero(cell,1:nscm) + elay(1:nscm)        ! *** (g)
           prop_bld(cell,1:nscm) = prop_bld(cell,1:nscm) + ebld(1:nscm)/DBLE(self.mesh_count(cell))   ! *** Average unit discharge (g/m/s)
+          
         else
           self.subgrid_mesh(j,i).ero(:) = 0.0
           self.subgrid_mesh(j,i).var(3) = 0.0

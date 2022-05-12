@@ -16,19 +16,20 @@ SUBROUTINE SEDZLJ_MAIN
   !
   ! ORIGINAL DATE :  May 24, 2006
   !  Craig Jones and Scott James
-  ! REVISED: SIGMA-ZED AND OMP - 2016-11-07
-  !  Paul M. Craig
+
+  ! 2016-11-07  Paul M. Craig  Updated for SIGMA-ZED AND OMP
+  ! 2017-01-04  Paul M. Craig  Toxics and bedload mass balance updates
+  ! 2021-06-07  Paul M. Craig  Updated for propwash
 
   ! *** *******************************************************************!
 
   USE GLOBAL
   IMPLICIT NONE
 
-  REAL(RKD) :: CRNUM,SEDAVG,GRADSED,CLEFT,CRIGHT,WVEL,SMASSD,SMASSU,SMASS
+  REAL(RKD) :: CRNUM, SEDAVG, GRADSED, CLEFT, CRIGHT, WVEL, SMASSD, SMASSU, SMASS
   REAL(RKD),SAVE :: LASTTIME=-9999.
-  REAL(RKD),DIMENSION(NSCM) :: BLFLUXU,BLFLUXD
-  REAL    :: T1TMP
-  INTEGER :: L,K,NS,ND,LL,LF,LP,LUTMP,LDTMP,NSB
+  REAL(RKD),DIMENSION(NSCM) :: BLFLUXU, BLFLUXD
+  INTEGER :: L, K, NS, ND, LL, LF, LP, LUTMP, LDTMP, NSB
  
   ! *** ENFORCE STARTUP FOR ENTIRE SEDIMENT PROCESS
   IF( LASTTIME == -9999. ) LASTTIME = TIMEDAY
@@ -64,7 +65,6 @@ SUBROUTINE SEDZLJ_MAIN
     !   SEDZLJ Sediment Transport
     !
     !$OMP PARALLEL DEFAULT(SHARED)
-    
 
     !$OMP DO PRIVATE(ND,NS,K,LP,L,WVEL,CLEFT,CRIGHT)
     DO ND=1,NDM  

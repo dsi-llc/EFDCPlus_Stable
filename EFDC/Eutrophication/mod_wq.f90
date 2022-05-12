@@ -159,6 +159,7 @@ MODULE WATERQUALITY
     IF( IWQSUN == 2 )THEN
       WQI1 = WQI0OPT/SUNFRC2  
       WQI0OPT = 0.0            ! *** Reset daily average
+      SUNFRC2 = 0.             ! *** Reset sun fraction
     ELSE
       WQI1 = WQI0
     ENDIF
@@ -275,7 +276,6 @@ MODULE WATERQUALITY
         ! *** OPTIMAL SOLAR RADIATION IS ALWAYS UPDATED BASED ON DAY AVERAGED
         IF( LDAYLIGHT .AND. (NASER > 1 .OR. USESHADE) )THEN  
           SOLARAVG = 0.                           ! *** SOLARAVG is the domain average solar radiation
-          SUNFRC2 = 0.
           DO L=2,LA  
             SOLARAVG = SOLARAVG + SOLSWRT(L)      ! *** SOLSWRT already include surface albedo and shading
           ENDDO  
@@ -983,9 +983,9 @@ MODULE WATERQUALITY
     ! C30: Concentration time series data for open boundaries
     ! Number of time series for each state variables of nutrient
     !---------------------------------------------------------------------------
-    Do NW = 1,NWQV
+    DO NW = 1,NWQV
       Call fson_get(json_data,'number_of_time_series.'//WQCONSTIT(NW), NWQCSR(NW))
-    Enddo
+    ENDDO
     
     NT = 0
     DO NW = 1,NWQV
@@ -1265,6 +1265,10 @@ MODULE WATERQUALITY
   Call Broadcast_Scalar(IWQSRP,      master_id)
   Call Broadcast_Scalar(IWQNC,       master_id)
   Call Broadcast_Scalar(IWQRST,      master_id)
+    
+  Call Broadcast_Scalar(IDOSFRM,     master_id)
+  Call Broadcast_Scalar(IDOSELE,     master_id)
+  Call Broadcast_Scalar(DOELEV,      master_id)
                                      
   Call Broadcast_Scalar(WQHRAVG,     master_id)
                                      
@@ -1456,7 +1460,7 @@ MODULE WATERQUALITY
   Call Map_WQ_PointSource
   
   ! **************************************************************************
-  ! *** Set up look-up table for temperature dependency over -10 ï¿½C to 50 ï¿½C
+  ! *** Set up look-up table for temperature dependency over -10 °C to 50 °C
   WQTDMIN =-10
   WQTDMAX = 50
   WTEMP = WQTDMIN
@@ -1925,6 +1929,7 @@ MODULE WATERQUALITY
         Call fson_get(item, "hydro_feedback.stemdensity",                   ALGAES(NAL).STEMDENSITY)    ! *** As growth occurs, stemdensity is constant (# stems/m2)
 
         ! *** Apply QC and special conditions
+
       ENDIF      
     ENDDO   
     
@@ -1942,6 +1947,7 @@ MODULE WATERQUALITY
      Call Broadcast_Scalar(ALGAES(NAL).WQWS(1),     master_id)
           
      Call Broadcast_Scalar(ALGAES(NAL).WQCHLA,      master_id)
+     Call Broadcast_Scalar(ALGAES(NAL).WQKEMAC,     master_id)
      Call Broadcast_Scalar(ALGAES(NAL).WQALGOCR,    master_id)
      Call Broadcast_Scalar(ALGAES(NAL).WQALGONT,    master_id)
 
@@ -1960,7 +1966,8 @@ MODULE WATERQUALITY
      Call Broadcast_Scalar(ALGAES(NAL).WQKG1,       master_id)
      Call Broadcast_Scalar(ALGAES(NAL).WQKG2,       master_id)
      Call Broadcast_Scalar(ALGAES(NAL).WQKBP(1),    master_id)                                              
-     Call Broadcast_Scalar(ALGAES(NAL).WQBMIN(1),   master_id) 
+     Call Broadcast_Scalar(ALGAES(NAL).WQBMIN(1),   master_id)
+     Call Broadcast_Scalar(ALGAES(NAL).WQBMAX,      master_id) 
      Call Broadcast_Scalar(ALGAES(NAL).WQTR,        master_id)
      Call Broadcast_Scalar(ALGAES(NAL).WQBMRA(1),   master_id)
      Call Broadcast_Scalar(ALGAES(NAL).WQKTB,       master_id)
@@ -3417,7 +3424,6 @@ MODULE WATERQUALITY
   ENDDO  
   
   ! *** ZERO RATES
-  !$OMP SIMD
   DO L = 2,LA
     ! *** DRY CELL BYPASS
     IF( .NOT. LMASKDRY(L) )THEN
@@ -3442,75 +3448,6 @@ MODULE WATERQUALITY
     ENDIF
   ENDDO
   
-  ! *** Handle settling for particulates when cell is dry but has inflow.
-  IF( ISDRY > 0 )THEN
-    
-    ! Reset flag
-    DO NS=1,NBCS
-      LUSED(LBCS(NS)) = 0
-    ENDDO
-    
-    DO NS=1,NBCS
-      L = LBCS(NS)
-      IF( .NOT. LMASKDRY(L) )THEN
-        ! *** Cell is dry.  Check for inflows
-        IF( QSUME(L) > 0.0 .AND. LUSED(L) == 0 )THEN
-          
-          RPOMF = 0.0                                                ! *** Flux of refractory POM at the bottom of the current layer
-          LPOMF = 0.0                                                ! *** Flux of Labile     POM at the bottom of the current layer
-          
-          ! *** Zone specific setting velocities for POM, (m/day)   
-          DO K = KC, KSZ(L), -1
-            WVEL = DTWQ*HPKI(L,K)                                    ! *** S/M
-            K1 = MAX(K-1,KSZ(L))
-            
-            ! *** Refractory paticulate nutrients
-            DO I = 1,3
-              WQV(L,K,IRPOM(I)) = WQV(L,K,IRPOM(I)) + RPOMF(I)*DTWQ*HPKI(L,K)   ! *** Add POM from layer above
-              CLEFT = 1.0 + WQWSRP(IWQZMAP(L,K1))*WVEL                          ! *** Dimensionless
-              CRIGHT = WQV(L,K1,IRPOM(I))                                       ! *** g/m3
-              WQV(L,K,IRPOM(I)) = CRIGHT/CLEFT                                  ! *** g/m3
-              RPOMF(I) = WQWSRP(IWQZMAP(L,K1))*WQV(L,K,IRPOM(I))                ! *** g/m2/day
-            ENDDO
-
-            ! *** Labile paticulate nutrients
-            DO I = 1,3
-              WQV(L,K,ILPOM(I)) = WQV(L,K,ILPOM(I)) + LPOMF(I)*DTWQ*HPKI(L,K)   ! *** Add POM from layer above
-              CLEFT = 1.0 + WQWSLP(IWQZMAP(L,K1))*WVEL                          ! *** Dimensionless
-              CRIGHT = WQV(L,K1,ILPOM(I))                                       ! *** g/m3
-              WQV(L,K,ILPOM(I)) = CRIGHT/CLEFT                                  ! *** g/m3
-              LPOMF(I) = WQWSLP(IWQZMAP(L,K1))*WQV(L,K,ILPOM(I))                ! *** g/m2/day
-            ENDDO
-          ENDDO
-        
-          ! *** Handle deposition to organic sediments from bottom water layer
-          IF( IWQBEN == 1 )THEN
-            SMDFC(L,:) = 0.0        ! *** LPOC  (g/m2/day)
-            SMDFP(L,:) = 0.0        ! *** LPOP  (g/m2/day)
-            SMDFN(L,:) = 0.0        ! *** LPON  (g/m2/day)
-
-            ! *** Labile POM source terms, only G1 class
-            SMDFC(L,1) = LPOMF(1)   ! *** LPOC  (g/m2/day)
-            SMDFP(L,1) = LPOMF(2)   ! *** LPOP  (g/m2/day)
-            SMDFN(L,1) = LPOMF(3)   ! *** LPON  (g/m2/day)
-
-            ! *** Refractory POM source temrs
-            DO M = 1,3
-              SMDFC(L,M) = SMDFC(L,M) + SMFCR(ISMZMAP(L),M)*RPOMF(1)  ! *** RPOC  (g/m2/day)
-              SMDFP(L,M) = SMDFP(L,M) + SMFPR(ISMZMAP(L),M)*RPOMF(2)  ! *** RPOP  (g/m2/day)
-              SMDFN(L,M) = SMDFN(L,M) + SMFNR(ISMZMAP(L),M)*RPOMF(3)  ! *** RPON  (g/m2/day)
-              
-              SMPOC(L,M) = ( SMPOC(L,M) + SMDFC(L,M)*SMDTOH(ISMZMAP(L)) ) / ( SMW2DTOH(ISMZMAP(L)) + SMTDCD(ISMT(L),M)*DTWQ + 1.E-18)  ! *** LPOC
-              SMPOP(L,M) = ( SMPOP(L,M) + SMDFP(L,M)*SMDTOH(ISMZMAP(L)) ) / ( SMW2DTOH(ISMZMAP(L)) + SMTDPD(ISMT(L),M)*DTWQ + 1.E-18)  ! *** LPOP
-              SMPON(L,M) = ( SMPON(L,M) + SMDFN(L,M)*SMDTOH(ISMZMAP(L)) ) / ( SMW2DTOH(ISMZMAP(L)) + SMTDND(ISMT(L),M)*DTWQ + 1.E-18)  ! *** LPON
-            ENDDO
-          ENDIF
-          LUSED(L) = 1      ! *** Prevent this cell from being computed again
-        ENDIF
-      ENDIF
-    ENDDO
-  ENDIF
-    
   ! *** Set vegetative growth and drag 
   DO NAL = 1, NALGAE
     IF( .NOT. ALGAES(NAL).ISMOBILE )THEN
@@ -4870,7 +4807,7 @@ MODULE WATERQUALITY
             ! *** Algal metabolism and predation source
             WQA16D = 0.0
             WQM16 = 0.0
-            ILAST = 2
+            ILAST = 1
             DO NAL = 1,NALGAE
               IF( ALGAES(NAL).ISILICA )THEN
                 WQA16D = WQA16D + (ALGAES(NAL).WQFSPD*WQBM(L,NAL) + ALGAES(NAL).WQFSPP*WQPR(L,NAL)) * ALGAES(NAL).WQASC * WQO(L,19+NAL)
@@ -5454,9 +5391,9 @@ MODULE WATERQUALITY
     DO K=1,KC  
       DO L=2,LA 
         IF(  ISTRAN(6) > 0  )THEN
-          RLIGHT1=WQKEB(IMWQZT(L))+WQKETSS*SEDT(L,K) 
+          RLIGHT1=WQKEB(IWQZMAP(L,K))+WQKETSS*SEDT(L,K) 
         ELSE
-          RLIGHT1=WQKEB(IMWQZT(L))
+          RLIGHT1=WQKEB(IWQZMAP(L,K))
         ENDIF
         XMRM = WQKECHL*WQCHL(L,K)  
         IF( WQKECHL  < 0.0 )THEN  

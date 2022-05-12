@@ -71,7 +71,7 @@
     IF( ISCDCA(MVAR) == 2 ) DDELTA=DT   ! *** Central Differencing (3TL) [EXPERIMENTAL]
     DDELTD2=DT
     IF( ISCDCA(MVAR) == 1 ) ISUD=0 
-    IF( ISTL_/=3 )THEN  
+    IF( ISTL_ /= 3 )THEN  
       DDELT=DT  
       DDELTA=DT  
       DDELTD2=0.5*DT  
@@ -282,25 +282,6 @@
       CON1(:,:) = CON(:,:)
     ENDIF  
 
-    ! *** Handle case when cell is dry but has inflow.
-    IF( ISDRY > 0 .AND. MVAR /= 2 )THEN
-      DO NS=1,NBCS
-        L=LBCS(NS)
-        IF( .NOT. LMASKDRY(L) )THEN
-          ! *** Cell is dry.  Check for inflows
-          IF( QSUME(L) > 0.0 )THEN
-            DO K = KSZ(L),KC
-              if( FQC(L,K,IT) > 0.0 )then
-                CON1(L,K) = CON(L,K)
-                CON(L,K)  = CON(L,K) +  DDELT*FQC(L,K,IT)*DXYIP(L)/(HP(L)*DZC(L,K))
-                FQC(L,K,IT) = 0.0                                                    ! *** Zero the mass flux to prevent counting multiple times if more than 1 BC discharges to this cell
-              endif
-            ENDDO
-          ENDIF
-        ENDIF
-      ENDDO
-    ENDIF
-    
     ! *** UPDATE NEW CONCENTRATIONS  
     DO K=1,KC  
       DO LP=1,LLWET(K,0)

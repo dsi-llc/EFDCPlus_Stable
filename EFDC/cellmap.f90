@@ -121,7 +121,7 @@ SUBROUTINE CELLMAP
   
   LA = L      ! *** Local LA
   LC = LA + 1
-  write(mpi_log_unit,'(a,i5)') 'Local LA in scancell ',LA
+  write(mpi_log_unit,'(a,i10)') 'Local LA in scancell ',LA
   
   ! *** Create a local list of the active cells excluding the ghost cells
   Call Create_List_No_Ghost_Cells

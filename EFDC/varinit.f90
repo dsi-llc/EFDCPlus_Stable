@@ -7,9 +7,10 @@
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !< @author Paul Craig
-!< @date 2015-06 - IMPLEMENTED SIGMA-Z (SGZ) IN EE7.3
+!< @date 2015-06 - Implemented SIGMA-Z (SGZ) IN EE7.3
+!< @date 2022-01 - Added mass erosion class for propwash
 !< @details Scans the input files and calls routines to allocate and zero out arrays
-!!         does some other setup as well.
+!< @details   does some other setup as well.
 
 SUBROUTINE VARINIT
 
@@ -28,37 +29,37 @@ SUBROUTINE VARINIT
 
   Integer :: ierr ! MPI error return value
 
-  KPCM=1
-  MDVSM=1
-  MTVSM=1
-  NDDAM=1
-  NDQCLT=1
-  NDQCLT2=1
-  NDVEGSER=1
-  NGLM=1
-  NJPSM=1
-  NJUNXM=1
-  NJUNYM=1
-  NLDAM=1
-  NPDM=1
-  NSMGM=1
-  NSMTSM=1
-  NSMZM=1
-  NTSM=1
-  NTSSMVM=1
-  NVEGSERM=1
-  NVEGTPM=100
-  NWGGM=1
-  NWQPSM=1
-  NWQPSRM=1
-  NWQZM=1
-  NXYSDATM=1
-  NWNDMAP = 1
-  NATMMAP = 1
-  NICEMAP = 1
+  KPCM     = 1
+  MDVSM    = 1
+  MTVSM    = 1
+  NDDAM    = 1
+  NDQCLT   = 1
+  NDQCLT2  = 1
+  NDVEGSER = 1
+  NGLM     = 1
+  NJPSM    = 1
+  NJUNXM   = 1
+  NJUNYM   = 1
+  NLDAM    = 1
+  NPDM     = 1
+  NSMGM    = 1
+  NSMTSM   = 1
+  NSMZM    = 1
+  NTSM     = 1
+  NTSSMVM  = 1
+  NVEGSERM = 1
+  NVEGTPM  = 100
+  NWGGM    = 1
+  NWQPSM   = 1
+  NWQPSRM  = 1
+  NWQZM    = 1
+  NXYSDATM = 1
+  NWNDMAP  = 1
+  NATMMAP  = 1
+  NICEMAP  = 1
 
-  ALLOCATE(NCSER(8))
-
+  Call AllocateDSI( NCSER,  8,  0)
+  
 #ifdef _MPI
   ! *** Scanning DECOMP file to setup variables for allocation
   !Call Scan_Decomp
@@ -81,7 +82,7 @@ SUBROUTINE VARINIT
   Call Broadcast_Scalar(ICM_Global, master_id)
   Call Broadcast_Scalar(JCM_Global, master_id)
   Call Broadcast_Scalar(LCM_Global, master_id)
-  Call Broadcast_Scalar(LC_Global, master_id)
+  Call Broadcast_Scalar(LC_Global,  master_id)
 
   ! *** Set some variables for array allocation
   max_width_x = max_width_x + 4  ! Adding the plus 4 because of the 2 ghost rows on each side of domain
@@ -96,14 +97,14 @@ SUBROUTINE VARINIT
 
   Call WriteBreak(mpi_log_unit)
   write(mpi_log_unit, '(a)')    'Writing from VARINIT afer Scan_Cell routine '
-  write(mpi_log_unit, '(a,i5)') 'Local ICM     = ', ICM
-  write(mpi_log_unit, '(a,i5)') 'Local JCM     = ', JCM
-  write(mpi_log_unit, '(a,i5)') 'Max local LCM = ', LCM
-  write(mpi_log_unit, '(a,i5)') 'LCM Global    = ', LCM_Global
-  write(mpi_log_unit, '(a,i5)') 'Global max X  = ', global_max_width_x
-  write(mpi_log_unit, '(a,i5)') 'Global max Y  = ', global_max_width_y
-  write(mpi_log_unit, '(a,i5)') 'Max width X   = ', max_width_x
-  write(mpi_log_unit, '(a,i5)') 'Max width Y   = ', max_width_y
+  write(mpi_log_unit, '(a,i10)') 'Local ICM     = ', ICM
+  write(mpi_log_unit, '(a,i10)') 'Local JCM     = ', JCM
+  write(mpi_log_unit, '(a,i10)') 'Max local LCM = ', LCM
+  write(mpi_log_unit, '(a,i10)') 'LCM Global    = ', LCM_Global
+  write(mpi_log_unit, '(a,i10)') 'Global max X  = ', global_max_width_x
+  write(mpi_log_unit, '(a,i10)') 'Global max Y  = ', global_max_width_y
+  write(mpi_log_unit, '(a,i10)') 'Max width X   = ', max_width_x
+  write(mpi_log_unit, '(a,i10)') 'Max width Y   = ', max_width_y
   write(mpi_log_unit,'(a)')     'Max X/Y widths should be equal to ICM/JCM at this point '
   Call WriteBreak(mpi_log_unit)
 
@@ -133,6 +134,7 @@ SUBROUTINE VARINIT
   IF( NQWRSR > 0  ) CALL SCANQWSER
   IF( LSEDZLJ ) CALL SCANSEDZLJ
   IF( NCSER5 > 0 .OR. NCSER6 > 0 .OR. NCSER7 > 0 ) CALL SCNTXSED
+  IF( ISPROPWASH > 0 ) CALL SCANPROPWASH
 
   Call MPI_Barrier(comm_2d, ierr)
 
@@ -144,11 +146,16 @@ SUBROUTINE VARINIT
   Call Broadcast_Scalar(NTXM, master_id)
 #endif
 
-  ! *** VARIABLE LOCATIONS
-  ALLOCATE(MSVDYE(NDYM))
-  ALLOCATE(MSVSED(NSCM))
-  ALLOCATE(MSVSND(NSNM))
-  ALLOCATE(MSVTOX(NTXM))
+  NSND2 = NSND     ! *** Propwash does not include non-cohesives for now.
+  NSNM2 = NSNM
+  NSED2 = NSED
+  NSCM2 = NSCM
+
+  ! *** Time series pointers for different constituents
+  Call AllocateDSI( MSVDYE,  NDYM,   0)
+  Call AllocateDSI( MSVSED,  NSCM,   0)
+  Call AllocateDSI( MSVSND,  NSNM,   0)
+  Call AllocateDSI( MSVTOX,  NTXM,   0)
 
   M = 2             ! *** M=1 (SALINITY), M=2 (TEMPERATURE)
   DO NS=1,NDYM      ! *** MUST USE NDYM INSTEAD OF NDYE TO ENSURE THE BASE OF 4 FOR LEGACY MASS BALANCE ROUTINES
@@ -172,14 +179,12 @@ SUBROUTINE VARINIT
   IF( ISTRAN(8) > 0 )THEN
     CALL SCANWQ
     
-    !IF( IWQPSL == 2)THEN !2018-11-06, NTL: This check causes MSVWQV errors of uninitialized array at several places
-    ALLOCATE(MSVWQV(NWQV))
-    MSVWQV = 0
+    Call AllocateDSI( MSVWQV,  NWQV,  0)
     DO MW = 1,NWQV
       IF( ISKINETICS(MW) > 0 )THEN
         M = M + 1
         MSVWQV(MW) = M        ! *** 3 + NDYM + NTOX + NSED + NSND + NW
-        IF(MW == 16) MSVDOX = MSVWQV(MW) ! *** MSVWQV index of DOX - DKT
+        IF( MW == IDOX ) MSVDOX = MSVWQV(MW)
       ENDIF
     ENDDO
     !ENDIF
@@ -189,13 +194,13 @@ SUBROUTINE VARINIT
   IGM=ICM+1
   JGM=JCM+1
   MGM=2*MTM
-  NSTM  = MAX(3,NSCM+NSNM+NTXM)                 ! *** MAXIMUM NUMBER OF SEDTOX VARIABLES
-  NSTVM = MAX(7,3+NDYM+NSCM+NSNM+NTXM+NWQV)     ! *** MAXIMUM NUMBER OF CONSTITUENTS
+  NSTM   = MAX(3, NSCM  + NSNM  + NTXM)                      ! *** Maximum number of SedTox variables
+  NSTVM  = MAX(7, 3 + NDYM + NSCM  + NSNM  + NTXM + NWQV)    ! *** Maximum number of constituents
 
   NQINFLM = MAX(1,NQSIJ+NQCTL+NQWR+2*MDCHH)
 
   ! *** CALCULATE SHELL FISH LARVAE AND/OR WATER QUALITY CONSTITUENTS
-  ISWQFLUX=0
+  ISWQFLUX = 0
   IF( ISTRAN(4) >= 1 ) ISWQFLUX = 1
   IF( ISTRAN(8) >= 1 ) ISWQFLUX = 1
   IF( ISWASP >= 1 )    ISWQFLUX = 1
@@ -203,13 +208,8 @@ SUBROUTINE VARINIT
   IF( ISSSMMT > 0 )    ISWQFLUX = 1
   IF( ISLSHA == 1)     ISWQFLUX = 1
 
-  ! *** ALLOCATE THE ARRAYS
-  CALL VARALLOC !***Each process needs to allocate variables
- 
-  ! *** Each process zeros out the variables just allocated
-  ! ** ZERO ARRAYS
-  CALL VARZEROReal
-  CALL VARZEROInt
+  ! *** Allocate the main EFDC+ arrays
+  CALL VARALLOC                                 ! *** Each process needs to allocate variables
   
   IF( LSEDZLJ ) CALL VARZEROSNL
 
@@ -261,10 +261,8 @@ SUBROUTINE VARINIT
   SHLIM = 44.         ! *** MAXIMUM ANGULAR WAVE NUMBER*DEPTH
 
   ! *** FOR WATER COLUMN POINTERS
-  ALLOCATE( IACTIVEWC1(100) )
-  ALLOCATE( IACTIVEWC2(100) )
-  IACTIVEWC1 = 0
-  IACTIVEWC2 = 0
+  Call AllocateDSI( IACTIVEWC1,  100,  0)
+  Call AllocateDSI( IACTIVEWC2,  100,  0)
 
   NACTIVEWC = 0
   IF( ISTRAN(1) > 0 )THEN
@@ -363,8 +361,7 @@ SUBROUTINE VARINIT
   Call AllocateDSI( FUHUD, LCM, KCM, NACTIVEWC, 0.0)
   Call AllocateDSI( FVHUD, LCM, KCM, NACTIVEWC, 0.0)
 
-  Allocate(FWUU(LCM,0:KCM,NACTIVEWC))
-  FWUU = 0.0
+  Call AllocateDSI( FWUU,  LCM, -KCM, NACTIVEWC, 0.0)
 
   ! *** Water column fluxes for output
   Call AllocateDSI( WC_UP, 100, KCM, NACTIVEWC, 0.0 )

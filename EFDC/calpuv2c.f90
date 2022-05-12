@@ -21,18 +21,18 @@ SUBROUTINE CALPUV2C
   !    2015-06       PAUL M. CRAIG     IMPLEMENTED SIGMA-Z (SGZ) IN EE7.3 
   !    2014-09       PAUL M. CRAIG     ADDED THE LWET BYPASS APPROACH
   !    2011-03       Paul M. Craig     Rewritten to F90 and added OMP
-  !    2002-02-28    John Hamrick      Modified Drying And Wetting Scheme.
-  !                                      The Old Formulation Remains  
-  !       See (ISDRY > 0 .AND. ISDRY < 98). The New Formulation Is Activated  
-  !       By ( ISDRY == 99 ). Also Added Option To Waste Water From Essentially  
-  !       Dry Cells Having Water Depths Greater Than HDRY.  Ie The High And  
-  !       Wet Cells Blocked By Dry Cells. This Is Actived By A Negative Value  
-  !       Of NDRYSTP Parameter Is The Efdc.Inp File  
-  !       Added Save Of Old Values Of Horizontal Flow Face Switches SUB1 & SVB1  
-  !       And Transport Bypass Mask, LMASKDRY For Dry Cells.
-  !       Added QDWASTE(L) To Save Source Equivalent Of Volume Loss Rate  
-  !       For Reducing Depth Of High/Dry Cells.  Also Added Concentration  
-  !       Adjustment  
+  !    2002-02-28    John Hamrick      Modified drying and wetting scheme.
+  !                                      the old formulation remains  
+  !       See (isdry > 0 .and. isdry < 98). The new formulation is activated  
+  !       by ( isdry == 99 ). Also added option to waste water from essentially  
+  !       dry cells having water depths greater than HDRY, i.e. the high and  
+  !       wet cells blocked by dry cells. This is actived by a negative value  
+  !       of ndrystp parameter is the efdc.inp file.  
+  !       Added save of old values of horizontal flow face switches SUB1 & SVB1  
+  !       and transport bypass mask, LMASKDRY for dry cells.
+  !       added QDWASTE(L) to save source equivalent of volume loss rate  
+  !       for reducing depth of high/dry cells.  Also added concentration  
+  !       adjustments. 
 
   USE GLOBAL 
   USE EFDCOUT
@@ -55,7 +55,7 @@ SUBROUTINE CALPUV2C
   REAL :: DELTD2, RLAMN, RLAMO, TMPX, TMPY, C1, TMPVAL, HDRY2, BELVAVG, SVPW1
   REAL :: SUBW, SUBE, SVBS, SVBN, DHPDT, DHPDT2, RDRY, CCMNM, CCMNMI, HDRY90
   REAL :: RVAL, HOLDTMP, RNPORI, DIVEXMX, DIVEXMN, DIVEX, ETGWTMP, ETGWAVL, EL, EW, ES
-  REAL(RKD), SAVE :: DAYOLD
+  REAL(RKD), SAVE :: DAYOLD, DAYOLD30
   
   INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: IACTIVE  
   INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: ICORDRYD
@@ -129,6 +129,7 @@ SUBROUTINE CALPUV2C
     NITERAVG = 0
     NCOUNT = 0
     DAYOLD = INT(TIMEDAY)
+    DAYOLD30 = DAYOLD + 30.
     
     ! INITIALIZE DIAGONAL
     CC=1.0
@@ -254,8 +255,8 @@ SUBROUTINE CALPUV2C
         TMPY = 1.0
         IF( UHE(L) /= 0.0) TMPX = U(L,KSZU(L))*HU(L)/UHE(L)
         IF( VHE(L) /= 0.0) TMPY=V(L,KSZV(L))*HV(L)/VHE(L)
-        RCX(L) = 1./( 1.+TMPX*RITB*DELT*HUI(L)*STBX(L)*SQRT(VU(L)*VU(L)+U(L,KSZU(L))*U(L,KSZU(L)))+DELT*FXVEGE(L) )
-        RCY(L) = 1./( 1.+TMPY*RITB*DELT*HVI(L)*STBY(L)*SQRT(UV(L)*UV(L)+V(L,KSZV(L))*V(L,KSZV(L)))+DELT*FYVEGE(L) )
+        RCX(L) = 1./( 1. + TMPX*RITB*DELT*HUI(L)*STBX(L)*SQRT(VU(L)*VU(L) + U(L,KSZU(L))*U(L,KSZU(L))) + DELT*FXVEGE(L) )
+        RCY(L) = 1./( 1. + TMPY*RITB*DELT*HVI(L)*STBY(L)*SQRT(UV(L)*UV(L) + V(L,KSZV(L))*V(L,KSZV(L))) + DELT*FYVEGE(L) )
         FUHDYE(L) = FUHDYE(L)*RCX(L)
         FVHDXE(L) = FVHDXE(L)*RCY(L)
       ENDDO
@@ -479,13 +480,11 @@ SUBROUTINE CALPUV2C
         VHDX1EK(L,K) = VHDXEK(L,K) 
       ENDDO
     ENDDO
-    IF( ISDRY == 0 )THEN
-      DO K=1,KC  
-        DO L=LF,LL
-          H1PK(L,K) = HPK(L,K)   
-        ENDDO
+    DO K=1,KC  
+      DO L=LF,LL
+        H1PK(L,K) = HPK(L,K)   
       ENDDO
-    ENDIF
+    ENDDO
 
     IF( ISGWIE >= 1 )THEN
       DO L=LF,LL  
@@ -507,16 +506,6 @@ SUBROUTINE CALPUV2C
   ENDDO   ! *** END OF DOMAIN LOOP
   !$OMP END PARALLEL DO
 
-  ! *** Advance layer thickenss for advective transport
-  IF( ISDRY > 0 )THEN
-    DO K=1,KC  
-      DO LP = 1,LAWET
-        L = LWET(LP)
-        H1PK(L,K) = HPK(L,K)    ! *** Using only wet cells preserves water level adjustments in CALTRAN
-      ENDDO
-    ENDDO
-  ENDIF
-  
   ! *** LAYER FACE BLOCKING
   IF( BSC > 0.0 .AND. NBLOCKED > 0 .AND. N > 1 )THEN
     ND = 1
@@ -586,8 +575,8 @@ SUBROUTINE CALPUV2C
 
     C1 = -0.5*DELTD2*G
     DO L=LF,LL
-      CS(L) = C1*SVB(L) *HRVO(L) *RCY(L) *HV(L) 
-      CW(L) = C1*SUB(L) *HRUO(L) *RCX(L) *HU(L)  
+      CS(L) = C1*SVB(L)*HRVO(L)*RCY(L)*HV(L) 
+      CW(L) = C1*SUB(L)*HRUO(L)*RCX(L)*HU(L)  
     ENDDO
     !DIR$ NOFUSION
     !$OMP SIMD PRIVATE(LE,LN)
@@ -608,7 +597,7 @@ SUBROUTINE CALPUV2C
   !$OMP SINGLE
   
   ! *** APPLY THE OPEN BOUNDARY CONDITIONS
-  IF( NBCSOP > 0 ) CALL SETOPENBC(DELTD2, HU, HV)    
+  IF( NBCSOP > 0 ) CALL SETOPENBC(DELTD2, HU, HV, NCORDRY)    
 
   ! *** INSERT IMPLICT SUB-GRID SCALE CHANNEL INTERACTIONS  
   IF( MDCHH >= 1 )THEN
@@ -646,9 +635,6 @@ SUBROUTINE CALPUV2C
 #endif
   CCMNMI = 1./CCMNM
 
-  ! *** APPLY THE OPEN BOUNDARY CONDITIONS FOR ADJACENT CELLS
-  !IF( NBCSOP > 0 ) CALL SETOPENBC2 
-  
   !$OMP END SINGLE  
   ! $OMP BARRIER
 
@@ -699,11 +685,11 @@ SUBROUTINE CALPUV2C
 #endif  
   ! *********************************************************************************************
   
-  ITERMAX = MAX(ITERMAX,IDRYTBP)
-  NITERAVG = NITERAVG + 1
-  ITERAVG = ITERAVG + IDRYTBP
+  ITERMAX   = MAX(ITERMAX,ITER)
+  ITERAVG   = ITERAVG + ITER
+  NITERAVG  = NITERAVG + 1
   
-  !if( process_id == 0 ) write(6,'(I10,3i5)') niter, process_id, NCORDRY, IDRYTBP   ! delme
+  !if( process_id == 0 ) write(6,'(I10,3i5)') niter, process_id, NCORDRY, ITER   ! delme
   
   !$OMP PARALLEL DEFAULT(SHARED) 
   !$OMP DO PRIVATE(ND,LF,LL,L,LS,LW) 
@@ -1076,23 +1062,22 @@ SUBROUTINE CALPUV2C
   ! *** *******************************************************************C
   ! *** FINISHED WITH WETTING/DRYING ITERATIONS
   IF( INT(TIMEDAY) /= DAYOLD .OR. TIMEDAY >= (TIMEEND-DELT/86400.) )THEN
-    if( process_id == master_id )THEN
-      OPEN(888,FILE=OUTDIR//'CALPUV.LOG',POSITION='APPEND')  
-      WRITE(888, '(I15,I10,F12.3,2(10X,2I10))') N,NITER,TIMEDAY,NINT(FLOAT(NCORDRYAVG)/FLOAT(NCOUNT)),NCORDRYMAX,NINT(FLOAT(ITERAVG)/FLOAT(NITERAVG)),ITERMAX
-      CLOSE(888)
-    ENDIF
-    
-    OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
-    IF( INT(TBEGIN) == DAYOLD ) WRITE(mpi_log_unit, '(//,A)') 'CALPUV Log for Number of Iterations'
+  
     ! *** Write CALPUV.LOG to every process log
-    WRITE(mpi_log_unit, '(I15,I10,F12.3,2(10X,2I10))') N,NITER,TIMEDAY,NINT(FLOAT(NCORDRYAVG)/FLOAT(NCOUNT)),NCORDRYMAX,NINT(FLOAT(ITERAVG)/FLOAT(NITERAVG)),ITERMAX
+    OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
+    
+    IF( INT(TBEGIN) == DAYOLD .OR. INT(TIMEDAY) >= DAYOLD30 )THEN
+      WRITE(mpi_log_unit,'(A)') '              N     NITER     TIMEDAY             NPUVAVG   NPUVMAX            NCONGAVG  NCONGMAX' 
+      DAYOLD30 = DAYOLD + 30.
+    ENDIF
+    WRITE(mpi_log_unit, '(I15,I10,F12.3,3(10X,2I10))') N, NITER, TIMEDAY, NINT(FLOAT(NCORDRYAVG)/FLOAT(NCOUNT)), NCORDRYMAX, &
+                                                                          NINT(FLOAT(ITERAVG)/FLOAT(NITERAVG)),  ITERMAX
     CLOSE(mpi_log_unit)
     
     NCORDRYAVG = 0
-    NCORDRYAVG = 0
     ITERMAX = 0
-    NITERAVG = 0
     ITERAVG = 0
+    NITERAVG = 0
     NCOUNT = 0
     DAYOLD = INT(TIMEDAY)
   ENDIF
@@ -1238,7 +1223,9 @@ SUBROUTINE CALPUV2C
         LMASKDRY(L)=.TRUE.  
       END DO  
       DO L=LF,LL  
+        ! *** Bypass dry cells unless they are actively have boundary flows
         IF( HP(L) < HDRY )THEN
+          IF( QSUME(L) /= 0.0 ) CYCLE        ! *** Check if cell is an active boundary
           LE=LEC(L)
           LN=LNC(L) 
           IUW=0  
@@ -1340,7 +1327,7 @@ SUBROUTINE CALPUV2C
   ENDIF
 
   ! *** CHECK FOR NEGATIVE DEPTHS  
-  CALL NEGDEP(NOPTIMAL,LDMOPT,QCHANUT,QCHANVT,2,SUB1,SVB1,NNEGFLG)  
+  CALL NEGDEP(NOPTIMAL, LDMOPT, QCHANUT, QCHANVT, 2, SUB1, SVB1, HPOLD, NNEGFLG)  
   
   ! *** CALCULATE THE EXTERNAL DIVERGENCE  
   IF( ISDIVEX > 0 )THEN  
@@ -1491,7 +1478,6 @@ SUBROUTINE CALPUV2C
       ENDDO
 
       ! *** UPDATE HU & HV FOR ALL CELLS
-      !$OMP SIMD PRIVATE(LW,LS)
       DO L=LF,LL
         LW = LWC(L)
         LS = LSC(L)

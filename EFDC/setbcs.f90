@@ -214,20 +214,22 @@ SUBROUTINE SETBCS
     J = JPBW(LL)
     L = LIJ(I,J)
     LPBW(LL) = L
-    SPB(L) = 0.           ! *** Used for On/Off of various BC forcings at !open boundaries
-    SUB(L) = 0.
-    SVB(L) = 0.
-    SVB(LNC(L)) = 0.
+    LE = LEC(L)
     SWB(L) = 0.               ! *** Used for On/Off of Vertical Velocities
-    SAAX(L) = 0.              ! *** Used for On/Off of Horizontal Momentum Stresses (X Dir)
-    IF( ISPBW(LL) <=  1 .OR. ISPBW(LL) == 4 )THEN
-      SWB(LEC(L)) = 0.
-      SVB(LEC(L)) = 0.
-      SVB(LNC(LEC(L))) = 0.
-      SCAX(LEC(L)) = 0.       ! *** Used for On/Off of Coriolis & Curvature Stresses
+    SPB(L) = 0.               ! *** Used for On/Off of various BC forcings at open boundaries
+    
+    SUB(L) = 0.
+    SVB(L) = 0.               ! *** Bottom of cell
+    SVB(LNC(L)) = 0.          ! *** Top of cell
+    SAAX(LE) = 0.             ! *** Used for On/Off of Explicit Solution Horizontal Momentum
+    SCAX(LE) = 0.             ! *** Used for On/Off of Coriolis Acceleration
+    SDX(LE) = 0.              ! *** Used for On/Off of Horizontal Eddy Viscosity
+    IF( ISPBW(LL) == 0 .OR. ISPBW(LL) == 1 .OR. ISPBW(LL) == 4 )THEN
+      ! *** Zero Tangiential (East of West BC)
+      SWB(LE) = 0.
+      SVB(LE) = 0.     
+      SVB(LNC(LE)) = 0.
     END IF
-    SAAX(LEC(L)) = 0.         ! *** Used for On/Off of Horizontal Momentum Stresses (X Dir)
-    SDX(LEC(L)) = 0.          ! *** Used for On/Off of Horizontal Momentum Diffusion Stresses
   ENDDO
   
   DO LL = 1,NPBE
@@ -235,18 +237,21 @@ SUBROUTINE SETBCS
     J = JPBE(LL)
     L = LIJ(I,J)
     LPBE(LL) = L
-    SPB(L) = 0.
-    SVB(L) = 0.
-    SVB(LNC(L)) = 0.
-    SWB(L) = 0.
-    IF( ISPBE(LL) <=  1 .OR. ISPBE(LL) == 4 )THEN
-      SWB(LWC(L)) = 0.
-      SVB(LWC(L)) = 0.
-      SVB(LNC(LWC(L))) = 0.
+    LW = LWC(L)
+    SWB(L) = 0.               ! *** Used for On/Off of Vertical Velocities
+    SPB(L) = 0.               ! *** Used for On/Off of various BC forcings at open boundaries
+    
+    SVB(L) = 0.               ! *** Bottom of cell
+    SVB(LNC(L)) = 0.          ! *** Top of cell
+    SAAX(L) = 0.              ! *** Used for On/Off of Explicit Solution Horizontal Momentum
+    SCAX(L) = 0.              ! *** Used for On/Off of Coriolis Acceleration
+    SDX(L) = 0.               ! *** Used for On/Off of Horizontal Eddy Viscosity
+    IF( ISPBE(LL) == 0 .OR. ISPBE(LL) == 1 .OR. ISPBE(LL) == 4 )THEN
+      ! *** Zero Tangiential (West of East BC)
+      SWB(LW) = 0.
+      SVB(LW) = 0.
+      SVB(LNC(LW)) = 0.
     END IF
-    SCAX(L) = 0.
-    SAAX(L) = 0.
-    SDX(L) = 0.
   ENDDO
   
   DO LL = 1,NPBS
@@ -255,19 +260,21 @@ SUBROUTINE SETBCS
     L = LIJ(I,J)
     LPBS(LL) = L
     LN = LNC(L)
-    SPB(L) = 0.
-    SVB(L) = 0.
-    SUB(L) = 0.
-    SUB(LEC(L)) = 0.
-    SWB(L) = 0.
-    IF( ISPBS(LL) <=  1 .OR. ISPBS(LL) == 4 )THEN
+    SWB(L) = 0.               ! *** Used for On/Off of Vertical Velocities
+    SPB(L) = 0.               ! *** Used for On/Off of various BC forcings at open boundaries
+    
+    SVB(L) = 0.     
+    SUB(L) = 0.               ! *** West of cell  
+    SUB(LEC(L)) = 0.          ! *** East of cell
+    SAAY(LN) = 0.             ! *** Used for On/Off of Explicit Solution Horizontal Momentum
+    SCAY(LN) = 0.             ! *** Used for On/Off of Coriolis Acceleration
+    SDY(LN) = 0.              ! *** Used for On/Off of Horizontal Eddy Viscosity
+    IF( ISPBS(LL) == 0 .OR. ISPBS(LL) == 1 .OR. ISPBS(LL) == 4 )THEN
+      ! *** Zero tangiential (North of South BC)
       SWB(LN) = 0.
       SUB(LN) = 0.
       SUB(LEC(LN)) = 0.
-      SCAY(LN) = 0.
     END IF
-    SAAY(LN) = 0.
-    SDY(LN) = 0.
   ENDDO
   
   DO LL = 1,NPBN
@@ -276,25 +283,19 @@ SUBROUTINE SETBCS
     L = LIJ(I,J)
     LPBN(LL) = L
     LS = LSC(L)
-    SPB(L) = 0.
-    SUB(L) = 0.
-    SUB(LEC(L)) = 0.
-    SWB(L) = 0.
-    SAAY(L) = 0.
-    SDY(L) = 0.
-    SCAX(L) = 0.
-    SCAX(LEC(L)) = 0.
-    SAAX(L) = 0.
-    SAAX(LEC(L)) = 0.
-    IF( ISPBN(LL) <=  1 .OR. ISPBN(LL) == 4 )THEN
+    SWB(L) = 0.               ! *** Used for On/Off of Vertical Velocities
+    SPB(L) = 0.               ! *** Used for On/Off of various BC forcings at open boundaries
+    
+    SUB(L) = 0.               ! *** West of cell  
+    SUB(LEC(L)) = 0.          ! *** East of cell
+    SAAY(L) = 0.              ! *** Used for On/Off of Explicit Solution Horizontal Momentum
+    SCAY(L) = 0.              ! *** Used for On/Off of Coriolis Acceleration
+    SDY(L) = 0.               ! *** Used for On/Off of Horizontal Eddy Viscosity
+    IF( ISPBN(LL) == 0 .OR. ISPBN(LL) == 1 .OR. ISPBN(LL) == 4 )THEN
+      ! *** Zero Tangiential (South of North BC)
+      SWB(LS) = 0.
       SUB(LS) = 0.
       SUB(LEC(LS)) = 0.
-      SWB(LS) = 0.
-      SCAY(L) = 0.
-      SCAX(LS) = 0.
-      SCAX(LEC(LS)) = 0.
-      SAAX(LS) = 0.
-      SAAX(LEC(LS)) = 0.
     END IF
   ENDDO
 
@@ -686,6 +687,8 @@ SUBROUTINE SETBCS
     NBCS = NBCS+1
     LBCS(NBCS) = L
 
+    !CYCLE    ! DELME
+    
     ! *** SET SAAX & SAAY FOR BOUNDARY MOMENTUM FLUXES
     ! *** EAST/WEST MOMENTUM
     LBERC(NBCS) = L
@@ -739,6 +742,8 @@ SUBROUTINE SETBCS
     NBCS = NBCS + 1
     LBCS(NBCS) = L
 
+    CYCLE    ! DELME
+
     ! *** SET SAAX & SAAY FOR BOUNDARY MOMENTUM FLUXES
     ! *** EAST/WEST MOMENTUM
     LBERC(NBCS) = L
@@ -782,6 +787,8 @@ SUBROUTINE SETBCS
       L = LIJ(ID,JD)
       NBCS = NBCS + 1
       LBCS(NBCS) = L
+
+      !CYCLE    ! DELME
 
       ! *** SET SAAX & SAAY FOR BOUNDARY MOMENTUM FLUXES
       ! *** EAST/WEST MOMENTUM
@@ -830,6 +837,8 @@ SUBROUTINE SETBCS
     L = LIJ(IU,JU)
     NBCS = NBCS + 1
     LBCS(NBCS) = L
+    
+    !CYCLE   ! DELME
 
     ! *** SET SAAX & SAAY FOR BOUNDARY MOMENTUM FLUXES
     ! *** EAST/WEST MOMENTUM
@@ -878,9 +887,9 @@ SUBROUTINE SETBCS
     L = LIJ(ID,JD)
     NBCS = NBCS + 1
     LBCS(NBCS) = L
-    !LBERC(NBCS) = 1
-    !LBNRC(NBCS) = 1
 
+    !CYCLE   ! DELME
+    
     ! *** SET SAAX & SAAY FOR BOUNDARY MOMENTUM FLUXES
     ! *** EAST/WEST MOMENTUM
     LBERC(NBCS) = L

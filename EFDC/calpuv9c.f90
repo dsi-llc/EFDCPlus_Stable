@@ -37,10 +37,10 @@ SUBROUTINE CALPUV9C(ISTL_)
   INTEGER, SAVE :: NOPTIMAL
   INTEGER, SAVE :: LDMOPT
   REAL    :: DELTD2, RLAMN, RLAMO, TMPX, TMPY, C1, TMPVAL, HOLDTMP, BELVAVG, RVAL
-  REAL    :: SVPW1, HPPMC, HDRY10, HDRY90, HDRY2
+  REAL    :: SVPW1, HPPMC, HDRY10, HDRY90
   REAL    :: SUBW, SUBE, SVBS, SVBN, DHPDT, DHPDT2, RDRY, CCMNM, CCMNMI
   REAL    :: RNPORI, DIVEXMX, DIVEXMN, DIVEX, ETGWTMP, ETGWAVL
-  REAL(RKD), SAVE :: DAYOLD
+  REAL(RKD), SAVE :: DAYOLD, DAYOLD30
 
   INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: IACTIVE
   INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: ICORDRYD
@@ -61,6 +61,7 @@ SUBROUTINE CALPUV9C(ISTL_)
 
   REAL(RKD), EXTERNAL :: DSTIME
   REAL(RKD)           :: TTDS, TWAIT                 ! MODEL TIMING TEMPORARY VARIABLE
+  
   IF(  .NOT. ALLOCATED(IACTIVE) )THEN
     ! *** SET THE OPTIMAL NUMBER OF THREADS.  USE 100 CELLS PER THREAD AS GENERAL RULE
     NOPTIMAL = MIN(NTHREADS,8,MAX(LA/100,1))
@@ -108,7 +109,8 @@ SUBROUTINE CALPUV9C(ISTL_)
     NITERAVG = 0
     NCOUNT = 0
     DAYOLD = INT(TIMEDAY)
-
+    DAYOLD30 = DAYOLD + 30.
+    
     ! INITIALIZE DIAGONAL
     CC=1.0
 
@@ -167,7 +169,7 @@ SUBROUTINE CALPUV9C(ISTL_)
   IF( BSC > 1.E-6 )Then
     CALL CALEBI
   ENDIF
-
+  
   ! *** BEGIN DOMAIN LOOP
   !$OMP PARALLEL DEFAULT(SHARED)
 
@@ -274,16 +276,16 @@ SUBROUTINE CALPUV9C(ISTL_)
       LL=MIN(LF+LDMOPT-1,LA)
 
       DO L=LF,LL
-        ISCDRY(L)=0
-        SUB1(L)=SUB(L)
-        SVB1(L)=SVB(L)
-        SUB(L)=SUBO(L)
-        SVB(L)=SVBO(L)
-        SBX(L)=SBXO(L)
-        SBY(L)=SBYO(L)
-        OLDMASK(L)=LMASKDRY(L)
+        ISCDRY(L) = 0
+        SUB1(L) = SUB(L)
+        SVB1(L) = SVB(L)
+        SUB(L)  = SUBO(L)
+        SVB(L)  = SVBO(L)
+        SBX(L)  = SBXO(L)
+        SBY(L)  = SBYO(L)
+        OLDMASK(L) = LMASKDRY(L)
       ENDDO
-    ENDDO   ! *** END OF DOMAIN
+    ENDDO
     !$OMP END DO
   ENDIF
 
@@ -336,12 +338,12 @@ SUBROUTINE CALPUV9C(ISTL_)
         ENDDO
       ENDDO
 
-        DO K=1,KC
-          DO L=LF,LL
-            H2PK(L,K) = H1PK(L,K)
-            H1PK(L,K) = HPK(L,K)
-          ENDDO
+      DO K=1,KC
+        DO L=LF,LL
+          H2PK(L,K) = H1PK(L,K)
+          H1PK(L,K) = HPK(L,K)
         ENDDO
+      ENDDO
 
       IF( ISGWIE >= 1 )THEN
         DO L=LF,LL
@@ -438,7 +440,7 @@ SUBROUTINE CALPUV9C(ISTL_)
   !$OMP SINGLE
 
   ! *** APPLY THE OPEN BOUNDARY CONDITIONS
-  IF( NBCSOP > 0 ) CALL SETOPENBC(DELTD2, HUTMP, HVTMP)
+  IF( NBCSOP > 0 ) CALL SETOPENBC(DELTD2, HUTMP, HVTMP, NCORDRY)
 
   ! *** INSERT IMPLICT SUB-GRID SCALE CHANNEL INTERACTIONS
   IF( MDCHH >= 1 )CALL SUBCHAN(QCHANUT,QCHANVT,IACTIVE,DELT)
@@ -463,9 +465,6 @@ SUBROUTINE CALPUV9C(ISTL_)
   ENDDO
   CCMNMI=1./CCMNM
 
-  ! *** APPLY THE OPEN BOUNDARY CONDITIONS FOR ADJACENT CELLS
-  !IF( NBCSOP > 0 ) CALL SETOPENBC2
-  
   !$OMP END SINGLE
 
   ! *** SCALE BY MINIMUM DIAGONAL  (IRVEC == 9 IS THE ONLY OPTION NOW)
@@ -500,9 +499,9 @@ SUBROUTINE CALPUV9C(ISTL_)
   IF( MDCHH >= 1 ) CALL CONGRADC
   ! *********************************************************************************************
   
-  ITERMAX = MAX(ITERMAX,IDRYTBP)
+  ITERMAX = MAX(ITERMAX,ITER)
   NITERAVG = NITERAVG + 1
-  ITERAVG = ITERAVG + IDRYTBP
+  ITERAVG = ITERAVG + ITER
 
   !$OMP PARALLEL DEFAULT(SHARED)
   !$OMP DO PRIVATE(ND,LF,LL,L,LS,LW)
@@ -661,12 +660,11 @@ SUBROUTINE CALPUV9C(ISTL_)
     ENDDO
   ENDIF
 
-  ! *** PERFORM INTERMEDIATE UPDATES OF P
+  ! *** Check for wet and dry cell changes
   ISNEG = 0
   IF( ISDRY > 0 )THEN
     ICORDRY=0
     ICORDRYD=0
-    HDRY2=2.*HDRY
     HDRY90 = 0.9*HDRY
     HDRY10 = 0.1*HDRY
 
@@ -807,17 +805,44 @@ SUBROUTINE CALPUV9C(ISTL_)
 
             ELSEIF( HP(L) < HDRY90 .OR. HPPMC < HDRY )THEN
               ! *** HP < HDRY.  SET SWITCHES TO DRY
-              SUB(L)=0.0
-              SUB(LE)=0.0
-              SVB(L)=0.0
-              SVB(LN)=0.0
-              SBX(L)=0.0
-              SBX(LE)=0.0
-              SBY(L)=0.0
-              SBY(LN)=0.0
+              RDRY = SUB(L) + SUB(LE) + SVB(L) + SVB(LN)
+              SUB(L)  = 0.0
+              SUB(LE) = 0.0
+              SVB(L)  = 0.0
+              SVB(LN) = 0.0
+              SBX(L)  = 0.0
+              SBX(LE) = 0.0
+              SBY(L)  = 0.0
+              SBY(LN) = 0.0
               IF( ISCDRY(L) == 0 )THEN
-                ISCDRY(L)=1
-                ICORDRYD(ND)=1
+                ISCDRY(L) = 1
+                ICORDRYD(ND) = 1
+              ENDIF
+              IF( HP(L) < 0.0 )THEN
+                IF( RDRY == 0.0 .AND. QSUME(L) > 1e-7 )THEN
+                  ! *** Reset cell
+                  PRINT '(i10,F12.5,3I6,3F10.4,4F5.1)', niter, TIMEDAY, ISTL, NCORDRY, L, HP(L), HPPMC, BELV(L), SUB(L), SUB(LEC(L)), SVB(L), SVB(LNC(L))   ! DELME
+                  HP(L) = HPPMC
+                  UHDY1E(L) = 0.0
+                  VHDX1E(L) = 0.0
+                  UHDY1E(LE) = 0.0
+                  VHDX1E(LN) = 0.0
+                  IF( ISTL_ == 3 )THEN
+                    H1P(L) = H2P(L)
+                    UHDY2E(L) = 0.0
+                    VHDX2E(L) = 0.0
+                    UHDY2E(LE) = 0.0
+                    VHDX2E(LN) = 0.0
+                    UHDY1(L,:) = 0.0
+                    VHDX1(L,:) = 0.0
+                    UHDY1(LE,:) = 0.0
+                    VHDX1(LN,:) = 0.0
+                  ENDIF
+                  IF( ISCDRY(L) /= 2 )THEN
+                    ICORDRYD(ND) = 1
+                  ENDIF
+                  ISCDRY(L) = 2
+                ENDIF
               ENDIF
             ENDIF
           ENDIF
@@ -864,27 +889,25 @@ SUBROUTINE CALPUV9C(ISTL_)
   NCORDRYAVG = NCORDRYAVG + NCORDRY
   NCOUNT = NCOUNT + 1
   
-
   ! *** *******************************************************************C
   ! *** FINISHED WITH WETTING/DRYING ITERATIONS
   IF( INT(TIMEDAY) /= DAYOLD .OR. TIMEDAY >= (TIMEEND-DELT/86400.) )THEN
-    if( process_id == master_id )THEN
-      OPEN(888,FILE=OUTDIR//'CALPUV.LOG',POSITION='APPEND')
-      WRITE(888, '(I15,I10,F12.3,2(10X,2I10))') N,NITER,TIMEDAY,NINT(FLOAT(NCORDRYAVG)/FLOAT(NCOUNT)),NCORDRYMAX,NINT(FLOAT(ITERAVG)/FLOAT(NITERAVG)),ITERMAX
-      CLOSE(888)
-    ENDIF
-
-    OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
-    IF( INT(TBEGIN) == DAYOLD ) WRITE(mpi_log_unit, '(//,A)') 'CALPUV Log for Number of Iterations'
+  
     ! *** Write CALPUV.LOG to every process log
-    WRITE(mpi_log_unit, '(I15,I10,F12.3,2(10X,2I10))') N,NITER,TIMEDAY,NINT(FLOAT(NCORDRYAVG)/FLOAT(NCOUNT)),NCORDRYMAX,NINT(FLOAT(ITERAVG)/FLOAT(NITERAVG)),ITERMAX
+    OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
+    
+    IF( INT(TBEGIN) == DAYOLD .OR. INT(TIMEDAY) >= DAYOLD30 )THEN
+      WRITE(mpi_log_unit,'(A)') '              N     NITER     TIMEDAY             NPUVAVG   NPUVMAX            NCONGAVG  NCONGMAX' 
+      DAYOLD30 = DAYOLD + 30.
+    ENDIF
+    WRITE(mpi_log_unit, '(I15,I10,F12.3,3(10X,2I10))') N, NITER, TIMEDAY, NINT(FLOAT(NCORDRYAVG)/FLOAT(NCOUNT)), NCORDRYMAX, &
+                                                                          NINT(FLOAT(ITERAVG)/FLOAT(NITERAVG)),  ITERMAX
     CLOSE(mpi_log_unit)
-
-    NCORDRYAVG = 0
+    
     NCORDRYAVG = 0
     ITERMAX = 0
-    NITERAVG = 0
     ITERAVG = 0
+    NITERAVG = 0
     NCOUNT = 0
     DAYOLD = INT(TIMEDAY)
   ENDIF
@@ -1025,7 +1048,9 @@ SUBROUTINE CALPUV9C(ISTL_)
         LMASKDRY(L)=.TRUE.
       END DO
       DO L=LF,LL
+        ! *** Bypass dry cells unless they are actively have boundary flows
         IF( HP(L) < HDRY )THEN
+          IF( QSUME(L) /= 0.0 ) CYCLE        ! *** Check if cell is an active boundary
           LE=LEC(L)
           LN=LNC(L)
           IUW=0
@@ -1130,7 +1155,7 @@ SUBROUTINE CALPUV9C(ISTL_)
   ENDIF
 
   ! *** CHECK FOR NEGATIVE DEPTHS
-  CALL NEGDEP(NOPTIMAL,LDMOPT,QCHANUT,QCHANVT,3,SUB1,SVB1,NNEGFLG)
+  CALL NEGDEP(NOPTIMAL, LDMOPT, QCHANUT, QCHANVT, 3, SUB1, SVB1, HPOLD, NNEGFLG)
 
   ! **  CALCULATE THE EXTERNAL DIVERGENCE
   IF( ISDIVEX > 0 )THEN
@@ -1316,7 +1341,6 @@ SUBROUTINE CALPUV9C(ISTL_)
       ENDDO
 
       ! *** UPDATE HU & HV FOR ALL CELLS
-      !$OMP SIMD PRIVATE(LW,LS)
       DO L=LF,LL
         LW=LWC(L)
         LS=LSC(L)

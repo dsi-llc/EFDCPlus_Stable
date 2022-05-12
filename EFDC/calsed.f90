@@ -380,7 +380,7 @@ SUBROUTINE CALSED
             PROBDEP = FPROBDEP(TAUDSS,TAUBHYDRO)
           ENDIF
         ENDIF
-        IF( SED(L,KSZ(L),NS) > SEDMDGM) PROBDEP = 1.
+        IF( SED(L,KSZ(L),NS) > SEDMDGM ) PROBDEP = 1.
         
         ! *** Handle Propwash
         IF( PROP_ERO(L,0) > 0.0 )THEN

@@ -50,7 +50,8 @@ SUBROUTINE CALEXP (ISTL_)
 
   IMPLICIT NONE
   
-  INTEGER :: I, LU, NS, ID,  JD, KD, LD, K,  L,  LL, LW, LNW, LSE, LE, LP                                                                        
+  INTEGER :: I, LU, NS, ID,  JD, KD, LD, K,  L,  LL, LW, LNW, LSE, LE, LP  
+  INTEGER :: LEE, LWW, LNN, LSS
   INTEGER :: ND, LF, NWR, IU, JU, KU, LN, LS, ISTL_   
   
   REAL :: QMF, QUMF, WUU, VTMPATU, UTMPATV, UMAGTMP, VMAGTMP, CACSUMT                                                                      
@@ -544,7 +545,7 @@ SUBROUTINE CALEXP (ISTL_)
             L=LKWET(LP,K,ND)  
             LE=LEC(L)
             LN=LNC(L)
-            CAC(L,K) = ( FCORC(L)*DXYP(L) + 0.5*SNLT*(V(LN,K)+V(L,K))*DYDI(L) - 0.5*SNLT*(U(LE,K)+U(L,K))*DXDJ(L) )*HP(L)
+            CAC(L,K) = ( FCORC(L)*DXYP(L) + 0.5*SNLT*(V(LN,K) + V(L,K))*DYDI(L) - 0.5*SNLT*(U(LE,K) + U(L,K))*DXDJ(L) )*HP(L)
             CACSUM(ND) = CACSUM(ND)+CAC(L,K)
           ENDDO
         ENDDO
@@ -558,7 +559,7 @@ SUBROUTINE CALEXP (ISTL_)
         DO L=2,LA
           LE = LEC(L)
           LN = LNC(L)
-          CAC(L,K) = ( FCORC(L)*DXYP(L) + 0.5*SNLT*(V(LN,K)+V(L,K))*DYDI(L) - 0.5*SNLT*(U(LE,K)+U(L,K))*DXDJ(L) )*HP(L)
+          CAC(L,K) = ( FCORC(L)*DXYP(L) + 0.5*SNLT*(V(LN,K) + V(L,K))*DYDI(L) - 0.5*SNLT*(U(LE,K) + U(L,K))*DXDJ(L) )*HP(L)
           CFEFF = ABS(CAC(L,K))*DXYIP(L)*HPI(L)
           CFMAX = MAX(CFMAX,CFEFF)
           CACSUM(ND) = CACSUM(ND)+CAC(L,K)
@@ -607,8 +608,8 @@ SUBROUTINE CALEXP (ISTL_)
           LW = LWC(L)
           LNW = LNWC(L)  
           LSE = LSEC(L)  
-          FCAX(L,K) = ROLD*FCAX(L,K) + 0.25*RNEW*SCAX(L)*(CAC(L,K)*(V(LN,K)+V(L,K)) + CAC(LW,K)*(V(LNW,K)+V(LW,K)))
-          FCAY(L,K) = ROLD*FCAY(L,K) + 0.25*RNEW*SCAY(L)*(CAC(L,K)*(U(LE,K)+U(L,K)) + CAC(LS,K)*(U(LSE,K)+U(LS,K)))
+          FCAX(L,K) = ROLD*FCAX(L,K) + 0.25*RNEW*SCAX(L)*(CAC(L,K)*(V(LN,K) + V(L,K)) + CAC(LW,K)*(V(LNW,K) + V(LW,K)))
+          FCAY(L,K) = ROLD*FCAY(L,K) + 0.25*RNEW*SCAY(L)*(CAC(L,K)*(U(LE,K) + U(L,K)) + CAC(LS,K)*(U(LSE,K) + U(LS,K)))
         ENDDO
       ENDDO
     ENDDO
@@ -685,23 +686,23 @@ SUBROUTINE CALEXP (ISTL_)
     ! *** BC CELL
     L = LBCS(LL)
     DO K=KSZ(L),KC
-      FX(L,K) = SAAX(L)*FX(L,K)
-      FY(L,K) = SAAY(L)*FY(L,K)
+      FX(L,K) = SAAX(L)*FX(L,K) + FUHJ(L,K)   ! ***  M4/S2
+      FY(L,K) = SAAY(L)*FY(L,K) + FVHJ(L,K)   ! ***  M4/S2
     ENDDO
 
     ! *** EAST/WEST ADJACENT CELL
     L = MAX(1,LBERC(LL))
     DO K=KSZ(L),KC
-      FX(L,K) = SAAX(L)*FX(L,K)
+      FX(L,K) = SAAX(L)*FX(L,K) + FUHJ(L,K)   ! ***  M4/S2
     ENDDO
 
     ! *** NORTH/SOUTH ADJACENT CELL
-    L = MAX(1,LBNRC(LL))
+    L = MAX(1, LBNRC(LL))
     DO K=KSZ(L),KC
-      FY(L,K) = SAAY(L)*FY(L,K)
+      FY(L,K) = SAAY(L)*FY(L,K) + FVHJ(L,K)   ! ***  M4/S2
     ENDDO
   ENDDO
-
+    
   ! *** Selective zero
   IF( ISPROPWASH == 2 .AND. NACTIVESHIPS > 0 )THEN
     DO I = 1, total_ships
@@ -823,6 +824,85 @@ SUBROUTINE CALEXP (ISTL_)
   !
   !----------------------------------------------------------------------!
   IF( ISHDMF >= 1 )THEN
+    ! *** Modification for open boundaries for large cell aspect ratios
+    !$OMP SINGLE
+    DO LL=1,NPBW
+      IF( ISPBW(LL) == 0 .OR. ISPBW(LL) == 1 .OR. ISPBW(LL) == 4 )THEN
+        L   = LEC(LPBW(LL))
+        LE  = LEC(L)
+        LEE = LEC(LE)
+        ! *** Both adjacent and connected cell must both meet aspect criteria
+        IF( MAX(DXP(LE),DYP(LE)) / MIN(DXP(LE),DYP(LE)) > 4.0 )THEN
+          IF( MAX(DXP(LEE),DYP(LEE)) / MIN(DXP(LEE),DYP(LEE)) > 4.0 )THEN
+            DO K=KSZ(LE),KC
+              FMDUY(LE,K) = 0.0
+            ENDDO
+            DO K=KSZ(LEE),KC
+              FMDUY(LEE,K) = 0.0
+            ENDDO
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDDO
+  
+    DO LL=1,NPBE
+      IF( ISPBE(LL) == 0 .OR. ISPBE(LL) == 1 .OR. ISPBE(LL) == 4 )THEN
+        L   = LPBE(LL)
+        LW  = LWC(L)
+        LWW = LEC(LW)
+        ! *** Both adjacent and connected cell must both meet aspect criteria
+        IF( MAX(DXP(LW),DYP(LW)) / MIN(DXP(LW),DYP(LW)) > 4.0 )THEN
+          IF( MAX(DXP(LWW),DYP(LWW)) / MIN(DXP(LWW),DYP(LWW)) > 4.0 )THEN
+            DO K=KSZ(LW),KC
+              FMDUY(LW,K) = 0.0
+            ENDDO
+            DO K=KSZ(LWW),KC
+              FMDUY(LWW,K) = 0.0
+            ENDDO
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDDO
+  
+    DO LL=1,NPBS
+      IF( ISPBS(LL) == 0 .OR. ISPBS(LL) == 1 .OR. ISPBS(LL) == 4 )THEN
+        L = LPBS(LL)
+        LN = LNC(L)
+        LNN = LEC(LN)
+        ! *** Both adjacent and connected cell must both meet aspect criteria
+        IF( MAX(DXP(LN),DYP(LN)) / MIN(DXP(LN),DYP(LN)) > 4.0 )THEN
+          IF( MAX(DXP(LNN),DYP(LNN)) / MIN(DXP(LNN),DYP(LNN)) > 4.0 )THEN
+            DO K=KSZ(LN),KC
+              FMDUY(LN,K) = 0.0
+            ENDDO
+            DO K=KSZ(LNN),KC
+              FMDUY(LNN,K) = 0.0
+            ENDDO
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDDO
+  
+    DO LL=1,NPBN
+      IF( ISPBN(LL) == 0 .OR. ISPBN(LL) == 1 .OR. ISPBN(LL) == 4 )THEN
+        L = LPBN(LL)
+        LS = LSC(L)
+        LSS = LEC(LS)
+        ! *** Both adjacent and connected cell must both meet aspect criteria
+        IF( MAX(DXP(LS),DYP(LS)) / MIN(DXP(LS),DYP(LS)) > 4.0 )THEN
+          IF( MAX(DXP(LSS),DYP(LSS)) / MIN(DXP(LSS),DYP(LSS)) > 4.0 )THEN
+            DO K=KSZ(LS),KC
+              FMDUY(LS,K) = 0.0
+            ENDDO
+            DO K=KSZ(LSS),KC
+              FMDUY(LSS,K) = 0.0
+            ENDDO
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDDO
+    !$OMP END SINGLE
+      
     !$OMP DO PRIVATE(ND,K,LP,L,LE,LS,LN,LW,FMDUY_TMP,FMDVX_TMP)
     DO ND=1,NDM  
       DO K=1,KC
@@ -997,8 +1077,7 @@ SUBROUTINE CALEXP (ISTL_)
   !
   !----------------------------------------------------------------------!
   !$OMP DO PRIVATE(ND,K,LP,L)
-  DO ND=1,NDM  
-      
+  DO ND=1,NDM   
     DO K=1,KC  
       DO LP=1,LLWET(K,ND)
         L = LKWET(LP,K,ND)  

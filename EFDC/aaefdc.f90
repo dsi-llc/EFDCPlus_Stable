@@ -19,12 +19,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !----------------------------------------------------------------------!
 !
-!  RELEASE:         EFDCPlus_10.4
+!  RELEASE:         EFDCPlus_11.2
 !                   Domain Decomposition with MPI
 !                   Propeller Wash 
 !                   New WQ kinetics with user defined algal groups and zooplankton
 !                   SIGMA-Zed (SGZ) Vertical Layering
-!  DATE:            2022-01-14
+!  DATE:            2022-04-14
 !  BY:              DSI, LLC
 !                   EDMONDS, WASHINGTON  98020
 !                   USA
@@ -106,6 +106,7 @@ PROGRAM EFDC
   !    2021-08       Tran D. Kien      Rewrote WQ kinetics to allow unlimited phytoplankton and macrophyte classes, with unlimited zooplankton classes
   !                  Paul M. Craig
   !    2021-12       Paul M. Craig     Added propeller jet efflux momentum to EFDC+ flow field
+  !    2022-01       Paul M. Craig     Added cohesive mass erosion classes for propwash induced resuspension
 
   USE GLOBAL
   USE OMP_LIB
@@ -181,7 +182,7 @@ PROGRAM EFDC
   Double Precision :: starting_time, ending_time
   
   ! *** When updating the version data also update the EXE date in the project settings
-  EFDC_VER = '2022-01-14'
+  EFDC_VER = '2022-04-14'
   
   IERR = 0
 #ifdef DEBUGGING
@@ -192,11 +193,11 @@ PROGRAM EFDC
   ! *** Initialize MPI communicator
   Call Initialize_MPI
 
-  ! ***  Write to screen just with the 'master' process
-  WRITE(*,11) num_Processors
-11 FORMAT( '********************************************************************************',/, &
-           '***           This EFDCPlus run is using:',I6,' MPI processes(s)             ***',/, &
-           '********************************************************************************',/)
+  ! ***  Write to screen how manh processes/domains are being used for each process
+  WRITE(*,11) num_Processors, process_id
+11 FORMAT( '***********************************************************************************',/, &
+           '***  This EFDCPlus run is using:',I6,' MPI domains(s). Preparing domain:',i6,'  ***',/, &
+           '***********************************************************************************',/)
 #else
   process_id = 0
   master_id  = 0
@@ -257,9 +258,9 @@ PROGRAM EFDC
   If( process_id == master_id )THEN
     !$    WRITE(*,1) num_Processors, NTHREADS
 
-1   FORMAT( '********************************************************************************',/, &
-            '***   This EFDCPlus Run will use:',I6,' MPI processor(s) and ',I2,' thread(s)    ***',/, &
-            '********************************************************************************',/)
+1   FORMAT( '***********************************************************************************',/, &
+            '***  This EFDC+ run will use:',I6,' MPI domains(s) and ',I2,' thread(s) per domain  ***',/, &
+            '***********************************************************************************',/)
   ENDIF
 
 #ifdef _WIN
@@ -302,11 +303,6 @@ PROGRAM EFDC
     CLOSE(1,STATUS='DELETE')
     OPEN(1,FILE=OUTDIR//'ERROR.LOG', STATUS='UNKNOWN')
     CLOSE(1,STATUS='DELETE')
-
-    ! *** PRESSURE SOLUTION ITERATION DIAGNOSTICS
-    OPEN(888,FILE=OUTDIR//'CALPUV.LOG', STATUS='REPLACE')
-    WRITE(888,'(A15,A10,A12,2(10X,2A10))') 'N','NITER','TIMEDAY','NPUVAVG','NPUVMAX','NCONGAVG','NCONGMAX'
-    CLOSE(888)
 
     ! *** PAUSE THE SCREEN TO ALLOW THE USER TO REVIEW THE NUMBER OF THREADS
     CALL SLEEPQQ(3000)
@@ -378,20 +374,21 @@ PROGRAM EFDC
   PI = ACOS(-1.0)
   NBAN = 49
 
-  ! ***  NTC:     NUMBER OF REFERENCE TIME PERIODS IN RUN
-  ! ***  NTSPTC:  NUMBER OF TIME STEPS PER REFERENCE TIME PERIOD
-  ! ***  TCON:    CONVERSION MULTIPLIER TO CHANGE TBEGIN TO SECONDS
-  ! ***  TBEGIN:  TIME ORIGIN OF RUN
-  ! ***  TIDALP:  REFERENCE TIME PERIOD IN SEC (IE 44714.16S OR 86400S)
+  ! ***  NTC:     Number of reference time periods in run
+  ! ***  NTSPTC:  Number of time steps per reference time period
+  ! ***  TCON:    Conversion multiplier to change tbegin to seconds
+  ! ***  TBEGIN:  Time origin of run
+  ! ***  TIDALP:  Reference time period in sec (ie 44714.16s or 86400s)
+  ! ***  NFLTMT:  Number of sub-periods within a reference period, typically = 1 (Research)
   TPN = REAL(NTSPTC)
-  NTS = INT8(NTC)*NTSPTC/NFLTMT
-  NLTS = NTSPTC*NLTC           ! *** # Transition Step to Completely linear
-  NTTS = NTSPTC*NTTC           ! *** # Transition Step to Fully Non-linear
-  NTTS = NTTS+NLTS             ! *** Total # of Steps to End of Transition
+  NTS = INT8(NTC)*NTSPTC/NFLTMT    ! *** Total # of time steps for entire simulation (typically NFLTMT = 1)
+  NLTS = NTSPTC*NLTC               ! *** # Transition Step to Completely linear
+  NTTS = NTSPTC*NTTC               ! *** # Transition Step to Fully Non-linear
+  NTTS = NTTS+NLTS                 ! *** Total # of Steps to End of Transition
   SNLT = 0.
   NCTBC = 1
   NPRINT = 1
-  NTSVB = NTCVB*NTSPTC         ! *** Variable Bouyancy
+  NTSVB = NTCVB*NTSPTC             ! *** Variable Bouyancy
   ITRMAX = 0
   ITRMIN = 1000
   ERRMAX = 1E-9
@@ -401,7 +398,7 @@ PROGRAM EFDC
   NBALO = 1
   NBUD = 1
   NHAR = 1
-  NTSPTC2 = 2*NTSPTC/NFLTMT
+  NTSPTC2 = 2*NTSPTC/NFLTMT        ! *** Twice # of time steps per reference time period
   NDISP = NTS-NTSPTC+2
   NSHOWR = 0
   NSHOWC = 0
@@ -447,14 +444,14 @@ PROGRAM EFDC
     Call Broadcast_Scalar(NSUBSET, master_id)
     
     Allocate(HFREGRP(NSUBSET))
-    Call AllocateDSI(IJHFRE,    NSUBSET, 0)
-    Call AllocateDSI(NPNT,      NSUBSET, 0)
+    Call AllocateDSI( IJHFRE,    NSUBSET, 0)
+    Call AllocateDSI( NPNT,      NSUBSET, 0)
 
-    Call AllocateDSI(HFREDAYEN, NSUBSET, 0.)
-    Call AllocateDSI(HFREDAYBG, NSUBSET, 0.)
-    Call AllocateDSI(HFREDUR,   NSUBSET, 0.)
-    Call AllocateDSI(HFREDAY,   NSUBSET, 0.)
-    Call AllocateDSI(HFREMIN,   NSUBSET, 0.)
+    Call AllocateDSI( HFREDAYEN, NSUBSET, 0.)
+    Call AllocateDSI( HFREDAYBG, NSUBSET, 0.)
+    Call AllocateDSI( HFREDUR,   NSUBSET, 0.)
+    Call AllocateDSI( HFREDAY,   NSUBSET, 0.)
+    Call AllocateDSI( HFREMIN,   NSUBSET, 0.)
 
     IF( process_id == master_id )THEN
       DO NS=1,NSUBSET
@@ -464,10 +461,10 @@ PROGRAM EFDC
           CALL STOPP('SUBSET.INP: READING ERROR!')
         ENDIF
 
-        Call AllocateDSI(HFREGRP(IS).ICEL, NPNT(IS), 0)
-        Call AllocateDSI(HFREGRP(IS).JCEL, NPNT(IS), 0)
-        Call AllocateDSI(HFREGRP(IS).XCEL, NPNT(IS), 0.)
-        Call AllocateDSI(HFREGRP(IS).YCEL, NPNT(IS), 0.)
+        Call AllocateDSI( HFREGRP(IS).ICEL, NPNT(IS), 0)
+        Call AllocateDSI( HFREGRP(IS).JCEL, NPNT(IS), 0)
+        Call AllocateDSI( HFREGRP(IS).XCEL, NPNT(IS), 0.)
+        Call AllocateDSI( HFREGRP(IS).YCEL, NPNT(IS), 0.)
 
         DO NP=1,NPNT(IS)
           CALL SKIPCOM(1,'*',2)
@@ -492,8 +489,10 @@ PROGRAM EFDC
 
     if( process_id /= master_id )THEN
       DO NS=1,NSUBSET
-        ALLOCATE (HFREGRP(NS).ICEL(NPNT(NS)),HFREGRP(NS).JCEL(NPNT(NS)))
-        ALLOCATE (HFREGRP(NS).XCEL(NPNT(NS)),HFREGRP(NS).YCEL(NPNT(NS)))
+        Call AllocateDSI( HFREGRP(NS).ICEL, NPNT(NS),   0)
+        Call AllocateDSI( HFREGRP(NS).JCEL, NPNT(NS),   0)
+        Call AllocateDSI( HFREGRP(NS).XCEL, NPNT(NS), 0.0)
+        Call AllocateDSI( HFREGRP(NS).YCEL, NPNT(NS), 0.0)
       ENDDO
     endif
     
@@ -584,6 +583,7 @@ PROGRAM EFDC
       CALL SKIPCOM(1,'*')
       READ(1,*)NSHOTS
       ALLOCATE(SHOTS(NSHOTS+1,3))
+      SHOTS = 0.0
       DO NS=1,NSHOTS
         READ(1,*)(SHOTS(NS,K),K=1,3)
         SHOTS(NS,3) = SHOTS(NS,3)/1440._8
@@ -604,7 +604,7 @@ PROGRAM EFDC
     NSNAPMAX = NN+2
 100 DEALLOCATE(SNAPSHOTS)
 
-    Call AllocateDSI(SNAPSHOTS, NSNAPMAX, 0.0)
+    Call AllocateDSI( SNAPSHOTS, NSNAPMAX, 0.0)
 
     ! *** BUILD THE SNAPSHOT DATES
     ISNAP = 1
@@ -768,7 +768,7 @@ PROGRAM EFDC
   DT2 = 2.*DT
   DTMIN  = DT
   AVCON1 = 2.*(1.-AVCON)*DZI*AVO
-  G    = 9.81
+  G    = 9.807
   GPO  = G*BSC
   GI   = 1./G
   GID2 = .5*GI
@@ -784,22 +784,22 @@ PROGRAM EFDC
     ACS=0.
     TSHIFT=(TBEGIN*TCON/DT)+REAL(NTC-2)*NTSPTC
     DO N=1,NTSPTC
-      TNT=REAL(N)+TSHIFT
-      NP=NTSPTC+N
-      WC(N)=COS(2.*PI*TNT/TPN)
-      WS(N)=SIN(2.*PI*TNT/TPN)
-      WC(NP)=WC(N)
-      WS(NP)=WS(N)
-      AC=AC + 2.*WC(N)*WC(N)
-      AS=AS + 2.*WS(N)*WS(N)
-      ACS=0.
-      WC2(N)=COS(4.*PI*TNT/TPN)
-      WS2(N)=SIN(4.*PI*TNT/TPN)
-      WC2(NP)=WC2(N)
-      WS2(NP)=WC2(N)
-      AC2=AC2 + 2.*WC2(N)*WC2(N)
-      AS2=AS2 + 2.*WS2(N)*WS2(N)
-      ACS2=0.
+      TNT     = REAL(N)+TSHIFT
+      NP      = NTSPTC+N
+      WC(N)   = COS(2.*PI*TNT/TPN)          ! DELME - WC and WS are not properly dimensioned.  WS is used for NTSPTC and NTSPTC2
+      WS(N)   = SIN(2.*PI*TNT/TPN)
+      WC(NP)  = WC(N)
+      WS(NP)  = WS(N)
+      AC      = AC + 2.*WC(N)*WC(N)
+      AS      = AS + 2.*WS(N)*WS(N)
+      ACS     = 0.
+      WC2(N)  = COS(4.*PI*TNT/TPN)
+      WS2(N)  = SIN(4.*PI*TNT/TPN)
+      WC2(NP) = WC2(N)
+      WS2(NP) = WC2(N)
+      AC2     = AC2 + 2.*WC2(N)*WC2(N)
+      AS2     = AS2 + 2.*WS2(N)*WS2(N)
+      ACS2    = 0.
     ENDDO
     DET=AC*AS-ACS*ACS
     AS=AS/DET
@@ -832,7 +832,7 @@ PROGRAM EFDC
   ierr = 0
   Call MPI_Barrier(MPI_Comm_World, ierr)
   IF( ISCLO == 1 )THEN
-    Call AllocateDSI(R2D_Global, LCM_Global, 8, 0.0)
+    Call AllocateDSI( R2D_Global, LCM_Global, 8, 0.0)
     
     IF( process_id == master_id )THEN
       WRITE(*,'(A)')'READING LXLY.INP'
@@ -1020,7 +1020,7 @@ PROGRAM EFDC
 
   ELSEIF( ISFDCH == 2 )THEN
     ! *** NEW BEDFORD APPLICATION
-    Call AllocateDSI(IFDCH, ICM, JCM, 0)
+    Call AllocateDSI( IFDCH, ICM, JCM, 0)
 
     WRITE(*,'(A)')'READING FOODCHAIN.INP'
     OPEN(1,FILE='foodchain.inp',STATUS='OLD')
@@ -1096,8 +1096,8 @@ PROGRAM EFDC
   !---------------------------------------------------------------------------!
 
   ! *** ALLOCATE MEMORY FOR VARIABLE TO STORE CONCENTRATIONS AT OPEN BOUNDARIES
-  Call AllocateDSI(WQBCCON,  NBCSOP, KCM, NACTIVEWC, 0.0)
-  Call AllocateDSI(WQBCCON1, NBCSOP, KCM, NACTIVEWC, 0.0)
+  Call AllocateDSI( WQBCCON,  NBCSOP, KCM, NACTIVEWC, 0.0)
+  Call AllocateDSI( WQBCCON1, NBCSOP, KCM, NACTIVEWC, 0.0)
   WQBCCON  = 0.0
   WQBCCON1 = 0.0
 
@@ -1177,12 +1177,12 @@ PROGRAM EFDC
     ENDIF
   ENDDO
 
-  IF( TMPVAL > 0.5 ) ISCURVATURE = .TRUE.
+  IF( TMPVAL > 0.5 .AND. ICK2COR > 0 ) ISCURVATURE = .TRUE.
 
   ! *** SETUP UP EDGE OF HARD BOTTOM REGIONS TO HANDLE BEDLOAD TRYING TO EXIT THE HARD BOTTOM REGION
   IF( ISBEDMAP > 0 )THEN
     IF( (ISTRAN(7) > 0 .AND. ICALC_BL > 0) .OR. (NSEDFLUME > 0 .AND. ICALC_BL > 0) )THEN
-      Call AllocateDSI(IDX, LCM, 0)
+      Call AllocateDSI( IDX, LCM, 0)
 
       ! *** WEST
       BEDEDGEW.NEDGE = 0
@@ -1195,7 +1195,7 @@ PROGRAM EFDC
         ENDIF
       ENDDO
       IF( BEDEDGEW.NEDGE > 0 )THEN
-        Call AllocateDSI(BEDEDGEW.LEDGE, BEDEDGEW.NEDGE, 0)
+        Call AllocateDSI( BEDEDGEW.LEDGE, BEDEDGEW.NEDGE, 0)
         DO LP=1,BEDEDGEW.NEDGE
           BEDEDGEW.LEDGE(LP) = IDX(LP)
         ENDDO
@@ -1213,7 +1213,7 @@ PROGRAM EFDC
         ENDIF
       ENDDO
       IF( BEDEDGEE.NEDGE > 0 )THEN
-        Call AllocateDSI(BEDEDGEE.LEDGE, BEDEDGEE.NEDGE, 0)
+        Call AllocateDSI( BEDEDGEE.LEDGE, BEDEDGEE.NEDGE, 0)
         DO LP=1,BEDEDGEE.NEDGE
           BEDEDGEE.LEDGE(LP) = IDX(LP)
         ENDDO
@@ -1231,7 +1231,7 @@ PROGRAM EFDC
         ENDIF
       ENDDO
       IF( BEDEDGEN.NEDGE > 0 )THEN
-        Call AllocateDSI(BEDEDGEN.LEDGE, BEDEDGEN.NEDGE, 0)
+        Call AllocateDSI( BEDEDGEN.LEDGE, BEDEDGEN.NEDGE, 0)
         DO LP=1,BEDEDGEN.NEDGE
           BEDEDGEN.LEDGE(LP) = IDX(LP)
         ENDDO
@@ -1249,7 +1249,7 @@ PROGRAM EFDC
         ENDIF
       ENDDO
       IF( BEDEDGES.NEDGE > 0 )THEN
-        Call AllocateDSI(BEDEDGES.LEDGE, BEDEDGES.NEDGE, 0)
+        Call AllocateDSI( BEDEDGES.LEDGE, BEDEDGES.NEDGE, 0)
         DO LP=1,BEDEDGES.NEDGE
           BEDEDGES.LEDGE(LP) = IDX(LP)
         ENDDO
@@ -1277,19 +1277,16 @@ PROGRAM EFDC
 
   ! **********************************************************************************
   ! *** ACTIVE CELL LISTS
-  ALLOCATE(LLWET(KCM,0:NDM))
-  ALLOCATE(LKWET(LCM,KCM,0:NDM))
+  Call AllocateDSI( LLWET, KCM, -NDM,    0)
+  Call AllocateDSI( LKWET, LCM,  KCM, -NDM, 0)
   LLWET=0
   LKWET=0
   IF( ISHDMF > 0 )THEN
-    ALLOCATE(LHDMF(LCM,KCM))
-    ALLOCATE(LLHDMF(KCM,0:NDM))
-    ALLOCATE(LKHDMF(LCM,KCM,0:NDM))
+    Call AllocateDSI( LHDMF,  LCM,  KCM, .false.)
+    Call AllocateDSI( LLHDMF, KCM, -NDM,       0)
+    Call AllocateDSI( LKHDMF, LCM,  KCM,    -NDM,  0)
 
     NHDMF = LA-1
-    LHDMF = .FALSE.
-    LLHDMF = 0
-    LKHDMF = 0
   ENDIF
 
   ! *** ENSURE SUM OF DZC = 1.0000 TO MACHINE PRECISION
@@ -1364,7 +1361,7 @@ PROGRAM EFDC
     ! *** COMPUTE NOMINAL LAYER THICKNESSES
     IF( IGRIDV == 2 )THEN
       KSZ = 1
-      Call AllocateDSI(THICK, KCM, 0.0)
+      Call AllocateDSI( THICK, KCM, 0.0)
 
       DEPTHMIN = 0.
       DO K=KC,1,-1
@@ -2460,7 +2457,7 @@ PROGRAM EFDC
   ! *** SET LIST OF CELLS WHOSE ACTIVE LAYER COUNT IS 1
   LDMSGZ1 = 0
   IF( IGRIDV > 0 )THEN
-    Call AllocateDSI(LSGZ1, LCM, 0)
+    Call AllocateDSI( LSGZ1, LCM, 0)
     DO L=2,LA
       IF( KSZ(L) == KC )THEN
         LASGZ1 = LASGZ1+1
@@ -2471,10 +2468,8 @@ PROGRAM EFDC
   ENDIF
 
   ! ***  TREAT SGZ CELLS WHOSE KSZ=KC (i.e. KMIN=1)
-  ALLOCATE(LLWETZ(KCM,0:NDM))
-  ALLOCATE(LKWETZ(LCM,KCM,0:NDM))
-  LLWETZ=0
-  LKWETZ=0
+  Call AllocateDSI( LLWETZ, KCM, -NDM,       0)
+  Call AllocateDSI( LKWETZ, LCM,  KCM, -NDM, 0)
 
   DO ND=1,NDM
     DO K=1,KS
@@ -3007,8 +3002,7 @@ PROGRAM EFDC
   ! *** LARGE ASPECT RATIO ASSIGMENTS
   NASPECT = 0
   IF( XYRATIO > 1.1 )THEN
-    ALLOCATE(LASPECT(LCM))
-    LASPECT=.FALSE.
+    Call AllocateDSI( LASPECT, LCM, .false.)
     DO L=2,LA
       IF( DXP(L) > XYRATIO*DYP(L) .OR. DYP(L) > XYRATIO*DXP(L) )THEN
         NASPECT = NASPECT+1
@@ -3138,6 +3132,7 @@ PROGRAM EFDC
 #endif
 
   ! *** INITIALIZE EFDC EXPLORER OUTPUT (SKIP IF CONTINUATION)
+  NITER = 0
   IF( ISPPH == 1 .AND. (ISRESTI == 0 .OR. (ISRESTI /= 0 .AND. ICONTINUE == 0)))THEN
 #ifdef _MPI
     ! *** Get local LA
@@ -3192,10 +3187,8 @@ PROGRAM EFDC
   
   ! *** Initialize propwash linkage, even if not used
   if( istran(6) > 0 .or. istran(7) > 0 )then
-    Allocate(prop_ero(lcm, 0:nscm))
-    Allocate(prop_bld(lcm, 0:nscm))
-    prop_ero = 0.0
-    prop_bld = 0.0
+    Call AllocateDSI( prop_ero, lcm, -nscm, 0.0)
+    Call AllocateDSI( prop_bld, lcm, -nscm, 0.0)
   endif  
 
   If( process_id == master_id )THEN
@@ -3566,6 +3559,12 @@ PROGRAM EFDC
 
   ! *** End the mpi calculation
 
+#ifdef DEBUGGING
+  if( process_id == 0 )then
+    Pause
+  endif
+#endif 
+
   Call MPI_Finalize(ierr)
 
   END
@@ -3575,7 +3574,7 @@ PROGRAM EFDC
   CHARACTER(*),INTENT(IN) :: MSG
 
   IF( LEN_TRIM(MSG) < 1 )THEN
-    PRINT '("EFDCPlus Stopped: ",A)', 'SEE #OUTPUT\EFDC_LOG.OUT FOR MORE INFORMATION'
+    PRINT '("EFDCPlus Stopped: ",A)', 'SEE #OUTPUT\EFDC_xxxx.log FOR MORE INFORMATION'
   ELSE
     PRINT '("EFDCPlus Stopped: ",A)', MSG
   ENDIF

@@ -1259,6 +1259,12 @@ SUBROUTINE CALTOX
 
   !$OMP END PARALLEL
   
+  ! delme
+  IF( LA == 2 .and. mod(niter,10) == 0 )THEN
+    WRITE(765,'(I10,F15.6,100E14.6)') NITER, TIMEDAY, QWTRBED(2,0), (TOX(2,K,1),K=1,KC), (TOXB(2,K,1),K=1,KB)  ! DELME
+  ENDIF
+  ! delme
+    
   RETURN
 
 END

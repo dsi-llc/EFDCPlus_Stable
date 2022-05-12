@@ -16,10 +16,10 @@ SUBROUTINE SEDZLJ(L)
   ! REVISION DATE :  August 29th, 2007
   !  Craig Jones and Scott James
   !  Updated to fix Active Layer issues
-  ! REVISED: Toxics and bedload mass balance updates - 2017-01-04
-  !  Paul M. Craig
-  ! REVISED: SIGMA-ZED AND OMP - 2016-11-07
-  !  Paul M. Craig
+
+  ! 2016-11-07  Paul M. Craig  Updated for SIGMA-ZED AND OMP
+  ! 2017-01-04  Paul M. Craig  Toxics and bedload mass balance updates
+  ! 2021-06-07  Paul M. Craig  Updated for propwash
 
   USE GLOBAL
   USE FIELDS
@@ -127,7 +127,7 @@ SUBROUTINE SEDZLJ(L)
         PY  = DABS(PY)
         PFY = SQR2PI*EXP(-0.5d0*PY*PY)
         PX  = ONE/(ONE + 0.33267*PY)
-        PROB(NS) = PFY*(0.43618*PX-0.12016*PX*PX+0.93729*PX**3)
+        PROB(NS) = PFY*(0.43618*PX - 0.12016*PX*PX + 0.93729*PX**3)
       ENDIF
     ELSEIF( TAU(L) <= TCRSUS(NS) )THEN
       PROB(NS) = ONE - TAU(L)/(TCRSUS(NS))                          ! *** Krones deposition probability is calculated
@@ -806,6 +806,34 @@ SUBROUTINE SEDZLJ(L)
     
   ENDIF   ! *** End of Active Layer Exchange 
 
+  ! *** Setup chemical processes in the sediment bed
+  IF( ISTRAN(5) > 0 )THEN
+    IF( ISGWIT > 0. )THEN  
+      !K = KBT(L)
+      !VOIDCON1 = VDRBED(L,K)                                          ! *** VDRBED(L,K) = PORBED(L,K)/(1.0-PORBED(L,K))
+      !HBEDTMP = (1. + VOIDCON1)*HBED(L,K)/(1. + VDRBED(L,K))  
+      !HBEDTMP = HBED(L,K)                                              
+      !TMPVALO = VDRBED(L,K)*HBED(L,K)/(1. + VDRBED(L,K))  
+      !TMPVALN = VOIDCON1*HBEDTMP/(1. + VOIDCON1)  
+      !QWBDTOP(L) = DELTI*(TMPVALO-TMPVALN)  
+      !HBED(L,K) = HBEDTMP  
+      !QWTRBED(L,K) = QWBDTOP(L) + QGW(L)/DXYP(L) 
+      !VDRBED(L,K) = VOIDCON1
+    
+      ! *** Assumes void ratio does not change. (See commented out code above)
+      DO K = 0,KBT(L)
+        QWTRBED(L,K) = QGW(L)/DXYP(L)                                  ! *** QWTRBED is the seepage velocity in m/s
+      ENDDO  
+    ENDIF
+  ENDIF
+  
+  ! delme
+  !if( l == 1388 )then
+  !  if( timeday > 273.6 )then
+  !    write(l,'(i10,f15.6,2i5,3f10.5,20e14.6)') niter, timeday, l, NSCM2, hp(l), belv(l), sum(HBED(L,:)), sum(tsed(:,l)), sum(sed(l,1,:)), DEPTSS(1:NSCM2), sum(DEPBL(:)), DEPO(L), ETOTO(L), sum(QBFLUX(:)), BULKDENS(3,L), SUM(DEPTSS(:)), SUM(DEPTSSB(:)), SUM(SMASS(:)), DEP, DTSEDJ    ! delme
+  !  endif
+  !endif
+  
   RETURN
   
 END SUBROUTINE SEDZLJ

@@ -57,6 +57,7 @@ SUBROUTINE CALEXP2T
   
   IMPLICIT NONE
   INTEGER :: L, LP, K, LN, LS, ID, JD, KD, NWR, IU, JU, KU, LU, NS, LNW, LSE, LL, IT, I
+  INTEGER :: LEE, LWW, LNN, LSS
   INTEGER :: LD, NMD, LHOST, LCHNU, LW, LE, LCHNV, ND, LF
   INTEGER,SAVE :: NSTB
 
@@ -231,22 +232,22 @@ SUBROUTINE CALEXP2T
           LW = LWC(L)
 
           ! *** U COMPONENTS  
-          UHB = 0.5*(UHDY(L,K) + UHDY(LE,K))
-          VHC = 0.5*(VHDX(L,K) + VHDX(LW,K)) 
-          
+          UHB = 0.5*(UHDY(L,K) + UHDY(LE,K))                                  ! *** m3/s
+          VHC = 0.5*(VHDX(L,K) + VHDX(LW,K))                                  ! *** m3/s 
+
           ! ***      |-- EAST FLOWING --|  |-- WEST FLOWING --|
-          FUHU(L,K) = MAX(UHB,0.)*U(L,K)  + MIN(UHB,0.)*U(LE,K)
+          FUHU(L,K) = MAX(UHB,0.)*U(L,K)  + MIN(UHB,0.)*U(LE,K)               ! *** m4/s2 
           ! ***      |-- NORTH FLOWING -|  |-- SOUTH FLOWING -|
-          FVHU(L,K) = MAX(VHC,0.)*U(LS,K) + MIN(VHC,0.)*U(L,K) 
-          
+          FVHU(L,K) = MAX(VHC,0.)*U(LS,K) + MIN(VHC,0.)*U(L,K)                ! *** m4/s2 
+
           ! *** V COMPONENTS
-          VHB = 0.5*(VHDX(L,K) + VHDX(LN,K))
-          UHC = 0.5*(UHDY(L,K) + UHDY(LS,K))
-          
+          VHB = 0.5*(VHDX(L,K) + VHDX(LN,K))                                  ! *** m3/s 
+          UHC = 0.5*(UHDY(L,K) + UHDY(LS,K))                                  ! *** m3/s 
+
           ! ***      |-- NORTH FLOWING -|  |-- SOUTH FLOWING -|
-          FVHV(L,K) = MAX(VHB,0.)*V(L,K)  + MIN(VHB,0.)*V(LN,K)
+          FVHV(L,K) = MAX(VHB,0.)*V(L,K)  + MIN(VHB,0.)*V(LN,K)               ! *** m4/s2
           ! ***      |-- EAST FLOWING --|  |-- WEST FLOWING --|
-          FUHV(L,K) = MAX(UHC,0.)*V(LW,K) + MIN(UHC,0.)*V(L,K) 
+          FUHV(L,K) = MAX(UHC,0.)*V(LW,K) + MIN(UHC,0.)*V(L,K)                ! *** m4/s2 
 
         ENDDO
       ENDDO  
@@ -764,7 +765,6 @@ SUBROUTINE CALEXP2T
         FYVEGE(L) = 0.  
       ENDDO  
 
-      ! $OMP SIMD PRIVATE(L,LW,LE,LS,LN,LNW,LSE,UTMPATV,VTMPATU,UMAGTMP,VMAGTMP)
       DO K=1,KC
         DO LP=1,LLVEG(K,ND)
           L = LKVEG(LP,K,ND)
@@ -834,6 +834,85 @@ SUBROUTINE CALEXP2T
   !----------------------------------------------------------------------!  
   IF( ISHDMF >= 1 )THEN
 
+    ! *** Modification for open boundaries for large cell aspect ratios
+    !$OMP SINGLE
+    DO LL=1,NPBW
+      IF( ISPBW(LL) == 0 .OR. ISPBW(LL) == 1 .OR. ISPBW(LL) == 4 )THEN
+        L   = LEC(LPBW(LL))
+        LE  = LEC(L)
+        LEE = LEC(LE)
+        ! *** Both adjacent and connected cell must both meet aspect criteria
+        IF( MAX(DXP(LE),DYP(LE)) / MIN(DXP(LE),DYP(LE)) > 4.0 )THEN
+          IF( MAX(DXP(LEE),DYP(LEE)) / MIN(DXP(LEE),DYP(LEE)) > 4.0 )THEN
+            DO K=KSZ(LE),KC
+              FMDUY(LE,K) = 0.0
+            ENDDO
+            DO K=KSZ(LEE),KC
+              FMDUY(LEE,K) = 0.0
+            ENDDO
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDDO
+  
+    DO LL=1,NPBE
+      IF( ISPBE(LL) == 0 .OR. ISPBE(LL) == 1 .OR. ISPBE(LL) == 4 )THEN
+        L   = LPBE(LL)
+        LW  = LWC(L)
+        LWW = LEC(LW)
+        ! *** Both adjacent and connected cell must both meet aspect criteria
+        IF( MAX(DXP(LW),DYP(LW)) / MIN(DXP(LW),DYP(LW)) > 4.0 )THEN
+          IF( MAX(DXP(LWW),DYP(LWW)) / MIN(DXP(LWW),DYP(LWW)) > 4.0 )THEN
+            DO K=KSZ(LW),KC
+              FMDUY(LW,K) = 0.0
+            ENDDO
+            DO K=KSZ(LWW),KC
+              FMDUY(LWW,K) = 0.0
+            ENDDO
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDDO
+  
+    DO LL=1,NPBS
+      IF( ISPBS(LL) == 0 .OR. ISPBS(LL) == 1 .OR. ISPBS(LL) == 4 )THEN
+        L = LPBS(LL)
+        LN = LNC(L)
+        LNN = LEC(LN)
+        ! *** Both adjacent and connected cell must both meet aspect criteria
+        IF( MAX(DXP(LN),DYP(LN)) / MIN(DXP(LN),DYP(LN)) > 4.0 )THEN
+          IF( MAX(DXP(LNN),DYP(LNN)) / MIN(DXP(LNN),DYP(LNN)) > 4.0 )THEN
+            DO K=KSZ(LN),KC
+              FMDUY(LN,K) = 0.0
+            ENDDO
+            DO K=KSZ(LNN),KC
+              FMDUY(LNN,K) = 0.0
+            ENDDO
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDDO
+  
+    DO LL=1,NPBN
+      IF( ISPBN(LL) == 0 .OR. ISPBN(LL) == 1 .OR. ISPBN(LL) == 4 )THEN
+        L = LPBN(LL)
+        LS = LSC(L)
+        LSS = LEC(LS)
+        ! *** Both adjacent and connected cell must both meet aspect criteria
+        IF( MAX(DXP(LS),DYP(LS)) / MIN(DXP(LS),DYP(LS)) > 4.0 )THEN
+          IF( MAX(DXP(LSS),DYP(LSS)) / MIN(DXP(LSS),DYP(LSS)) > 4.0 )THEN
+            DO K=KSZ(LS),KC
+              FMDUY(LS,K) = 0.0
+            ENDDO
+            DO K=KSZ(LSS),KC
+              FMDUY(LSS,K) = 0.0
+            ENDDO
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDDO
+    !$OMP END SINGLE
+    
     !$OMP DO PRIVATE(ND,K,LP,L) 
     DO ND=1,NDM  
       DO K=1,KC  

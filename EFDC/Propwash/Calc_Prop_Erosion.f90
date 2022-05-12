@@ -7,16 +7,14 @@
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!
-!< @details  CALCULATES EROSION RATE (GM/M2/S) FOR A GIVEN
-!! SHEAR STRESS (TAUP (Pascals))
+!< @details Calculates erosion rate (g/m2/s) for a given shear stress (TAUP (Pascals))
 !< @author  Paul Craig
-!< @param[in] L
-!< @param[in] TAUP
+!< @param[in]  L
+!< @param[in]  TAUP
 !< @param[out] ELAY, SURFACE
 !---------------------------------------------------------------------------!
 Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
 
-  ! ***
   USE GLOBAL
 
   IMPLICIT NONE
@@ -74,7 +72,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
   ! *** Get things set up for Erosion Calculations
   SURFACE = KB+1
   DO K=2,KB                       ! *** Ignore active layer
-    IF( TSED(K,L) > 1E-6 )THEN
+    IF( TSED(K,L) > 0.001 )THEN   ! *** Ignore layers than are less than 0.1 mm (typically)
       SURFACE = K
       EXIT
     ENDIF

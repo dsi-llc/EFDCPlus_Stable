@@ -377,8 +377,8 @@
     VER=7300
     WRITE(EE_UNIT) INT(VER,4)
 
-    ! # OF TIME VARYING ARRAYS
-    NS = 4 + 4 + 4   ! 13
+    ! *** NUMBER OF TIME VARYING ARRAYS
+    NS = 4 + 4
     IF( ISHDMF >= 1 ) NS = NS + 4  ! NOTE: THIS IS ONLY NEEDED AS LONG AS FMDUX AND FMDUY ARE BEING USED
     WRITE(EE_UNIT) INT(NS,4)
 
@@ -411,27 +411,6 @@
       WRITE(EE_UNIT) REAL(SBYO(L),4)
     ENDDO
 
-    WRITE(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
-    ARRAYNAME='HP'
-    WRITE(EE_UNIT) ARRAYNAME
-    DO L=2,LA_Global
-      WRITE(EE_UNIT) REAL(HP(L),4)
-    ENDDO
-
-    WRITE(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
-    ARRAYNAME='SDX'
-    WRITE(EE_UNIT) ARRAYNAME
-    DO L=2,LA_Global
-      WRITE(EE_UNIT) REAL(SDX(L),4)
-    ENDDO
-    
-    WRITE(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
-    ARRAYNAME='SDY'
-    WRITE(EE_UNIT) ARRAYNAME
-    DO L=2,LA_Global
-      WRITE(EE_UNIT) REAL(SDY(L),4)
-    ENDDO
-
     ITYPE = 1
     WRITE(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
     ARRAYNAME='DZC'
@@ -459,6 +438,7 @@
   REAL(RKD)    :: PTIME
 
   FILENAME=OUTDIR//'EE_WS.OUT'
+  EE_UNIT = 96                        ! *** EE_WS.OUT
 
   ! *** If we are restarting and continuing a run
   IF( ISRESTI /= 0 .AND. ICONTINUE == 1 .AND. RSTFIRST_WS == 0 )THEN
@@ -523,7 +503,7 @@
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_WS.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -545,6 +525,7 @@ SUBROUTINE VELOUT
   REAL(RKD)    :: PTIME
 
   FILENAME=OUTDIR//'EE_VEL.OUT'
+  EE_UNIT = 97                        ! *** EE_VEL.OUT
   IF( ISRESTI /= 0 .AND. ICONTINUE == 1 .AND. RSTFIRST_VEL == 0 )THEN
     RSTFIRST_VEL=1
     WRITE(*,'(A)')'READING TO STARTING TIME FOR VEL'
@@ -606,7 +587,7 @@ SUBROUTINE VELOUT
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_VEL.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -619,6 +600,7 @@ SUBROUTINE VELOUT
 END SUBROUTINE
 
 SUBROUTINE WCOUT
+
   ! ** WATER COLUMN OF CONSTITUENTS OUTPUT
   INTEGER(IK4) :: VER, I, ITMP, NSED4, NSND4, NTOX4
   INTEGER(IK4) :: NS, HSIZE, BSIZE, ISTAT
@@ -629,6 +611,7 @@ SUBROUTINE WCOUT
   LOGICAL      :: LTMP
 
   FILENAME=OUTDIR//'EE_WC.OUT'
+  EE_UNIT = 98                        ! *** EE_WC.OUT
   IF( ISRESTI /= 0 .AND. ICONTINUE == 1 .AND. RSTFIRST_WC == 0 )THEN
     RSTFIRST_WC=1
     WRITE(*,'(A)')'READING TO STARTING TIME FOR WC'
@@ -775,7 +758,7 @@ SUBROUTINE WCOUT
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_WC.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -826,14 +809,14 @@ INTEGER FUNCTION BLOCKWC(CELL3D)
   ENDIF
   IF( ISTRAN(1) >= 1 ) DSIZE = DSIZE + CELL3D   ! SAL_Global
   IF( ISTRAN(2) >= 1 )THEN
-    DSIZE = DSIZE + CELL3D                    ! TEM_Global
-    IF( TEMBO > 0.) DSIZE = DSIZE + CELL2D   ! TEMB
-    IF( IEVAP > 1 )THEN
-      DSIZE = DSIZE + 2 * CELL2D              ! EVAPT, RAINT
+    DSIZE = DSIZE + CELL3D                      ! TEM_Global
+    IF( TEMBO > 0.) DSIZE = DSIZE + CELL2D      ! TEMB
+    IF( IEVAP > 1 )THEN                         
+      DSIZE = DSIZE + 2 * CELL2D                ! EVAPT, RAINT
     ENDIF
   ENDIF
   IF( ISTRAN(3) >= 1 ) DSIZE = DSIZE + NDYE*CELL3D   ! DYE
-  IF( ISTRAN(4) >= 1 ) DSIZE = DSIZE + CELL3D   ! SFL
+  IF( ISTRAN(4) >= 1 ) DSIZE = DSIZE + CELL3D        ! SFL
   IF( ISTRAN(5) >= 1 )THEN
     DSIZE = DSIZE + NTOX*CELL2D               ! TOXB
     DSIZE = DSIZE + NTOX*CELL3D               ! TOX
@@ -861,7 +844,7 @@ INTEGER FUNCTION BLOCKWC(CELL3D)
   IF(ISTRAN(2) > 0 .AND. ISICE  >= 3)THEN
     DSIZE = DSIZE + 2*CELL2D                  ! ICETHICK, ICETEMP
   ENDIF
-  BLOCKWC = 4*DSIZE                             ! SINGLE DATA
+  BLOCKWC = 4*DSIZE                             ! SINGLE PRECISION
   END FUNCTION
 
   SUBROUTINE SEDZLJOUT
@@ -873,6 +856,7 @@ INTEGER FUNCTION BLOCKWC(CELL3D)
   REAL(RKD)    :: PTIME
 
   FILENAME=OUTDIR//'EE_SEDZLJ.OUT'
+  EE_UNIT = 99                        ! *** EE_SEDZLJ.OUT
   IF( ISRESTI /= 0 .AND. ICONTINUE == 1 .AND. RSTFIRST_SEDZLJ == 0 )THEN
     RSTFIRST_SEDZLJ=1
     WRITE(*,'(A)')'READING TO STARTING TIME FOR SEDZLJ'
@@ -977,7 +961,7 @@ INTEGER FUNCTION BLOCKWC(CELL3D)
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_SEDZLJ.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -1102,7 +1086,7 @@ INTEGER FUNCTION BLOCKSEDZLJ(CELL3D)
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_BED.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -1147,6 +1131,7 @@ INTEGER FUNCTION BLOCKBED(CELL3D)
   IF( NSEDSTEPS >= ABS(ISSDBIN) .OR. JSEXPLORER == 1 )THEN
 
     FILENAME=OUTDIR//'EE_SD.OUT'
+    EE_UNIT = 101                      ! *** EE_SD.OUT
     IF( ISRESTI /= 0 .AND. ICONTINUE == 1 .AND. RSTFIRST_SD == 0 )THEN
       RSTFIRST_SD=1
       WRITE(*,'(A)')'READING TO STARTING TIME FOR SD'
@@ -1230,7 +1215,7 @@ INTEGER FUNCTION BLOCKBED(CELL3D)
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_SD.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -1258,6 +1243,7 @@ INTEGER FUNCTION BLOCKBED(CELL3D)
 
     IF( NRPEMSTEPS >= NRPEMEE .OR. JSEXPLORER == 1 )THEN
       FILENAME=OUTDIR//'EE_RPEM.OUT'
+      EE_UNIT = 102                      ! *** EE_RPEM.OUT
       IF( ISRESTI /= 0 .AND. ICONTINUE == 1 .AND. RSTFIRST_RPEM == 0 )THEN
         RSTFIRST_RPEM=1
         WRITE(*,'(A)')'READING TO STARTING TIME FOR RPEM'
@@ -1335,7 +1321,7 @@ INTEGER FUNCTION BLOCKBED(CELL3D)
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_RPEM.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -1409,6 +1395,7 @@ SUBROUTINE WQOUT
   ENDIF
 
   FILENAME=OUTDIR//'EE_WQ.OUT'
+  EE_UNIT = 100                      ! *** EE_WQ.OUT
   IF( ISRESTI /= 0 .AND. ICONTINUE == 1 .AND. RSTFIRST_WQ == 0 )THEN
     RSTFIRST_WQ=1
     WRITE(*,'(A)')'READING TO STARTING TIME FOR WQ'
@@ -1530,7 +1517,7 @@ SUBROUTINE WQOUT
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_WQ.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -1551,6 +1538,7 @@ SUBROUTINE BCOUT
   REAL(RKD)    :: PTIME
 
   FILENAME=OUTDIR//'EE_BC.OUT'
+  EE_UNIT = 104                      ! *** EE_BC.OUT
 
   IF( ISRESTI /= 0 .AND. ICONTINUE == 1 .AND. RSTFIRST_BC == 0 )THEN
     RSTFIRST_BC=1
@@ -1678,7 +1666,7 @@ SUBROUTINE BCOUT
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_BC.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -1937,6 +1925,7 @@ SUBROUTINE SHELLFISHOUT()
   REAL(RKD)    :: PTIME
 
   FILENAME=OUTDIR//'EE_SHF.OUT'
+  EE_UNIT = 103                      ! *** EE_SHF.OUT
   IF( ISRESTI /= 0 .AND. ICONTINUE == 1 )THEN
     WRITE(*,'(A)')'READING TO STARTING TIME FOR SHELLFISH'
     FSIZE = FILESIZE(FILENAME)
@@ -2106,7 +2095,7 @@ SUBROUTINE SHELLFISHOUT()
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_SHF.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF
@@ -2168,6 +2157,7 @@ SUBROUTINE ARRAYSOUT
     ZERO=0.0
 
     FILENAME=OUTDIR//'EE_ARRAYS.OUT'
+    EE_UNIT = 105                      ! *** EE_ARRAYS.OUT
 
     NERR = 0
     IORIGIN = 10
@@ -2176,45 +2166,6 @@ SUBROUTINE ARRAYSOUT
     ! *** TIME VARIABLE FLAG
     ITIMEVAR = 1
     
-    ITYPE = 1
-    WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='AH'
-    WRITE(EE_UNIT)ARRAYNAME
-    DO K=1,KC
-      DO L=2,LA_Global
-        WRITE(EE_UNIT)REAL(AH(L,K),4)
-      ENDDO
-    ENDDO
-
-    ITYPE = 1
-    WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='AV'
-    WRITE(EE_UNIT)ARRAYNAME
-    DO K=1,KC
-      DO L=2,LA_Global
-        TMPVAL=AV(L,K)*HP(L)
-        WRITE(EE_UNIT)TMPVAL
-      ENDDO
-    ENDDO
-
-    ITYPE = 0
-    WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='AHOXY'
-    WRITE(EE_UNIT)ARRAYNAME
-    DO L=2,LA_Global
-      TMPVAL=AHOXY(L)
-      WRITE(EE_UNIT)TMPVAL
-    ENDDO
-
-    !ITYPE = 0
-    !WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    !ARRAYNAME='LNWC'
-    !WRITE(EE_UNIT)ARRAYNAME
-    !DO L=2,LA_Global
-    !  TMPVAL=LNWC(L)
-    !  WRITE(EE_UNIT)TMPVAL
-    !ENDDO
-
     ITYPE = 0
     WRITE(EE_UNIT)ITYPE,ITIMEVAR
     ARRAYNAME='TBX'
@@ -2232,45 +2183,53 @@ SUBROUTINE ARRAYSOUT
       TMPVAL=TBY(L)
       WRITE(EE_UNIT)TMPVAL
     ENDDO
-    
-    ITYPE = 2
+        
+    ITYPE = 0
     WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='QQ'
+    ARRAYNAME='FUHDYE' 
     WRITE(EE_UNIT)ARRAYNAME
-    DO K=0,KC
-      DO L=2,LA_Global
-        WRITE(EE_UNIT)REAL(QQ(L,K),4)
-      ENDDO
+    DO L=2,LA_Global
+      WRITE(EE_UNIT)REAL(FUHDYE(L),4)
+    ENDDO
+
+    ITYPE = 0
+    WRITE(EE_UNIT)ITYPE,ITIMEVAR
+    ARRAYNAME='FVHDXE' 
+    WRITE(EE_UNIT)ARRAYNAME
+    DO L=2,LA_Global
+      WRITE(EE_UNIT)REAL(FVHDXE(L),4)
     ENDDO
     
-    ITYPE = 1
+    ITYPE = 0
     WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='HPK'
+    ARRAYNAME='P'
     WRITE(EE_UNIT)ARRAYNAME
-    DO K=1,KC
-      DO L=2,LA_Global
-        WRITE(EE_UNIT)REAL(HPK(L,K),4)
-      ENDDO
+    DO L=2,LA_Global
+      WRITE(EE_UNIT)REAL(PMCTESTX(1,L),4)
     ENDDO
     
-    ITYPE = 1
+    ITYPE = 0
     WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='U'
+    ARRAYNAME='PCG'
     WRITE(EE_UNIT)ARRAYNAME
-    DO K=1,KC
-      DO L=2,LA_Global
-        WRITE(EE_UNIT)REAL(U(L,K),4)
-      ENDDO
+    DO L=2,LA_Global
+      WRITE(EE_UNIT)REAL(PMCTESTX(2,L),4)
     ENDDO
     
-    ITYPE = 1
+    ITYPE = 0
     WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='V'
+    ARRAYNAME='RCG'
     WRITE(EE_UNIT)ARRAYNAME
-    DO K=1,KC
-      DO L=2,LA_Global
-        WRITE(EE_UNIT)REAL(V(L,K),4)
-      ENDDO
+    DO L=2,LA_Global
+      WRITE(EE_UNIT)REAL(PMCTESTX(3,L),4)
+    ENDDO
+    
+    ITYPE = 0
+    WRITE(EE_UNIT)ITYPE,ITIMEVAR
+    ARRAYNAME='TMPCG'
+    WRITE(EE_UNIT)ARRAYNAME
+    DO L=2,LA_Global
+      WRITE(EE_UNIT)REAL(PMCTESTX(4,L),4)
     ENDDO
     
     IF( ISHDMF >= 1 )THEN
@@ -2318,31 +2277,8 @@ SUBROUTINE ARRAYSOUT
         ENDDO
       ENDDO
     ENDIF
-    
-    ITYPE = 0
-    WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='RAINT' 
-    WRITE(EE_UNIT)ARRAYNAME
-    DO L=2,LA_Global
-      WRITE(EE_UNIT)REAL(RAINT(L),4)
-    ENDDO
 
-    ITYPE = 0
-    WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='EVAPT' 
-    WRITE(EE_UNIT)ARRAYNAME
-    DO L=2,LA_Global
-      WRITE(EE_UNIT)REAL(EVAPT(L),4)
-    ENDDO
-
-    ITYPE = 0
-    WRITE(EE_UNIT)ITYPE,ITIMEVAR
-    ARRAYNAME='QSUME' 
-    WRITE(EE_UNIT)ARRAYNAME
-    DO L=2,LA_Global
-      WRITE(EE_UNIT)REAL(QSUME(L),4)
-    ENDDO
-    
+   
     
     !ITYPE = 0
     !WRITE(EE_UNIT)ITYPE,ITIMEVAR
@@ -2882,7 +2818,7 @@ SUBROUTINE ARRAYSOUT
       ! *** Unit EE_UNIT busy.  Pause for 1 second
       NERR = NERR + 1
       PRINT *, 'File in use (EE_ARRAYS.OUT) error.  Try # ',nerr
-      CALL SLEEP(1)
+      CALL SLEEP(5)
       IF( NERR == 3 )THEN
         CLOSE(EE_UNIT,STATUS='KEEP')
       ENDIF

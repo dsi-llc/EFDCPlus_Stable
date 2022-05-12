@@ -1,5 +1,3 @@
-
-
 # Visual studio 
 .vscode/
 .vs/
@@ -16,12 +14,21 @@
 /x64_Runtimes.txt
 
 # build directories
-DebugSP/
-ReleaseSP/
-ReleaseDP/
-build/
-MPI_SP_64/
-64DP_D_MPI/
+DebugSP
+ReleaseSP
+ReleaseDP
+build
+MPI_SP_64
+64DP_D_MPI
+64SP_D_MPI
+64DP_R_MPI
+64SP_R_MPI
+64DP_Rel_OneApi_MPI
+64SP_Rel_OneApi_MPI
+
+# build files
+*.mod
+*.o
 
 # executables & archives
 *.x
@@ -31,6 +38,9 @@ MPI_SP_64/
 # misc
 delme
 delme*
-EFDC/fort.8
-ZanderDevelopment/
-/EFDC/#output
+fort.*
+ZanderDevelopment
+#output
+/Backups
+Backups
+EFDC/#output
