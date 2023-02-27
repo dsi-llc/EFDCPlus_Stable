@@ -37,46 +37,8 @@ Load the intel environment variables.
 ```bash
 source /opt/intel/oneapi/setvars.sh
 ```
-Install NetCDF library (for Ubuntu users) \
-Run the command to update the package lists for upgrades for packages that need upgrading
-```bash
-sudo apt update
-```
-Install hdf5 and hdf5-devel libraries using the command: 
-```bash
-sudo apt install hdf5-tools hdf5-helpers libhdf5-dev libhdf5-doc libhdf5-serial-dev
-```
-Install the libnetcdf-dev:
-```bash
-sudo apt install libnetcdf-dev
-```
-Install m4 package:
-```bash
-sudo apt-get install m4
-```
-Download netcdf-fortran-4.5.2 from the website https://github.com/Unidata/netcdf-fortran/releases/tag/v4.5.2 \
-Go to the netcdf-fortran-4.5.2 folder and create config-intel.sh as the following:
-```bash
-export FC=mpiifort
-export F77=mpiifort
-export F90=mpiifort
-./configure
-```
-Run config.sh
-```bash
-./config.sh
-```
-Build NetCDF-Foxtran \
-Go to the NetCDF-Fortran source code folder and run the following commands
-```bash
-make check
-make install
-```
-Run the below command for checking whether NetCDF and NetCDF-Foxtran are installed propertly or not
-```bash
-nc-config --all
-```
-Add the DNCOUT flag to the FFLAGS section in the makefile for supporting NetCDF
+
+If your environment already has NetCDF installed and available in the Path, you can add the DNCOUT flag to the FFLAGS section in the makefile to compile with NetCDF features enabled.
 
 #### _Build EFDC_
 ```bash
