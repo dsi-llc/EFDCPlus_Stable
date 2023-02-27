@@ -37,6 +37,17 @@ SUBROUTINE CALTOX
     ALLOCATE(TOXFPA(LCM))
     TOXFPA = 0.0
     NDUMP = 0
+    
+    ! *** VALIDATE INITIAL CONDITIONS
+    DO L =2,LA
+      DO K = 1,KB
+        IF( HBED(L,K) <= 1E-9 )THEN
+          TOXB(L,K,:) = 0.0
+          TOXB1(L,K,:) = 0.0
+        ENDIF
+      ENDDO
+    ENDDO
+    
   ENDIF
 
   IF( LSEDZLJ )THEN
@@ -50,7 +61,7 @@ SUBROUTINE CALTOX
   IF( ISTPOCB == 4 )THEN
     IVAL = 0
     DO NT = 1,NTOX
-      IF( ISTOC(NT) >= 2)IVAL = 1
+      IF( ISTOC(NT) >= 2) IVAL = 1
     ENDDO
   
     IF( IVAL == 1 )THEN
@@ -79,11 +90,8 @@ SUBROUTINE CALTOX
   ! *** OMP LOOP OVER THE TOXICS COMPUTATIONS (SETTLING, DEPOSTION AND EROSION ONLY)
   !$OMP PARALLEL DEFAULT(SHARED)
  
-  !$OMP DO PRIVATE(ND,LF,LL,LP,L,K,NT,NS,NX,LE,LW,LN,LS,TMPEXP,TMPVAL,SNDFEFF)
+  !$OMP DO PRIVATE(ND, LP, L, K, NT, NS, NX, TMPEXP, TMPVAL)
   DO ND = 1,NDM
-    LF = (ND-1)*LDMSED + 1  
-    LL = MIN(LF + LDMSED - 1,LASED)
-
     !**********************************************************************C
     ! **  CALCULATE TOXIC CONTAMINANT PARTICULATE FRACTIONS IN WATER COLUMN
     ! **
@@ -291,7 +299,11 @@ SUBROUTINE CALTOX
         ENDDO
       ENDDO
     ENDDO   ! *** NTOX
-    
+  ENDDO
+  !$OMP END DO   
+  
+  !$OMP DO PRIVATE(ND, K, LP, L, NT, NS)
+  DO ND = 1,NDM  
     ! ** COMPUTE THE SORBED FRACTION (TOXPFW) (DIMENSIONLESS)
     DO NT = 1,NTOX
       DO NS = 1,NSP2(NT)
@@ -316,31 +328,49 @@ SUBROUTINE CALTOX
         ENDDO
       ENDDO
     ENDIF
-
-    !**********************************************************************C
-    !
-    ! **  CALCULATE TOXIC CONTAMINANT PARTICULATE FRACTIONS IN SEDIMENT BED
-    !
-    ! **  TOXPFB(L,NS,NT) = PARTICULATE FRACTION IN SEDIMENT BED 
-    ! **  TOXPFTB(L,NT)   = TOTAL PARTICULATE FRACTION IN SEDIMENT BED (INTERIM UNITS: METERS)
+  ENDDO
+  !$OMP END DO
+  
+  !**********************************************************************C
+  !
+  ! **  CALCULATE TOXIC CONTAMINANT PARTICULATE FRACTIONS IN SEDIMENT BED
+  !
+  ! **  TOXPFB(L,NS,NT) = PARTICULATE FRACTION IN SEDIMENT BED 
+  ! **  TOXPFTB(L,NT)   = TOTAL PARTICULATE FRACTION IN SEDIMENT BED (INTERIM UNITS: METERS)
+  !$OMP DO PRIVATE(ND, LF, LL)
+  DO ND = 1,NDM
+    LF = (ND-1)*LDMSED + 1  
+    LL = MIN(LF + LDMSED - 1,LASED)
     CALL CALTOXB_FRACTIONS(LF,LL)
+  ENDDO
+  !$OMP END DO 
+  
+  ! ******************************************************************************
+  ! ******************************************************************************
+  !
+  ! *** CALCULATE PARTICULATE TOXIC CONTAMINANT SETTLING AND BED EXCHANGE FLUXES
 
-    ! ******************************************************************************
-    ! ******************************************************************************
-    !
-    ! *** CALCULATE PARTICULATE TOXIC CONTAMINANT SETTLING AND BED EXCHANGE FLUXES
-
-    ! *** TOXF(L,1:KS,NT) = TOXIC CONTAMINANT SETTLING AND BED EXCHANGE FLUX 
-    ! ***                    ( + ) UPWARD FLUX,  (-) DOWNWARD FLUX   (M/S)
-    ! *** TOXF(L,0,NT)    = TOXIC CONTAMINANT DEPOSITIONAL FLUX      (M/S)
-    ! *** TOXFB(L,NT)     = TOXIC CONTAMINANT EROSIONAL FLUX         (FINAL 1/S, INTERIM M/S)
+  ! *** TOXF(L,1:KS,NT) = TOXIC CONTAMINANT SETTLING AND BED EXCHANGE FLUX 
+  ! ***                    ( + ) UPWARD FLUX,  (-) DOWNWARD FLUX   (M/S)
+  ! *** TOXF(L,0,NT)    = TOXIC CONTAMINANT DEPOSITIONAL FLUX      (M/S)
+  ! *** TOXFB(L,NT)     = TOXIC CONTAMINANT EROSIONAL FLUX         (FINAL 1/S, INTERIM M/S)
+  !$OMP DO PRIVATE(ND, LF, LL, LP, L, K, NT, NS, NX, TMPEXP, TMPVAL)
+  DO ND = 1,NDM
+    LF = (ND-1)*LDMSED + 1  
+    LL = MIN(LF + LDMSED - 1,LASED)
     
     DO NT = 1,NTOX
-      DO K = 0,KC
-        DO LP = LF,LL
-          L = LSED(LP)
+      ! *** Water column
+      DO K = 1,KC
+        DO LP = 1,LLWET(K,ND)
+          L = LKWET(LP,K,ND)
           TOXF(L,K,NT) = 0.
         ENDDO
+      ENDDO
+      ! *** Bed/water column interface
+      DO LP = LF,LL
+        L = LSED(LP)
+        TOXF(L,0,NT) = 0.
       ENDDO
     ENDDO
 
@@ -453,7 +483,13 @@ SUBROUTINE CALTOX
           ENDIF
         ENDIF
       ENDDO   ! *** NTOX
-
+    ENDIF    ! *** KC >= 2
+  ENDDO
+  !$OMP END DO
+  
+  IF( KC >= 2 )THEN
+    !$OMP DO PRIVATE(ND, LP, L, K, NT)
+    DO ND = 1,NDM
       DO NT = 1,NTOX
         DO K = 1,KS
           DO LP = 1,LLWET(K,ND)
@@ -462,11 +498,18 @@ SUBROUTINE CALTOX
           ENDDO
         ENDDO
       ENDDO
-    ENDIF    ! *** KC >= 2
+    ENDDO
+    !$OMP END DO
+  ENDIF    ! *** KC >= 2
 
-    ! ******************************************************************************
-    ! *** DEPOSITIONAL TOXICS FLUX (TOXF) AT THE SEDIMENT BED/WATER COLUMN INTERFACE 
-    ! *** FROM THE WATER COLUMMN ONLY
+  ! ******************************************************************************
+  ! *** DEPOSITIONAL TOXICS FLUX (TOXF) AT THE SEDIMENT BED/WATER COLUMN INTERFACE 
+  ! *** FROM THE WATER COLUMMN ONLY
+  !$OMP DO PRIVATE(ND, LF, LL, LP, L, K, NT, NS, NX, TMPEXP, TMPVAL, SNDFEFF)
+  DO ND = 1,NDM
+    LF = (ND-1)*LDMSED + 1  
+    LL = MIN(LF + LDMSED - 1,LASED)
+    
     DO NT = 1,NTOX
       ! *** PARTICLE COHESIVE DEPOSITIONAL FLUX,  (SEDF) < 0 
       IF( ISTRAN(6) >= 1 )THEN
@@ -564,18 +607,32 @@ SUBROUTINE CALTOX
         ENDIF
       ENDIF
     ENDDO   ! *** NTOX
-
-    ! *** FINALIZE THE DEPOSITIONAL TOXICS FLUX (M/S)
+  ENDDO
+  !$OMP END DO 
+  
+  ! *** FINALIZE THE DEPOSITIONAL TOXICS FLUX (M/S)
+  !$OMP DO PRIVATE(ND, LF, LL, LP, L, NT)
+  DO ND = 1,NDM
+    LF = (ND-1)*LDMSED + 1  
+    LL = MIN(LF + LDMSED - 1,LASED)
+    
     DO NT = 1,NTOX
       DO LP = LF,LL
         L = LSED(LP)
         TOXF(L,0,NT) = TOXF(L,0,NT)/(1. + TOXPFTW(L,KSZ(L),NT))
       ENDDO
     ENDDO
-
-    ! ******************************************************************************
-    ! *** EROSIONAL TOXICS FLUX (TOXFB) AT THE SEDIMENT BED/WATER COLUMN INTERFACE
-    ! *** WHEN SOLIDS FLUX IS > 0
+  ENDDO
+  !$OMP END DO 
+  
+  ! ******************************************************************************
+  ! *** EROSIONAL TOXICS FLUX (TOXFB) AT THE SEDIMENT BED/WATER COLUMN INTERFACE
+  ! *** WHEN SOLIDS FLUX IS > 0
+  !$OMP DO PRIVATE(ND, LF, LL, LP, L, NT, NS, NX, TMPVAL, SNDFEFF)
+  DO ND = 1,NDM
+    LF = (ND-1)*LDMSED + 1  
+    LL = MIN(LF + LDMSED - 1,LASED)
+    
     DO NT = 1,NTOX
       DO LP = LF,LL
         L = LSED(LP)
@@ -755,8 +812,8 @@ SUBROUTINE CALTOX
   !**********************************************************************C
   ! **  DETERMINE TOXIC FLUX FROM BED LOAD SORBED MATERIAL
   IF( ICALC_BL > 0 .AND. .NOT. LSEDZLJ )THEN  
-    !$OMP DO PRIVATE(ND,LF,LL,LP,L,K,NT,NS,NX,LE,LW,LN,LS) &
-    !$OMP    PRIVATE(TMPTOXC,TMPTOXE,TMPTOXW,TMPTOXN,TMPTOXS)
+    !$OMP DO PRIVATE(ND, LF, LL, LP, L, K, NT, NS, NX, LE, LW, LN, LS) &
+    !$OMP    PRIVATE(TMPTOXC, TMPTOXE, TMPTOXW, TMPTOXN, TMPTOXS)
     DO ND = 1,NDM
       LF = (ND-1)*LDMSED + 1  
       LL = MIN(LF + LDMSED - 1,LASED)
@@ -1015,8 +1072,8 @@ SUBROUTINE CALTOX
   ! ***********************************************************************************
   ! ***  UPDATE WATER COLUMN BOTTOM LAYER AND TOP SEDIMENT LAYER FOR TOXIC CONTAMINANT
   ! ***  PMC - NEW APPROACH FOR BETTER MASS BALANCE 2017-07
-  !$OMP DO PRIVATE(ND,LF,LL,LP,L,K,NT,NS,NX,LE,LW,LN,LS)  &
-  !$OMP    PRIVATE(AA11,BB11,BB22,TMPVAL,CLEFT,CRIGHT,WVEL)
+  !$OMP DO PRIVATE(ND, LF, LL, LP, L, K, NT, NS, NX, LE, LW, LN, LS)  &
+  !$OMP    PRIVATE(AA11, BB11, BB22, TMPVAL, CLEFT, CRIGHT, WVEL)
   DO ND = 1,NDM
     LF = (ND-1)*LDMWET + 1  
     LL = MIN(LF + LDMWET-1,LAWET)
@@ -1028,26 +1085,48 @@ SUBROUTINE CALTOX
         ! *** WATER COLUMN/SEDIMENT BED INTERFACE
         DO LP = LF,LL
           L = LWET(LP)
-          IF( LBED(L) ) CYCLE
-
-          ! *** MASS BALANCE AROUND BOTTOM WATER COLUMN LAYER
-          BB11 = TOXFB(L,NT)*TOXB(L,KBT(L),NT)            ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
-          BB22 = TOXF(L,0,NT)*TOX(L,KSZ(L),NT)            ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
           
+          ! *** BB11 = 0.0                                  ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
+          ! *** BB22 = 0.0                                  ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
+          IF( LBED(L) ) CYCLE        
+          
+          ! *** DETERMINE FLUXES
+          BB11 = TOXFB(L,NT)*TOXB(L,KBT(L),NT)              ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
+          BB22 = TOXF(L,0,NT)*TOX(L,KSZ(L),NT)              ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
+
           ! *** LIMIT DEPOSITING MASS TO AVAILABLE MASS
-          TMPVAL = TOX(L,KSZ(L),NT) + DTSED*( BB11 + BB22 )*HPKI(L,KSZ(L))
-          IF( TMPVAL < 0. )THEN
-            BB11 = -TOX(L,KSZ(L),NT)*HPK(L,KSZ(L))*DELTI
-            BB22 = 0.0
+          TMPVAL = TOX(L,KSZ(L),NT) + DTSED*BB22*HPKI(L,KSZ(L))
+          IF( TMPVAL < 0.0 )THEN
+            BB22 = -TOX(L,KSZ(L),NT)*DELTI*HPK(L,KSZ(L))
+          ENDIF
+            
+          ! *** CHECK FOR AVAILABLE MASS IN THE BED
+          TMPVAL = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
+          IF( TMPVAL < 0.0 )THEN
+            BB11 = TOXB(L,KBT(L),NT)*DELTI - BB22 - TOXFBL(L,NT)
+            IF( BB11 < 0.0 )THEN
+              PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB correction', TIMEDAY, L, KBT(L), BB11, TOXB(L,KBT(L),NT)   ! DELME
+              pause
+              BB11 = 0.0   ! delme
+            ENDIF
+          ENDIF
+            
+          ! *** MASS BALANCE AROUND WATER COLUMN BOTTOM LAYER
+          TOX(L,KSZ(L),NT) = TOX(L,KSZ(L),NT) + DTSED*( BB11 + BB22 )*HPKI(L,KSZ(L))
+          IF( TOX(L,KSZ(L),NT) < 0.0 )THEN
+            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOX correction', TIMEDAY, L, KSZ(L), BB22, TOX(L,KSZ(L),NT)   ! DELME
+            pause
             TOX(L,KSZ(L),NT) = 0.0
-          ELSE
-            TOX(L,KSZ(L),NT) = TMPVAL
           ENDIF
           
           ! *** MASS BALANCE AROUND TOP SEDIMENT LAYER
           TOXB1(L,KBT(L),NT) = TOXB(L,KBT(L),NT)
           TOXB(L,KBT(L),NT) = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
-          TOXB(L,KBT(L),NT) = MAX(TOXB(L,KBT(L),NT),0.0)
+          IF( TOXB(L,KBT(L),NT) < 0.0 )THEN
+            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB', TIMEDAY, L, KBT(L), TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)   ! DELME
+            pause
+            TOXB(L,KBT(L),NT) = 0.0    !  delme
+          ENDIF          
         ENDDO
       ENDDO   ! *** NTOX
     ENDIF     ! *** KC = 1
@@ -1070,31 +1149,48 @@ SUBROUTINE CALTOX
         DO LP = LF,LL
           L = LWET(LP)
 
-          ! *** MASS BALANCE AROUND BOTTOM WATER COLUMN LAYER
+          ! *** BB11 = 0.0                                  ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
+          ! *** BB22 = 0.0                                  ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
+          IF( LBED(L) ) CYCLE        
+          
+          ! *** DETERMINE FLUXES
           AA11 = TOXF(L,KSZ(L),NT)*TOX(L,KSZ(L)+1,NT)       ! *** SETTLING FROM TOP OF BOTTOM LAYER,        MG/M2/S
-          IF( LBED(L) )THEN
-            BB11 = 0.0                                      ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
-            BB22 = 0.0                                      ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
-          ELSE
-            BB11 = TOXFB(L,NT)*TOXB(L,KBT(L),NT)            ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
-            BB22 = TOXF(L,0,NT)*TOX(L,KSZ(L),NT)            ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
+          BB11 = TOXFB(L,NT)*TOXB(L,KBT(L),NT)              ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
+          BB22 = TOXF(L,0,NT)*TOX(L,KSZ(L),NT)              ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
+
+          ! *** LIMIT DEPOSITING MASS TO AVAILABLE MASS
+          TMPVAL = TOX(L,KSZ(L),NT) + DTSED*( BB22 - AA11 )*HPKI(L,KSZ(L))
+          IF( TMPVAL < 0.0 )THEN
+            BB22 = -TOX(L,KSZ(L),NT)*DELTI*HPK(L,KSZ(L)) - AA11
+          ENDIF
+            
+          ! *** CHECK FOR AVAILABLE MASS IN THE BED
+          TMPVAL = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
+          IF( TMPVAL < 0.0 )THEN
+            BB11 = TOXB(L,KBT(L),NT)*DELTI - BB22 - TOXFBL(L,NT)
+            IF( BB11 < 0.0 )THEN
+              PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB correction', TIMEDAY, L, KBT(L), BB11, TOXB(L,KBT(L),NT)   ! DELME
+              pause
+              BB11 = 0.0   ! delme
+            ENDIF
+          ENDIF
+            
+          ! *** MASS BALANCE AROUND WATER COLUMN BOTTOM LAYER
+          TOX(L,KSZ(L),NT) = TOX(L,KSZ(L),NT) + DTSED*( BB11 + BB22 - AA11 )*HPKI(L,KSZ(L))
+          IF( TOX(L,KSZ(L),NT) < 0.0 )THEN
+            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOX correction', TIMEDAY, L, KSZ(L), BB22, TOX(L,KSZ(L),NT)   ! DELME
+            pause
+            TOX(L,KSZ(L),NT) = 0.0
           ENDIF
           
-          ! *** LIMIT DEPOSITING MASS TO AVAILABLE MASS
-          TMPVAL = TOX(L,KSZ(L),NT) + DTSED*( BB11 + BB22 - AA11 )*HPKI(L,KSZ(L))
-          IF( TMPVAL < 0. )THEN
-            BB11 = -TOX(L,KSZ(L),NT)*HPK(L,KSZ(L))*DELTI
-            BB22 = 0.0
-            TOX(L,KSZ(L),NT) = 0.0
-          ELSE
-            TOX(L,KSZ(L),NT) = TMPVAL
-          ENDIF
-
           ! *** MASS BALANCE AROUND TOP SEDIMENT LAYER
           TOXB1(L,KBT(L),NT) = TOXB(L,KBT(L),NT)
           TOXB(L,KBT(L),NT) = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
-          TOXB(L,KBT(L),NT) = MAX(TOXB(L,KBT(L),NT),0.0)
-
+          IF( TOXB(L,KBT(L),NT) < 0.0 )THEN
+            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB', TIMEDAY, L, KBT(L), TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)   ! DELME
+            pause
+            TOXB(L,KBT(L),NT) = 0.0    !  delme
+          ENDIF
         ENDDO
       ENDDO   ! *** NTOX
     ENDIF     ! *** KC = 2
@@ -1141,32 +1237,51 @@ SUBROUTINE CALTOX
         ! *** WATER COLUMN/SEDIMENT BED INTERFACE
         DO LP = LF,LL
           L = LWET(LP)
+
+          ! *** BB11 = 0.0                                  ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
+          ! *** BB22 = 0.0                                  ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
           IF( LBED(L) ) CYCLE        
 
-          ! *** MASS BALANCE AROUND BOTTOM WATER COLUMN LAYER
+          ! *** DETERMINE FLUXES
           AA11 = TOXF(L,KSZ(L),NT)*TOX(L,KSZ(L)+1,NT)       ! *** SETTLING FROM TOP OF BOTTOM LAYER,        MG/M2/S
-          IF( LBED(L) )THEN
-            BB11 = 0.0                                      ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
-            BB22 = 0.0                                      ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
-          ELSE
-            BB11 = TOXFB(L,NT)*TOXB(L,KBT(L),NT)            ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
-            BB22 = TOXF(L,0,NT)*TOX(L,KSZ(L),NT)            ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
-          ENDIF
-          
+          BB11 = TOXFB(L,NT)*TOXB(L,KBT(L),NT)              ! *** EROSIONAL FLUX TO THE WATER COLUMN,       MG/M2/S
+          BB22 = TOXF(L,0,NT)*TOX(L,KSZ(L),NT)              ! *** DEPOSITIONAL FLUX FROM THE WATER COLUMN,  MG/M2/S
+
           ! *** LIMIT DEPOSITING MASS TO AVAILABLE MASS
-          TMPVAL = TOX(L,KSZ(L),NT) + DTSED*( BB11 + BB22 - AA11 )*HPKI(L,KSZ(L))
-          IF( TMPVAL < 0. )THEN
-            BB11 = -TOX(L,KSZ(L),NT)*HPK(L,KSZ(L))*DELTI
-            BB22 = 0.0
+          TMPVAL = TOX(L,KSZ(L),NT) + DTSED*( BB22 - AA11 )*HPKI(L,KSZ(L))
+          IF( TMPVAL < 0.0 )THEN
+            !BB22 = (TOX(L,KSZ(L),NT) - TMPVAL)*DELTI*HPK(L,KSZ(L)) - AA11
+            BB22 = -TOX(L,KSZ(L),NT)*DELTI*HPK(L,KSZ(L)) - AA11
+          ENDIF
+            
+          ! *** CHECK FOR AVAILABLE MASS IN THE BED
+          TMPVAL = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
+          IF( TMPVAL < 0.0 )THEN
+            !BB11 = (TOXB(L,KBT(L),NT) - TMPVAL)*DELTI - BB22 - TOXFBL(L,NT)
+            BB11 = TOXB(L,KBT(L),NT)*DELTI - BB22 - TOXFBL(L,NT)
+            IF( BB11 < 0.0 )THEN
+              PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB correction', TIMEDAY, L, KBT(L), BB11, TOXB(L,KBT(L),NT)   ! DELME
+              pause
+              BB11 = 0.0   ! delme
+            ENDIF
+          ENDIF
+            
+          ! *** MASS BALANCE AROUND WATER COLUMN BOTTOM LAYER
+          TOX(L,KSZ(L),NT) = TOX(L,KSZ(L),NT) + DTSED*( BB11 + BB22 - AA11 )*HPKI(L,KSZ(L))
+          IF( TOX(L,KSZ(L),NT) < 0.0 )THEN
+            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOX correction', TIMEDAY, L, KSZ(L), BB22, TOX(L,KSZ(L),NT)   ! DELME
+            pause
             TOX(L,KSZ(L),NT) = 0.0
-          ELSE
-            TOX(L,KSZ(L),NT) = TMPVAL
           ENDIF
           
           ! *** MASS BALANCE AROUND TOP SEDIMENT LAYER
           TOXB1(L,KBT(L),NT) = TOXB(L,KBT(L),NT)
           TOXB(L,KBT(L),NT) = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
-          TOXB(L,KBT(L),NT) = MAX(TOXB(L,KBT(L),NT),0.0)
+          IF( TOXB(L,KBT(L),NT) < 0.0 )THEN
+            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB', TIMEDAY, L, KBT(L), TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)   ! DELME
+            pause
+            TOXB(L,KBT(L),NT) = 0.0    !  delme
+          ENDIF
         ENDDO
       ENDDO   ! *** NTOX
     ENDIF     ! *** KC >= 3

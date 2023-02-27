@@ -31,32 +31,40 @@ SUBROUTINE CALTOXB
   INTEGER   :: NC, ND, LF, LL, LP, L, NT, K, KBTM1, NS
   INTEGER   :: NFD, KM, KK, KBTP1, KBOT, KINC, KBOT2
   REAL      :: DEPINBED, DIFBWFAC, BETTMP
-  REAL      :: HBEDMIN0, SORBMIN, TOXTIMEI
+  REAL      :: HBEDMIN0, SORBMIN, TOXTIMEI, GAMTOX(KBM)
   REAL(RKD) :: CELLMASS, ERRT, ERRB, ERRW
   REAL,SAVE :: TOXTIME
   
-  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:,:) :: DERRB
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)        :: DIFTOXBW
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:)      :: PARTDIF     ! *** Sediment particle mixing and diffusion between layers
-  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXBBALN    ! *** Total toxic mass in bed   after  advection/diffusion calculations
-  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXBBALO    ! *** Total toxic mass in bed   before advection/diffusion calculations
-  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXWBALN    ! *** Total toxic mass in water after  advection/diffusion calculations
-  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:)   :: TOXWBALO    ! *** Total toxic mass in water before advection/diffusion calculations
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:)   :: DERRB
+  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:,:)    :: PARTDIF     ! *** Sediment particle mixing and diffusion between layers, by toxic class
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:,:) :: TOXBBALN    ! *** Total toxic mass in bed   after  advection/diffusion calculations
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:,:) :: TOXBBALO    ! *** Total toxic mass in bed   before advection/diffusion calculations
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:,:) :: TOXWBALN    ! *** Total toxic mass in water after  advection/diffusion calculations
+  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:,:) :: TOXWBALO    ! *** Total toxic mass in water before advection/diffusion calculations
 
-  IF( .NOT. ALLOCATED(DIFTOXBW) )THEN
-    Call AllocateDSI( DERRB,    KBM, NDM, 0.0)
-    Call AllocateDSI( DIFTOXBW, LCM, 0.0)
-    Call AllocateDSI( PARTDIF,  LCM, KBM, 0.0)
-    Call AllocateDSI( TOXBBALN, LCM, 0.0)
-    Call AllocateDSI( TOXBBALO, LCM, 0.0)
-    Call AllocateDSI( TOXWBALN, LCM, 0.0)
-    Call AllocateDSI( TOXWBALO, LCM, 0.0)
+  IF( .NOT. ALLOCATED(DERRB) )THEN
+    Call AllocateDSI( DERRB,    KBM, 0.0)
+    Call AllocateDSI( PARTDIF,  LCM, KBM,  NTXM, 0.0)
+    Call AllocateDSI( TOXBBALN, LCM, NTXM, 0.0)
+    Call AllocateDSI( TOXBBALO, LCM, NTXM, 0.0)
+    Call AllocateDSI( TOXWBALN, LCM, NTXM, 0.0)
+    Call AllocateDSI( TOXWBALO, LCM, NTXM, 0.0)
     
+    ! *** Set up spatial surface diffusion/surface flux array (delme - spatially varying not implemented)
+    DO ND = 1,NDM
+      LF = (ND-1)*LDMSED + 1  
+      LL = MIN(LF + LDMSED-1,LASED)
+      DO LP = LF,LL
+        L = LSED(LP)
+        DIFTOXBW(L,:) = DIFTOXS(:)    ! *** Implicit loop over NTOX
+      ENDDO    
+    ENDDO
+  
     TOXTIME = 0.0
     TOXSTEPB = TOXSTEPB - DTSED/10.         ! *** Add a tolerance to prevent machine precision impacting update frequencies
   ENDIF
   NFD = NSED2 + NSND + 1
-
+  
   TOXTIME = TOXTIME + DTSED
   
   ! *** ONLY COMPUTE FLUX TERMS AND BED MIXING IF TIME INTERVAL EXCEEDS TOXSTEPB
@@ -77,15 +85,14 @@ SUBROUTINE CALTOXB
     HBEDMIN0 = 1E-12
   ENDIF
   
-  ND = PRECISION(SORBMIN)
-  SORBMIN = 0.99  ! 1. - 1./10**ND
+  SORBMIN = 0.99
   
   ! *** *******************************************************************C
   !
   ! *** UPDATE TOTAL PARTICULATE FRACTION OF EACH TOXIC IN THE BED
   !
   !$OMP PARALLEL DEFAULT(SHARED) 
-  !$OMP DO PRIVATE(ND,LF,LL,LP,L,K,NT)
+  !$OMP DO PRIVATE(ND, LF, LL, LP, L, K, NT)
   DO ND = 1,NDM
     LF = (ND-1)*LDMSED + 1  
     LL = MIN(LF + LDMSED-1,LASED)
@@ -97,7 +104,13 @@ SUBROUTINE CALTOXB
     ! *** TOXPFB(L,NS,NT) = PARTICULATE FRACTION IN SEDIMENT BED 
     ! *** TOXPFTB(L,NT)   = TOTAL PARTICULATE FRACTION IN SEDIMENT BED
     CALL CALTOXB_FRACTIONS(LF,LL)
-    
+  ENDDO
+  !$OMP END DO
+
+  !$OMP DO PRIVATE(ND, LF, LL, LP, L, K, NT)
+  DO ND = 1,NDM
+    LF = (ND-1)*LDMSED + 1  
+    LL = MIN(LF + LDMSED-1,LASED)
     ! *** COMPUTE MASS FRACTION (TOXPFTB) OF SORBED TOXICS TO PARTICULATES (DIMENSIONLESS)
     DO NT = 1,NTOX
       DO K = 1,KB
@@ -115,8 +128,9 @@ SUBROUTINE CALTOXB
     ENDDO
   ENDDO   ! *** END OF DOMAIN LOOP
   !$OMP END DO
-    
-  !$OMP DO PRIVATE(ND,LF,LL,LP,L,NC,NT,K,KM,KK,DEPINBED,KBTP1,KBTM1,DIFBWFAC,BETTMP,ERRT,CELLMASS,ERRB,ERRW)
+  
+  !$OMP DO PRIVATE(ND, LF, LL, LP, L, NC, NT, K, KM, KK, KBTP1, KBTM1)                     &
+  !$OMP    PRIVATE(DEPINBED, DIFBWFAC, BETTMP, ERRT, CELLMASS, ERRB, ERRW, GAMTOX, DERRB)
   DO ND = 1,NDM
     LF = (ND-1)*LDMSED + 1  
     LL = MIN(LF + LDMSED-1,LASED)
@@ -135,31 +149,25 @@ SUBROUTINE CALTOXB
         DEPINBED = 0.
         
         ! *** Particle Mixing
-        PARTDIF(L,KBT(L)) = 0.0
+        PARTDIF(L,KBT(L),NT) = 0.0
         IF( KBT(L) /= KBOT2 )THEN
           DO K = KBT(L),KBOT2,KINC
             KM = K + KINC
             DEPINBED = DEPINBED + HBED(L,K)
-            PARTDIF(L,KM) = 0.0
+            PARTDIF(L,KM,NT) = 0.0
             IF( DEPINBED < DPDIFTOX(NT) )THEN
-              PARTDIF(L,KM) = 2.*PDIFTOX(NT)/(2.0-TOXPFTB(L,K,NT)-TOXPFTB(L,KM,NT))
+              PARTDIF(L,KM,NT) = 2.*PDIFTOX(NT)/(2.0-TOXPFTB(L,K,NT)-TOXPFTB(L,KM,NT))
             ENDIF
           ENDDO
         ELSE
           K  = KBOT2
           KM = K + KINC
           DEPINBED = DEPINBED + HBED(L,K)
-          PARTDIF(L,KM) = 0.0
+          PARTDIF(L,KM,NT) = 0.0
           IF( DEPINBED < DPDIFTOX(NT) )THEN
-            PARTDIF(L,KM) = 2.*PDIFTOX(NT)/(2.0-TOXPFTB(L,K,NT)-TOXPFTB(L,KM,NT))
+            PARTDIF(L,KM,NT) = 2.*PDIFTOX(NT)/(2.0-TOXPFTB(L,K,NT)-TOXPFTB(L,KM,NT))
           ENDIF
         ENDIF
-      ENDDO
-    
-      ! *** Set up spatial surface diffusion/surface flux array (delme - spatially varying not implemented)
-      DO LP = LF,LL
-        L = LSED(LP)
-        DIFTOXBW(L) = DIFTOXS(NT)
       ENDDO
     
       DO LP = LF,LL
@@ -169,59 +177,59 @@ SUBROUTINE CALTOXB
         DIFBWFAC = 2./HBED(L,KBT(L))
         IF( ISDIFBW(NT) == 1 ) DIFBWFAC = 1.0   ! *** Surface flux rate used
         
-        TOXBBALO(L) = 0.
+        TOXBBALO(L,NT) = 0.
         KBTP1 = KBT(L) - KINC   ! *** Layer above KBT
         KBTM1 = KBT(L) + KINC   ! *** Layer below KBT
-        ALOW(L,KBOT) = 0. 
-        CUPP(L,KBTP1) = 0.
+        ALOW(L,KBOT,NT) = 0. 
+        CUPP(L,KBTP1,NT) = 0.
         
         DO K = KBOT,KBTM1,-KINC
-          CUPP(L,K) = MIN(QWTRBED(L,K),0.) - (DIFTOX(NT) + PARTDIF(L,K))*(PORBED(L,K) + PORBED(L,K-KINC))/(HBED(L,K) + HBED(L,K-KINC))
+          CUPP(L,K,NT) = MIN(QWTRBED(L,K),0.) - (DIFTOX(NT) + PARTDIF(L,K,NT))*(PORBED(L,K) + PORBED(L,K-KINC))/(HBED(L,K) + HBED(L,K-KINC))
         ENDDO
-        CUPP(L,KBT(L)) = MIN(QWTRBED(L,KBT(L)),0.) - DIFBWFAC*DIFTOXBW(L)*PORBED(L,KBT(L))       ! *** Surface diffusion/flux
+        CUPP(L,KBT(L),NT) = MIN(QWTRBED(L,KBT(L)),0.) - DIFBWFAC*DIFTOXBW(L,NT)*PORBED(L,KBT(L))       ! *** Surface diffusion/flux
         
         DO K = KBOT2,KBT(L),-KINC
-          ALOW(L,K) = -MAX(QWTRBED(L,K + KINC),0.) - (DIFTOX(NT) + PARTDIF(L,K + KINC))*(PORBED(L,K + KINC) + PORBED(L,K))/(HBED(L,K + KINC) + HBED(L,K))
+          ALOW(L,K,NT) = -MAX(QWTRBED(L,K+KINC),0.)   - (DIFTOX(NT) + PARTDIF(L,K+KINC,NT))*(PORBED(L,K+KINC) + PORBED(L,K))/(HBED(L,K + KINC) + HBED(L,K))
         ENDDO
-        ALOW(L,KBTP1) = -MAX(QWTRBED(L,KBT(L)),0.) - DIFBWFAC*DIFTOXBW(L)*PORBED(L,KBT(L))       ! *** Surface diffusion/flux
+        ALOW(L,KBTP1,NT) = -MAX(QWTRBED(L,KBT(L)),0.) - DIFBWFAC*DIFTOXBW(L,NT)*PORBED(L,KBT(L))       ! *** Surface diffusion/flux
         
         DO K = KBOT,KBT(L),-KINC
-          BMNN(L,K) = TOXTIMEI*HBED(L,K)*PORBED(L,K)/(1.-TOXPFTB(L,K,NT))
+          BMNN(L,K,NT) = TOXTIMEI*HBED(L,K)*PORBED(L,K)/(1.-TOXPFTB(L,K,NT))
         ENDDO
-        BMNN(L,KBTP1) = TOXTIMEI*HPK(L,KSZ(L))/(1.-TOXPFTW(L,KSZ(L),NT))  ! *** BOTTOM LAYER OF WATER COLUMN
+        BMNN(L,KBTP1,NT) = TOXTIMEI*HPK(L,KSZ(L))/(1.-TOXPFTW(L,KSZ(L),NT))                         ! *** Bottom layer of water column
         
         ! *** BOTTOM LAYER
-        BMNN(L,KBOT)  = BMNN(L,KBOT) - MIN(QWTRBED(L,0),0.)
-        BMNN(L,KBOT)  = BMNN(L,KBOT) + MAX(QWTRBED(L,KBOT),0.) + (DIFTOX(NT) + PARTDIF(L,KBOT))*(PORBED(L,KBOT2) + PORBED(L,KBOT))/(HBED(L,KBOT2) + HBED(L,KBOT))
+        BMNN(L,KBOT,NT)  = BMNN(L,KBOT,NT) - MIN(QWTRBED(L,0),0.)
+        BMNN(L,KBOT,NT)  = BMNN(L,KBOT,NT) + MAX(QWTRBED(L,KBOT),0.) + (DIFTOX(NT) + PARTDIF(L,KBOT,NT))*(PORBED(L,KBOT2) + PORBED(L,KBOT))/(HBED(L,KBOT2) + HBED(L,KBOT))
         
         ! *** MIDDLE LAYERS
         DO K = KBOT2,KBTM1,-KINC
-          BMNN(L,K) = BMNN(L,K) + MAX(QWTRBED(L,K),0.)      + (DIFTOX(NT) + PARTDIF(L,K))     *(PORBED(L,K-KINC) + PORBED(L,K))/(HBED(L,K-KINC) + HBED(L,K)) &
-                                - MIN(QWTRBED(L,K+KINC),0.) + (DIFTOX(NT) + PARTDIF(L,K+KINC))*(PORBED(L,K+KINC) + PORBED(L,K))/(HBED(L,K+KINC) + HBED(L,K))
+          BMNN(L,K,NT) = BMNN(L,K,NT) + MAX(QWTRBED(L,K),0.)      + (DIFTOX(NT) + PARTDIF(L,K,NT))     *(PORBED(L,K-KINC) + PORBED(L,K))/(HBED(L,K-KINC) + HBED(L,K)) &
+                                      - MIN(QWTRBED(L,K+KINC),0.) + (DIFTOX(NT) + PARTDIF(L,K+KINC,NT))*(PORBED(L,K+KINC) + PORBED(L,K))/(HBED(L,K+KINC) + HBED(L,K))
         ENDDO
         
-        ! *** TOP LAYER
+        ! *** Top layer of sediment column
         K = KBT(L)
         IF( K == KBOT )THEN
-          BMNN(L,K) = BMNN(L,K) + MAX(QWTRBED(L,K),0.)      + DIFBWFAC*DIFTOXBW(L)*PORBED(L,KBT(L))
+          BMNN(L,K,NT) = BMNN(L,K,NT) + MAX(QWTRBED(L,K),0.)      + DIFBWFAC*DIFTOXBW(L,NT)*PORBED(L,KBT(L))
         ELSE
-          BMNN(L,K) = BMNN(L,K) + MAX(QWTRBED(L,K),0.)      + DIFBWFAC*DIFTOXBW(L)*PORBED(L,KBT(L)) &
-                                - MIN(QWTRBED(L,K+KINC),0.) + (DIFTOX(NT) + PARTDIF(L,K+KINC))*(PORBED(L,K+KINC) + PORBED(L,K))/(HBED(L,K+KINC) + HBED(L,K))  
+          BMNN(L,K,NT) = BMNN(L,K,NT) + MAX(QWTRBED(L,K),0.)      + DIFBWFAC*DIFTOXBW(L,NT)*PORBED(L,KBT(L)) &
+                                      - MIN(QWTRBED(L,K+KINC),0.) + (DIFTOX(NT) + PARTDIF(L,K+KINC,NT))*(PORBED(L,K+KINC) + PORBED(L,K))/(HBED(L,K+KINC) + HBED(L,K))  
         ENDIF
       
         ! *** ABOVE TOP LAYER
-        BMNN(L,KBTP1) = BMNN(L,KBTP1) - MIN(QWTRBED(L,KBT(L)),0.) + DIFBWFAC*DIFTOXBW(L)*PORBED(L,KBT(L))       ! *** Surface diffusion/flux
+        BMNN(L,KBTP1,NT) = BMNN(L,KBTP1,NT) - MIN(QWTRBED(L,KBT(L)),0.) + DIFBWFAC*DIFTOXBW(L,NT)*PORBED(L,KBT(L))       ! *** Surface diffusion/flux
 
         ! *** COMPUTE RRHS KG/S
         DO K = KBOT,KBT(L),-KINC
-          RRHS(L,K) =  TOXTIMEI*TOXB(L,K,NT)
-          TOXBBALO(L) = TOXBBALO(L) + TOXB(L,K,NT)               ! *** TOTAL MASS OF TOXICS IN BED BEFORE DIFFUSION STEPS (MG/M2)
-        ENDDO
-        TOXWBALO(L) = HPK(L,KSZ(L))*TOX(L,KSZ(L),NT)             ! *** TOTAL MASS OF TOXICS IN BOTTOM LAYER BEFORE DIFFUSION STEPS (MG/M2)
+          RRHS(L,K,NT) =  TOXTIMEI*TOXB(L,K,NT)
+          TOXBBALO(L,NT) = TOXBBALO(L,NT) + TOXB(L,K,NT)                  ! *** Total mass of toxics in bed before diffusion steps (mg/m2)
+        ENDDO                                                       
+        TOXWBALO(L,NT) = HPK(L,KSZ(L))*TOX(L,KSZ(L),NT)                ! *** Total mass of toxics in bottom layer before diffusion steps (mg/m2)
         
         ! *** ADD FLUX OF GROUNDWATER INTO THE BOTTOM SEDIMENT LAYER
-        RRHS(L,KBOT) = RRHS(L,KBOT) + MAX(QWTRBED(L,0),0.)*CONGW(L,NT + 4)
-        RRHS(L,KBTP1) = TOXTIMEI*TOXWBALO(L)                     ! *** RRHS - MASS FLUX RATE (MG/M2/S) 
+        RRHS(L,KBOT,NT) = RRHS(L,KBOT,NT) + MAX(QWTRBED(L,0),0.)*CONGW(L,NC)
+        RRHS(L,KBTP1,NT) = TOXTIMEI*TOXWBALO(L,NT)                     ! *** RRHS - Mass flux rate (mg/m2/s) 
       ENDDO
 
       ! *** TRI-DIAGONAL SOLVER
@@ -229,15 +237,15 @@ SUBROUTINE CALTOXB
         L = LSED(LP)
         
         KBTP1 = KBT(L)-KINC           ! *** Layer above the top layer
-        BETTMP = BMNN(L,KBOT)
-        TOXTMP(L,KBOT) = RRHS(L,KBOT)/BETTMP
+        BETTMP = BMNN(L,KBOT,NT)
+        TOXTMP(L,KBOT,NT) = RRHS(L,KBOT,NT)/BETTMP
         DO KK = KBOT2,KBTP1,-KINC
-          GAMTMP(L,KK) = CUPP(L,KK+KINC)/BETTMP
-          BETTMP = BMNN(L,KK) - ALOW(L,KK)*GAMTMP(L,KK) + 1E-12
-          TOXTMP(L,KK) = (RRHS(L,KK) - ALOW(L,KK)*TOXTMP(L,KK+KINC))/BETTMP
+          GAMTOX(KK) = CUPP(L,KK+KINC,NT)/BETTMP
+          BETTMP = BMNN(L,KK,NT) - ALOW(L,KK,NT)*GAMTOX(KK) + 1E-12
+          TOXTMP(L,KK,NT) = (RRHS(L,KK,NT) - ALOW(L,KK,NT)*TOXTMP(L,KK+KINC,NT))/BETTMP
         ENDDO
         DO KK = KBT(L),KBOT,KINC
-          TOXTMP(L,KK) = TOXTMP(L,KK) - GAMTMP(L,KK-KINC)*TOXTMP(L,KK-KINC)
+          TOXTMP(L,KK,NT) = TOXTMP(L,KK,NT) - GAMTOX(KK-KINC)*TOXTMP(L,KK-KINC,NT)
         ENDDO
       ENDDO
 
@@ -245,41 +253,44 @@ SUBROUTINE CALTOXB
       DO LP = LF,LL
         L = LSED(LP)
 
-        TOXBBALN(L) = 0.0
+        TOXBBALN(L,NT) = 0.0
         DO K = KBOT,KBT(L),-KINC
-          TOXB(L,K,NT) = HBED(L,K)*PORBED(L,K)*TOXTMP(L,K)/(1.0-TOXPFTB(L,K,NT))
-          TOXBBALN(L) = TOXBBALN(L) + TOXB(L,K,NT)                                 ! *** Total mass of toxics in bed after diffusion steps (mg/m2)
+          TOXB(L,K,NT) = HBED(L,K)*PORBED(L,K)*TOXTMP(L,K,NT)/(1.0-TOXPFTB(L,K,NT))
+          TOXBBALN(L,NT) = TOXBBALN(L,NT) + TOXB(L,K,NT)                                 ! *** Total mass of toxics in bed after diffusion steps (mg/m2)
         ENDDO
         
         KBTP1 = KBT(L)-KINC
-        TOX(L,KSZ(L),NT) = TOXTMP(L,KBTP1)/(1.-TOXPFTW(L,KSZ(L),NT))
-        TOXWBALN(L) = HPK(L,KSZ(L))*TOX(L,KSZ(L),NT)                               ! *** Total mass of toxics in bottom layer after diffusion steps (mg/m2)
+        TOX(L,KSZ(L),NT) = TOXTMP(L,KBTP1,NT)/(1.-TOXPFTW(L,KSZ(L),NT))
+        TOXWBALN(L,NT) = HPK(L,KSZ(L))*TOX(L,KSZ(L),NT)                               ! *** Total mass of toxics in bottom layer after diffusion steps (mg/m2)
       ENDDO
   
       ! *** CORRECT MASS ERROR AND DETERMINE NET FLUX FROM BED TO WATER COLUMN
       DO LP = LF,LL
         L = LSED(LP)
         
-        CELLMASS = TOXBBALN(L) + TOXWBALN(L)
-        ERRT     = CELLMASS - (TOXBBALO(L) + TOXWBALO(L))                          ! *** Difference in bed mass at the start and end of calculations
+        CELLMASS = TOXBBALN(L,NT) + TOXWBALN(L,NT)
+        ERRT     = CELLMASS - (TOXBBALO(L,NT) + TOXWBALO(L,NT))                          ! *** Difference in bed mass at the start and end of calculations
         ERRT     = ERRT - MAX(QWTRBED(L,0),0.)*CONGW(L,NC)*TOXTIME                 ! *** Remove the external mass loading
         
         ! *** HANDLE ZERO SEDIMENT AND/OR WATER CONCENTRATIONS
-        IF( TOXBBALN(L) > 1.E-12 .AND. ERRT /= 0. )THEN
-          ERRB = ERRT*TOXBBALN(L)/CELLMASS
+        IF( TOXBBALN(L,NT) > 1.E-12 .AND. ERRT /= 0. )THEN
+          ERRB = ERRT*TOXBBALN(L,NT)/CELLMASS
           ERRW = ERRT - ERRB
           TOX(L,KSZ(L),NT) = TOX(L,KSZ(L),NT) - ERRW/HPK(L,KSZ(L))
           DO K = KBOT,KBT(L),-KINC
-            DERRB(K,ND) = TOXB(L,K,NT)/TOXBBALN(L)
+            DERRB(K) = TOXB(L,K,NT)/TOXBBALN(L,NT)
           ENDDO
           DO K = KBOT,KBT(L),-KINC
-            TOXB(L,K,NT) = TOXB(L,K,NT) - DERRB(K,ND)*ERRB
+            TOXB(L,K,NT) = TOXB(L,K,NT) - DERRB(K)*ERRB
           ENDDO
-          TADFLUX(L,NT) = (HPK(L,KSZ(L))*TOX(L,KSZ(L),NT)-TOXWBALO(L))/TOXTIME
+          TADFLUX(L,NT) = (HPK(L,KSZ(L))*TOX(L,KSZ(L),NT)-TOXWBALO(L,NT))/TOXTIME
         ELSE
           TADFLUX(L,NT) = 0.
         ENDIF
+
+
       ENDDO
+      
     ENDDO ! *** End of contaminant class
   ENDDO   ! *** End of domain loop
   !$OMP END DO
@@ -317,10 +328,10 @@ SUBROUTINE CALTOXB_FRACTIONS(LF,LL)
   
   IMPLICIT NONE
 
-  INTEGER, INTENT(IN) :: LL,LF
-  INTEGER             :: LP,L,K,NT,NS,NX,NFD
+  INTEGER, INTENT(IN) :: LL, LF
+  INTEGER             :: LP, L, K, NT, NS, NX, NFD
 
-  REAL                :: HBEDMIN0,TMPVAL,  PMC(10)
+  REAL                :: HBEDMIN0, TMPVAL,  PMC(10)
 
   IF( LSEDZLJ )THEN
       HBEDMIN0 = 1E-12
@@ -347,7 +358,7 @@ SUBROUTINE CALTOXB_FRACTIONS(LF,LL)
     IF( ISTRAN(6) >= 1 )THEN
       IF( ISTOC(NT) > 1 )THEN
         ! *** fPOC BASED
-        DO NS = 1,NSED
+        DO NS = 1,NSED2
           DO K = 1,KB
             DO LP = LF,LL
               L = LSED(LP)
@@ -358,7 +369,7 @@ SUBROUTINE CALTOXB_FRACTIONS(LF,LL)
         ENDDO
       ELSEIF( ISTOC(NT) == 0 )THEN
         ! *** Kd APPROACH
-        DO NS = 1,NSED
+        DO NS = 1,NSED2
           DO K = 1,KB
             DO LP = LF,LL
               L = LSED(LP)
@@ -383,7 +394,7 @@ SUBROUTINE CALTOXB_FRACTIONS(LF,LL)
               TOXPFB(L,K,NS,NT) = SNDB(L,K,NX)*STFPOCB(L,K,NS)*TOXPARB(L,NS,NT)
             ENDDO
           ENDDO
-        ELSEIF( ISTOC(NT) == 0 )THEN
+        ELSEIF( ISTOC(NT) == 0 )THEN 
           ! *** Kd APPROACH
           DO K = 1,KB
             DO LP = LF,LL

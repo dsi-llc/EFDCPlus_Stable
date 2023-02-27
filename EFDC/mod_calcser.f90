@@ -29,7 +29,7 @@ CONTAINS
 
     INTEGER :: NS, K, NT, NTT, M1, M2, NW, NC, MD, MS                                                                          
     REAL :: TIME, TDIFF, WTM1, WTM2
-
+    
     ! *** INITIALIZE NULL SERIES CONCENTRATIONS                                                                             
     NTT = 3 + NDYM + NTOX + NSED + NSND
     DO NT=1,NTT
@@ -193,7 +193,7 @@ CONTAINS
           TIME=TIMESEC/TCSFSER
         ENDIF
       ENDIF
-
+      
       M1=MSFTLST
       DO WHILE(1)
         M2=M1+1

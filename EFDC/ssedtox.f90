@@ -26,12 +26,12 @@ SUBROUTINE SSEDTOX
   !----------------------------------------------------------------------C                                                
   !  2002          John Hamrick       Many updates to work with bedload, morphology and toxics
                           
-  ! *** *******************************************************************
+  ! ***********************************************************************
                           
   ! *** SUBROUTINE SSEDTOX CALCULATES SETTLING AND WATER COLUMN-BED                                                       
   ! *** EXCHANGE OF SEDIMENT AND SORBED TOXIC CONTAMINANTS                                                                
                           
-  ! *** *******************************************************************CC                                               
+  ! ***********************************************************************CC                                               
 
   USE GLOBAL
   USE RESTART_MODULE
@@ -160,7 +160,7 @@ SUBROUTINE SSEDTOX
   FOURDPI = 4./PI
   MINTHICK = MIN(1E-6,DTSED*1E-6)           ! *** Minimum bed thickness
   
-  ! *** *******************************************************************C                                                
+  ! ***********************************************************************C                                                
   ! *** IF N=1 CALCULATE INITIAL SEDIMENT BED THICKNESS
                           
   !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,K,NS,NX,LN,LE,KK,NT) &
@@ -363,7 +363,7 @@ SUBROUTINE SSEDTOX
         ENDDO
       ENDIF
 
-      ! *** *******************************************************************C                                                
+      ! ***********************************************************************C                                                
       ! *** SET MEAN D50 AND D90                                                                                              
       IF( ISTRAN(7) >= 1 )THEN
         ! *** SEDIMENT MASS
@@ -495,7 +495,7 @@ SUBROUTINE SSEDTOX
       ENDIF    ! *** END OF NON-COHESIVE GRAIN SIZE CALCS
     ENDIF    ! *** END OF LSEDZLJ BYPASS
                             
-    ! *** *******************************************************************C                                                
+    ! ***********************************************************************C                                                
     ! *** SET CELL CENTER BED STRESS FOR SEDIMENT RESUSPENSION AND DEPOSITION                                               
     IF( .NOT. LSEDZLJ )THEN
       IF( ISWAVE > 0 )THEN
@@ -593,7 +593,7 @@ SUBROUTINE SSEDTOX
         ENDDO
       ENDIF
 
-      ! *** *************************************************************************************
+      ! *****************************************************************************************
       ! *** PARTITION BED STRESS BETWEEN TOTAL AND GRAIN STRESS                                                               
       IF( ISBEDSTR == 1 .OR. ISBEDSTR == 2 )THEN
         TMPEXP=2./7.
@@ -830,7 +830,7 @@ SUBROUTINE SSEDTOX
                               
       ENDIF
                               
-      ! *** *******************************************************************C                                                
+      ! ***********************************************************************C                                                
       DO LP=LF,LL
         L = LSED(LP)
         HBEDA(L) = 0.0
@@ -869,7 +869,7 @@ SUBROUTINE SSEDTOX
     ENDIF
   ENDIF
     
-  ! *** *******************************************************************C                                                
+  ! ***********************************************************************C                                                
   ! *** CALCULATE COHESIVE SEDIMENT SETTLING, DEPOSITION AND RESUSPENSION                                                 
   IF( ISTRAN(6) >= 1 )THEN
     IF( LSEDZLJ )THEN
@@ -880,12 +880,12 @@ SUBROUTINE SSEDTOX
     ENDIF
   ENDIF
                             
-  ! *** *******************************************************************C                                                
+  ! ***********************************************************************C                                                
   ! *** CALCULATE NONCOHESIVE SEDIMENT BEDLOAD TRANSPORT, SETTLING,                                                       
   ! *** DEPOSITION AND RESUSPENSION                                                                                       
   IF( ISTRAN(7) >= 1 ) CALL CALSND
                           
-  ! *** *******************************************************************C                                                
+  ! ***********************************************************************C                                                
   ! *** CALCULATE BANK EROSION AND ADJUST SEDIMENT AND WATER VOLUME FLUXES                                                                                                            
   IF( ISTRAN(6) >= 1 .OR. ISTRAN(7) >= 1 )THEN
     IF( ISBKERO >= 1 )THEN
@@ -907,7 +907,7 @@ SUBROUTINE SSEDTOX
     LF = (ND-1)*LDMSED+1  
     LL = MIN(LF+LDMSED-1,LASED)
 
-    ! *** *******************************************************************C                                                
+    ! ***********************************************************************C                                                
     ! *** CALCULATE PARENT TO ACTIVE LAYER SEDIMENT FLUX                                                                    
     DO LP=LF,LL
       L = LSED(LP)
@@ -995,7 +995,7 @@ SUBROUTINE SSEDTOX
       ENDIF
     ENDIF
                             
-    ! *** *************************************************************************                                           
+    ! *****************************************************************************                                           
     ! *** UPDATE TOP BED LAYER THICKNESS AND VOID RATIO                                                                     
     ! *** FOR DEPOSITION-RESUSPENSION STEP                                                                                  
     DO LP=LF,LL
@@ -1100,10 +1100,10 @@ SUBROUTINE SSEDTOX
   ENDDO   ! *** END OF DOMAIN LOOP
   !$OMP END PARALLEL DO
     
-  ! *** ******************************************************************
+  ! **********************************************************************
   1000 CONTINUE  ! *** JUMP DIRECTLY HERE FROM SEDZLJ_MAIN CALL
                            
-  ! *** *******************************************************************C                                                
+  ! ***********************************************************************C                                                
   ! *** CALCULATE TOXIC SETTLING, DEPOSITION AND RESUSPENSION                                                             
   IF( ISTRAN(5) > 0 )THEN
     TTDSX = DSTIME(0)
@@ -1112,7 +1112,7 @@ SUBROUTINE SSEDTOX
   ENDIF                      
                           
   IF( .NOT. LSEDZLJ )THEN
-    ! *** *******************************************************************C                                                
+    ! ***********************************************************************C                                                
     ! *** UPDATE TOP BED LAYER THICKNESS AND VOID RATIO                                                                     
     ! *** FOR DEPOSITION-RESUSPENSION STEP                                                                                  
     ! *** PRESENTLY ACTIVE BEFORE THE WATER COLUMN-BED TOXICS EXCHANGE                                                      
@@ -1120,11 +1120,11 @@ SUBROUTINE SSEDTOX
     !        VDRTMP=(TMPVAL/HBED(L,K))-1.                                                                                   
     !        VDRBED(L,K) = VDRTMP                                                                                             
 
-    ! *** *******************************************************************C                                                
+    ! ***********************************************************************C                                                
     ! *** UPDATE SEDIMENT BED LAYERING                                                                                      
     IF( KB > 1 ) CALL CALBLAY
                           
-    ! *** *******************************************************************C                                                
+    ! ***********************************************************************C                                                
     ! *** RESET SEDIMENT VOLUME FRACTIONS                                                                                   
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,K,NS,NX)
     DO ND=1,NDM  
@@ -1276,7 +1276,7 @@ SUBROUTINE SSEDTOX
     !$OMP END PARALLEL DO
   ENDIF  ! *** END OF SEDZLJ BYPASS
   
-  ! *** *******************************************************************C                                                
+  ! ***********************************************************************C                                                
   ! *** UPDATE SEDIMENT BED PHYSICAL PROPERTIES  
   IF( LSEDZLJ )THEN
     ! *** ALL SEDZLJ VARIABLES NEEDED BY EFDC ARE UPDATED IN S_SEDZLJ.F90
@@ -1288,7 +1288,7 @@ SUBROUTINE SSEDTOX
     ENDIF
   ENDIF
   
-  ! *** *******************************************************************C                                                
+  ! ***********************************************************************C                                                
   ! *** CHANGE BED MORPHOLOGY.  NOW INCLUDING SEDZLJ OPTION (2017-01)
   IF( IMORPH > 0 )THEN
     ITMP=0
@@ -1323,7 +1323,7 @@ SUBROUTINE SSEDTOX
     ! *** 2017-01 - PMC REMOVED CONCENTRATION ADJUSTMENT SINCE NEW APPROACH MAINTAINS WATER BALANCE
   ENDIF
   
-  ! *** *******************************************************************C                                                
+  ! ***********************************************************************C                                                
   ! *** TOXICS CALCULATIONS
   IF( ISTRAN(5) > 0 )THEN
     ! *** POREWATER ADVECTION AND DIFFUSION OF TOXICS                                                                       
@@ -1344,7 +1344,7 @@ SUBROUTINE SSEDTOX
     if( icalc_bl > 0 ) prop_bld(:,:) = 0.0    ! *** Zero erosion due to propwash for next iteration
   endif
   
-  ! *** *******************************************************************C                                                
+  ! ***********************************************************************C                                                
   
   TTSED = TTSED + (DSTIME(0) - TTDS) - TTWAIT
 

@@ -19,12 +19,12 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !----------------------------------------------------------------------!
 !
-!  RELEASE:         EFDCPlus_11.4
+!  RELEASE:         EFDCPlus_11.5
 !                   Domain Decomposition with MPI
 !                   Propeller Wash 
 !                   New WQ kinetics with user defined algal groups and zooplankton
 !                   SIGMA-Zed (SGZ) Vertical Layering
-!  DATE:            2022-08-06
+!  DATE:            2022-10-06
 !  BY:              DSI, LLC
 !                   EDMONDS, WASHINGTON  98020
 !                   USA
@@ -164,7 +164,7 @@ PROGRAM EFDC
   INTEGER :: ITMPVAL, IFIRST, ILAST, ISO, JDUMY, IISTMP, LPBTMP, LBELMIN
   INTEGER :: L, K, I, J, IP, IS, M, LL, LP, LF, LT, LN, LS, NX, LW, KM, LE, LG, ND, IYEAR, NP, NC, MD
 
-  INTEGER(IK4) :: IERROR
+  INTEGER(IK4) :: IERROR, NWR, IU, JU, LU, ID, JD, LD, NJP
   INTEGER(IK4) :: IRET
   INTEGER(IK8) :: NREST,NN
   INTEGER(1)   :: VERSION
@@ -184,7 +184,7 @@ PROGRAM EFDC
   Double Precision :: starting_time, ending_time
   
   ! *** When updating the version data also update the EXE date in the project settings
-  EFDC_VER = '2022-08-22'
+  EFDC_VER = '2022-10-06'
   
   IERR = 0
 #ifdef DEBUGGING
@@ -211,11 +211,6 @@ PROGRAM EFDC
   VERSION = 3
 
   IF( process_id == master_id )THEN
-#ifdef HSDEBUG
-    OPEN(200,FILE=OUTDIR//'HSLOG.TXT',STATUS='UNKNOWN')
-    WRITE(200,'(A)') '     N  NCTL STATE    EETIME      TSTART      TOPEN       ZHU      ZHD     HOPEN    WOPEN     SOPEN    QHS'
-    CLOSE(200)
-#endif
 
     COUNT = NARGS()
     NTHREADS = 1
@@ -349,7 +344,7 @@ PROGRAM EFDC
   ! *** THE PARAMETER NTC=NUMBER OF TIME CYCLES, CONTROLS THE LENGTH OF RUN (NUMBER OF TIME STEPS)
   ! *** STARTING AND ENDING DATES, IN DAYS
   TIMEDAY = DBLE(TCON)*DBLE(TBEGIN)/86400._8
-  TIMEEND = TIMEDAY + (DBLE(TIDALP)*DBLE(NTC) + DBLE(DELT))/86400._8
+  TIMEEND = TIMEDAY + (DBLE(TIDALP)*DBLE(NTC) + DBLE(DT))/86400._8
 
   ! *** MODEL RUN TIME ACCUMULATORS
   !TCYCLE=0.0
@@ -1416,7 +1411,7 @@ PROGRAM EFDC
 
         ! *** QC
         TMP = ABS(1.0 - SUM(DZC(L,1:KC)))
-        IF( ABS(1.0 - SUM(DZC(L,1:KC))) > 1.E-6 )THEN
+        IF( ABS(1.0 - SUM(DZC(L,1:KC))) > 2.E-6 )THEN  ! Changed from 1.E-6 to 2.E-6 for the Lake Tahoe - DKT
           TMP = SUM(DZC(L,1:KC))
           PRINT *,' BAD DZC FOR CELL: ',L,TMP
           CALL STOPP('.')
@@ -1579,6 +1574,25 @@ PROGRAM EFDC
     ENDDO
   ENDDO
 
+  ! *** Limit BC layers to active layers
+  DO NWR=1,NQWR
+    IU = WITH_RET(NWR).IQWRU
+    JU = WITH_RET(NWR).JQWRU
+    LU = LIJ(IU,JU)
+    WITH_RET(NWR).KQWRU = MAX(WITH_RET(NWR).KQWRU, KSZ(LU))
+    
+    ID = WITH_RET(NWR).IQWRD
+    JD = WITH_RET(NWR).JQWRD
+    LD = LIJ(ID,JD)
+    IF( LD > 1 )THEN
+      WITH_RET(NWR).KQWRD = MAX(WITH_RET(NWR).KQWRD, KSZ(LD))  
+    ENDIF
+  ENDDO
+  DO NJP=1,NQJPIJ
+    LU = LIJ(IQJP(NJP),JQJP(NJP))
+    KUPCJP(NJP) = MAX(KUPCJP(NJP), KSZ(LU))
+  ENDDO
+  
   If( process_id == master_id )THEN
     IF( IGRIDV > 0 )THEN
       IF( DEBUG ) WRITE(6,'(A)') 'TOTAL NUMBER OF ACTIVE COMPUTATIONAL CELLS PER LAYER'

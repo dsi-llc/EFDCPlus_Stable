@@ -973,10 +973,13 @@ subroutine calc_erosive_flux(self, debug)
 
   ! *** Determine bottom shear stress at all intersection points
   !     of the bottom with propwash velocity field
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i, j, cell, m, shear_counter, isurf)                                    &
-  !$OMP                             PRIVATE(x_ax, y_ax, x_bed, y_bed, z_bed, w_depth, ax, bot_velocity, prop_off)   &
-  !$OMP                             PRIVATE(sin2, cos2, xp2, yp2, d1, d2, radius, vel2, erosion, shear, elay)       &
-  !$OMP                             PRIVATE(ang, velx, vely, ebld, xxx, yyy) REDUCTION(MAX: vb_max)
+  !$OMP PARALLEL DO DEFAULT(NONE) PRIVATE(i, j, m, isurf)   REDUCTION(MAX: vb_max)                                  &
+  !$OMP                           PRIVATE(x_ax, y_ax, ax, prop_off, sin2, cos2, xp2, yp2, radius, d1, d2)           &
+  !$OMP                           PRIVATE(vel2, erosion, shear, ang, velx, vely, ebld, xxx, yyy)                    &
+  !$OMP                           FIRSTPRIVATE(elay, bot_velocity, shear_counter, vb_max1, prop_radius)             &
+  !$OMP                           FIRSTPRIVATE(cell, x_bed, y_bed, z_bed, w_depth, c_f)                             &
+  !$OMP                           SHARED(KSZ, RHOW, ISTRAN, LBED, LSEDZLJ, DTSEDJ, NSCM, PROP_ERO, PROP_BLD)        &
+  !$OMP                           SHARED(self, num_axial_elems, num_radial_elems)
   do i = 1, num_axial_elems
     ! *** get axial location (x,y,z)
     x_ax = self.axial_mesh(i).x_pos         ! *** Model domain position X
@@ -1064,8 +1067,9 @@ subroutine calc_erosive_flux(self, debug)
             Call Calc_Prop_Erosion_SEDZLJ(cell, shear, elay, isurf)           ! *** Calculate erosion rates in g/cm^2
 
             elay(:) = elay(:)*self.subgrid_mesh(j,i).area                     ! *** Mass eroded for mesh cell per class (g)
+            self.subgrid_mesh(j,i).ero(:) = elay(:)                           ! *** Total mass eroded for mesh cell per class (g)
             !ebld(:) = ebld(:)*self.subgrid_mesh(j,i).area                    ! *** Mass eroded into bedload layer for mesh cell per class (g)   ToDo
-            self.subgrid_mesh(j,i).ero(:) = (elay(:) + ebld(:))               ! *** Total mass eroded for mesh cell per class (g)
+            !self.subgrid_mesh(j,i).ero(:) = (elay(:) + ebld(:))              ! *** Total mass eroded for mesh cell per class (g)                ToDo
           else
             shear = shear*0.001                                               ! *** Density normalized shear in m2/s2
             Call Calc_Prop_Erosion_Original(cell, shear, elay, ebld)          ! *** Calculate erosion rates
@@ -1076,11 +1080,6 @@ subroutine calc_erosive_flux(self, debug)
             ! *** Convert bedload to get total mass eroded for mesh cell per class (g)
             self.subgrid_mesh(j,i).ero(:) = (elay(:) + ebld(:)*self.subgrid_mesh(j,i).width*DTSEDJ)
           endif
-
-          ! *** Gather erosion and put it into the cell the propwash component exists
-          prop_ero(cell,1:nscm) = prop_ero(cell,1:nscm) + elay(1:nscm)        ! *** (g)
-          prop_bld(cell,1:nscm) = prop_bld(cell,1:nscm) + ebld(1:nscm)/DBLE(self.mesh_count(cell))   ! *** Average unit discharge (g/m/s)
-          
         else
           self.subgrid_mesh(j,i).ero(:) = 0.0
           self.subgrid_mesh(j,i).var(3) = 0.0
@@ -1096,6 +1095,19 @@ subroutine calc_erosive_flux(self, debug)
   end do
   !$OMP END PARALLEL DO
 
+  ! *** Accumulate the global propwash erosion (moved outside OMP due to "racing")
+  do i = 1, num_axial_elems
+    do j = 1, num_radial_elems
+      if( self.subgrid_mesh(j,i).cell < 1 )then
+        cycle
+      endif
+
+      cell = self.subgrid_mesh(j,i).cell          ! *** Gather erosion and put it into the cell the propwash component exists
+      prop_ero(cell,1:nscm) = prop_ero(cell,1:nscm) + self.subgrid_mesh(j,i).ero(:)               ! *** (g)
+      !prop_bld(cell,1:nscm) = prop_bld(cell,1:nscm) + ebld(1:nscm)/DBLE(self.mesh_count(cell))   ! *** Average unit discharge (g/m/s)
+    enddo
+  enddo
+  
   self.max_bot_vel = 0.25 * vb_max          ! *** Fraction of maximum bottom velocity to be used to prevent double counting if ISPROPWASH = 2
 
   if( self.freq_out > 0. )then

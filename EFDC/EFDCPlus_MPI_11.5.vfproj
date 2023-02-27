@@ -14,15 +14,9 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-<<<<<<<< HEAD:EFDC/EFDCPlus_MPI_10.3.9.vfproj
-		<Configuration Name="64SP_R_MPI|x64" OutputDirectory="$(ConfigurationName)" IntermediateDirectory="$(ConfigurationName)" TargetName="$(ProjectName)_220214">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ROOT)\intel64\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" RuntimeLibrary="rtMultiThreadedDLL"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(I_MPI_ROOT)\intel64\lib\release;..\NetCDFLib\x64\lib" IgnoreDefaultLibraryNames="libcmt.lib;mscvrt.lib;libifcoremt.lib" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib"/>
-========
-		<Configuration Name="64SP_R_MPI|x64" OutputDirectory="$(ConfigurationName)" IntermediateDirectory="$(ConfigurationName)" TargetName="$(ProjectName)_220701">
+		<Configuration Name="64SP_R_MPI|x64" OutputDirectory="$(ConfigurationName)" IntermediateDirectory="$(ConfigurationName)" TargetName="$(ProjectName)_221006">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ROOT)\intel64\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT;WASPOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" RuntimeLibrary="rtMultiThreadedDLL"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(I_MPI_ROOT)\intel64\lib\release;..\NetCDFLib\x64\lib;..\WASP" IgnoreDefaultLibraryNames="libcmt.lib;mscvrt.lib;libifcoremt.lib" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
->>>>>>>> develop:EFDC/EFDCPlus_MPI_11.3.vfproj
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -100,11 +94,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-<<<<<<<< HEAD:EFDC/EFDCPlus_MPI_10.3.9.vfproj
-		<Configuration Name="64SP_Rel_OneApi_MPI|x64" TargetName="$(ProjectName)_210925">
-========
 		<Configuration Name="64SP_Rel_OneApi_MPI|x64">
->>>>>>>> develop:EFDC/EFDCPlus_MPI_11.3.vfproj
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ONEAPI_ROOT)\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" RuntimeLibrary="rtMultiThreadedDLL"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(I_MPI_ONEAPI_ROOT)\lib\release;..\NetCDFLib\x64\lib" IgnoreDefaultLibraryNames="libcmt.lib;mscvrt.lib;libifcoremt.lib" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
@@ -124,11 +114,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-<<<<<<<< HEAD:EFDC/EFDCPlus_MPI_10.3.9.vfproj
-		<Configuration Name="64DP_Rel_OneApi_MPI|x64" TargetName="$(ProjectName)_210925">
-========
 		<Configuration Name="64DP_Rel_OneApi_MPI|x64" TargetName="$(ProjectName)_220327_fast">
->>>>>>>> develop:EFDC/EFDCPlus_MPI_11.3.vfproj
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ONEAPI_ROOT)\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" RealKIND="realKIND8" LocalSavedScalarsZero="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" BuildDependencies="true" EmitBuildDependencies="true" Traceback="true" RuntimeChecks="rtChecksNone" RuntimeLibrary="rtMultiThreadedDLL"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(I_MPI_ONEAPI_ROOT)\lib\release;..\NetCDFLib\x64\lib" IgnoreDefaultLibraryNames="libcmt.lib;mscvrt.lib;libifcoremt.lib" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
@@ -414,34 +400,9 @@
 			<FileConfiguration Name="64DP_R_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
 			<FileConfiguration Name="64DP_Rel_OneApi_MPI|x64">
-<<<<<<<< HEAD:EFDC/EFDCPlus_MPI_10.3.9.vfproj
 				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
 			<FileConfiguration Name="64SP_R_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
-			<FileConfiguration Name="64SP_Rel_OneApi_MPI|x64">
-				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration></File>
-		<File RelativePath=".\varzeroint.f90">
-			<FileConfiguration Name="64DP_R_MPI|x64">
-========
->>>>>>>> develop:EFDC/EFDCPlus_MPI_11.3.vfproj
-				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
-			<FileConfiguration Name="64DP_Rel_OneApi_MPI|x64">
-				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
-			<FileConfiguration Name="64SP_R_MPI|x64">
-<<<<<<<< HEAD:EFDC/EFDCPlus_MPI_10.3.9.vfproj
-				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
-			<FileConfiguration Name="64SP_Rel_OneApi_MPI|x64">
-				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration></File>
-		<File RelativePath=".\varzeroreal.f90">
-			<FileConfiguration Name="64DP_R_MPI|x64">
-				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
-			<FileConfiguration Name="64DP_Rel_OneApi_MPI|x64">
-				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
-			<FileConfiguration Name="64SP_R_MPI|x64">
-				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
-========
-				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
->>>>>>>> develop:EFDC/EFDCPlus_MPI_11.3.vfproj
 			<FileConfiguration Name="64SP_Rel_OneApi_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration></File>
 		<File RelativePath=".\varzerosnl.f90">

@@ -36,7 +36,7 @@ Module Variables_WQ
   INTEGER :: IWQZONES = 0    !< Flag to activact the use of WQ zones
   INTEGER :: IWQBEN = 0      !< Sediment diagensis flux option
 
-  INTEGER :: DIATOM          !< Index of diatom when switching to silica
+  INTEGER :: DIATOM          !< Constituent index of diatom using silica (Deprecated - Now multiple classes can interact with silica)
   INTEGER :: ISWQLVL         !< Global flag to active macrophyte and/or priphyton velocity limitation
   INTEGER :: ITNWQ           !< Water quality kinetics counter
   INTEGER :: IWQICI
@@ -507,7 +507,6 @@ Module Variables_WQ
   INTEGER,ALLOCATABLE,DIMENSION(:)  :: ISMZMAP
     
   ! *** Real Array Variables
-  REAL,ALLOCATABLE,DIMENSION(:)     :: SMDWQANC   !< Nitrogen-to-carbon ratio for algae 
   REAL,ALLOCATABLE,DIMENSION(:,:)   :: WQDFB      !< Coupling between water column and sediment diagenesis model
   REAL,ALLOCATABLE,DIMENSION(:)     :: SMD1PO4
   REAL,ALLOCATABLE,DIMENSION(:)     :: SMD1SI
@@ -921,7 +920,6 @@ Module Variables_WQ
     Call AllocateDSI(ISMZMAP,  LCM, 0)
     
     ! *** Call AllocateDSI real arrays
-    Call AllocateDSI(SMDWQANC,  NALGAEM, 0.0)
     Call AllocateDSI(WQDFB,     LCM,  NALGAEM, 0.0)
     Call AllocateDSI(SMD1PO4,   LCM,  0.0)
     Call AllocateDSI(SMD1SI,    LCM,  0.0)

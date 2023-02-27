@@ -96,7 +96,7 @@ SUBROUTINE SEDZLJ(L)
   EBD = 0.0                  ! *** Initialize non-propwash total erosion for the cell
   NOPROPWASH = .TRUE.
   
-  INITMASS(1:KB) = TSED(1:KB,L)   ! *** Save the starting sediment mass by layers
+  INITMASS(1:KB) = TSED(1:KB,L)   ! *** Save the starting sediment mass by layers  (g/cm^2)
   SQR2PI = 1. / SQRT(2.*PI)
 
   ! *** Convert Bottom Shear from (m/s)^2 to dynes/cm^2, if using shear from EFDC

@@ -767,14 +767,14 @@
         SMDFCA = 0.0
         ! *** Algal Source Terms
         DO NAL = 1,ALG_COUNT
-          SMDFNA = SMDFNA + SMFNBA(NAL,M)*SMDWQANC(NAL)*WQDFB(L,NAL)  ! *** RPON
-          SMDFPA = SMDFPA + SMFPBA(NAL,M)*WQAPC(L)*WQDFB(L,NAL)       ! *** RPOP
-          SMDFCA = SMDFCA + SMFCBA(NAL,M)*WQDFB(L,NAL)                ! *** RPOC
-        ENDDO
-        ! *** Refractory POM source temrs
-        SMDFN(L,M) = SMDFNA + SMFNR(ISMZMAP(L),M)*WQDFRN(L)           ! *** RPON
-        SMDFP(L,M) = SMDFPA + SMFPR(ISMZMAP(L),M)*WQDFRP(L)           ! *** RPOP
-        SMDFC(L,M) = SMDFCA + SMFCR(ISMZMAP(L),M)*WQDFRC(L)           ! *** RPOC
+          SMDFNA = SMDFNA + SMFNBA(NAL,M)*ALGAES(NAL).WQANCA*WQDFB(L,NAL)  ! *** RPON
+          SMDFPA = SMDFPA + SMFPBA(NAL,M)*WQAPC(L)*WQDFB(L,NAL)            ! *** RPOP
+          SMDFCA = SMDFCA + SMFCBA(NAL,M)*WQDFB(L,NAL)                     ! *** RPOC
+        ENDDO                                                             
+        ! *** Refractory POM source terms                                 
+        SMDFN(L,M) = SMDFNA + SMFNR(ISMZMAP(L),M)*WQDFRN(L)                ! *** RPON
+        SMDFP(L,M) = SMDFPA + SMFPR(ISMZMAP(L),M)*WQDFRP(L)                ! *** RPOP
+        SMDFC(L,M) = SMDFCA + SMFCR(ISMZMAP(L),M)*WQDFRC(L)                ! *** RPOC
       ENDDO
     ENDDO
     
@@ -1035,7 +1035,10 @@
     IF( IWQSI == 1 )THEN
       DO L=LF,LL
         IF( SCB(L) > 0.5 )THEN
-          SMDFSI(L) = (SMWQASC*WQDFB(L,DIATOM) + WQDFSI(L) + SMJDSI) * SMDTOH(ISMZMAP(L))
+          SMDFSI(L) = 0.0
+          DO NAL = 1, NALGAE
+            IF( ALGAES(NAL).ISILICA > 0 ) SMDFSI(L) = SMDFSI(L) + (ALGAES(NAL).WQASC*WQDFB(L,NAL) + WQDFSI(L) + SMJDSI) * SMDTOH(ISMZMAP(L))
+          ENDDO
           WQTT = DTWQ * SMTDSI(ISMT(L)) * (SMSISAT-SMFD2SI*SM2SI(L)) / (SMPSI(L)+SMKMPSI+ 1.E-18)
           SMPSI(L) = (SMPSI(L)+SMDFSI(L)) / (SMW2DTOH(ISMZMAP(L))+WQTT+ 1.E-18)
           IF( XSMO20(L) < SMCO2SI )THEN

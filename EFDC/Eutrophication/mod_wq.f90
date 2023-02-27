@@ -2078,23 +2078,18 @@ MODULE WATERQUALITY
   Call Broadcast_Scalar(WQAOCR,   master_id)
   Call Broadcast_Scalar(WQAONT,   master_id)
   
-  IF(  IWQBEN > 0  )then
-    Do NAL = 1, NALGAE
-      SMDWQANC(NAL) = ALGAES(NAL).WQANCA     
-    Enddo
-    Call Broadcast_Array (SMDWQANC,   master_id)
-  End if
-  
-  If(  IWQBEN > 0 .OR. IWQSI == 1 )then
-    Do NAL = 1, NALGAE    
-      If ( ALGAES(NAL).ISILICA == 1 )then
-        SMWQASC = ALGAES(NAL).WQASC
-        DIATOM  = ALGAES(NAL).IDN
-      End If
-    Enddo
-    Call Broadcast_Scalar(SMWQASC,    master_id)
-    Call Broadcast_Scalar(DIATOM,     master_id)
-  End if
+  !IF(  IWQBEN > 0  )then         ! *** Deprecated - Multiple alagal classes can interact with silica and no need to duplicate variables
+  !  Do NAL = 1, NALGAE
+  !    SMDWQANC(NAL) = ALGAES(NAL).WQANCA     
+  !    IF( ALGAES(NAL).ISILICA == 1 )THEN    
+  !      SMWQASC = ALGAES(NAL).WQASC
+  !      DIATOM  = ALGAES(NAL).IDN
+  !    END IF
+  !  Enddo
+  !  Call Broadcast_Array (SMDWQANC,   master_id)
+  !  Call Broadcast_Scalar(SMWQASC,    master_id)
+  !  Call Broadcast_Scalar(DIATOM,     master_id)
+  !End if
 
   ! *** SET UP LOOK-UP TABLE FOR TEMPERATURE DEPENDENCY OVER -10 OC TO 50 OC
   WQTDMIN =-10
@@ -3363,6 +3358,7 @@ MODULE WATERQUALITY
   REAL PPCDO, TMP22, WQA22, WQA22C, WQA22D, WQA22G, WQCDDOC
   REAL WQCDREA, WQCDSUM, ALGCOUNT
   REAL WQKESS, EXPA0, EXPA1, WQISM                         ! VARIABLES FOR LIGHT EXTINCTION
+  REAL PSMLMULTIPLIER
   
   REAL(RKD) :: TVAL1
   REAL(RKD), STATIC :: AVGNEXT, AVGLAST
@@ -3433,6 +3429,10 @@ MODULE WATERQUALITY
     
   ENDIF
   NWQITER = NWQITER + 1
+  PSMLMULTIPLIER = 1.0
+  IF( ISTL == 3 )THEN
+    PSMLMULTIPLIER = (DTWQ*86400. + DT/FLOAT(NTSTBC))/DT   ! 2.0
+  ENDIF
   
   ! *** Compute the optimal average light intensity over the last three days
   IF( IWQSUN  == 2 )THEN  
@@ -4148,7 +4148,7 @@ MODULE WATERQUALITY
             WQKK(L) = 1.0 / (1.0 - WQAC) 
       
             ! ***   PT_SRC_LOADS    VOLUME  
-            WQRC = WQWPSL(L,K,19+NAL) * VOLWQ(L)                             ! *** Point source load rate multiplied by inverse cell volume  g/m^3/t
+            WQRC = WQWPSL(L,K,19+NAL) * VOLWQ(L) * PSMLMULTIPLIER            ! *** Point source load rate multiplied by inverse cell volume  g/m^3/t
             WQRR(L) = WQV(L,K,19+NAL) + DTWQ*WQRC + WQAC*WQV(L,K,19+NAL)     ! *** Transported biomass conc. (CALWQC) + point source load rate X time step + growth rate X previous biomass conc.
             
             ! *** Coupling to zooplankton - DKT
@@ -4211,7 +4211,7 @@ MODULE WATERQUALITY
           ENDDO 
           
           ! ***  PT_SRC_LOADS    VOLUME  
-          WQR4 = WQWPSL(L,K,IROC) * VOLWQ(L)
+          WQR4 = WQWPSL(L,K,IROC) * VOLWQ(L) * PSMLMULTIPLIER
           
           WQRR(L) = WQV(L,K,IROC) + DTWQ*WQR4 + DTWQO2*WQA4 + WQB4*WQVO(L,K,IROC)
           
@@ -4261,7 +4261,7 @@ MODULE WATERQUALITY
           ENDDO
           
           ! ***  PT_SRC_LOADS       VOLUME  
-          WQR5 = WQWPSL(L,K,ILOC) * VOLWQ(L)
+          WQR5 = WQWPSL(L,K,ILOC) * VOLWQ(L) * PSMLMULTIPLIER
 
           WQRR(L) = WQV(L,K,ILOC) + DTWQ*WQR5 + DTWQO2*WQA5 + WQC5*WQVO(L,K,ILOC)
           
@@ -4318,7 +4318,7 @@ MODULE WATERQUALITY
           ENDDO
 
           ! ***  PT_SRC_LOADS    VOLUME  
-          WQR6 = WQWPSL(L,K,IDOC) * VOLWQ(L)
+          WQR6 = WQWPSL(L,K,IDOC) * VOLWQ(L) * PSMLMULTIPLIER
 
           WQRR(L) = WQV(L,K,IDOC) + DTWQ*WQR6 + WQD6*WQVO(L,K,IDOC) + DTWQO2*(WQA6 + WQKRPC(L)*WQO(L,IROC) + WQKLPC(L)*WQO(L,ILOC))
           
@@ -4365,7 +4365,7 @@ MODULE WATERQUALITY
           ENDDO
           
           ! ***  PT_SRC_LOADS    VOLUME  
-          WQR7 = WQWPSL(L,K,IROP) * VOLWQ(L)  
+          WQR7 = WQWPSL(L,K,IROP) * VOLWQ(L) * PSMLMULTIPLIER
           WQRR(L) = WQV(L,K,IROP) + DTWQ*WQR7 + DTWQO2*WQA7 + WQE7*WQVO(L,K,IROP) 
          
           ! *** Coupling to zooplankton - DKT              
@@ -4418,7 +4418,7 @@ MODULE WATERQUALITY
           ENDDO
           
           ! ***  PT_SRC_LOADS    VOLUME  
-          WQR8 = WQWPSL(L,K,ILOP) * VOLWQ(L)  
+          WQR8 = WQWPSL(L,K,ILOP) * VOLWQ(L) * PSMLMULTIPLIER
           WQRR(L) = WQV(L,K,ILOP) + DTWQ*WQR8 + DTWQO2*WQA8 + WQF8*WQVO(L,K,ILOP)  
           
           ! *** Coupling to zooplankton - DKT
@@ -4470,7 +4470,7 @@ MODULE WATERQUALITY
           ENDDO
 
           ! ***  PT_SRC_LOADS    VOLUME  
-          WQR9 = WQWPSL(L,K,IDOP) * VOLWQ(L)  
+          WQR9 = WQWPSL(L,K,IDOP) * VOLWQ(L) * PSMLMULTIPLIER
           WQRR(L) = WQV(L,K,IDOP) + DTWQ*WQR9 + WQF9*WQVO(L,K,IDOP) + DTWQO2*(WQA9 + WQKRPP(L)*WQO(L,IROP) + WQKLPP(L)*WQO(L,ILOP))
            
           ! *** Coupling to zooplankton - DKT
@@ -4514,7 +4514,7 @@ MODULE WATERQUALITY
           ENDDO 
 
           ! ***      PT_SRC_LOADS      VOLUME  
-          WQRR(L) = WQWPSL(L,K,IP4D) * VOLWQ(L)
+          WQRR(L) = WQWPSL(L,K,IP4D) * VOLWQ(L) * PSMLMULTIPLIER
            
           ! *** Coupling to zooplankton - DKT
           IF( IWQZPL > 0 ) WQRR(L) = WQRR(L) + SPO4Z(L,K)
@@ -4581,7 +4581,7 @@ MODULE WATERQUALITY
           ENDDO
 
           ! ***    PT_SRC_LOADS    VOLUME  
-          WQR11 = WQWPSL(L,K,IRON) * VOLWQ(L)
+          WQR11 = WQWPSL(L,K,IRON) * VOLWQ(L) * PSMLMULTIPLIER
           WQRR(L) = WQV(L,K,IRON) + DTWQ*WQR11 + DTWQO2*WQA11 + WQI11*WQVO(L,K,IRON)
           
           ! *** Coupling to zooplankton - DKT
@@ -4634,7 +4634,7 @@ MODULE WATERQUALITY
           ENDDO
 
           ! ***    PT_SRC_LOADS    VOLUME  
-          WQR12 = WQWPSL(L,K,ILON) * VOLWQ(L)  
+          WQR12 = WQWPSL(L,K,ILON) * VOLWQ(L) * PSMLMULTIPLIER
           WQRR(L) = WQV(L,K,ILON) + DTWQ*WQR12 + DTWQO2*WQA12 + WQJ12*WQVO(L,K,ILON)
                      
 
@@ -4686,8 +4686,7 @@ MODULE WATERQUALITY
           ENDDO
           
           ! ***    PT_SRC_LOADS    VOLUME  
-          WQR13 = WQWPSL(L,K,IDON) * VOLWQ(L)
-          
+          WQR13 = WQWPSL(L,K,IDON) * VOLWQ(L) * PSMLMULTIPLIER
           WQRR(L) = WQVO(L,K,IDON) + DTWQ*WQR13 + WQF13*WQVO(L,K,IDON) + DTWQO2*(WQA13 + WQKRPN(L)*WQO(L,IRON)  + WQKLPN(L)*WQO(L,ILON))
            
           ! *** Coupling to zooplankton - DKT
@@ -4716,7 +4715,7 @@ MODULE WATERQUALITY
           DO LP = 1,LLWET(K,ND)                      ! *** Note - SKIP IF IWQPSL = 2
             L = LKWET(LP,K,ND)  
             ! ***      PT_SRC_LOADS     VOLUME  
-            WQRR(L) = WQWPSL(L,K,INHX) * VOLWQ(L)  
+            WQRR(L) = WQWPSL(L,K,INHX) * VOLWQ(L) * PSMLMULTIPLIER
           ENDDO
         ELSE
           ! *** Zero the loadings array
@@ -4778,7 +4777,7 @@ MODULE WATERQUALITY
           DO LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
             ! ***      PT_SRC_LOADS      VOLUME  
-            WQRR(L) = WQWPSL(L,K,INOX) * VOLWQ(L)  
+            WQRR(L) = WQWPSL(L,K,INOX) * VOLWQ(L) * PSMLMULTIPLIER
           ENDDO  
         ELSE
           ! *** Zero the loadings array
@@ -4848,7 +4847,7 @@ MODULE WATERQUALITY
             WQKK(L) = 1.0 / (1.0 - WQM16)
             
             ! ***    PT_SRC_LOADS      VOLUME  
-            WQR16 = WQWPSL(L,K,ISUU) * VOLWQ(L)
+            WQR16 = WQWPSL(L,K,ISUU) * VOLWQ(L) * PSMLMULTIPLIER
             WQRR(L) = WQV(L,K,ISUU) + DTWQ*WQR16 + DTWQO2*WQA16D + WQM16*WQVO(L,K,ISUU)
              
             ! *** Coupling to zooplankton - DKT
@@ -4889,7 +4888,7 @@ MODULE WATERQUALITY
               ENDIF
             ENDDO
             ! ***      PT_SRC_LOADS      VOLUME  
-            WQRR(L) = WQWPSL(L,K,ISAA) * VOLWQ(L)  
+            WQRR(L) = WQWPSL(L,K,ISAA) * VOLWQ(L) * PSMLMULTIPLIER
           ENDDO  
       
           DO LP = 1,LLWET(K,ND)
@@ -4937,7 +4936,7 @@ MODULE WATERQUALITY
           WQKK(L) = 1.0 / (1.0 - WQO18(L))  
           
             ! ***    PT_SRC_LOADS      VOLUME  
-          WQRR(L) = WQWPSL(L,K,ICOD) * VOLWQ(L)  
+          WQRR(L) = WQWPSL(L,K,ICOD) * VOLWQ(L) * PSMLMULTIPLIER
         ENDDO  
         
         DO LP = 1,LLWET(K,ND)
@@ -4995,7 +4994,7 @@ MODULE WATERQUALITY
         ! *** Point Source Loading 
         DO LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQRR(L) = WQWPSL(L,K,IDOX) * VOLWQ(L)           
+          WQRR(L) = WQWPSL(L,K,IDOX) * VOLWQ(L) * PSMLMULTIPLIER
         ENDDO
   
         ! *** Handle Surface Processes
@@ -5088,7 +5087,7 @@ MODULE WATERQUALITY
         IF( IWQSRP == 1 )THEN  
           DO LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
-            WQR20(L) = WQWPSL(L,K,17)*VOLWQ(L) + (WQV(L,K,ITAM) - WQTAMP(L,K))*WQWSSET(L,1)  
+            WQR20(L) = WQWPSL(L,K,17)*VOLWQ(L) * PSMLMULTIPLIER + (WQV(L,K,ITAM) - WQTAMP(L,K))*WQWSSET(L,1)  
           ENDDO
 
           DO LP = 1,LLWET(K,ND)
@@ -5138,7 +5137,7 @@ MODULE WATERQUALITY
           WQKK(L) = WQTD2FCB(IWQT(L))  
           
           ! ***   PT SRC LOADS     VOLUME  
-          WQR21 = WQWPSL(L,K,IFCB)*VOLWQ(L)
+          WQR21 = WQWPSL(L,K,IFCB)*VOLWQ(L) * PSMLMULTIPLIER
           
           IF( K == KC )THEN
             ! ***            ATM DRY DEP        ATM WET DEP       VOLUME  
@@ -5178,7 +5177,7 @@ MODULE WATERQUALITY
       IF( ISKINETICS(19) == 1 )THEN  
         DO LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQRR(L) = WQWPSL(L,K,ICO2) * VOLWQ(L)  
+          WQRR(L) = WQWPSL(L,K,ICO2) * VOLWQ(L) * PSMLMULTIPLIER  
           TMP22 = WQRR(L)*DTWQ*HPK(L,K) 
         ENDDO  
   
@@ -5307,8 +5306,17 @@ MODULE WATERQUALITY
         WQDFLP(L) = SCB(L)*WQWSLP(IMWQZ)*WQV(L,KSZ(L),ILOP)   !< Depositional flux of LPOP   
         WQDFRN(L) = SCB(L)*WQWSRP(IMWQZ)*WQV(L,KSZ(L),IRON)   !< Depositional flux of RPON
         WQDFLN(L) = SCB(L)*WQWSLP(IMWQZ)*WQV(L,KSZ(L),ILON)   !< Depositional flux of LPON   
-        IF( IWQSI == 1 ) WQDFSI(L) = SCB(L)*ALGAES(DIATOM).WQWS(IMWQZ)*WQV(L,KSZ(L),ISUU)  
+        
+        WQDFSI(L) = 0.0
+        IF( IWQSI == 1 )THEN
+          DO NAL = 1,NALGAE
+            IF( ALGAES(NAL).ISILICA > 0 )THEN
+               WQDFSI(L) = WQDFSI(L) + SCB(L)*ALGAES(NAL).WQWS(IMWQZ)*WQV(L,KSZ(L),ISUU)  
+            ENDIF
+          ENDDO       
+        ENDIF      
       ENDDO  
+
       IF( IWQSRP == 1 )THEN  
         DO LP = LF,LL
           L = LWET(LP)

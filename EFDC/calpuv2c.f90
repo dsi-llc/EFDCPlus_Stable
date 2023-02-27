@@ -767,6 +767,41 @@ SUBROUTINE CALPUV2C
   !$OMP END DO
   !$OMP END PARALLEL
   
+  !
+  !L = 2860
+  !L = 2862
+  !l = 2295     ! delme
+  !
+  ! L = 2860
+  !LW = 2295
+  !WRITE(L,'(F12.6,I10,2(I5,8E15.7))') TIMEDAY, NITER, L,  HP(L), QSUME(L), UHDYE(L+1), U(L+1,1), STBX(L+1), VU(L+1), TBX(L+1), FUHDYE(L+1),  &  ! DELME
+  !                                                   LW, HP(LW), QSUME(LW), UHDYE(LW), U(LW,1), STBX(L), VU(LW), TBX(LW), FUHDYE(LW)
+  !WRITE(100,*) 'NITER = ', NITER
+  !DO L = 2,LA
+  !  WRITE(100,'(3I5,4F5.1,25E15.7)') L, IL(L), JL(L), SUB(L), SVB(L), SAAX(L), SAAY(L), HP(L), HU(L), HV(L), HPI(L), HUI(L), HVI(L),  &  ! DELME
+  !                                   QSUME(L), UHDYE(L), VHDXE(L), TBX(L), TBY(L), FUHDYE(L), FVHDXE(L), P(L), FCAXE(L), FCAYE(L), FXE(L), FYE(L)    ! DELME
+  !ENDDO
+  !L = 2295
+  !IF( MOD(NITER,10) == 0 )THEN
+  !  L = 2295   ! DELME
+  !ENDIF
+  !IF( MOD(NITER,100) == 0 )THEN
+  !  L = 2295   ! DELME
+  !ENDIF
+  !IF( MOD(NITER,1000) == 0 )THEN
+  !  L = 2295  ! DELME
+  !ENDIF
+  !IF( MOD(NITER,8000) == 0 )THEN
+  !  L = 2862  ! DELME
+  !ENDIF
+  !IF( NITER == 3701 )THEN
+  !  L = 2295   ! DELME
+  !ENDIF
+  !IF( MOD(NITER,10) == 0 )THEN
+  !  L = 2295   ! DELME
+  !  CLOSE(100,STATUS='DELETE')
+  !ENDIF
+  
   ! ***  APPLY OPEN BOUNDARYS
   DO LL=1,NBCSOP
     L = LOBCS(LL)

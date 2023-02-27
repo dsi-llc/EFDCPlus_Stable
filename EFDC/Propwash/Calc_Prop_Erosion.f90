@@ -30,7 +30,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
   INTEGER :: NSC0, NSC1, NTAU0, NTAU1, ICORE
 
   REAL(RKD) :: CSEDSS,SQR2PI
-  REAL(RKD) :: D50TMPP
+  REAL(RKD) :: D50TMPP, D50AVGL
   REAL(RKD) :: DEP
   REAL(RKD) :: EBD, ERO
   REAL(RKD) :: ERATEMOD
@@ -96,27 +96,27 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
 
   ! *** Calculate Average particle size of surface layer so we can calculate
   ! *** active layer unit mass
-  D50AVG(L) = SUM(PERSED(1:NSCM,SURFACE,L)*D50(1:NSCM))             ! *** Calculate local d50 at sediment bed surface
+  D50AVGL = SUM(PERSED(1:NSCM,SURFACE,L)*D50(1:NSCM))             ! *** Calculate local d50 at sediment bed surface
 
   ! *** Calculate TAUCRIT Based on the Average Particle Size of Surface
   ! *** Then calculate the Active Layer unit mass (TACT) from it.
   ! *** Ta =  Tam * Davg * (Tau/Taucr)
   IF( LAYERACTIVE(SURFACE,L) < 2 )THEN
     ! Identify Size Class interval to use for Taucrit erosion calculation
-    IF(D50AVG(L) < SCND(1) )THEN
+    IF(D50AVGL < SCND(1) )THEN
       NSCD(1)=SCND(1)
       NSCD(2)=SCND(2)
       NSC0=1
       NSC1=2
-      D50AVG(L) = SCND(1)                                             ! *** Prevent division (s_shear) by zero when there is no sediment in the layer
-    ELSEIF( D50AVG(L) >= SCND(NSICM) )THEN
+      D50AVGL = SCND(1)                                             ! *** Prevent division (s_shear) by zero when there is no sediment in the layer
+    ELSEIF( D50AVGL >= SCND(NSICM) )THEN
       NSCD(1)=SCND(NSICM-1)
       NSCD(2)=SCND(NSICM)
       NSC0=NSICM-1
       NSC1=NSICM
     ELSE
       DO NS=1,NSICM-1
-        IF( D50AVG(L) >= SCND(NS) .AND. D50AVG(L) < SCND(NS+1) )THEN
+        IF( D50AVGL >= SCND(NS) .AND. D50AVGL < SCND(NS+1) )THEN
           NSCD(1)=SCND(NS)
           NSCD(2)=SCND(NS+1)
           NSC0=NS
@@ -126,7 +126,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
       ENDDO
     ENDIF
 
-    TAUCRIT = TAUCRITE(NSC0)+(TAUCRITE(NSC1)-TAUCRITE(NSC0))/(NSCD(2)-NSCD(1))*(D50AVG(L)-NSCD(1))
+    TAUCRIT = TAUCRITE(NSC0)+(TAUCRITE(NSC1)-TAUCRITE(NSC0))/(NSCD(2)-NSCD(1))*(D50AVGL-NSCD(1))
   ELSE
     ! *** IN-PLACE SEDIMENTS
     TAUCRIT = TAUCOR(SURFACE,L)
@@ -136,7 +136,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
   IF( TAUDYNE < TAUCRIT )THEN
     RETURN
   ELSE
-    TACT = TACTM*D50AVG(L)*(TAUDYNE/TAUCRIT)*(BULKDENS(1,L)/10000.0)
+    TACT = TACTM*D50AVGL*(TAUDYNE/TAUCRIT)*(BULKDENS(1,L)/10000.0)
   ENDIF
 
   ! *** ********************************************************************************************************************************************
@@ -144,23 +144,23 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
   K = SURFACE
 
   ! *** Find upper and lower limits of size classes on mean bed diameter
-  IF( (D50AVG(L)+1E-6) < SCND(1) )THEN
+  IF( (D50AVGL+1E-6) < SCND(1) )THEN
     NS = 1
     NSCD(1) = SCND(NS)
     NSCD(2) = SCND(NS+1)
     NSC0 = NS
     NSC1 = NS+1
-    D50AVG(L) = SCND(1)
-  ELSEIF( (D50AVG(L)-1E-6) > SCND(NSICM) )THEN
+    D50AVGL = SCND(1)
+  ELSEIF( (D50AVGL-1E-6) > SCND(NSICM) )THEN
     NS = NSICM - 1
     NSCD(1) = SCND(NS)
     NSCD(2) = SCND(NS+1)
     NSC0 = NS
     NSC1 = NS+1
-    D50AVG(L) = SCND(NSICM)
+    D50AVGL = SCND(NSICM)
   ELSE
     DO NS=1,NSICM-1
-      IF( D50AVG(L) >= SCND(NS) .AND. D50AVG(L) < SCND(NS+1) )THEN
+      IF( D50AVGL >= SCND(NS) .AND. D50AVGL < SCND(NS+1) )THEN
         NSCD(1) = SCND(NS)
         NSCD(2) = SCND(NS+1)
         NSC0 = NS
@@ -172,7 +172,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
 
   ! *** Calculate TAUCRIT Based on the D50 of the bed or from Sedflume Data
   IF( LAYERACTIVE(SURFACE,L) < 2 )THEN                ! *** For active/deposited layers
-    TAUCRIT = TAUCRITE(NSC0) + (TAUCRITE(NSC1)-TAUCRITE(NSC0))/(NSCD(2)-NSCD(1))*(D50AVG(L)-NSCD(1)) !interpolation
+    TAUCRIT = TAUCRITE(NSC0) + (TAUCRITE(NSC1)-TAUCRITE(NSC0))/(NSCD(2)-NSCD(1))*(D50AVGL-NSCD(1)) !interpolation
     TAUCOR(K,L) = TAUCRIT
   ELSE
     ! *** SEDFlume data (depth interpolation)
@@ -255,7 +255,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
     ! *** Sedflume experiments and is based on average particle Size (D50AVG)
     ! ***
     NSCTOT = NSCD(2)-NSCD(1)                                                         ! *** difference in interpolant size class
-    D50TMPP = D50AVG(L)-NSCD(1)                                                      ! *** difference from local size class and lower interpolant
+    D50TMPP = D50AVGL-NSCD(1)                                                      ! *** difference from local size class and lower interpolant
     IF( NSEDFLUME == 1 )THEN
       SN00 = (TAUDD(2)-TAUDYNE)/(TAUDD(2)-TAUDD(1))                                  ! *** weighting factor 1 for interpolation
       SN10 = (TAUDD(1)-TAUDYNE)/(TAUDD(1)-TAUDD(2))                                  ! *** weigthing factor 2

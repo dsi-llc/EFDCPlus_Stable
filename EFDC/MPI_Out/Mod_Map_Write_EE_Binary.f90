@@ -35,16 +35,17 @@
 
   ! *** End variable definitions
 
-  Contains
-  !---------------------------------------------------------------------------!
-  ! Subroutine: Map_Write_EE_Binary
-  !
-  !> @details
-  !
-  !> @author Zander Mausolff
-  !---------------------------------------------------------------------------!
-  ! *** Driver subroutine
-  Subroutine Map_Write_EE_Binary
+Contains
+
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_EE_Binary
+!
+!> @details Calls each module used for exporting to linkage files
+!
+!> @author Zander Mausolff
+!---------------------------------------------------------------------------!
+! *** Driver subroutine
+Subroutine Map_Write_EE_Binary
 
   Use Variables_Propwash
   
@@ -81,16 +82,16 @@
 
   End Subroutine Map_Write_EE_Binary
 
-  !---------------------------------------------------------------------------!
-  ! Subroutine: Map_Write_WSOUT
-  !
-  !> @details
-  !
-  !> @author Zander Mausolff
-  !> @date 1/8/2019
-  !---------------------------------------------------------------------------!
-  ! *** WSOUT - EE_WS.OUT
-  Subroutine Map_Write_WSOUT
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_WSOUT
+!
+!> @details This routine maps out the variables necessary for writing out
+!  EE_WS.OUT
+!
+!> @author Zander Mausolff
+!> @date 1/8/2019
+!---------------------------------------------------------------------------!
+Subroutine Map_Write_WSOUT
 
   Implicit None
 
@@ -107,17 +108,18 @@
   ! *** Call routine that maps, gathers, and sorts to produce the final Global value
   Call Handle_Calls_MapGatherSort(num_arrays_to_write_out)
 
-  End Subroutine Map_Write_WSOUT
-  !---------------------------------------------------------------------------!
-  ! Subroutine: Map_Write_VELOUT
-  !
-  !> @details
-  !
-  !> @author Zander Mausolff
-  !> @date 1/8/2019
-  !---------------------------------------------------------------------------!
-  ! *** VELOUT
-  Subroutine Map_Write_VELOUT
+End Subroutine Map_Write_WSOUT
+
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_VELOUT
+!
+!> @details This routine maps out the variables necessary for writing out
+!  EE_VEL.OUT
+!
+!> @author Zander Mausolff
+!> @date 1/8/2019
+!---------------------------------------------------------------------------!
+Subroutine Map_Write_VELOUT
 
   Implicit None
 
@@ -142,17 +144,18 @@
   ! *** Call routine that maps, gathers, and sorts to produce the final Global value
   Call Handle_Calls_MapGatherSort(num_arrays_to_write_out)
 
-  End Subroutine Map_Write_VELOUT
-  !---------------------------------------------------------------------------!
-  ! Subroutine: Map_Write_BCOUT
-  !
-  !> @details
-  !
-  !> @author Zander Mausolff
-  !> @date 1/8/2019
-  !---------------------------------------------------------------------------!
-  ! *** BCOUT
-  Subroutine Map_Write_BCOUT
+End Subroutine Map_Write_VELOUT
+
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_BCOUT
+!
+!> @details This routine maps out the variables necessary for writing out
+!  EE_BC.OUT
+!
+!> @author Zander Mausolff
+!> @date 1/8/2019
+!---------------------------------------------------------------------------!
+Subroutine Map_Write_BCOUT
 
   Implicit None
 
@@ -191,18 +194,18 @@
   Call Handle_Calls_MapGatherSort(num_arrays_to_write_out)
 
 
-  End Subroutine Map_Write_BCOUT
-  !---------------------------------------------------------------------------!
-  ! Subroutine: Map_Write_WCOUT
-  !
-  !> @details This routine maps out the variables necessary for writing out
-  ! EE_WC.OUT Follows the logic in WCOUT for determining what variables to write out
-  !
-  !> @author Zander Mausolff
-  !> @date 1/8/2019
-  !---------------------------------------------------------------------------!
-  ! *** WCOUT
-  Subroutine Map_Write_WCOUT
+End Subroutine Map_Write_BCOUT
+
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_WCOUT
+!
+!> @details This routine maps out the variables necessary for writing out
+!  EE_WC.OUT Follows the logic in WCOUT for determining what variables to write out
+!
+!> @author Zander Mausolff
+!> @date 1/8/2019
+!---------------------------------------------------------------------------!
+Subroutine Map_Write_WCOUT
 
   Implicit None
 
@@ -478,8 +481,14 @@
 
   End Subroutine Map_Write_WCOUT
 
-  ! *** SEDZLJOUT
-  Subroutine Map_Write_SEDZLJOUT
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_SEDZLJOUT
+!
+!> @details This routine maps out the variables necessary for writing out
+! EE_SEDZLJ.OUT Follows the logic in WCOUT for determining what variables to write out
+!
+!---------------------------------------------------------------------------!
+Subroutine Map_Write_SEDZLJOUT
 
   Implicit None
 
@@ -621,8 +630,14 @@
 
   End Subroutine Map_Write_SEDZLJOUT
 
-  ! *** BEDOUT
-  Subroutine Map_Write_BEDOUT
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_BEDOUT
+!
+!> @details This routine maps out the variables necessary for writing out
+! EE_BED.OUT
+!
+!---------------------------------------------------------------------------!
+Subroutine Map_Write_BEDOUT
 
   Implicit None
 
@@ -670,8 +685,14 @@
 
   End Subroutine Map_Write_BEDOUT
 
-  ! *** WQOUT
-  Subroutine Map_Write_WQOUT
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_WQOUT
+!
+!> @details This routine maps out the variables necessary for writing out
+! EE_WQ.OUT Follows the logic in WCOUT for determining what variables to write out
+!
+!---------------------------------------------------------------------------!
+Subroutine Map_Write_WQOUT
 
   Implicit None
 
@@ -690,14 +711,21 @@
 
   End Subroutine Map_Write_WQOUT
 
-  ! *** SDOUT
-  Subroutine Map_Write_SDOUT
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_SDOUT
+!
+!> @details This routine maps out the variables necessary for writing out
+! EE_SD.OUT Follows the logic in WCOUT for determining what variables to write out
+!
+!---------------------------------------------------------------------------!
+Subroutine Map_Write_SDOUT
 
   Implicit None
 
   ! *** Local variables
-  Integer :: i, j
-
+  Integer :: i, j, l
+  real :: TEMFAC
+  
   j = 0
 
   j = j + 1
@@ -786,11 +814,25 @@
   num_arrays_to_write_out = j
 
   Call Handle_Calls_MapGatherSort(num_arrays_to_write_out)
+    
+  ! *** Adjust any global arrays before writing
+  
+  ! *** Temperature adjustment for SOD
+  do L = 2, LA_Global
+    TEMFAC = STEMFAC**(TEM_Global(L,KSZ_Global(L)) - 20.)
+    WQBFO2_Global(L) = TEMFAC*WQBFO2_Global(L)
+  enddo
 
-  End Subroutine Map_Write_SDOUT
+End Subroutine Map_Write_SDOUT
 
-  ! *** RPEMOUT
-  Subroutine Map_Write_RPEMOUT
+!---------------------------------------------------------------------------!
+! Subroutine: Map_Write_RPEMOUT
+!
+!> @details This routine maps out the variables necessary for writing out
+! EE_RPEM.OUT Follows the logic in WCOUT for determining what variables to write out
+!
+!---------------------------------------------------------------------------!
+Subroutine Map_Write_RPEMOUT
 
   Implicit None
 
@@ -815,7 +857,7 @@
 
   Call Handle_Calls_MapGatherSort(num_arrays_to_write_out)
 
-  End Subroutine Map_Write_RPEMOUT
+End Subroutine Map_Write_RPEMOUT
 
   ! @todo Develop method for handling arrays out
   !---------------------------------------------------------------------------!

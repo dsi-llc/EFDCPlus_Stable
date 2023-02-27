@@ -514,7 +514,10 @@ MODULE WQ_ZOOPLANKTON
           DO NZO = 1,NZOOPL
             DO LP = 1, LLWET(K,ND)
               L = LKWET(LP,K,ND)
-              FRSI(L,NZO)  = ZOOPL(NZO).UBZ(DIATOM)*BAZ(L,NZO,DIATOM)/(PRAZ(L,NZO) + 1.E-18)
+              FRSI(L,NZO) = 0.0
+              DO NAL = 1,NALGAE
+                IF( ALGAES(NAL).ISILICA > 0 ) FRSI(L,NZO) = FRSI(L,NZO) + ZOOPL(NZO).UBZ(NAL)*BAZ(L,NZO,NAL)/(PRAZ(L,NZO) + 1.E-18)
+              ENDDO
             ENDDO          
           ENDDO
         ENDIF

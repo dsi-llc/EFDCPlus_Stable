@@ -84,6 +84,7 @@
   TIMEDAY = DBLE(TCON)*DBLE(TBEGIN)/86400._8
   DAYNEXT = TIMEDAY + 1.0
   TIMEHARM = DBLE(TCON)*DBLE(TBEGIN) + 300.   ! *** 05 MINUTE INCREMENTS
+  DTWQ = 0.0
 
   ! *** *******************************************************************C
   !
@@ -701,6 +702,7 @@
       !----------------------------------------------------------------------C
       IF( ISWQFLUX == 1 )THEN
         NTMP=MOD(N,2)
+        IF( ISTL == 3 ) DTWQ = DTWQ + DT
         IF( NTMP == 0 .AND. ISTL == 3 )THEN
 
           ! *** CALCULATE CONSERVATION OF VOLUME FOR THE WATER QUALITY ADVECTION
@@ -783,7 +785,7 @@
               H2WQ(L) = HWQ(L)
             ENDDO
           ENDIF
-
+          DTWQ = 0.0
         ENDIF
       ENDIF         ! *** END OF WQ SECTION
 

@@ -349,21 +349,21 @@ SUBROUTINE CALBED9
       ENDDO
       DO L=2,LA
         IF( LCONSOL(L) >= 2 )THEN
-          ALOW(L,1)=0.
-          CUPP(L,KBT(L))=0.
+          ALOW(L,1,1)=0.
+          CUPP(L,KBT(L),1)=0.
           DO K=1,KBT(L)-1
-            CUPP(L,K)=-DTSED*ACOEF(L,K)/DZBTR(L,K)
+            CUPP(L,K,1)=-DTSED*ACOEF(L,K)/DZBTR(L,K)
           ENDDO
           DO K=2,KBT(L)
-            ALOW(L,K)=-DTSED*ACOEF(L,K-1)/DZBTR(L,K)
+            ALOW(L,K,1)=-DTSED*ACOEF(L,K-1)/DZBTR(L,K)
           ENDDO
           DO K=1,KBT(L)
-            BMNN(L,K)=1.0-ALOW(L,K)-CUPP(L,K)
+            BMNN(L,K,1)=1.0-ALOW(L,K,1)-CUPP(L,K,1)
           ENDDO
           K=KBT(L)
-          BMNN(L,K)=BMNN(L,K)+DTSED*ACOEF(L,K)/DZBTR(L,K)
+          BMNN(L,K,1)=BMNN(L,K,1)+DTSED*ACOEF(L,K)/DZBTR(L,K)
           DO K=1,KBT(L)
-            RRHS(L,K)=VDRBED(L,K) &
+            RRHS(L,K,1)=VDRBED(L,K) &
                 +DTSED*(QCOEF(L,K-1)-QCOEF(L,K))/DZBTR(L,K)
             VDRBED1(L,K)=VDRBED(L,K)
             HBED1(L,K)=HBED(L,K)
@@ -373,29 +373,29 @@ SUBROUTINE CALBED9
       DO L=2,LA
         IF( LCONSOL(L) == 2 )THEN
           K=KBT(L)
-          RRHS(L,K)=RRHS(L,K)+DTSED*ACOEF(L,K)*VDRDEPO(1) &
+          RRHS(L,K,1)=RRHS(L,K,1)+DTSED*ACOEF(L,K)*VDRDEPO(1) &
               /DZBTR(L,K)
         ENDIF
       ENDDO
       DO L=2,LA
         IF( LCONSOL(L) == 3 )THEN
           K=KBT(L)
-          RRHS(L,K)=RRHS(L,K)+DTSED*ACOEF(L,K)*(VDRBED(L,K) &
+          RRHS(L,K,1)=RRHS(L,K,1)+DTSED*ACOEF(L,K)*(VDRBED(L,K) &
               +(STRSE(L,K)/DSTRSE(L,K)))/DZBTR(L,K)
         ENDIF
       ENDDO
       DO L=2,LA
         IF( LCONSOL(L) >= 2 )THEN
-          BETTMP=BMNN(L,1)
-          TOXTMP(L,1)=RRHS(L,1)/BETTMP
+          BETTMP=BMNN(L,1,1)
+          TOXTMP(L,1,1)=RRHS(L,1,1)/BETTMP
           DO KK=2,KBT(L)
-            GAMTMP(L,KK)=CUPP(L,KK-1)/BETTMP
-            BETTMP=BMNN(L,KK)-ALOW(L,KK)*GAMTMP(L,KK)
-            TOXTMP(L,KK)=(RRHS(L,KK)-ALOW(L,KK)*TOXTMP(L,KK-1))/ &
+            GAMTMP(L,KK)=CUPP(L,KK-1,1)/BETTMP
+            BETTMP=BMNN(L,KK,1)-ALOW(L,KK,1)*GAMTMP(L,KK)
+            TOXTMP(L,KK,1)=(RRHS(L,KK,1)-ALOW(L,KK,1)*TOXTMP(L,KK-1,1))/ &
                 BETTMP
           ENDDO
           DO KK=KBT(L)-1,1,-1
-            TOXTMP(L,KK)=TOXTMP(L,KK)-GAMTMP(L,KK+1)*TOXTMP(L,KK+1)
+            TOXTMP(L,KK,1)=TOXTMP(L,KK,1)-GAMTMP(L,KK+1)*TOXTMP(L,KK+1,1)
           ENDDO
         ENDIF
       ENDDO
@@ -403,7 +403,7 @@ SUBROUTINE CALBED9
         DO L=2,LA
           IF( LCONSOL(L) >= 2 )THEN
             IF( K < KBT(L) )THEN
-              QWTRBED(L,K)=-ACOEF(L,K)*(TOXTMP(L,K+1)-TOXTMP(L,K)) &
+              QWTRBED(L,K)=-ACOEF(L,K)*(TOXTMP(L,K+1,1)-TOXTMP(L,K,1)) &
                   +QCOEF(L,K)
             ELSE
               QWTRBED(L,K)=0.0
@@ -414,7 +414,7 @@ SUBROUTINE CALBED9
       DO L=2,LA
         IF( LCONSOL(L) == 2 )THEN
           K=KBT(L)
-          QWTRBED(L,K)=-ACOEF(L,K)*(SEDVDRD-TOXTMP(L,K)) &
+          QWTRBED(L,K)=-ACOEF(L,K)*(SEDVDRD-TOXTMP(L,K,1)) &
               +QCOEF(L,K)
         ENDIF
       ENDDO
@@ -425,7 +425,7 @@ SUBROUTINE CALBED9
         IF( LCONSOL(L) == 3 )THEN
           K=KBT(L)
           QWTRBED(L,K)=-ACOEF(L,K)*(VDRBED(L,K) &
-              +(STRSE(L,K)/DSTRSE(L,K))-TOXTMP(L,K))+QCOEF(L,K)
+              +(STRSE(L,K)/DSTRSE(L,K))-TOXTMP(L,K,1))+QCOEF(L,K)
         ENDIF
       ENDDO
   !
@@ -746,21 +746,21 @@ SUBROUTINE CALBED9
       ENDDO
       DO L=2,LA
         IF( LCONSOL(L) >= 2 )THEN
-          ALOW(L,1)=0.
-          CUPP(L,KBT(L))=0.
+          ALOW(L,1,1)=0.
+          CUPP(L,KBT(L),1)=0.
           DO K=1,KBT(L)-1
-            CUPP(L,K)=-DTSED*ACOEF(L,K)/DZBTR(L,K)
+            CUPP(L,K,1)=-DTSED*ACOEF(L,K)/DZBTR(L,K)
           ENDDO
           DO K=2,KBT(L)
-            ALOW(L,K)=-DTSED*ACOEF(L,K-1)/DZBTR(L,K)
+            ALOW(L,K,1)=-DTSED*ACOEF(L,K-1)/DZBTR(L,K)
           ENDDO
           DO K=1,KBT(L)
-            BMNN(L,K)=FRACCOH(L,K)-ALOW(L,K)-CUPP(L,K)
+            BMNN(L,K,1)=FRACCOH(L,K)-ALOW(L,K,1)-CUPP(L,K,1)
           ENDDO
           K=KBT(L)
-          BMNN(L,K)=BMNN(L,K)+DTSED*ACOEF(L,K)/DZBTR(L,K)
+          BMNN(L,K,1)=BMNN(L,K,1)+DTSED*ACOEF(L,K)/DZBTR(L,K)
           DO K=1,KBT(L)
-            RRHS(L,K)=FRACCOH(L,K)*VDRBEDSED(L,K) &
+            RRHS(L,K,1)=FRACCOH(L,K)*VDRBEDSED(L,K) &
                 +DTSED*(QCOEF(L,K-1)-QCOEF(L,K))/DZBTR(L,K)
             VDRBED1(L,K)=VDRBED(L,K)
             HBED1(L,K)=HBED(L,K)
@@ -770,30 +770,30 @@ SUBROUTINE CALBED9
       DO L=2,LA
         IF( LCONSOL(L) == 2 )THEN
           K=KBT(L)
-          RRHS(L,K)=RRHS(L,K)+DTSED*ACOEF(L,K)*VDRDEPO(1) &
+          RRHS(L,K,1)=RRHS(L,K,1)+DTSED*ACOEF(L,K)*VDRDEPO(1) &
               /DZBTR(L,K)
         ENDIF
       ENDDO
       DO L=2,LA
         IF( LCONSOL(L) == 3 )THEN
           K=KBT(L)
-          RRHS(L,K)=RRHS(L,K) &
+          RRHS(L,K,1)=RRHS(L,K,1) &
               +DTSED*ACOEF(L,K)*(VDRBEDSED(L,K) &
               +(STRSE(L,K)/DSTRSE(L,K)))/DZBTR(L,K)
         ENDIF
       ENDDO
       DO L=2,LA
         IF( LCONSOL(L) >= 2 )THEN
-          BETTMP=BMNN(L,1)
-          TOXTMP(L,1)=RRHS(L,1)/BETTMP
+          BETTMP=BMNN(L,1,1)
+          TOXTMP(L,1,1)=RRHS(L,1,1)/BETTMP
           DO KK=2,KBT(L)
-            GAMTMP(L,KK)=CUPP(L,KK-1)/BETTMP
-            BETTMP=BMNN(L,KK)-ALOW(L,KK)*GAMTMP(L,KK)
-            TOXTMP(L,KK)=(RRHS(L,KK)-ALOW(L,KK)*TOXTMP(L,KK-1))/ &
+            GAMTMP(L,KK)=CUPP(L,KK-1,1)/BETTMP
+            BETTMP=BMNN(L,KK,1)-ALOW(L,KK,1)*GAMTMP(L,KK)
+            TOXTMP(L,KK,1)=(RRHS(L,KK,1)-ALOW(L,KK,1)*TOXTMP(L,KK-1,1))/ &
                 BETTMP
           ENDDO
           DO KK=KBT(L)-1,1,-1
-            TOXTMP(L,KK)=TOXTMP(L,KK)-GAMTMP(L,KK+1)*TOXTMP(L,KK+1)
+            TOXTMP(L,KK,1)=TOXTMP(L,KK,1)-GAMTMP(L,KK+1)*TOXTMP(L,KK+1,1)
           ENDDO
         ENDIF
       ENDDO
@@ -801,7 +801,7 @@ SUBROUTINE CALBED9
         DO L=2,LA
           IF( LCONSOL(L) >= 2 )THEN
             IF( K < KBT(L) )THEN
-              QWTRBED(L,K)=-ACOEF(L,K)*(TOXTMP(L,K+1)-TOXTMP(L,K)) &
+              QWTRBED(L,K)=-ACOEF(L,K)*(TOXTMP(L,K+1,1)-TOXTMP(L,K,1)) &
                   +QCOEF(L,K)
             ELSE
               QWTRBED(L,K)=0.0
@@ -812,7 +812,7 @@ SUBROUTINE CALBED9
       DO L=2,LA
         IF( LCONSOL(L) == 2 )THEN
           K=KBT(L)
-          QWTRBED(L,K)=-ACOEF(L,K)*(VDRDEPO(1)-TOXTMP(L,K)) &
+          QWTRBED(L,K)=-ACOEF(L,K)*(VDRDEPO(1)-TOXTMP(L,K,1)) &
               +QCOEF(L,K)
         ENDIF
       ENDDO
@@ -823,7 +823,7 @@ SUBROUTINE CALBED9
         IF( LCONSOL(L) == 3 )THEN
           K=KBT(L)
           QWTRBED(L,K)=-ACOEF(L,K)*(VDRBEDSED(L,K) &
-              +(STRSE(L,K)/DSTRSE(L,K))-TOXTMP(L,K))+QCOEF(L,K)
+              +(STRSE(L,K)/DSTRSE(L,K))-TOXTMP(L,K,1))+QCOEF(L,K)
         ENDIF
       ENDDO
   !
