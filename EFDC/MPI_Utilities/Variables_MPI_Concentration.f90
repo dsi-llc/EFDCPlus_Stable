@@ -1,0 +1,54 @@
+! ----------------------------------------------------------------------
+!   This file is a part of EFDC+
+!   Website:  https://eemodelingsystem.com/
+!   Repository: https://github.com/dsi-llc/EFDC_Plus.git
+! ----------------------------------------------------------------------
+! Copyright 2021-2022 DSI, LLC
+! Distributed under the GNU GPLv2 License.
+! ----------------------------------------------------------------------
+  ! global concentration arrays for writing out
+
+  Module Variables_MPI_Concentration
+
+  Implicit none
+
+  ! *** Concentration global data arrays
+  Integer,ALLOCATABLE,DIMENSION (:) ::   ICBS_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) ::   JCBS_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) ::   NTSCRS_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:,:) :: NCSERS_GL
+  REAL,ALLOCATABLE,DIMENSION (:,:,:) ::  CBS_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:)::    ICBW_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:)::    JCBW_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:)::    NTSCRW_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:,:)::  NCSERW_GL
+  REAL,ALLOCATABLE,DIMENSION (:,:,:)::   CBW_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:)::    ICBE_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:)::    JCBE_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:)::    NTSCRE_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:,:)::  NCSERE_GL
+  REAL,ALLOCATABLE,DIMENSION (:,:,:)::   CBE_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:)   ::  ICBN_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:)   ::  JCBN_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:)   ::  NTSCRN_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:,:) ::  NCSERN_GL
+  REAL,ALLOCATABLE,DIMENSION (:,:,:)  ::   CBN_GL
+
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: ILTMSR_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: JLTMSR_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: NTSSSS_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: MTMSRP_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: MTMSRC_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: MTMSRA_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: MTMSRUE_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: MTMSRUT_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: MTMSRU_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: MTMSRQE_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: MTMSRQ_GL
+  INTEGER,ALLOCATABLE,DIMENSION (:) :: MLTM_GL
+
+  ! *** End variables for global mapping
+
+  CHARACTER(len=20),ALLOCATABLE,DIMENSION (:):: CLTMSR_GL
+
+  End module Variables_MPI_Concentration
