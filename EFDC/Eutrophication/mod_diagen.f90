@@ -119,9 +119,9 @@
   Real,allocatable      :: SMFNR_TEMP(:)
   Real,allocatable      :: SMFPR_TEMP(:)
   Real,allocatable      :: SMFCR_TEMP(:)
-  Real,allocatable      :: SUMCBA(:)
-  Real,allocatable      :: SUMPBA(:)
-  Real,allocatable      :: SUMNBA(:)
+  Real,allocatable      :: SUMCBA(:)       !< Total of the reactive class splits for each algal class - Carbon
+  Real,allocatable      :: SUMPBA(:)       !< Total of the reactive class splits for each algal class - Phosphorus
+  Real,allocatable      :: SUMNBA(:)       !< Total of the reactive class splits for each algal class - Nitrogen
   
   If(  .NOT. allocated(SMKPOC)  )then
     Allocate(SMKPOC(NSMGM))
@@ -136,9 +136,9 @@
     Allocate(SMFNR_TEMP(NSMGM))
     Allocate(SMFPR_TEMP(NSMGM))
     Allocate(SMFCR_TEMP(NSMGM))
-    Allocate(SUMCBA(NSMGM))
-    Allocate(SUMPBA(NSMGM))
-    Allocate(SUMNBA(NSMGM))
+    Allocate(SUMCBA(NALGAEM))
+    Allocate(SUMPBA(NALGAEM))
+    Allocate(SUMNBA(NALGAEM))
     
     SMKPOC = 0.0
     SMKPON = 0.0
@@ -179,7 +179,6 @@
     
     Do NAL = 1,ALG_COUNT
       SUMCBA(NAL) = SMFCBA(NAL,1) + SMFCBA(NAL,2) + SMFCBA(NAL,3)
-      SUMPBA(NAL) = SMFPBA(NAL,1) + SMFPBA(NAL,2) + SMFPBA(NAL,3)
       SUMPBA(NAL) = SMFPBA(NAL,1) + SMFPBA(NAL,2) + SMFPBA(NAL,3)
       SUMNBA(NAL) = SMFNBA(NAL,1) + SMFNBA(NAL,2) + SMFNBA(NAL,3)
       IF( SUMCBA(NAL) < 0.9999 .OR. SUMCBA(NAL) > 1.0001) CALL STOPP('ERROR!! SMFCBA(1)+SMFCBA(2)+SMFCBA(3) SHOULD BE 1')

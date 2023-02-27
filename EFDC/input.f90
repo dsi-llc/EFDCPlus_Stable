@@ -2271,13 +2271,15 @@ SUBROUTINE INPUT(TITLE)
     Call Broadcast_Array(PDIFTOX  , master_id)
     Call Broadcast_Array(DPDIFTOX , master_id)
 
+    ! *** Set up spatially varying particle mixing flags
     DO NT=1,NTOX
-      ISPMXZ(NT)=0
-      IF( PDIFTOX(NT) < 0.0 ) ISPMXZ(NT)=1
-      ISDIFBW(NT)=0
-      IF( DIFTOXS(NT)<0.0 )THEN
-        DIFTOXS(NT)=ABS(DIFTOXS(NT))
-        ISDIFBW(NT)=1
+      ISPMXZ(NT) = 0
+      IF( PDIFTOX(NT) < 0.0 ) ISPMXZ(NT) = 1
+      
+      ISDIFBW(NT) = 0
+      IF( DIFTOXS(NT) < 0.0 )THEN
+        DIFTOXS(NT) = ABS(DIFTOXS(NT))
+        ISDIFBW(NT) = 1
       ENDIF
     ENDDO
 
@@ -2360,7 +2362,7 @@ SUBROUTINE INPUT(TITLE)
     endif
     TOXPARWC = ABS(TOXPARWC)    ! *** Remove any legacy flags
     TOXPARBC = ABS(TOXPARBC)    ! *** Remove any legacy flags
-    
+
     Call Broadcast_Array(ITXPARWC,  master_id)
     Call Broadcast_Array(CONPARWC,  master_id)
     Call Broadcast_Array(TOXPARWC,  master_id)
@@ -6200,7 +6202,7 @@ SUBROUTINE INPUT(TITLE)
   ! *** SERIES FROM THE FILE GWSER.INP
   IF( ISGWIT == 2 )THEN
     ! *** SKIP OVER TITLE AND AND HEADER LINES
-    NCTMP = 3 + NDYM + NSED + NSND + NTOX
+    NCTMP = 3 + NDYM + NTOX + NSED + NSND
 
     ! *** READ IN GW CONCENTRATIONS
     if( process_id == master_id )THEN
@@ -8089,9 +8091,9 @@ SUBROUTINE READ_SUBSET
       Call Broadcast_Scalar(IS,            master_id)
       Call Broadcast_Scalar(NPNT(IS),      master_id)
       
-      ALLOCATE (HFREGRP(IS)%ICEL(NPNT(IS)),HFREGRP(IS)%JCEL(NPNT(IS)))
-      ALLOCATE (HFREGRP(IS)%XCEL(NPNT(IS)),HFREGRP(IS)%YCEL(NPNT(IS)))
-      ALLOCATE (HFREGRP(IS)%NAME(NPNT(IS)))
+      ALLOCATE (HFREGRP(IS).ICEL(NPNT(IS)),HFREGRP(IS).JCEL(NPNT(IS)))
+      ALLOCATE (HFREGRP(IS).XCEL(NPNT(IS)),HFREGRP(IS).YCEL(NPNT(IS)))
+      ALLOCATE (HFREGRP(IS).NAME(NPNT(IS)))
       
       If( process_id == master_id )Then
         DO NP=1,NPNT(IS)
@@ -8101,20 +8103,20 @@ SUBROUTINE READ_SUBSET
           IF( IJHFRE(IS) == 1 )THEN
             !READ(1,*,advance='no',IOSTAT=ISO) HFREGRP(IS)%ICEL(NP),HFREGRP(IS)%JCEL(NP)
             call PARSESTRING(string, substring)
-            read(substring,*) HFREGRP(IS)%ICEL(NP)
+            read(substring,*) HFREGRP(IS).ICEL(NP)
             call PARSESTRING(string, substring)
-            read(substring,*) HFREGRP(IS)%JCEL(NP)
+            read(substring,*) HFREGRP(IS).JCEL(NP)
           ELSE
             !READ(1,*,advance='no',IOSTAT=ISO) HFREGRP(IS)%XCEL(NP),HFREGRP(IS)%YCEL(NP)
             call PARSESTRING(string, substring)
-            read(substring,*) HFREGRP(IS)%XCEL(NP)
+            read(substring,*) HFREGRP(IS).XCEL(NP)
             call PARSESTRING(string, substring)
-            read(substring,*) HFREGRP(IS)%YCEL(NP)
+            read(substring,*) HFREGRP(IS).YCEL(NP)
           ENDIF
           IF( ISO > 0 ) CALL STOPP('SUBSET.INP: READING ERROR!')
           string = TRIM(string)
           IF (string(1:1)=='!') string = string(2:20)
-          HFREGRP(IS)%NAME(NP) = TRIM(string)
+          HFREGRP(IS).NAME(NP) = TRIM(string)
         ENDDO
       End if
       

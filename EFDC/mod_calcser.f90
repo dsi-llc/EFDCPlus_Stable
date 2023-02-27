@@ -21,14 +21,14 @@ IMPLICIT NONE
 
 CONTAINS
   
-  SUBROUTINE CALCSER (ISTL_)
+  SUBROUTINE CALCSER
     ! CHANGE RECORD
     ! ***SUBROUTINE CALPSER UPDATES TIME VARIABLE SALINITY, TEMPERATURE
     ! ***DYE, SEDIMENT, AND SHELL FISH LARVAE
     ! ***BOUNDARY CONDITIONS AND INFLOW CONCENTRATIONS
 
-    INTEGER :: ISTL_,NS,K,NT,NTT,M1,M2,NW,NC,MD,MS                                                                          
-    REAL :: TIME,TDIFF,WTM1,WTM2
+    INTEGER :: NS, K, NT, NTT, M1, M2, NW, NC, MD, MS                                                                          
+    REAL :: TIME, TDIFF, WTM1, WTM2
 
     ! *** INITIALIZE NULL SERIES CONCENTRATIONS                                                                             
     NTT = 3 + NDYM + NTOX + NSED + NSND
@@ -180,7 +180,7 @@ CONTAINS
  
     ! *** SHELL FISH LARVAE BEHAVIOR TIME SERIES INTERPOLATION
     IF( ISTRAN(4) >= 1 )THEN
-      IF( ISTL_ == 2 )THEN
+      IF( ISTL == 2 )THEN
         IF( ISDYNSTP == 0 )THEN
           TIME=DT*(FLOAT(N)-0.5)/TCSFSER +TBEGIN*(TCON/TCSFSER)
         ELSE

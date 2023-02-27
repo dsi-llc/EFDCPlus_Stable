@@ -1049,7 +1049,7 @@ SUBROUTINE VARALLOC
     Call AllocateDSI( TOXPFTW,       LCM,    KCM,     NTXM,    0.0)  
     Call AllocateDSI( TOXPFW,        LCM,    KCM,     NSTM2+2, NTXM,  0.0)
     Call AllocateDSI( TOXS,          LCM,    KCM,     NTXM,    0.0)
-    Call AllocateDSI( TOXTMP,        LCM,   -KBM+1 ,  0.0)
+    Call AllocateDSI( TOXTMP,        LCM,  -(KBM+1),  0.0)
   ENDIF   ! *** END OF TOXIC VARIABLE DECLARATIONS
 
   ! ** SED VARIABLES
@@ -1178,7 +1178,7 @@ SUBROUTINE VARALLOC
   
   IF( ISTRAN(6) >= 1 .OR. ISTRAN(7) >= 1 .OR. ISBAL > 0 )THEN
     Call AllocateDSI( ACOEF,       LCM,      -KBM,     0.0)
-    Call AllocateDSI( ALOW,        LCM,      -KBM+1,   0.0)
+    Call AllocateDSI( ALOW,        LCM,      -(KBM+1),   0.0)
     Call AllocateDSI( BDENBED,     LCM,       KBM,     0.0)
     Call AllocateDSI( BDENBED1,    LCM,       KBM,     0.0)
     Call AllocateDSI( BDENBEDA,    LCM,       0.0)     
@@ -1190,14 +1190,14 @@ SUBROUTINE VARALLOC
     Call AllocateDSI( BEDPORSV,    LCM,       KBM,     0.0)
     Call AllocateDSI( BEDTHKSV,    LCM,       KBM,     0.0)
     Call AllocateDSI( BEDVDRSV,    LCM,       KBM,     0.0)
-    Call AllocateDSI( BMNN,        LCM,      -KBM+1,   0.0)
+    Call AllocateDSI( BMNN,        LCM,      -(KBM+1),   0.0)
     Call AllocateDSI( CBEDTOTAL,   LCM,       0.0)     
     Call AllocateDSI( COEFK,       LCM,       KBM,     0.0)
     Call AllocateDSI( COEFSK,      LCM,       KBM,     0.0)
     Call AllocateDSI( CQBEDLOADX,  LCM,       NSNM,    0.0)
     Call AllocateDSI( CQBEDLOADY,  LCM,       NSNM,    0.0)
     Call AllocateDSI( CSHIELDS50,  LCM,       0.0)     
-    Call AllocateDSI( CUPP,        LCM,      -KBM+1,   0.0)
+    Call AllocateDSI( CUPP,        LCM,      -(KBM+1),   0.0)
     Call AllocateDSI( DSTRSE,      LCM,       KBM,     0.0)
     Call AllocateDSI( DZBTR,       LCM,       KBM,     0.0)
     Call AllocateDSI( DZBTR1,      LCM,       KBM,     0.0)
@@ -1289,7 +1289,7 @@ SUBROUTINE VARALLOC
     Call AllocateDSI( PORBED1,     LCM,       KBM,     0.0)
     Call AllocateDSI( QCOEF,       LCM,      -KBM,     0.0)
     Call AllocateDSI( QWTRBED,     LCM,      -KBM,     0.0)                ! *** VOLUME OF WATER EXCHANGE BETWEEN SEDIMENT LAYERS (M/S)
-    Call AllocateDSI( RRHS,        LCM,      -KBM+1,   0.0)
+    Call AllocateDSI( RRHS,        LCM,      -(KBM+1),   0.0)
     Call AllocateDSI( RSEDERE2T,   NSCM2,     0.0)
     Call AllocateDSI( RSEDERE2TB,  NSCM2,     0.0)
     Call AllocateDSI( RSEDERE2TW,  NSCM2,     0.0)

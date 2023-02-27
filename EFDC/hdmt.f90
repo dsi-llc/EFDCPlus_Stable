@@ -205,11 +205,11 @@
   ISTL=3
   IS2TL=0
   DTDYN = DT  ! *** PMC - FOR INITIALIZATION
-  CALL CALTBXY(ISTL,IS2TL)
+  CALL CALTBXY
 
   ! *** *******************************************************************!
   ! *** CALCULATE HORIZONTAL VISCOSITY AND DIFFUSIVE MOMENTUM FLUXES
-  IF( ISHDMF >= 1 ) CALL CALHDMF3(ISTL)
+  IF( ISHDMF >= 1 ) CALL CALHDMF3
 
   ! *** *******************************************************************!
   ! *** CALCULATE BOTTOM AND SURFACE STRESS AT TIME LEVEL (N-1) AND N
@@ -226,7 +226,7 @@
 
   ! *** *******************************************************************!
   ! *** SECOND CALL TO INITIALIZE BOTTOM STRESS COEFFICIENTS
-  CALL CALTBXY(ISTL,IS2TL)
+  CALL CALTBXY
 
   ! *** *******************************************************************C
   ! *** SET BOTTOM AND SURFACE STRESSES
@@ -453,32 +453,33 @@
       ! *** CALEXP   -  PRODUCTION VERSION WITH HORIZONTAL MOMENTUM SOURCE
       ! ***             AND 3D IMPLICIT VEGETATION DRAG
       TTDS = DSTIME(0)
-      CALL CALEXP (ISTL)
+      CALL CALEXP 
       TCEXP = TCEXP + (DSTIME(0)-TTDS)
 
       ! *** *******************************************************************!
       ! *** UPDATE TIME VARIABLE VOLUME SOURCES AND SINKS, CONCENTRATIONS,
       ! *** VEGETATION CHARACTERISTICS AND SURFACE ELEVATIONS
-      CALL CALCSER (ISTL)
+      CALL CALCSER 
       CALL CALVEGSER
-      CALL CALQVS(ISTL)
+      CALL CALQVS
       PSERT(0) = 0.
       IF( NPSER >= 1 ) CALL CALPSER
 
       ! *** *******************************************************************!
       ! *** SOLVE EXTERNAL MODE EQUATIONS FOR P, UHDYE, AND VHDXE
       TTDS = DSTIME(0)
-      CALL CALPUV9C(ISTL)
+      CALL CALPUV9C
       TPUV=TPUV+(DSTIME(0)-TTDS)
 
       ! *** *******************************************************************C
       ! *** ADVANCE TIME SNAPSHOT INTERNAL VARIABLES FOR THREE TIME LEVEL STEP
       IF( ISTL == 3 )THEN
-        !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,K,LP,L)
+        !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,K,LF,LL,L)
         DO ND=1,NDM
+          LF = 2 + (ND-1)*LDM
+          LL = MIN(LF+LDM-1,LA)
           DO K=1,KC
-            DO LP=1,LLWET(K,ND)
-              L = LKWET(LP,K,ND)
+            DO L = LF,LL
               UHDYF2(L,K)=UHDYF1(L,K)   ! *** FLOW BY LAYER FOR THE ENTIRE DEPTH
               UHDYF1(L,K)=UHDYF(L,K)
               VHDXF2(L,K)=VHDXF1(L,K)
@@ -543,7 +544,7 @@
       ! *** USING THE INTERNAL SHEARS STORED IN DU & DV
       TTDS = DSTIME(0)
       IF( KC > 1 )THEN
-        CALL CALUVW (ISTL)
+        CALL CALUVW 
       ELSE
         !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,LA,LDM,UHDYE,UHDYF,UHDY,HUI,DYIU,U,VHDXE,VHDXF,VHDX,HVI,DXIV,V,W)   &
         !$OMP                           PRIVATE(ND,LF,LL,L)
@@ -562,7 +563,7 @@
           ENDDO
         ENDDO
         !$OMP END PARALLEL DO
-        CALL CALUVW (ISTL)
+        CALL CALUVW 
       ENDIF
       TUVW = TUVW+(DSTIME(0)-TTDS)
 
@@ -572,7 +573,7 @@
     ! *** CALCULATE SALINITY, TEMPERATURE, DYE AND SEDIMENT CONCENTRATIONS
     ! *** AT TIME LEVEL (N+1)
     IF( ISTRANACTIVE > 0 )then
-      CALL CALCONC(ISTL, IS2TL)
+      CALL CALCONC
     ELSE
       ! *** Call Propwash module if that option is selected
       IF( propwash_on .and. ISTL == 3 )THEN
@@ -775,7 +776,7 @@
 
           ! *** CALL WATER QAULITY KINETICS, SEDIMENT AND RPEM PROCESSES
           IF( ISTRAN(8) >= 1 ) CALL WQ3D
-          IF( ISTRAN(4) >= 1 ) CALL CALSFT(ISTL,IS2TL)
+          IF( ISTRAN(4) >= 1 ) CALL CALSFT
 
           IF( ISICM >= 1 )THEN
             DO L=2,LA
@@ -847,7 +848,7 @@
       ! *** AT TIME LEVEL (N)
       IF( ISHDMF >= 1 )THEN
         TTDS = DSTIME(0)
-        CALL CALHDMF3(ISTL)
+        CALL CALHDMF3
         THMDF=THMDF+(DSTIME(0)-TTDS)
       ENDIF
 
@@ -899,7 +900,7 @@
       ! *** CALCULATE BOTTOM STRESS AT LEVEL (N+1)
 
       TTDS = DSTIME(0)
-      CALL CALTBXY(ISTL,IS2TL)
+      CALL CALTBXY
 
       !$OMP PARALLEL DO DEFAULT(NONE) PRIVATE(ND,LF,LL,LP,L,AVCON1,USGZ,VSGZ)       &
       !$OMP             SHARED(ICALTB,ISAVCOMP,NDM,LDMWET,LAWET,LWET,KSZ,KSZU,KSZV) &
@@ -1035,7 +1036,7 @@
       ! *** CALCULATE TURBULENT INTENSITY SQUARED
       !
       IF( KC > 1 )THEN
-        CALL CALQQ1 (ISTL)
+        CALL CALQQ1 
       ENDIF
       TQQQ = TQQQ + (DSTIME(0)-TTDS)
 
@@ -1076,8 +1077,7 @@
       ! *** *******************************************************************!
 
       ! *** WRITE TO TIME SERIES FILES
-      CTIM=DT*FLOAT(N)+TCON*TBEGIN
-      CTIM=CTIM/TCON
+      CTIM=TIMESEC/TCON
 
       ICALLTP=0
       IF( ISTMSR >= 1 )THEN
@@ -1106,7 +1106,7 @@
               ASFZERD=WTM*ASURFEL(LS)+WTMP*ASURFEL(LS+1)
             ENDIF
           ENDDO
-          CTIM=(DT*FLOAT(N)+TCON*TBEGIN)/TCTMSR
+          CTIM=TIMESEC/TCTMSR
           WRITE(1,5304)CTIM,SELZERD,ASFZERD,VOLZERD,VETZERD
           CLOSE(1)
 5304      FORMAT(2X,F10.4,2X,F10.5,3(2X,E12.4))

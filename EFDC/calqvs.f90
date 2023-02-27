@@ -6,7 +6,7 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-  SUBROUTINE CALQVS(ISTL_)
+  SUBROUTINE CALQVS
 
   ! *** SUBROUTINE CALQVS UPDATES TIME VARIABLE VOLUME SOURCES
 
@@ -35,7 +35,6 @@
 
   IMPLICIT NONE
 
-  INTEGER :: ISTL_
   INTEGER :: L, K, LL, NS, NCTMP, M1, M2, ITYP, NCTL, NCTLT, I, NC, IG
   INTEGER :: IU, JU, ID, JD, LU, LD, ND, LF, IPMC, MU1, MU2, MD1, MD2
   INTEGER :: NTMP, NWR, KU, KD, NJP, LJP, KTMP, ITMPD, NTT, LEVELFLAG, MWET
@@ -207,7 +206,7 @@
     ICEDAY = INT(TIMEDAY)
   ENDIF
 
-  IF( ISTL_ == 2 )THEN
+  IF( ISTL == 2 )THEN
     IF( ISDYNSTP == 0 )THEN
       DELT=DT
     ELSE
@@ -336,7 +335,7 @@
   ! *************************************************************************************
   ! *** VOLUME SOURCE/SINK INTERPOLATION
   DO NS=1,NQSER
-    IF( ISTL_ == 2 )THEN
+    IF( ISTL == 2 )THEN
       IF( ISDYNSTP == 0 )THEN
         CTIM = DT*(FLOAT(N)-0.5)/TCQSER(NS)+TBEGIN*(TCON/TCQSER(NS))
       ELSE
@@ -598,9 +597,9 @@
   ! *************************************************************************************
   ! **  GROUNDWATER SOURCE/SINK INTERPOLATION
   IF( NGWSER >= 1 .AND. GWSP.IFLAG == 0 )THEN
-    NCTMP = 3 + NDYM + NSED + NSND + NTOX
+    NCTMP = 3 + NDYM + NTOX + NSED + NSND
     DO NS=1,NGWSER
-      IF( ISTL_ == 2 )THEN
+      IF( ISTL == 2 )THEN
         IF( ISDYNSTP == 0 )THEN
           CTIM=DT*(FLOAT(N)-0.5)/TCGWSER(NS) + TBEGIN*(TCON/TCGWSER(NS))
         ELSE
@@ -793,7 +792,7 @@
 
       IF( HYD_STR(NCTL).NQCTYP == 1 )THEN
         ! *** ACCELERATION TYPE
-        IF( ISTL_ == 3 )THEN
+        IF( ISTL == 3 )THEN
           DO K=1,KC
             QCTLST(K,NCTL)=QCTLT(K,NCTL,1)
             TMPVAL=QCTLTO(K,NCTL) + DT*AQCTL(NCTLT)*QCTLST(K,NCTL)*QCTLST(K,NCTL)
@@ -1181,7 +1180,7 @@
     CQWRSERT(0,NC)=0.
   ENDDO
   DO NS=1,NQWRSR
-    IF( ISTL_ == 2 )THEN
+    IF( ISTL == 2 )THEN
       IF( ISDYNSTP == 0 )THEN
         CTIM=DT*(FLOAT(N)-0.5)/TCQWRSR(NS)+TBEGIN*(TCON/TCQWRSR(NS))
       ELSE
@@ -1266,7 +1265,7 @@
 
   ! **  CALL JPEFDC AND PLACE JET-PLUME VOLUMES SOURCES
   IF( NQJPIJ > 0 .AND. N == 1 ) CALL JPEFDC
-  IF( NQJPIJ > 0 .AND. ISTL_ == 3 )THEN
+  IF( NQJPIJ > 0 .AND. ISTL == 3 )THEN
     IF( NUDJPC(1) == NUDJP(1) )THEN
       CALL JPEFDC
       NUDJPC(1)=1
@@ -1339,7 +1338,7 @@
     DELTICE1 = DELTICE1 + DELT
     DELTICE2 = DELTICE2 + DELT
 
-    CALL ICECOMP(ISTL_, DELTICE2, ICESTEP)
+    CALL ICECOMP(DELTICE2, ICESTEP)
     IF( DELTICE2 >= ICESTEP ) DELTICE2 = 0.0  ! *** RESET ICE COVER TIMER AND VOLUME ACCUMULATORy
   ENDIF
 
@@ -1410,7 +1409,7 @@
 
   ! *** ADD ICE MET/GROWTH VOLUMETRIC RATES (M3/S)
   IF( ISICE > 2 .AND. ( LCHECKICE .OR. LFRAZIL ) .AND. DELTICE1 >= 60. )THEN
-    !$OMP DO PRIVATE(ND,LF,LL,L,HPICE)
+    !$OMP DO PRIVATE(ND,LF,LL,L,HPICE) REDUCTION(MAX:ICEDAY)
     DO ND=1,NDM
       LF=2+(ND-1)*LDM
       LL=MIN(LF+LDM-1,LA)
@@ -1502,16 +1501,7 @@
     ENDIF
 
     IF( IEVAP == 0 )THEN
-      ! *** IGNORE EVAPORATION
-      !$OMP DO PRIVATE(ND,LF,LL,L,K)
-      DO ND=1,NDM
-        LF=2+(ND-1)*LDM
-        LL=MIN(LF+LDM-1,LA)
-        DO L=LF,LL
-          QSUM(L,KC) = QSUM(L,KC) + DXYP(L)*RAINT(L)
-        ENDDO
-      ENDDO
-      !$OMP END DO
+      ! *** IGNORE EVAPORATION AND RAINFALL
     
     ELSEIF( IEVAP == 1 .OR. EVAP.IFLAG > 0 .OR. RAIN.IFLAG > 0 )THEN
       ! *** USE INPUT EVAPORATION
@@ -1654,7 +1644,7 @@
               QSUME(L)=0.
 
               ! *** REDUCE ICE THICKNESS
-              IF( ISICE > 2 .AND. ( ISTL_ == 3 .OR. IS2TL > 0 ) )THEN
+              IF( ISICE > 2 .AND. ( ISTL == 3 .OR. IS2TL > 0 ) )THEN
                 IF( ICEVOL(L) < 0. )THEN
                   TMPVAL = ICEVOL(L)*999.8426/RHOI/DXYP(L)
                   ICETHICK(L) = ICETHICK(L) + TMPVAL
@@ -1682,7 +1672,7 @@
                 RAINT(L) = RAINT(L)*RAVAIL
 
                 ! *** REDUCE ICE THICKNESS
-                IF( ISICE > 2 .AND. ( ISTL_ == 3 .OR. IS2TL > 0 ) )THEN
+                IF( ISICE > 2 .AND. ( ISTL == 3 .OR. IS2TL > 0 ) )THEN
                   IF( ICEVOL(L) < 0. )THEN
                     ! *** FREEZING TEMPERATURE OF WATER
                     IF( ISTRAN(1) > 0 )THEN
@@ -1798,7 +1788,7 @@
 
   ! **  WRITE DIAGNOSTIC FILE FOR VOLUME SOURCES,SINKS, ETC
   ITMPD=0
-  IF( ISDIQ == 2 .AND. ISTL_ == 2 ) ITMPD=1
+  IF( ISDIQ == 2 .AND. ISTL == 2 ) ITMPD=1
   IF( ISDIQ == 1 ) ITMPD=1
   NTT = 3 + NDYM + NTOX + NSED + NSND
 

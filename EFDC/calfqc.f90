@@ -6,7 +6,7 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
+SUBROUTINE CALFQC(MVAR, MO, CON, CON1, IT)
 
   ! **  SUBROUTINE CALFQC CALCULATES MASS SOURCES AND SINKS ASSOCIATED  
   ! **  WITH CONSTANT AND TIME SERIES INFLOWS AND OUTFLOWS; CONTROL  
@@ -32,8 +32,8 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
   IMPLICIT NONE
   
   ! *** Passed in variables
-  INTEGER, INTENT(IN) :: ISTL_, IS2TL_, MVAR, MO, IT
-  REAL, INTENT(INOUT)    :: CON(LCM,KCM), CON1(LCM,KCM)
+  INTEGER, INTENT(IN) :: MVAR, MO, IT
+  REAL, INTENT(INOUT) :: CON(LCM,KCM), CON1(LCM,KCM)
   
   ! *** Local variables
   REAL    :: FQOUT(NQCTLM), QTOUT(NQCTLM)
@@ -132,7 +132,7 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
   ! **************************************************************************************
 
   ! *** CONQ INITIALIZATION: 3TL STANDARD TIME STEP
-  IF( ISTL_ == 3 )THEN  
+  IF( ISTL == 3 )THEN  
     ! *** INITIALIZE BOTTOM LAYER FOR GW INTERACTIONS
     IF( NGWSER > 0 .OR. ISGWIT /= 0 )THEN
       DO L=1,LC  
@@ -157,7 +157,7 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
   ENDIF  ! *** END OF CONQ INITIALIZATION: 3TL STANDARD TIME STEP
 
   ! *** CONQ INITIALIZATION: 3TL CORRECTION STEP
-  IF( ISTL_ == 2 .AND. IS2TL_ == 0 )THEN  
+  IF( ISTL == 2 .AND. IS2TL == 0 )THEN  
     ! *** INITIALIZE BOTTOM LAYER FOR GW INTERACTIONS
     IF( NGWSER > 0 .OR. ISGWIT /= 0 )THEN
       DO L=1,LC  
@@ -182,7 +182,7 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
   ENDIF   ! *** END OF CONQ INITIALIZATION: 3TL CORRECTION STEP
        
   ! *** CONQ INITIALIZATION: 2TL STANDARD TIME STEP
-  IF( IS2TL_ == 1 )THEN  
+  IF( IS2TL == 1 )THEN  
     ! *** INITIALIZE BOTTOM LAYER FOR GW INTERACTIONS
     IF( NGWSER > 0 .OR. ISGWIT /= 0 )THEN
       DO L=1,LC  
@@ -240,6 +240,18 @@ SUBROUTINE CALFQC(ISTL_, IS2TL_, MVAR, MO, CON, CON1, IT)
         QSUMPAD(L,K,IT) = QSUMPAD(L,K,IT) + MAX(QSS(K,NS),0.)             + MAX(QSERCELL(K,NS),0.)  
       ENDDO  
     ENDDO  
+  ELSE
+    ! *** Handle WQ mass loading withdrawals
+    DO NS=1,NQSIJ  
+      L=LQS(NS)  
+      NQSTMP=NQSERQ(NS)  
+      NCSTMP=NCSERQ(NS,MVAR)  
+      DO K=KSZ(L),KC  
+        ! ***                             |-----------  OUT  ----------------|
+        FQC(L,K,IT)     = FQC(L,K,IT)     + MIN(QSS(K,NS),0.)     *CONQ(L,K,IT)  &
+                                          + MIN(QSERCELL(K,NS),0.)*CONQ(L,K,IT)  
+      ENDDO  
+    ENDDO
   ENDIF
     
   ! ***  JET-PLUME VOLUMETRICS SOURCE SINK LOCATIONS

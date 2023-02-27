@@ -4,7 +4,7 @@ FC=/opt/intel/oneapi/mpi/latest/bin/mpiifort
 
 # Compiler options
 #FFLAGS=-g -traceback -fpp -DENABLE_MPI -D_MPI -nofixed -qopenmp -DNCOUT
-FFLAGS=-g -traceback -qopenmp -O3 -fpp -DENABLE_MPI -D_MPI -DLINUX -m64 -real-size 32 -fpe0 -fp-speculation=safe -multiple-processes=12
+FFLAGS=-g -traceback -qopenmp -pthread -O3 -fpp -DENABLE_MPI -D_MPI -DLINUX -m64 -real-size 32 -fpe0 -fp-speculation=safe -multiple-processes=12
 # Compilation options for debug mode
 #FFLAGS=-g -traceback -qopenmp -debug all -check all -fpp -DENABLE_MPI -D_MPI -DDEBUGGING -fpic -real-size 64 -fpe0 -fp-speculation=safe -multiple-processes=8
 

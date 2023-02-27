@@ -39,7 +39,7 @@ SUBROUTINE WELCOME
       ,/,'*                   NEW EUTROPHICATION WITH ZOOPLANKTON AND RPEM SUB-MODELS       *'  &  
       ,/,'*                   WITH SEDZLJ, HYDROKINETIC DEVICES (SNL)                       *'  &  
       ,/,'*                                                                                 *'  &  
-      ,/,'*        EFDC+ HAS BEEN CUSTOMIZED TO WORK WITH DSI''s EFDC_EXPLORER 11.3.0        *'  &  
+      ,/,'*        EFDC+ HAS BEEN CUSTOMIZED TO WORK WITH DSI''s EFDC_EXPLORER 11.4.0        *'  &  
       ,/,'*                                                                                 *'  &  
       ,/,'*                         VERSION DATE: MPI ',A10,'                            *'  &  
       ,/,'*                                                                                 *'  &  

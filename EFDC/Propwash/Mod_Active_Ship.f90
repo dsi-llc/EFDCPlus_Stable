@@ -846,16 +846,7 @@ subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
     else
       rho = 999.82                                                                     ! *** Water density @ 20 degC
     endif
-    
-    ! delme
-    if( ep < 0. )then
-      print '(" *** Error in Propwash:  Time=",f15.5,", L, MMSI, Track, Pt =",I8, I12,2I5,", Power, Speed, EP =",2f10.3,e14.6)', timeday, cell, self.mmsi, self.itrack, self.ipos, self.power, power, self.speed, ep
-    endif
-    if( rho < 900. )then
-      print '(" *** Error in Propwash:  Time=",f15.5,", L, MMSI, Track, Pt =",I8, I12,2I5,", Rho =",f10.2)', timeday, cell, self.mmsi, self.itrack, self.ipos, rho
-    endif
-    ! delme
-    
+
     efflux_vel = 1.13/C1/self.ship.prop_diam * sqrt(EP/rho)
   endif
   self.efflux_vel = efflux_vel * efflux_mag_mult                                       ! *** efflux_mag_mult is a factor to account for subgrid turbulent losses

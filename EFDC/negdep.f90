@@ -6,7 +6,7 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-  SUBROUTINE NEGDEP(NOPTIMAL, LDMOPT, QCHANUT, QCHANVT, ISTL_, SUB1, SVB1, HPOLD, NNEGFLG)
+  SUBROUTINE NEGDEP(NOPTIMAL, LDMOPT, QCHANUT, QCHANVT, SUB1, SVB1, HPOLD, NNEGFLG)
 
   ! ** SUBROUTINE NEGDEP CHECK EXTERNAL SOLUTION FOR NEGATIVE DEPTHS
 
@@ -33,7 +33,7 @@
   REAL,INTENT(IN),DIMENSION(:)    :: SVB1(LCM)
   REAL,INTENT(INOUT),DIMENSION(:) :: HPOLD(LCM)
 
-  INTEGER :: INEGFLG, ISTL_, L, NMD, LHOST, IHOST, JHOST, LCHNU, LCHNV, ICHNU, JCHNU, ICHNV, JCHNV, K, ND, LF, LL, LS, LN, LW, LE
+  INTEGER :: INEGFLG, L, NMD, LHOST, IHOST, JHOST, LCHNU, LCHNV, ICHNU, JCHNU, ICHNV, JCHNV, K, ND, LF, LL, LS, LN, LW, LE
   REAL    :: QCHANUT(NCHANM), QCHANVT(NCHANM), SRFCHAN, SRFHOST, SRFCHAN1, SRFHOST1, SURFTMP, DELTD2
   INTEGER, SAVE :: NEEOUT
 
@@ -66,7 +66,7 @@
         LS=LSC(L)
         LW=LWC(L)
         LE=LEC(L)
-        WRITE(6,1111) TIMEDAY, NITER, ISTL_, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, process_id
+        WRITE(6,1111) TIMEDAY, NITER, ISTL, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, process_id
         WRITE (6,6060) Map2Global(L).IG, Map2Global(L).JG, HP(L), H1P(L), H2P(L)
         WRITE (6,6061) Map2Global(L).IG, Map2Global(L).JG, HU(L), H1U(L)
         WRITE (6,6062) Map2Global(L).IG, Map2Global(L).JG, HU(LE), H1U(LE)
@@ -89,7 +89,7 @@
           DELTD2=0.5*DTDYN
         ENDIF
 
-        WRITE(mpi_log_unit,1111) TIMEDAY, NITER, ISTL_, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, process_id
+        WRITE(mpi_log_unit,1111) TIMEDAY, NITER, ISTL, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, process_id
 
         ! *** EE7.2 DIAGNOSTICS
         WRITE (mpi_log_unit,'(2X,A14,5I14)')'L  CWESN', Map2Global(L).LG, Map2Global(LW).LG, Map2Global(LE).LG, Map2Global(LS).LG, Map2Global(LN).LG
@@ -269,7 +269,7 @@
       OPEN(1,FILE=OUTDIR//'EQCOEF.OUT',STATUS='UNKNOWN')
       CLOSE(1,STATUS='DELETE')
       OPEN(1,FILE=OUTDIR//'EQCOEF.OUT',POSITION='APPEND',STATUS='UNKNOWN')
-      WRITE(1,1001)NITER,ISTL_
+      WRITE(1,1001)NITER,ISTL
       DO L=2,LA
         SURFTMP=GI*P(L)
         WRITE(1,1001) Map2Global(L).IG, Map2Global(L).JG,CCS(L),CCW(L),CCC(L),CCE(L),CCN(L),FPTMP(L),SURFTMP
@@ -278,7 +278,7 @@
       OPEN(1,FILE=OUTDIR//'EQTERM.OUT',STATUS='UNKNOWN')
       CLOSE(1,STATUS='DELETE')
       OPEN(1,FILE=OUTDIR//'EQTERM.OUT',POSITION='APPEND',STATUS='UNKNOWN')
-      WRITE(1,1001)NITER,ISTL_
+      WRITE(1,1001)NITER,ISTL
       DO L=2,LA
         WRITE(1,1001) Map2Global(L).IG, Map2Global(L).JG,SUB(L),SVB(L), HRUO(L), HRVO(L), HU(L), HV(L)
       ENDDO

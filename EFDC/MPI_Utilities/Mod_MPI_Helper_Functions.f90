@@ -222,11 +222,11 @@
     
     endif
     
-    ! *** Point not in domain
+    ! *** Point not nearby, widen search
     cell_index = 0
     
     ! *** Still have not assigned L.  Search entire domain
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(L1)
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(L1) REDUCTION(MAX:cell_index)
     do L1 = 2,LA
       if( cell_index > 0 ) cycle       ! *** Once cell_index is defined fast forward as quickly as possible for all domains
       if( insidecell(L1, x_position, y_position) )then

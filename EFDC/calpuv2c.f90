@@ -755,7 +755,7 @@ SUBROUTINE CALPUV2C
       LN = LNC(L)  
       HP(L) = H1P(L) + DELTD2*DXYIP(L)*( 2.*QSUME(L) - ( UHDYE(LE)+UHDY1E(LE)-UHDYE(L)-UHDY1E(L)  &
                                                        + VHDXE(LN)+VHDX1E(LN)-VHDXE(L)-VHDX1E(L) ) )  
-    ENDDO  
+    ENDDO 
 
     IF( ISGWIE >= 1 )THEN
       DO L=LF,LL  
@@ -766,7 +766,7 @@ SUBROUTINE CALPUV2C
   ENDDO   ! *** END OF DOMAIN LOOP
   !$OMP END DO
   !$OMP END PARALLEL
-
+  
   ! ***  APPLY OPEN BOUNDARYS
   DO LL=1,NBCSOP
     L = LOBCS(LL)
@@ -1100,7 +1100,7 @@ SUBROUTINE CALPUV2C
   IUPDATE = 0
   IF( ISDRY > 0 .AND. NDRYSTP > 0 )THEN
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LS,LN,LE,LW,NTMP,IUW,IUE,IVS,IVN,IFACE,K)  &
-    !$OMP                             PRIVATE(RDRY,BELVAVG,RVAL,HOLDTMP,TMPVAL,SVPW1,RNPORI,ETGWTMP,ETGWAVL)
+    !$OMP                             PRIVATE(RDRY,BELVAVG,RVAL,HOLDTMP,TMPVAL,SVPW1,RNPORI,ETGWTMP,ETGWAVL) REDUCTION(MAX:IUPDATE)
     DO ND=1,NOPTIMAL
       LF = 2+(ND-1)*LDMOPT
       LL = MIN(LF+LDMOPT-1,LA)
@@ -1368,16 +1368,15 @@ SUBROUTINE CALPUV2C
     DO L=2,LA
       IF( LMASKDRY(L) )THEN
         LAWET = LAWET+1
-        LWET(LAWET)=L
+        LWET(LAWET) = L
       ELSEIF( OLDMASK(L) .OR. N < NTSTBC+1 )THEN
         ! *** ONLY FLAG NEWLY DRY CELLS
-        LADRY = LADRY+1
+        LADRY = LADRY + 1
         LDRY(LADRY) = L
         
         ! *** UPDATE DEPTHS FOR DRY CELLS
-        HOLDTMP = MAX(HP(L),HMIN)
         DO K=KSZ(L),KC
-          HPK(L,K)  = HOLDTMP*DZC(L,K)
+          HPK(L,K)  = HP(L)*DZC(L,K)
           HPKI(L,K) = 1./HPK(L,K)
         ENDDO    
         HU(L) = ( DXYP(L)*HP(L) + DXYP(LWC(L))*HP(LWC(L)) )*FSGZUDXYPI(L)
@@ -1719,7 +1718,7 @@ SUBROUTINE CALPUV2C
     ENDDO
     
   ENDIF
-
+  
 #ifdef _MPI
   TTDS = DSTIME(0)
   Call MPI_barrier(MPI_Comm_World, ierr)

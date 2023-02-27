@@ -10,7 +10,7 @@
 ! @DATE 10/22020
 ! @AUTHOR PAUL 
   
-  SUBROUTINE CALTRAN (ISTL_, IS2TL_, MVAR, MO, CON, CON1, IW, IT, WCCUTOFF, ISKIP)  
+  SUBROUTINE CALTRAN (MVAR, MO, CON, CON1, IW, IT, WCCUTOFF, ISKIP)  
 
   ! **  SUBROUTINE CALTRAN CALCULATES THE ADVECTIVE  
   ! **  TRANSPORT OF DISSOLVED OR SUSPENDED CONSTITUENT M LEADING TO  
@@ -26,7 +26,7 @@
 
   USE GLOBAL 
   Use Variables_MPI
-  !  USE OMP_LIB
+
 #ifdef _MPI
   Use MPI
 #endif
@@ -34,7 +34,7 @@
   IMPLICIT NONE  
     
   ! *** Passed in variables
-  INTEGER, INTENT(IN)    :: ISTL_, IS2TL_, MVAR, MO, IW, IT
+  INTEGER, INTENT(IN)    :: MVAR, MO, IW, IT
   INTEGER, INTENT(INOUT) :: ISKIP
   REAL, INTENT(IN)       :: WCCUTOFF
   REAL, INTENT(INOUT)    :: CON(LCM,KCM), CON1(LCM,KCM)  
@@ -71,7 +71,7 @@
     IF( ISCDCA(MVAR) == 2 ) DDELTA=DT   ! *** Central Differencing (3TL) [EXPERIMENTAL]
     DDELTD2=DT
     IF( ISCDCA(MVAR) == 1 ) ISUD=0 
-    IF( ISTL_ /= 3 )THEN  
+    IF( ISTL /= 3 )THEN  
       DDELT=DT  
       DDELTA=DT  
       DDELTD2=0.5*DT  
@@ -85,7 +85,7 @@
   END IF  
  
   M = MO  
-  IF( IS2TL_ == 1 )THEN  
+  IF( IS2TL == 1 )THEN  
     ! *** ADVANCE CONCENTRATIONS BEFORE THE 2TL TRANSPORT CALCULATIONS
     ! *** SKIP UPDATING VARIABLES IF ALREADY COMPLETED BEFORE THIS STEP
     IF( MVAR /= 8 )THEN
@@ -103,7 +103,7 @@
   ENDDO  
   
   ! **  CALCULATED EXTERNAL SOURCES AND SINKS  
-  CALL CALFQC(ISTL_, IS2TL_, MVAR, M, CON, CON1, IT)  
+  CALL CALFQC(MVAR, M, CON, CON1, IT)  
   
   ! *** SKIP TRANSPORT IF NOTHING TO TRANSPORT
   ISKIP = 0
@@ -144,7 +144,7 @@
   ! **  BEGIN COMBINED ADVECTION SCHEME  
   ! **  ADVECTIVE FLUX CALCULATION  
  
-  IF( ISTL_ == 2 ) GOTO 300  
+  IF( ISTL == 2 ) GOTO 300  
   IF( ISCDCA(MVAR) == 0 ) GOTO 300   ! *** Upwind Differencing  (3TL)
   IF( ISCDCA(MVAR) == 1 ) GOTO 400   ! *** Central Differencing (3TL)  
   IF( ISCDCA(MVAR) == 2 ) GOTO 350   ! *** Upwind Differencing  (3TL) [EXPERIMENTAL]
@@ -248,7 +248,7 @@
   ! *** IF ISACAC EQ 0 INCLUDE FQC MASS SOURCES IN UPDATE  
   IF( ISCDCA(MVAR) == 0 )THEN
     ! *** Upwind Differencing (3TL & 2TL)  
-    IF( ISTL_ == 2 )THEN  
+    IF( ISTL == 2 )THEN  
       DO K=1,KC
         DO LP=1,LLWET(K,0)
           L = LKWET(LP,K,0)  
@@ -277,7 +277,7 @@
       ENDIF  
     ENDIF     ! *** ENDIF ON TIME LEVEL CHOICE FOR ISCDCA=0  
   
-    IF( IS2TL_ == 0  .AND.  ISUD == 1 )THEN  
+    IF( IS2TL == 0  .AND.  ISUD == 1 )THEN  
       ! *** ADVANCE CON1 TO CON (3TL)
       CON1(:,:) = CON(:,:)
     ENDIF  
@@ -294,7 +294,7 @@
    
     ! *** Central Differencing (3TL)
     ! *** Experimental Upwind Differencing (3TL)  
-    IF( ISTL_ == 2 )THEN  
+    IF( ISTL == 2 )THEN  
       DO K=1,KC  
         DO LP=1,LLWET(K,0)
           L = LKWET(LP,K,0)  
@@ -365,7 +365,7 @@
         LN=LNC(L)  
         IF( VHDX2(LN,K) <= 0. )THEN  
           ! *** FLOWING OUT OF DOMAIN  
-          IF( ISTL_ == 2 )THEN  
+          IF( ISTL == 2 )THEN  
                                     CTMP = CON1(L,K) + DDELT*(VHDX2(LN,K)*CON1(L,K) - FVHUD(LNC(L),K,IW))*DXYIP(L)*HPKI(L,K)
           ELSE  
             IF( ISCDCA(MVAR) /= 2 ) CTMP = CON1(L,K) + DDELT*(VHDX2(LN,K)*CON1(L,K) - FVHUD(LNC(L),K,IW))*DXYIP(L)*HPKI(L,K)  
@@ -407,7 +407,7 @@
         IF( LKSZ(L,K) .OR. .NOT. LMASKDRY(L) )CYCLE 
         IF( UHDY2(LEC(L),K) <= 0. )THEN  
           ! *** FLOWING OUT OF DOMAIN  
-          IF( ISTL_ == 2 )THEN  
+          IF( ISTL == 2 )THEN  
                                     CTMP = CON1(L,K) + DDELT*(UHDY2(LEC(L),K)*CON1(L,K) - FUHUD(LEC(L),K,IW))*DXYIP(L)*HPKI(L,K)
           ELSE  
             IF( ISCDCA(MVAR) /= 2 ) CTMP = CON1(L,K) + DDELT*(UHDY2(LEC(L),K)*CON1(L,K) - FUHUD(LEC(L),K,IW))*DXYIP(L)*HPKI(L,K)
@@ -445,7 +445,7 @@
         IF( LKSZ(L,K) .OR. .NOT. LMASKDRY(L) ) CYCLE 
         IF( UHDY2(L,K) >= 0. )THEN  
           ! *** FLOWING OUT OF DOMAIN  
-          IF( ISTL_ == 2 )THEN  
+          IF( ISTL == 2 )THEN  
                                     CTMP = CON1(L,K) + DDELT*(FUHUD(L,K,IW) - UHDY2(L,K)*CON1(L,K))*DXYIP(L)*HPKI(L,K)
           ELSE  
             IF( ISCDCA(MVAR) /= 2 ) CTMP = CON1(L,K) + DDELT*(FUHUD(L,K,IW) - UHDY2(L,K)*CON1(L,K))*DXYIP(L)*HPKI(L,K)  
@@ -483,7 +483,7 @@
         LS=LSC(L)  
         IF( VHDX2(L,K) >= 0. )THEN  
           ! *** FLOWING OUT OF DOMAIN  
-          IF( ISTL_ == 2 )THEN  
+          IF( ISTL == 2 )THEN  
                                     CTMP = CON1(L,K) + DDELT*(FVHUD(L,K,IW) - VHDX2(L,K)*CON1(L,K))*DXYIP(L)*HPKI(L,K)
           ELSE  
             IF( ISCDCA(MVAR) /= 2 ) CTMP = CON1(L,K) + DDELT*(FVHUD(L,K,IW) - VHDX2(L,K)*CON1(L,K))*DXYIP(L)*HPKI(L,K) 
@@ -532,193 +532,6 @@
   ENDIF
   
   !  $ print *, ' CALTRAN-Leaving: Thread, MVAR, MO',IT,MVAR,MO  
-
-  ! *** Sum Fluxes, Newtown Creek Hardwire
-  IF( ISTL_ == 3 .and. la == 1640 )THEN
-    
-    ! *** All parameters
-  
-    ! *** CM 1.5
-    I = 69
-    NS = 1
-    DO J = 36, 40
-      L = LIJ(I,J)
-    
-      ! *** NEGATIVE SUMS TO FLIP SIGN CONVENTION
-      DO K = 1,KC
-        IF( IW == 1 )THEN
-          ! *** ONLY ACCUMULATE FLOWS ONCE
-          IF( UHDY2(L,K) < 0 )THEN
-            ! *** DOWNSTREAM
-            WC_QD(NS,K) = WC_QD(NS,K) - DDELTD2*UHDY2(L,K)
-          ELSE
-            ! *** UPSTREAM
-            WC_QU(NS,K) = WC_QU(NS,K) - DDELTD2*UHDY2(L,K)
-          ENDIF
-        ENDIF
-  
-        ! *** ACCUMULATE PARAMETER MASS
-        IF( FUHUD(L,K,IW) < 0 )THEN
-          ! *** DOWNSTREAM
-          WC_DN(NS,K,IW) = WC_DN(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ELSE
-          ! *** UPSTREAM
-          WC_UP(NS,K,IW) = WC_UP(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ENDIF
-      ENDDO
-    ENDDO 
-  
-    ! *** CM 1.7
-    I = 76
-    NS = NS + 1
-    DO J = 36, 41
-      L = LIJ(I,J)
-    
-      ! *** NEGATIVE SUMS TO FLIP SIGN CONVENTION
-      DO K = 1,KC
-        IF( IW == 1 )THEN
-          ! *** ONLY ACCUMULATE FLOWS ONCE
-          IF( UHDY2(L,K) < 0 )THEN
-            ! *** DOWNSTREAM
-            WC_QD(NS,K) = WC_QD(NS,K) - DDELTD2*UHDY2(L,K)
-          ELSE
-            ! *** UPSTREAM
-            WC_QU(NS,K) = WC_QU(NS,K) - DDELTD2*UHDY2(L,K)
-          ENDIF
-        ENDIF
-  
-        ! *** ACCUMULATE PARAMETER MASS
-        IF( FUHUD(L,K,IW) < 0 )THEN
-          ! *** DOWNSTREAM
-          WC_DN(NS,K,IW) = WC_DN(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ELSE
-          ! *** UPSTREAM
-          WC_UP(NS,K,IW) = WC_UP(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ENDIF
-      ENDDO
-    ENDDO
-    
-    ! *** CM 2.0
-    I = 89
-    NS = NS + 1
-    DO J = 36, 41
-      L = LIJ(I,J)
-    
-      ! *** NEGATIVE SUMS TO FLIP SIGN CONVENTION
-      DO K = 1,KC
-        IF( IW == 1 )THEN
-          ! *** ONLY ACCUMULATE FLOWS ONCE
-          IF( UHDY2(L,K) < 0 )THEN
-            ! *** DOWNSTREAM
-            WC_QD(NS,K) = WC_QD(NS,K) - DDELTD2*UHDY2(L,K)
-          ELSE
-            ! *** UPSTREAM
-            WC_QU(NS,K) = WC_QU(NS,K) - DDELTD2*UHDY2(L,K)
-          ENDIF
-        ENDIF
-  
-        ! *** ACCUMULATE PARAMETER MASS
-        IF( FUHUD(L,K,IW) < 0 )THEN
-          ! *** DOWNSTREAM
-          WC_DN(NS,K,IW) = WC_DN(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ELSE
-          ! *** UPSTREAM
-          WC_UP(NS,K,IW) = WC_UP(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ENDIF
-      ENDDO
-    ENDDO
-  
-    ! *** CM 2.4/Turning Basin
-    I = 99
-    NS = NS + 1
-    DO J = 36, 41
-      L = LIJ(I,J)
-    
-      ! *** NEGATIVE SUMS TO FLIP SIGN CONVENTION
-      DO K = 1,KC
-        IF( IW == 1 )THEN
-          ! *** ONLY ACCUMULATE FLOWS ONCE
-          IF( UHDY2(L,K) < 0 )THEN
-            ! *** DOWNSTREAM
-            WC_QD(NS,K) = WC_QD(NS,K) - DDELTD2*UHDY2(L,K)
-          ELSE
-            ! *** UPSTREAM
-            WC_QU(NS,K) = WC_QU(NS,K) - DDELTD2*UHDY2(L,K)
-          ENDIF
-        ENDIF
-  
-        ! *** ACCUMULATE PARAMETER MASS
-        IF( FUHUD(L,K,IW) < 0 )THEN
-          ! *** DOWNSTREAM
-          WC_DN(NS,K,IW) = WC_DN(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ELSE
-          ! *** UPSTREAM
-          WC_UP(NS,K,IW) = WC_UP(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ENDIF
-      ENDDO
-    ENDDO
-
-    ! *** Upstream end of Turning Basin
-    I = 116
-    NS = NS + 1
-    DO J = 39, 41
-      L = LIJ(I,J)
-    
-      ! *** NEGATIVE SUMS TO FLIP SIGN CONVENTION
-      DO K = 1,KC
-        IF( IW == 1 )THEN
-          ! *** ONLY ACCUMULATE FLOWS ONCE
-          IF( UHDY2(L,K) < 0 )THEN
-            ! *** DOWNSTREAM
-            WC_QD(NS,K) = WC_QD(NS,K) - DDELTD2*UHDY2(L,K)
-          ELSE
-            ! *** UPSTREAM
-            WC_QU(NS,K) = WC_QU(NS,K) - DDELTD2*UHDY2(L,K)
-          ENDIF
-        ENDIF
-  
-        ! *** ACCUMULATE PARAMETER MASS
-        IF( FUHUD(L,K,IW) < 0 )THEN
-          ! *** DOWNSTREAM
-          WC_DN(NS,K,IW) = WC_DN(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ELSE
-          ! *** UPSTREAM
-          WC_UP(NS,K,IW) = WC_UP(NS,K,IW) - DDELTD2*FUHUD(L,K,IW)
-        ENDIF
-      ENDDO
-    ENDDO
-
-    ! *** Maspeth Creek
-    J = 42
-    NS = NS + 1
-    DO I = 105, 107
-      L = LIJ(I,J)
-    
-      ! *** NEGATIVE SUMS TO FLIP SIGN CONVENTION
-      DO K = 1,KC
-        IF( IW == 1 )THEN
-          ! *** ONLY ACCUMULATE FLOWS ONCE
-          IF( VHDX2(L,K) < 0 )THEN
-            ! *** DOWNSTREAM
-            WC_QD(NS,K) = WC_QD(NS,K) - DDELTD2*VHDX2(L,K)
-          ELSE
-            ! *** UPSTREAM
-            WC_QU(NS,K) = WC_QU(NS,K) - DDELTD2*VHDX2(L,K)
-          ENDIF
-        ENDIF
-  
-        ! *** ACCUMULATE PARAMETER MASS
-        IF( FVHUD(L,K,IW) < 0 )THEN
-          ! *** DOWNSTREAM
-          WC_DN(NS,K,IW) = WC_DN(NS,K,IW) - DDELTD2*FVHUD(L,K,IW)
-        ELSE
-          ! *** UPSTREAM
-          WC_UP(NS,K,IW) = WC_UP(NS,K,IW) - DDELTD2*FVHUD(L,K,IW)
-        ENDIF
-      ENDDO
-    ENDDO
-  ENDIF
-  ! *** End Fluxes
   
   RETURN  
 END  

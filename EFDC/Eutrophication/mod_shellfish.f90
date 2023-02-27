@@ -421,12 +421,6 @@ MODULE SHELLFISHMOD
         ENDDO
       ENDIF
       ASSIMIND = SF.K_ASSIM * GRAZIND                 ! Assimilation [g C]
-
-      !sfhtime = (dt*float(n)+tcon*tbegin)/86400.
-      !if( abs(sfhtime-int(sfhtime)) < 1.0e-3 )then
-      !  iprint = 1
-      !  write(*,'(3f9.3,2f9.6\)') sfhtime, dw, sf.fr(l),grazind/dtwq, assimind/dtwq
-      !endif
       
       ! Respiration
       IF( SF.IRES == 1 )THEN
@@ -586,7 +580,7 @@ MODULE SHELLFISHMOD
     INTEGER :: I,J,K,L
     REAL :: TIME
     
-    TIME = (DT*FLOAT(N)+TCON*TBEGIN)/86400.
+    TIME = TIMESEC/TCON  
     
     DO J=1,NSFHARV
       IF((TIME >= HARVTIMES(J)) .AND. (.NOT. HARVDONE(J)) )THEN

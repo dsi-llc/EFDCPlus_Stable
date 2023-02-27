@@ -677,8 +677,8 @@ SUBROUTINE SEDZLJ(L)
     IF( SED(L,K,NS) < 0. )THEN
       IF( SED(L,K,NS) < -0.001 )THEN
         OPEN(1,FILE=OUTDIR//'NEGSEDSND.OUT',POSITION='APPEND')  
-        WRITE(1,"(' Warning: WC  SED < 0: TIME, NS, I, J, K, NEGSED = ',F12.4,4I5,4E13.4)" ) TIMEDAY, NS, Map2Global(L).IG, Map2Global(L).JG, K, SED(L,K,NS)  
-        PRINT "(' Warning: WC  SED < 0: TIME, NS, I, J, K, NEGSED = ',F12.4,4I5,4E13.4)", TIMEDAY, NS, Map2Global(L).IG, Map2Global(L).JG, K, SED(L,K,NS)  
+        WRITE(1,"(' Warning: WC  SED < 0: TIME, NS, L, I, J, K, HP, NEGSED = ',F12.4,5I5,4E13.4)" ) TIMEDAY, NS, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, K, HP(L), SED(L,K,NS)  
+        PRINT "(' Warning: WC  SED < 0: TIME, NS, L, I, J, K, HP, NEGSED = ',F12.4,5I5,4E13.4)", TIMEDAY, NS, Map2Global(L).LG, Map2Global(L).IG, Map2Global(L).JG, K, HP(L), SED(L,K,NS)  
         CLOSE(1)
       ENDIF  
       SED(L,K,NS) = 0.0    ! *** Continue with warning

@@ -49,7 +49,7 @@
 
 CONTAINS
 
-SUBROUTINE CALHEAT(ISTL_)
+SUBROUTINE CALHEAT
 
   !   Subroutine CALHEAT takes the information from the atmospheric boundary
   !   file and the wind forcing file and calculates the net heat flux across
@@ -132,7 +132,6 @@ SUBROUTINE CALHEAT(ISTL_)
   Use Broadcast_Routines
   Use Allocate_Initialize      
 
-  INTEGER, INTENT(IN) :: ISTL_
   INTEGER :: L, LF, LG, LL, LP, K, I, J, L1, ND, IOS, NAL
 
   INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: ICOUNT
@@ -319,7 +318,7 @@ SUBROUTINE CALHEAT(ISTL_)
 
   ENDIF    ! *** END OF CALHEAT INITIALIZATION BLOCK
 
-  IF( ISTL_ == 2 )THEN
+  IF( ISTL == 2 )THEN
     IF( ISDYNSTP == 0 )THEN
       DELT=DT
     ELSE
@@ -329,7 +328,7 @@ SUBROUTINE CALHEAT(ISTL_)
     DELT=DT2
   ENDIF
   TMIND = 9999.
-  
+
   ! *** OVERWRITE THE INPUT SOLAR RAD WITH A COMPUTED ONE
   IF( COMPUTESOLRAD )THEN
     CALL SHORT_WAVE_RADIATION(CLOUDT(2), SRO, SRON)
@@ -771,7 +770,6 @@ SUBROUTINE CALHEAT(ISTL_)
 
   ! *** BED/WATER COLUMN INTERFACE HEAT FLUX ***********************************************
   IF( NASER > 0 .AND. ISTOPT(2) /= 0 )THEN
-
     ! *** Update bottom water column layer temperatures
     IF( (HTBED1 + HTBED2) > 0. )THEN
       !$OMP DO PRIVATE(ND,LF,LL,LP,L,UBED,VBED,USPD,TFLUX,THICK,TEMP)
@@ -791,7 +789,7 @@ SUBROUTINE CALHEAT(ISTL_)
           ! *** ACCUMULATE BOTTOM HEAT FLUXTB (TO AVOID TRUNCATION ERROR, APPLY MINIMUM FLUXTB)
           FLUXTB(L) = FLUXTB(L) + TFLUX
           THICK = HPK(L,KSZ(L))
-          
+
           IF( ABS(FLUXTB(L))/THICK > 0.001 )THEN
             TEM(L,KSZ(L)) = TEM(L,KSZ(L)) + FLUXTB(L)/THICK       ! *** Update water column for bed heat exchange
             IF( FLUXTB(L) < 0.0 )THEN
@@ -805,7 +803,7 @@ SUBROUTINE CALHEAT(ISTL_)
       ENDDO   ! *** END OF DOMAIN
       !$OMP END DO
     ENDIF
-
+  
     ! *** Update bed temperatures, if needed
     IF( TEMBO > 0.0 )THEN
       !$OMP DO PRIVATE(ND,LF,LL,LP,L,THICK)
@@ -918,8 +916,8 @@ SUBROUTINE CALHEAT(ISTL_)
     IF( TEMBO > 0. )THEN
       DO L=2,LA
         IF( .NOT. LMASKDRY(L) )THEN
-          !TEMB(L) = MAX(MIN(TEMB(L), TATMT(1)+20.), 0.)                            ! *** Prevent shallow cells from excessive heat
-          TEMB(L) =  MAX(TATMT(L),0.0)   ! *** Limit bed temperature to air temp for dry cells
+          TEMB(L) = MAX(MIN(TEMB(L), TATMT(1)+20.), 0.)                            ! *** Prevent shallow cells from excessive heat
+          !TEMB(L) =  MAX(TATMT(L),0.0)   ! *** Limit bed temperature to air temp for dry cells
         ENDIF
       ENDDO
     ENDIF
@@ -929,7 +927,7 @@ SUBROUTINE CALHEAT(ISTL_)
 
 END SUBROUTINE CALHEAT
 
-SUBROUTINE ICECOMP(ISTL_, DELTD2, ICESTEP)
+SUBROUTINE ICECOMP(DELTD2, ICESTEP)
 
   ! *************************************************************************************************
   ! *** HEAT COUPLED ICE COMPUTATIONS WITH MASS BALANCE IN FREEZE/MELT
@@ -946,16 +944,15 @@ SUBROUTINE ICECOMP(ISTL_, DELTD2, ICESTEP)
   ! 2015-05           PAUL M. CRAIG    ADDED FULLY HEAT COUPLED ICE FORMATION/MELT
   !                   DANG H CHUNG
 
-  INTEGER, INTENT(IN) :: ISTL_
   REAL, INTENT(IN)    :: DELTD2,ICESTEP
 
   INTEGER :: L, K, ND, LF, LL, IFILE, ICEITER
   INTEGER,SAVE :: ITERMAX, ITERMAX2
 
   REAL       :: THICKMIN, MINICE, TMPVAL, ET, CSHE
-  REAL       :: WTEMP,RHOA
-  REAL       :: DEL,RANLW,RN,TF,TFS, RB,RC,RE,RT,TICEBOT
-  REAL       :: RATIODENS,DICETHI,DICETHW,HICE
+  REAL       :: WTEMP, RHOA
+  REAL       :: DEL, RANLW, RN, TF, TFS, RB, RC, RE, RT, TICEBOT
+  REAL       :: RATIODENS, DICETHI, DICETHW, HICE
 
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: ICETEM_OLD
 
@@ -980,7 +977,7 @@ SUBROUTINE ICECOMP(ISTL_, DELTD2, ICESTEP)
   ENDIF
 
   IFILE = -1
-  IF( ( NCTBC /= NTSTBC .OR. IS2TL > 0 ) .AND. (LCHECKICE .OR. LFRAZIL) )THEN
+  IF( ( (IS2TL == 0 .AND. ISTL == 3) .OR. IS2TL > 0 ) .AND. (LCHECKICE .OR. LFRAZIL) )THEN
     ! *** DENSITY OF WATER AT 0 DEG C = 999.8426 KG/M3
 
     IF( ISDYNSTP == 0 )THEN
@@ -1006,7 +1003,7 @@ SUBROUTINE ICECOMP(ISTL_, DELTD2, ICESTEP)
         DICETHW   = 0.0   ! *** CHANGE IN ICE THICKNESS DUE TO WATER TEMPERATURES FOR OPEN WATER (NO ICE)/ICE WATER INTERFACE (WITH ICE COVER)  (M)
         DICETHI   = 0.0   ! *** CHANGE IN ICE THICKNESS DUE TO ICE TEMPERATURES, I.E. BOTTOM GROWTH (M)
 
-        IF( ISTL_ == 3 .OR. IS2TL > 0 ) ICETHICK1(L) = ICETHICK(L)
+        IF( ISTL == 3 .OR. IS2TL > 0 ) ICETHICK1(L) = ICETHICK(L)
 
         ! *** HANDLE SHALLOW CELLS
         MINICE = MINICETHICK
@@ -1044,7 +1041,7 @@ SUBROUTINE ICECOMP(ISTL_, DELTD2, ICESTEP)
               
               ! *** ICE FORMATION LATENT HEAT OF FUSION ADDS HEAT
               IF( IS2TL == 0 )THEN
-                IF( ISTL_ == 3 )THEN
+                IF( ISTL == 3 )THEN
                   TEM1(L,K) = TF
                 ELSE
                   TEM(L,K) = TF
@@ -1053,7 +1050,6 @@ SUBROUTINE ICECOMP(ISTL_, DELTD2, ICESTEP)
                 TEM1(L,K) = TF
                 TEM(L,K)  = TF
               ENDIF
-
               ! ***  AMBIENT DENSITY
               IF( ISTRAN(6) > 0 .OR. ISTRAN(7) > 0 )THEN
                 RHOW(L,K) = FUNDEN(SAL(L,KC),SEDT(L,KC),TF)
@@ -1147,7 +1143,7 @@ SUBROUTINE ICECOMP(ISTL_, DELTD2, ICESTEP)
               DO K=KSZ(L),KC
                 H1PK(L,K) = H1P(L)*DZC(L,K)
               ENDDO
-              IF( ISTL_ == 3 )HP(L) = HP(L) - DICETHW*RHOI/999.8426 + TMPVAL
+              IF( ISTL == 3 )HP(L) = HP(L) - DICETHW*RHOI/999.8426 + TMPVAL
               ! ICEVOL(L) should be zeroed here?
             ELSE
               ICEVOL(L) = ICEVOL(L) - DICETHW*RATIODENS*DXYP(L)    ! *** REMOVE THE VOLUME OF WATER FROM THE WATER COLUMN
@@ -1283,7 +1279,7 @@ SUBROUTINE ICECOMP(ISTL_, DELTD2, ICESTEP)
               DO K=KSZ(L),KC
                 H1PK(L,K) = H1P(L)*DZC(L,K)
               ENDDO
-              IF( ISTL_ == 3 ) HP(L) = HP(L) - DICETHW*RHOI/999.8426 + TMPVAL
+              IF( ISTL == 3 ) HP(L) = HP(L) - DICETHW*RHOI/999.8426 + TMPVAL
               TEM1(L,KC) = TF
               ! ICEVOL(L) should be zeroed here?
             ELSE
@@ -1316,7 +1312,7 @@ SUBROUTINE ICECOMP(ISTL_, DELTD2, ICESTEP)
                   DO K=KSZ(L),KC
                     H1PK(L,K) = H1P(L)*DZC(L,K)
                   ENDDO
-                  IF( ISTL_ == 3 ) HP(L) = HP(L) + ICETHICK(L)*RHOI/999.8426 + TMPVAL
+                  IF( ISTL == 3 ) HP(L) = HP(L) + ICETHICK(L)*RHOI/999.8426 + TMPVAL
                   TMPVAL = 0.
                   ICETHICK(L) = 0.
                 ELSE

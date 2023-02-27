@@ -6,7 +6,7 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)  
+SUBROUTINE CALTRANICE(CON, CON1, IT)  
 
   ! **  SUBROUTINE CALTRAN CALCULATES THE ADVECTIVE  
   ! **  TRANSPORT OF FRAZIL ICE OR ANY OTHER ICE IMPACTED TRANSPORT
@@ -25,7 +25,7 @@ SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)
   IMPLICIT NONE  
     
   ! *** Passed in variables
-  INTEGER, INTENT(IN) :: ISTL_,IT  
+  INTEGER, INTENT(IN) :: IT  
   REAL, INTENT(INOUT)    :: CON(LCM,KCM),CON1(LCM,KCM)  
   ! *** Local variables
   REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: FLUX
@@ -42,7 +42,7 @@ SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)
   !ISUD=1  
   IF( ISDYNSTP == 0 )THEN
     ! *** FIXED DELTA T
-    IF( ISTL_ == 3 )THEN  
+    IF( ISTL == 3 )THEN  
       DDELT=DT2
     ELSE
       DDELT=DT
@@ -66,7 +66,7 @@ SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)
   !  ENDDO  
   !
   !  ! **  CALCULATED EXTERNAL SOURCES AND SINKS  
-  !  CALL CALFQC (ISTL_,IS2TL_,MVAR,10,CON,CON1,IT)  
+  !  CALL CALFQC (ISTL,IS2TL_,MVAR,10,CON,CON1,IT)  
   !ENDIF
 
   ! **  CALCULATE ADVECTIVE FLUXES BY UPWIND DIFFERENCE WITH ADVECTION  
@@ -95,7 +95,7 @@ SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)
   !IF(ISHDMF == 2 ) CALL CALDIFF (CON1,IT)  
     
   ! *** Upwind Differencing (3TL & 2TL)  
-  IF( ISTL_ == 2 )THEN  
+  IF( ISTL == 2 )THEN  
     DO K=1,KC  
       RDZIC=DZIC(L,K)  
       DO LP=1,LLWET(K,0)
@@ -115,7 +115,7 @@ SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)
     ENDDO
   ENDIF     ! *** ENDIF ON TIME LEVEL CHOICE FOR ISCDCA=0  
   
-  IF( ISTL_ == 3 .AND. .FALSE. )THEN  
+  IF( ISTL == 3 .AND. .FALSE. )THEN     ! delme - not needed - delete
     ! *** ADVANCE CON1 TO CON
     DO K=1,KC  
       DO LP=1,LLWET(K,0)
@@ -200,7 +200,7 @@ SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)
         LN=LNC(L)  
         IF( VHDX2(LN,K) <= 0. )THEN  
           ! *** FLOWING OUT OF DOMAIN  
-          IF( ISTL_ == 2 )THEN  
+          IF( ISTL == 2 )THEN  
             CTMP=CON1(L,K)+DDELT*(VHDX2(LN,K)*CON1(L,K)-FVHUD(LN,K,IT))*DXYIP(L)*HPI(L)  
           ELSE  
             CTMP=CON1(L,K)+DDELT*(VHDX2(LN,K)*CON1(L,K)-FVHUD(LN,K,IT))*DXYIP(L)*HPI(L)  
@@ -219,7 +219,7 @@ SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)
         L=LCBW(LL)  
         IF( UHDY2(LEC(L),K) <= 0. )THEN  
           ! *** FLOWING OUT OF DOMAIN  
-          IF( ISTL_ == 2 )THEN  
+          IF( ISTL == 2 )THEN  
             CTMP=CON1(L,K)+DDELT*(UHDY2(LEC(L),K)*CON1(L,K)-FUHUD(LEC(L),K,IT))*DXYIP(L)*HPI(L)  
           ELSE  
             CTMP=CON1(L,K)+DDELT*(UHDY2(LEC(L),K)*CON1(L,K)-FUHUD(LEC(L),K,IT))*DXYIP(L)*HPI(L)  
@@ -238,7 +238,7 @@ SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)
         L=LCBE(LL)  
         IF( UHDY2(L,K) >= 0. )THEN  
           ! *** FLOWING OUT OF DOMAIN  
-          IF( ISTL_ == 2 )THEN  
+          IF( ISTL == 2 )THEN  
             CTMP=CON1(L,K)+DDELT*(FUHUD(L,K,IT)-UHDY2(L,K)*CON1(L,K))*DXYIP(L)*HPI(L)  
           ELSE  
             CTMP=CON1(L,K)+DDELT*(FUHUD(L,K,IT)-UHDY2(L,K)*CON1(L,K))*DXYIP(L)*HPI(L)  
@@ -258,7 +258,7 @@ SUBROUTINE CALTRANICE(ISTL_,CON,CON1,IT)
         LS=LSC(L)  
         IF( VHDX2(L,K) >= 0. )THEN  
           ! *** FLOWING OUT OF DOMAIN  
-          IF( ISTL_ == 2 )THEN  
+          IF( ISTL == 2 )THEN  
             CTMP=CON1(L,K)+DDELT*(FVHUD(L,K,IT)-VHDX2(L,K)*CON1(L,K))*DXYIP(L)*HPI(L)  
           ELSE  
             CTMP=CON1(L,K)+DDELT*(FVHUD(L,K,IT)-VHDX2(L,K)*CON1(L,K))*DXYIP(L)*HPI(L)  

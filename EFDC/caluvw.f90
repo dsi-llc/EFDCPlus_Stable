@@ -13,7 +13,7 @@
 !!         2011-03       Paul M. Craig     Rewritten to F90 and added OMP
 ! @parameter ISTL ISTL indicates the # of time levels in the step
 
-SUBROUTINE CALUVW(ISTL_)
+SUBROUTINE CALUVW
 
   USE GLOBAL
   Use Variables_MPI
@@ -24,7 +24,6 @@ SUBROUTINE CALUVW(ISTL_)
 
   IMPLICIT NONE
 
-  INTEGER, INTENT(IN) :: ISTL_
   INTEGER :: NMD, ND, LF, LL, L, LS, LN, K, LE, LW, LNN, LP, LHOST, LCHNU, LCHNV, LG
   INTEGER :: ICFL, JCFL, KCFL, IVAL, IDTCFL, LTMP, L1P, IOBC, IFILE
   INTEGER, SAVE :: NKCE, NKCN, NHOLE, NSTEP
@@ -243,7 +242,7 @@ SUBROUTINE CALUVW(ISTL_)
 
   IF( ISDYNSTP == 0 )THEN
     DELT=DT2
-    IF( ISTL_ == 2 )THEN
+    IF( ISTL == 2 )THEN
       DELT=DT
     ENDIF
     DELTI=1./DELT
@@ -354,7 +353,7 @@ SUBROUTINE CALUVW(ISTL_)
 
   ! ***************************************************************************
   ! *** CALCULATE BOTTOM FRICTION COEFFICIENT
-  IF( ISTL_ == 3 )THEN
+  IF( ISTL == 3 )THEN
     !$OMP DO PRIVATE(ND,LP,L)
     DO ND=1,NDM
       DO LP=1,LLWETZ(KC,ND)
@@ -770,7 +769,7 @@ SUBROUTINE CALUVW(ISTL_)
   !$OMP BARRIER
 #endif
 
-  IF( ISTL_ == 3 )THEN
+  IF( ISTL == 3 )THEN
     !$OMP DO PRIVATE(ND,K,LP,L,LN,LE)
     DO ND=1,NDM
       DO K=1,KS
@@ -787,7 +786,7 @@ SUBROUTINE CALUVW(ISTL_)
     ENDDO    ! ***  END OF DOMAIN LOOP
     !$OMP END DO
 
-  ELSEIF( ISTL_ == 2 )THEN
+  ELSEIF( ISTL == 2 )THEN
     ! *** TWO TIME LEVEL SOLUTION OR 3TL CORRECTOR
     !$OMP DO PRIVATE(ND,K,LP,L,LN,LE)
     DO ND=1,NDM
@@ -903,7 +902,7 @@ SUBROUTINE CALUVW(ISTL_)
   ! ***************************************************************************
   ! *** CALCULATE AVERAGE CELL FACE TRANSPORTS FOR SALT, TEMPERATURE AND
   ! *** SEDIMENT TRANSPORT AND PLACE IN UHDY2, VHDX2 AND W2
-  IF( ISTL_ == 2 )THEN
+  IF( ISTL == 2 )THEN
     ! *** 3TL ISTL=2 OR IS2TIM>0
     !$OMP DO PRIVATE(ND,K,LP,L,LN)
     DO ND=1,NDM
@@ -985,7 +984,7 @@ SUBROUTINE CALUVW(ISTL_)
       LF=(ND-1)*LDMWET+1
       LL=MIN(LF+LDMWET-1,LAWET)
 
-      IF( ISTL_ == 3 )THEN
+      IF( ISTL == 3 )THEN
         ! *** 3TL AND ISTL=3
         DO LP=1,LLWETZ(KC,ND)
           L=LKWETZ(LP,KC,ND)
@@ -1056,7 +1055,7 @@ SUBROUTINE CALUVW(ISTL_)
                   OPEN(8,FILE=OUTDIR//'EFDCLOG.OUT',POSITION='APPEND')
                 ENDIF
                 WRITE(8,'(A)')              ' ERROR!  NEGATIVE DEPTH IN CONTINUITY CHECK.'
-                WRITE(8,'(A,I15,3I5,F15.5)')'         N L ISTL NCTBC TIMEDAY   ',N,L,ISTL_,NCTBC,TIMEDAY
+                WRITE(8,'(A,I15,3I5,F15.5)')'         N L ISTL NCTBC TIMEDAY   ',N,L,ISTL,NCTBC,TIMEDAY
                 WRITE(8,'(A,4F10.4)')       '         H1P H2P HP HPNEW         ',H1P(L),H2P(L),HP(L),HPPTMP
                 WRITE(8,'(A,4F10.4)')       '         HP  WESN                 ',HP(LW),   HP(LE),   HP(LS),    HP(LN)
                 WRITE(8,'(A,4F10.4)')       '         H1P WESN                 ',H1P(LW),  H1P(LE),  H1P(LS),   H1P(LN)
@@ -1156,7 +1155,7 @@ SUBROUTINE CALUVW(ISTL_)
                   OPEN(8,FILE=OUTDIR//'EFDCLOG.OUT',POSITION='APPEND')
                 ENDIF
                 WRITE(8,'(A)')              ' ERROR!  NEGATIVE DEPTH IN CONTINUITY CHECK.'
-                WRITE(8,'(A,I15,3I5,F15.5)')'         N L ISTL NCTBC TIMEDAY   ',N,L,ISTL_,NCTBC,TIMEDAY
+                WRITE(8,'(A,I15,3I5,F15.5)')'         N L ISTL NCTBC TIMEDAY   ',N,L,ISTL,NCTBC,TIMEDAY
                 WRITE(8,'(A,4F10.4)')       '         H1P H2P HP HPNEW         ',H1P(L),H2P(L),HP(L),HPPTMP
                 WRITE(8,'(A,4F10.4)')       '         HP  WESN                 ',HP(LW),   HP(LE),   HP(LS),    HP(LN)
                 WRITE(8,'(A,4F10.4)')       '         H1P WESN                 ',H1P(LW),  H1P(LE),  H1P(LS),   H1P(LN)
@@ -1361,7 +1360,7 @@ SUBROUTINE CALUVW(ISTL_)
   ! ***************************************************************************
   ! *** WRITE TO DIAGNOSTIC FILE CFL.OUT WITH DIAGNOSTICS OF MAXIMUM TIME STEP
   ! *** SEDIMENT TRANSPORT AND PLACE IN UHDY2, VHDX2 AND W2
-  IF( ISCFL >= 1 .AND. ISTL_ == 3 .AND. DEBUG )THEN
+  IF( ISCFL >= 1 .AND. ISTL == 3 .AND. DEBUG )THEN
     if( process_id == master_id )THEN
       OPEN(1,FILE=OUTDIR//'CFL.OUT',STATUS='UNKNOWN',POSITION='APPEND')
       IF( ISCFLM >= 1 .AND. NITER == 1 )THEN

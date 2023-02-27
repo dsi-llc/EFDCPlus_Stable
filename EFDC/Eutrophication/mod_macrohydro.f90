@@ -74,19 +74,11 @@ SUBROUTINE Macro_Veg(NAL)
     LayerRatio_MAC(L,:,NAL) = 0.0
     DIAMETER_MAC(L,NAL) = ALGAES(NAL).MINDIAMETER
     
-    if( timeday > 180.5 )then
-      k = 1  ! delme
-    endif
-    
     KTOP = 0
     K2 = MIN(LAYERTOP(NAL,L)+1,KC)
     ! *** Loop over layers to redistribute vegetation mass
     DO K = LAYERBOT(NAL,L), K2
       IF( WQV(L,K,19+NAL) < 1E-8 ) CYCLE
-      
-      if( k == kc )then
-        k1 = 0  ! delme
-      endif
       
       ! *** Allow for growth between layers, if allowed
       IF( WQV(L,K,19+NAL) > ALGAES(NAL).THRESHOLD .AND. K < KC )THEN

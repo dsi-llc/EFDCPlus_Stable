@@ -6,7 +6,7 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-SUBROUTINE CALHDMF3(ISTL_)
+SUBROUTINE CALHDMF3
 
   ! **  SUBROUTINE CALDMF CALCULATES THE HORIZONTAL VISCOSITY AND
   ! **  DIFFUSIVE MOMENTUM FLUXES. THE VISCOSITY, AH IS CALCULATED USING
@@ -30,7 +30,6 @@ SUBROUTINE CALHDMF3(ISTL_)
   ! *** *******************************************************************!
   !
   ! **VARIABLE DEFINITION 
-  INTEGER, INTENT(IN) :: ISTL_
   INTEGER :: L,LP,LW,K,ND,LN,LS,LE,LNW,LNE,LSW,LSE
   REAL    :: TMPVAL,WVFACT,DTMPH,DTMPX,AHWVX,DTMP,FMDUX0,FMDUY0,FMDVY0,FMDVX0
   
@@ -77,7 +76,7 @@ SUBROUTINE CALHDMF3(ISTL_)
       ENDDO 
     ENDIF
   ENDIF
-  IF( ISTL_ /=3 )RETURN
+  IF( ISTL /= 3 )RETURN
   
   IF( ISWAVE == 2 .OR. ISWAVE == 4 )THEN
     IF( WVLSH > 0.0 .OR. WVLSX > 0.0 )THEN

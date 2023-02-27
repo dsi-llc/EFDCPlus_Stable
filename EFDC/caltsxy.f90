@@ -388,7 +388,6 @@ SUBROUTINE CALTSXY
     IF( TIMEDAY >= DAYNEXT .AND. NUMSTEPS > 0 )THEN
       TATMT(1) = SUMT/FLOAT(NUMSTEPS)
       TATMT(1) = MAX(TATMT(1), 0.0)     ! *** TATMT(1) is only used for QC bed temperatures
-      PRINT *, 'TATMT',TIMEDAY, TATMT(1)   ! DELME
       NUMSTEPS = 0
       SUMT = 0.0
       DAYNEXT = DAYNEXT + 1.

@@ -1491,7 +1491,7 @@ MODULE WATERQUALITY
   Call Map_WQ_PointSource
   
   ! **************************************************************************
-  ! *** Set up look-up table for temperature dependency over -10 ï¿½C to 50 ï¿½C
+  ! *** Set up look-up table for temperature dependency over -10 °C to 50 °C
   WQTDMIN =-10
   WQTDMAX = 50
   WTEMP = WQTDMIN
@@ -2078,7 +2078,7 @@ MODULE WATERQUALITY
   Call Broadcast_Scalar(WQAOCR,   master_id)
   Call Broadcast_Scalar(WQAONT,   master_id)
   
-  If(  IWQBEN > 0 )then
+  IF(  IWQBEN > 0  )then
     Do NAL = 1, NALGAE
       SMDWQANC(NAL) = ALGAES(NAL).WQANCA     
     Enddo
@@ -2095,7 +2095,7 @@ MODULE WATERQUALITY
     Call Broadcast_Scalar(SMWQASC,    master_id)
     Call Broadcast_Scalar(DIATOM,     master_id)
   End if
-  
+
   ! *** SET UP LOOK-UP TABLE FOR TEMPERATURE DEPENDENCY OVER -10 OC TO 50 OC
   WQTDMIN =-10
   WQTDMAX = 50
@@ -2530,11 +2530,8 @@ MODULE WATERQUALITY
   !
   ! **  DAILY AVERAGE SOLAR SW RADIATION INTERPOLTATION FOR WATER QUALITY
   !
-  IF( ISDYNSTP == 0 )THEN
-    TIME=(DT*FLOAT(N)+TCON*TBEGIN)/86400.
-  ELSE
-    TIME=TIMESEC/86400.
-  ENDIF
+  TIME=TIMESEC/86400.
+
   M1=ISPAR
   !
   !      TEMP USE ISPAR FOR MCSUNDAY
@@ -2603,7 +2600,7 @@ MODULE WATERQUALITY
 
         ! *** CONVERT WQ VAR 1-19, 22 FROM KG/D TO G/D  !VB
         ! *** CONVERT WQ VAR 20 (TAM) FROM KMOLS/D TO MOLES/D
-        ! *** CONVERT FECAL COLIFORM FROM MPN/DAY TO MPN/D FOR FCM,
+        ! *** CONVERT FECAL COLIFORM FROM MPN/DAY TO MPN/D FOR FCM
         RMULADJ=1000.*RMULADJ
         !ADDADJ=ADDADJ
 
@@ -2659,15 +2656,11 @@ MODULE WATERQUALITY
   ENDDO
 
   ! **  LOADING SERIES INTERPOLTATION
-  TIME=DT*FLOAT(N)+TCON*TBEGIN
-  TIME=TIME/86400.
+  TIME=TIMESEC/86400.
+
   DO NS=1,NPSTMSR
-    IF( ISDYNSTP == 0 )THEN
-      TIME=DT*FLOAT(N)+TCON*TBEGIN
-      TIME=TIME/TCWQPSR(NS)
-    ELSE
-      TIME=TIMESEC/TCWQPSR(NS)
-    ENDIF
+    TIME=TIMESEC/TCWQPSR(NS)
+
     M2=MWQPTLT(NS)
     DO WHILE (TIME > TWQPSER(M2,NS))
       M2=M2+1
@@ -2768,21 +2761,21 @@ MODULE WATERQUALITY
   ENDDO
 
   if(process_id == master_id )then
-      IF( ITNWQ == 0 )THEN
-        DO L=2,LA
-          ITMP=IWQPSC(L,1)
-          IF( ITMP > 0 )THEN
-            DO K=1,KC
-              WRITE(1,110)ITMP,IL(L),JL(L),K,(WQWPSL(L,K,NW),NW=1,NWQV)
-            ENDDO
-          ENDIF
-        ENDDO
-        CLOSE(1)
-      ENDIF
+    IF( ITNWQ == 0 )THEN
+      DO L=2,LA
+        ITMP=IWQPSC(L,1)
+        IF( ITMP > 0 )THEN
+          DO K=1,KC
+            WRITE(1,110) ITMP, IL(L), JL(L), K, (WQWPSL(L,K,NW),NW=1,NWQV)
+          ENDDO
+        ENDIF
+      ENDDO
+      CLOSE(1)
+    ENDIF
   end if
   
-  110 FORMAT(1X,4I4,2X,7E12.4,/,19X,7E12.4,/,19X,7E12.4)
-  111 FORMAT(1X,I4,2X,7E12.4,/,7X,7E12.4,/,7X,7E12.4)
+  110 FORMAT(1X,4I4,2X,7E12.4,/,19X,7E12.4,/,19X,20E12.4)
+  111 FORMAT(1X,I4,2X,7E12.4,/,7X,7E12.4,/,7X,20E12.4)
   112 FORMAT(' N, TIME = ', I10, F12.5/)
   121 FORMAT(' NS,L,I,J,K,ITMP = ', 6I5/)
 
@@ -2973,11 +2966,8 @@ MODULE WATERQUALITY
     OPEN(1,FILE=OUTDIR//'WQATM.DIA',STATUS='UNKNOWN')
     CLOSE(1,STATUS='DELETE')
     OPEN(1,FILE=OUTDIR//'WQATM.DIA',STATUS='UNKNOWN')
-    IF( ISDYNSTP == 0 )THEN
-      TIME=(DT*FLOAT(N)+TCON*TBEGIN)/86400.
-    ELSE
-      TIME=TIMESEC/86400.
-    ENDIF
+    TIME=TIMESEC/86400.
+
     WRITE(1,112) NITER,TIME
     DO L=2,LA
       WRITE(1,110) IL(L),JL(L),(WQATML(L,KC,NW),NW=1,NWQV)
@@ -3066,11 +3056,8 @@ MODULE WATERQUALITY
       IWQT(L) = NINT((TWQ(L)-WQTDMIN)/WQTDINC)  ! *** DSI SINGLE L!INE
       IF( IWQT(L) < 1 .OR. IWQT(L) > NWQTD )THEN
         if( process_id == master_id )THEN  
-          IF( ISDYNSTP == 0 )THEN
-            TIMTMP = (DT*FLOAT(N) + TCON*TBEGIN)/86400.
-          ELSE
-            TIMTMP = TIMESEC/86400.
-          ENDIF
+          TIMTMP = TIMESEC/86400.
+          
           OPEN(3,FILE=OUTDIR//'ERROR.LOG',POSITION='APPEND' &
                 ,STATUS='UNKNOWN')
           WRITE(3,*)' *** ERROR IN WATER QUALITY'
@@ -3271,12 +3258,7 @@ MODULE WATERQUALITY
   !
   ! INCREMENT COUNTER FOR LIMITATION AND XDOXXX DO COMPONENT ARRAYS:
   !
-  IF( ISDYNSTP == 0 )THEN
-    TIMTMP = DT*FLOAT(N)+TCON*TBEGIN
-    TIMTMP = TIMTMP/TCTMSR
-  ELSE
-    TIMTMP = TIMESEC/TCTMSR
-  ENDIF
+  TIMTMP = TIMESEC/TCTMSR
   TIMESUM3 = TIMESUM3 + TIMTMP
   
   ! COMPUTE WQCHL,WQTAMP,WQPO4D,WQSAD AT A NEW TIME STEP: WQCHLX=1/WQCHLX
@@ -3376,7 +3358,7 @@ MODULE WATERQUALITY
   REAL WQR14, WQF14, WQA14
   REAL WQR15, WQA15, WQB15
   REAL WQM16, WQA16D, WQR16, WQR17, WQR18
-  REAL WQA19, WQSUM, WQRea, WQDOC, WQNH3, WQCOD, WQRes
+  REAL WQA19, WQSUM, WQRea, WQPOC, WQDOC, WQNH3, WQCOD, WQRes
   REAL WQT20, WQR21, TIMTMP, WQTAMD
   REAL PPCDO, TMP22, WQA22, WQA22C, WQA22D, WQA22G, WQCDDOC
   REAL WQCDREA, WQCDSUM, ALGCOUNT
@@ -3507,36 +3489,36 @@ MODULE WATERQUALITY
   CNS1 = 2.718  
   NS = 1  
   
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND, LF, LL, LP, L, K, NQ, NW, IZ, IMWQZ, NAL)  &
-  !$OMP             PRIVATE(WQF1N, WQF2I, WQTTA, WQTTAA, WQGN, WQGP, WQGCO2, WQA6A)        &
-  !$OMP             PRIVATE(WQA7A, WQA8A, WQA9A, WQA10A, WQA11A, WQA12A, WQA13A)           &
-  !$OMP             PRIVATE(WQA14A, WQA15A, WQA19A, WQA22A)                                &
-  !$OMP             PRIVATE(DTWQxH, DTWQxH2, TEMFAC, ALGCOUNT)                             &
-  !$OMP             PRIVATE(XMRM, YMRM, WQTT1, WQKHN)                                      &
-  !$OMP             PRIVATE(WQFDI0, WQHTT, WQTTT)                                          &
-  !$OMP             PRIVATE(SADWQ, WQGSD, WQTTB, WQFDM)                                    &
-  !$OMP             PRIVATE(UMRM, VMRM, WQVEL, WQLVF, WQF4SC, WQKDOC, WQKHP, WQTTS)        &
-  !$OMP             PRIVATE(XNUMER, XDENOM, WQLDF, WQTTM)                                  &
-  !$OMP             PRIVATE(WINDREA, WQWREA, WQVREA, WQAC, WQVA1C, WQRC)                   &
-  !$OMP             PRIVATE(WQB4,  WQA4, WQR4)                                             &
-  !$OMP             PRIVATE(WQC5,  WQA5, WQR5)                                             &
-  !$OMP             PRIVATE(WQD6,  WQA6, WQR6)                                             &
-  !$OMP             PRIVATE(WQE7,  WQA7, WQR7)                                             &
-  !$OMP             PRIVATE(WQF8,  WQA8, WQR8)                                             &
-  !$OMP             PRIVATE(WQF9,  WQA9, WQR9)                                             &
-  !$OMP             PRIVATE(WQR10, WQKKL)                                                  &
-  !$OMP             PRIVATE(WQI11, WQA11, WQR11)                                           &
-  !$OMP             PRIVATE(WQJ12, WQA12, WQR12)                                           &
-  !$OMP             PRIVATE(WQF13, WQA13, WQR13)                                           &
-  !$OMP             PRIVATE(WQR14, WQF14, WQA14)                                           &
-  !$OMP             PRIVATE(WQR15, WQA15, WQB15)                                           &
-  !$OMP             PRIVATE(WQM16, WQA16D, WQR16)                                          &
-  !$OMP             PRIVATE(WQR17, WQR18)                                                  &
-  !$OMP             PRIVATE(WQA19, WQSUM, WQRea, WQDOC, WQNH3, WQCOD, WQRes)               &
-  !$OMP             PRIVATE(WQT20, WQR21, WQTAMD)                                          &
-  !$OMP             PRIVATE(PPCDO, TMP22, WQA22, WQA22C, WQA22D, WQA22G, WQCDDOC)          &
-  !$OMP             PRIVATE(WQCDREA, WQCDSUM)                                              &
-  !$OMP             PRIVATE(WQKESS, EXPA0, EXPA1, WQISM)                                   &
+  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND, LF, LL, LP, L, ILAST, K, NQ, NW, IZ, IMWQZ, NAL)  &
+  !$OMP             PRIVATE(WQF1N, WQF2I, WQTTA, WQTTAA, WQGN, WQGP, WQGCO2, WQA6A)               &
+  !$OMP             PRIVATE(WQA7A, WQA8A, WQA9A, WQA10A, WQA11A, WQA12A, WQA13A)                  &
+  !$OMP             PRIVATE(WQA14A, WQA15A, WQA19A, WQA22A)                                       &
+  !$OMP             PRIVATE(DTWQxH, DTWQxH2, TEMFAC, ALGCOUNT)                                    &
+  !$OMP             PRIVATE(XMRM, YMRM, WQTT1, WQKHN)                                             &
+  !$OMP             PRIVATE(WQFDI0, WQHTT, WQTTT)                                                 &
+  !$OMP             PRIVATE(SADWQ, WQGSD, WQTTB, WQFDM)                                           &
+  !$OMP             PRIVATE(UMRM, VMRM, WQVEL, WQLVF, WQF4SC, WQKDOC, WQKHP, WQTTS)               &
+  !$OMP             PRIVATE(XNUMER, XDENOM, WQLDF, WQTTM)                                         &
+  !$OMP             PRIVATE(WINDREA, WQWREA, WQVREA, WQAC, WQVA1C, WQRC)                          &
+  !$OMP             PRIVATE(WQB4,  WQA4, WQR4)                                                    &
+  !$OMP             PRIVATE(WQC5,  WQA5, WQR5)                                                    &
+  !$OMP             PRIVATE(WQD6,  WQA6, WQR6)                                                    &
+  !$OMP             PRIVATE(WQE7,  WQA7, WQR7)                                                    &
+  !$OMP             PRIVATE(WQF8,  WQA8, WQR8)                                                    &
+  !$OMP             PRIVATE(WQF9,  WQA9, WQR9)                                                    &
+  !$OMP             PRIVATE(WQR10, WQKKL)                                                         &
+  !$OMP             PRIVATE(WQI11, WQA11, WQR11)                                                  &
+  !$OMP             PRIVATE(WQJ12, WQA12, WQR12)                                                  &
+  !$OMP             PRIVATE(WQF13, WQA13, WQR13)                                                  &
+  !$OMP             PRIVATE(WQR14, WQF14, WQA14)                                                  &
+  !$OMP             PRIVATE(WQR15, WQA15, WQB15)                                                  &
+  !$OMP             PRIVATE(WQM16, WQA16D, WQR16)                                                 &
+  !$OMP             PRIVATE(WQR17, WQR18)                                                         &
+  !$OMP             PRIVATE(WQA19, WQSUM, WQRea, WQPOC, WQDOC, WQNH3, WQCOD, WQRes)               &
+  !$OMP             PRIVATE(WQT20, WQR21, WQTAMD)                                                 &
+  !$OMP             PRIVATE(PPCDO, TMP22, WQA22, WQA22C, WQA22D, WQA22G, WQCDDOC)                 &
+  !$OMP             PRIVATE(WQCDREA, WQCDSUM)                                                     &
+  !$OMP             PRIVATE(WQKESS, EXPA0, EXPA1, WQISM)                                          &
   !$OMP             PRIVATE(WQSROPT)
   DO ND = 1,NDM
     LF = (ND - 1)*LDMWET + 1  
@@ -3584,7 +3566,7 @@ MODULE WATERQUALITY
       ! *** ZERO WQWPSL IF FLOWS ARE NEGATIVE.  THESE ARE HANDLED IN CALFQC (PMC)
       IF( IWQPSL /= 2 )THEN
         DO NQ = 1,NQSIJ  
-          IF( (QSERCELL(K,NQ) + QSS(K,NQ)) <= 0.0 )THEN
+          IF( (QSERCELL(K,NQ) + QSS(K,NQ)) < 0.0 )THEN
             ! *** ZERO THE FLUX
             L = LQS(NQ)  
             DO NW = 1,NWQV
@@ -5348,7 +5330,7 @@ MODULE WATERQUALITY
   ! *** ZERO THIN LAYERS WHEN DELTA T WQ IS LARGE
   IF( KC > 1 .AND. ISDRY > 0 )THEN
     IFLAG = 0
-    !$OMP PARALLEL DO PRIVATE(ND,LF,LL,LP,L,NW,K)
+    !$OMP PARALLEL DO PRIVATE(ND,LF,LL,LP,L,NW,K) REDUCTION(+:IFLAG)
     DO ND=1,NDM 
       LF = (ND-1)*LDMWET+1  
       LL = MIN(LF+LDMWET-1,LAWET)
@@ -5452,12 +5434,8 @@ MODULE WATERQUALITY
     ENDDO  
     IF( NDLTCNT == NSTPTMP )THEN  
       NDLTCNT=0  
-      IF( ISDYNSTP == 0 )THEN  
-        TIME=DT*FLOAT(N)+TCON*TBEGIN  
-        TIME=TIME/TCON  
-      ELSE  
-        TIME=TIMESEC/TCON  
-      ENDIF  
+      TIME=TIMESEC/TCON  
+
       DO K=1,KC  
         DO L=2,LA
           RLIGHTT(L,K)=RMULTMP*RLIGHTT(L,K)  
@@ -5483,12 +5461,7 @@ MODULE WATERQUALITY
 
   ! ***************************************************************************
   ! INCREMENT COUNTER FOR LIMITATION AND XDOXXX DO COMPONENT ARRAYS:  
-  IF( ISDYNSTP == 0 )THEN  
-    TIMTMP=DT*FLOAT(N)+TCON*TBEGIN  
-    TIMTMP=TIMTMP/TCTMSR  
-  ELSE  
-    TIMTMP=TIMESEC/TCTMSR  
-  ENDIF  
+  TIMTMP = TIMESEC/TCON  
   TIMESUM3 = TIMESUM3 + TIMTMP  
   
   1111 FORMAT(I12,F10.4)  

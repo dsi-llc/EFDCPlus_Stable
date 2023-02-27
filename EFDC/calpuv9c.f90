@@ -6,7 +6,7 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-SUBROUTINE CALPUV9C(ISTL_)
+SUBROUTINE CALPUV9C
 
   ! *** *******************************************************************C
   !
@@ -29,10 +29,8 @@ SUBROUTINE CALPUV9C(ISTL_)
 
   IMPLICIT NONE
 
-  INTEGER, INTENT(IN) :: ISTL_
-
   INTEGER :: NMD, ITERHP, NCORDRY, ICORDRY, ND, LF, LL, L, LP, LS, LN, LW, LE, LHOST, LCHNU, LCHNV, NTMP, I, KM
-  INTEGER :: IUW, IUE, IVS, IVN, IFACE, LMAX, LMIN, IMAX, IMIN, JMAX, JMIN, K, NNEGFLG, NEGFLAG, NNEG, NEGCOUNT, ISNEG
+  INTEGER :: IUW, IUE, IVS, IVN, IFACE, LMAX, LMIN, IMAX, IMIN, JMAX, JMIN, K, NNEGFLG, NEGFLAG, NNEG, NEGCOUNT
   INTEGER, SAVE :: INOTICE, NCORDRYMAX, NCORDRYAVG, ITERMAX, ITERAVG, NITERAVG, NCOUNT
   INTEGER, SAVE :: NOPTIMAL
   INTEGER, SAVE :: LDMOPT
@@ -128,7 +126,7 @@ SUBROUTINE CALPUV9C(ISTL_)
 
   DELT = DT2
   DELTD2 = DT
-  IF( ISTL_ == 2 )THEN
+  IF( ISTL == 2 )THEN
     DELT=DT
     DELTD2=0.5*DT
   ENDIF
@@ -156,7 +154,7 @@ SUBROUTINE CALPUV9C(ISTL_)
       QCHANUT(NMD)=QCHANUN(NMD)
       QCHANVT(NMD)=QCHANVN(NMD)
     ENDDO
-    IF( ISTL_ == 3 )THEN
+    IF( ISTL == 3 )THEN
       DO NMD=1,MDCHH
         QCHANUN(NMD)=QCHANU(NMD)
         QCHANVN(NMD)=QCHANV(NMD)
@@ -217,7 +215,7 @@ SUBROUTINE CALPUV9C(ISTL_)
     ENDIF
 
     ! *** SET THE CURRENT FACE DEPTHS INTO HUTMP AND HVTMP
-    IF( ISTL_ == 2 )THEN
+    IF( ISTL == 2 )THEN
       DO L=LF,LL
         HUTMP(L) = 0.5*(HU(L)+H1U(L))
         HVTMP(L) = 0.5*(HV(L)+H1V(L))
@@ -306,7 +304,7 @@ SUBROUTINE CALPUV9C(ISTL_)
   !$OMP END DO
 
   ! *** ADVANCE EXTERNAL VARIABLES FOR THREE TIME LEVEL STEP
-  IF( ISTL_ == 3 )THEN
+  IF( ISTL == 3 )THEN
     !$OMP DO PRIVATE(ND,LF,LL,L,K)
     DO ND=1,NOPTIMAL
       LF=2+(ND-1)*LDMOPT
@@ -552,7 +550,7 @@ SUBROUTINE CALPUV9C(ISTL_)
   !$OMP END SINGLE
 
   ! **  CALCULATE REVISED CELL DEPTHS BASED ON NEW HORIZONTAL TRANSPORTS AT (N+1)
-  IF( ISTL_ == 3 )THEN
+  IF( ISTL == 3 )THEN
     !$OMP DO PRIVATE(ND,LF,LL,L,LE,LN)
     DO ND=1,NOPTIMAL
       LF=2+(ND-1)*LDMOPT
@@ -661,7 +659,6 @@ SUBROUTINE CALPUV9C(ISTL_)
   ENDIF
 
   ! *** Check for wet and dry cell changes
-  ISNEG = 0
   IF( ISDRY > 0 )THEN
     ICORDRY=0
     ICORDRYD=0
@@ -679,13 +676,12 @@ SUBROUTINE CALPUV9C(ISTL_)
 
         DO L=LF,LL
           IF( HP(L) < HDRY )THEN
-            IF( ISTL_ == 3 )THEN
+            IF( ISTL == 3 )THEN
               HPPMC = H2P(L)
             ELSE
               HPPMC = H1P(L)
             ENDIF
             IF( ( HP(L) < HDRY90 .OR. HPPMC < HDRY ) .AND. HP(L) < (HPPMC+HDRY10) )THEN
-              IF( HP(L) < 0.0 ) ISNEG = 1
               IF( ISCDRY(L) == 0 )THEN
                 ISCDRY(L)=ISCDRY(L)+1
                 ICORDRYD(ND)=1
@@ -723,7 +719,7 @@ SUBROUTINE CALPUV9C(ISTL_)
             SUBE=SUB(LE)
             SVBS=SVB(L)
             SVBN=SVB(LN)
-            IF( ISTL_ == 3 )THEN
+            IF( ISTL == 3 )THEN
               HPPMC = H2P(L)
             ELSE
               HPPMC = H1P(L)
@@ -732,6 +728,7 @@ SUBROUTINE CALPUV9C(ISTL_)
 
             ! *** ALLOW RE-WETTING
             IF( DHPDT > 0.0 )THEN
+              ! *** Rising water levels
               LW = LWC(L)
               LS = LSC(L)
               SUB(L)=0.0
@@ -803,9 +800,9 @@ SUBROUTINE CALPUV9C(ISTL_)
                 ENDIF
               ENDIF     ! *** END OF REWETTING SECTION, DHPDT > DHPDT2
 
-            ELSEIF( HP(L) < HDRY90 .OR. HPPMC < HDRY )THEN
-              ! *** HP < HDRY.  SET SWITCHES TO DRY
-              RDRY = SUB(L) + SUB(LE) + SVB(L) + SVB(LN)
+            ELSEIF( HP(L) < HDRY .OR. HPPMC < HDRY )THEN
+              ! *** Falling water levels
+              ! *** HP < HDRY.  Set switches to dry
               SUB(L)  = 0.0
               SUB(LE) = 0.0
               SVB(L)  = 0.0
@@ -817,32 +814,6 @@ SUBROUTINE CALPUV9C(ISTL_)
               IF( ISCDRY(L) == 0 )THEN
                 ISCDRY(L) = 1
                 ICORDRYD(ND) = 1
-              ENDIF
-              IF( HP(L) < 0.0 )THEN
-                IF( RDRY == 0.0 .AND. QSUME(L) > 1e-7 )THEN
-                  ! *** Reset cell
-                  PRINT '(i10,F12.5,3I6,3F10.4,4F5.1)', niter, TIMEDAY, ISTL, NCORDRY, L, HP(L), HPPMC, BELV(L), SUB(L), SUB(LEC(L)), SVB(L), SVB(LNC(L))   ! DELME
-                  HP(L) = HPPMC
-                  UHDY1E(L) = 0.0
-                  VHDX1E(L) = 0.0
-                  UHDY1E(LE) = 0.0
-                  VHDX1E(LN) = 0.0
-                  IF( ISTL_ == 3 )THEN
-                    H1P(L) = H2P(L)
-                    UHDY2E(L) = 0.0
-                    VHDX2E(L) = 0.0
-                    UHDY2E(LE) = 0.0
-                    VHDX2E(LN) = 0.0
-                    UHDY1(L,:) = 0.0
-                    VHDX1(L,:) = 0.0
-                    UHDY1(LE,:) = 0.0
-                    VHDX1(LN,:) = 0.0
-                  ENDIF
-                  IF( ISCDRY(L) /= 2 )THEN
-                    ICORDRYD(ND) = 1
-                  ENDIF
-                  ISCDRY(L) = 2
-                ENDIF
               ENDIF
             ENDIF
           ENDIF
@@ -919,10 +890,10 @@ SUBROUTINE CALPUV9C(ISTL_)
       IF( .NOT. LMASKDRY(L) )THEN
         IF( HP(L) >= HDRY )THEN
           ! *** PREVIOUSLY CELL WAS DRY, NOW IT IS WET
-          IF( ISTL_ == 3 )THEN
-            WRITE(8,'(A,2I5,F12.5,I5,L5,3F10.5)') 'REWETTED CELL: ',N,ISTL_,TIMEDAY,L,LMASKDRY(L),H2P(L),HP(L)
+          IF( ISTL == 3 )THEN
+            WRITE(8,'(A,2I5,F12.5,I5,L5,3F10.5)') 'REWETTED CELL: ',N,ISTL,TIMEDAY,L,LMASKDRY(L),H2P(L),HP(L)
           ELSE
-            WRITE(8,'(A,2I5,F12.5,I5,L5,3F10.5)') 'REWETTED CELL: ',N,ISTL_,TIMEDAY,L,LMASKDRY(L),H1P(L),HP(L)
+            WRITE(8,'(A,2I5,F12.5,I5,L5,3F10.5)') 'REWETTED CELL: ',N,ISTL,TIMEDAY,L,LMASKDRY(L),H1P(L),HP(L)
           ENDIF
         ENDIF
       ENDIF
@@ -1058,10 +1029,10 @@ SUBROUTINE CALPUV9C(ISTL_)
           IVS=0
           IVN=0
           ! *** THIS REQUIRES THE CELL HAVE HP<HDRY FOR 2 ITERATIONS
-          IF( SUB1(L)  < 0.5 .AND. SUB(L)  < 0.5 )IUE=1
-          IF( SUB1(LE) < 0.5 .AND. SUB(LE) < 0.5 )IUW=1
-          IF( SVB1(L)  < 0.5 .AND. SVB(L)  < 0.5 )IVS=1
-          IF( SVB1(LN) < 0.5 .AND. SVB(LN) < 0.5 )IVN=1
+          IF( SUB1(L)  < 0.5 .AND. SUB(L)  < 0.5 ) IUE = 1
+          IF( SUB1(LE) < 0.5 .AND. SUB(LE) < 0.5 ) IUW = 1
+          IF( SVB1(L)  < 0.5 .AND. SVB(L)  < 0.5 ) IVS = 1
+          IF( SVB1(LN) < 0.5 .AND. SVB(LN) < 0.5 ) IVN = 1
 
           IFACE=IUW+IUE+IVS+IVN
           IF( IFACE == 4 )THEN
@@ -1080,7 +1051,7 @@ SUBROUTINE CALPUV9C(ISTL_)
 
       ! *** INFILTRATION STEP
       RNPORI=1./RNPOR
-      IF( ISTL_ == 3 )THEN
+      IF( ISTL == 3 )THEN
         DO L=LF,LL
           AGWELV(L) = AGWELV2(L) - RNPORI*DELT*DXYIP(L)*QGW(L)
         ENDDO
@@ -1161,7 +1132,7 @@ SUBROUTINE CALPUV9C(ISTL_)
   IF( ISDIVEX > 0 )THEN
     DIVEXMX=0.
     DIVEXMN=1000000.
-    IF( ISTL_ == 3 )THEN
+    IF( ISTL == 3 )THEN
       !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LN,LE,DIVEX,DIVEXMX,LMAX,LMIN,DIVEXMN)
       DO ND=1,NDM
         LF=2+(ND-1)*LDM
@@ -1230,17 +1201,16 @@ SUBROUTINE CALPUV9C(ISTL_)
     LADRY = 0
     DO L=2,LA
       IF( LMASKDRY(L) )THEN
-        LAWET = LAWET+1
-        LWET(LAWET)=L
-      ELSEIF( OLDMASK(L) .OR. N < NTSTBC+1 )THEN
+        LAWET = LAWET + 1
+        LWET(LAWET) = L
+      ELSE
         ! *** ONLY FLAG NEWLY DRY CELLS
-        LADRY = LADRY+1
-        LDRY(LADRY)=L
+        LADRY = LADRY + 1
+        LDRY(LADRY) = L
         
         ! *** UPDATE DEPTHS FOR DRY CELLS
-        HOLDTMP = MAX(HP(L),HMIN)
         DO K=KSZ(L),KC
-          HPK(L,K)  = HOLDTMP*DZC(L,K)
+          HPK(L,K)  = HP(L)*DZC(L,K)
           HPKI(L,K) = 1./HPK(L,K)
         ENDDO
         HU(L) = ( DXYP(L)*HP(L) + DXYP(LWC(L))*HP(LWC(L)) )*FSGZUDXYPI(L)

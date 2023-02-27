@@ -472,8 +472,8 @@
   IMPLICIT NONE
 
   ! ** OUTPUT WATER DEPTH
-  INTEGER(IK4) :: VER,HSIZE,BSIZE
-  INTEGER(IK4) :: L,ITMP,LTMP,NN,NS,ISTAT
+  INTEGER(IK4) :: VER, HSIZE, BSIZE, I, J, LG, LL, L2
+  INTEGER(IK4) :: L, ITMP, LTMP, NN, NS, ISTAT
   INTEGER(IK8) :: FSIZE, OFFSET
   REAL(RK4)    :: TMP
   REAL(RKD)    :: PTIME
@@ -533,7 +533,61 @@
 
   IF( ISRESTI == 0 .OR. ICONTINUE == 0) NRESTART=0
 
-  WRITE(EE_UNIT) (REAL(HP_Global(L),4), L=2,LA_Global) !***Modified for MPI
+  ! *** Check for anti-reflection type BC's and replace the interior cell depths with the boundary values
+  DO LL=1,NPBW_GL
+    IF( ISPBW_GL(LL) == 4 .OR. ISPBW_GL(LL) == 5 )THEN
+      I = IG2IL(IPBW_GL(LL))
+      J = JG2JL(JPBW_GL(LL))
+      IF(  I > 0 .AND. I <= IC_GLOBAL )THEN
+        IF(  J > 0 .AND. J <= JC_GLOBAL )THEN
+          LG = LIJ_GLOBAL(I,J) 
+          L2 = LEC_GLOBAL(LG)
+          HP_GLOBAL(L2) = (HP_GLOBAL(LG) + BELV_GLOBAL(LG)) - BELV_GLOBAL(L2)
+        END IF
+      END IF
+    END IF
+  END DO
+  DO LL=1,NPBE_GL
+    IF( ISPBE_GL(LL) == 4 .OR. ISPBE_GL(LL) == 5 )THEN
+      I = IG2IL(IPBE_GL(LL))
+      J = JG2JL(JPBE_GL(LL))
+      IF(  I > 0 .AND. I <= IC_GLOBAL )THEN
+        IF(  J > 0 .AND. J <= JC_GLOBAL )THEN
+          LG = LIJ_GLOBAL(I,J) 
+          L2 = LWC_GLOBAL(LG)
+          HP_GLOBAL(L2) = (HP_GLOBAL(LG) + BELV_GLOBAL(LG)) - BELV_GLOBAL(L2)
+        END IF
+      END IF
+    END IF
+  END DO
+  DO LL=1,NPBS_GL
+    IF( ISPBS_GL(LL) == 4 .OR. ISPBS_GL(LL) == 5 )THEN
+      I = IG2IL(IPBS_GL(LL))
+      J = JG2JL(JPBS_GL(LL))
+      IF(  I > 0 .AND. I <= IC_GLOBAL )THEN
+        IF(  J > 0 .AND. J <= JC_GLOBAL )THEN
+          LG = LIJ_GLOBAL(I,J) 
+          L2 = LNC_GLOBAL(LG)
+          HP_GLOBAL(L2) = (HP_GLOBAL(LG) + BELV_GLOBAL(LG)) - BELV_GLOBAL(L2)
+        END IF
+      END IF
+    END IF
+  END DO
+  DO LL=1,NPBN_GL
+    IF( ISPBN_GL(LL) == 4 .OR. ISPBN_GL(LL) == 5 )THEN
+      I = IG2IL(IPBN_GL(LL))
+      J = JG2JL(JPBN_GL(LL))
+      IF(  I > 0 .AND. I <= IC_GLOBAL )THEN
+        IF(  J > 0 .AND. J <= JC_GLOBAL )THEN
+          LG = LIJ_GLOBAL(I,J) 
+          L2 = LSC_GLOBAL(LG)
+          HP_GLOBAL(L2) = (HP_GLOBAL(LG) + BELV_GLOBAL(LG)) - BELV_GLOBAL(L2)
+        END IF
+      END IF
+    END IF
+  END DO
+ 
+  WRITE(EE_UNIT) (REAL(HP_Global(L),4), L=2,LA_Global)
 
   FLUSH(EE_UNIT)
   CLOSE(EE_UNIT,STATUS='KEEP')

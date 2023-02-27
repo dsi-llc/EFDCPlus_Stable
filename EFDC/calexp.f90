@@ -6,7 +6,7 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-SUBROUTINE CALEXP (ISTL_)
+SUBROUTINE CALEXP
 
   ! *** *******************************************************************!
   ! **  SUBROUTINE CALEXP2T CALCULATES EXPLICIT MOMENTUM EQUATION TERMS  
@@ -52,7 +52,7 @@ SUBROUTINE CALEXP (ISTL_)
   
   INTEGER :: I, LU, NS, ID,  JD, KD, LD, K,  L,  LL, LW, LNW, LSE, LE, LP  
   INTEGER :: LEE, LWW, LNN, LSS
-  INTEGER :: ND, LF, NWR, IU, JU, KU, LN, LS, ISTL_   
+  INTEGER :: ND, LF, NWR, IU, JU, KU, LN, LS   
   
   REAL :: QMF, QUMF, WUU, VTMPATU, UTMPATV, UMAGTMP, VMAGTMP, CACSUMT                                                                      
   REAL :: WVFACT, WVV, CFEFF, TMPVAL, DZPU, DZPV, FMDUY_TMP, FMDVX_TMP                                                       
@@ -77,7 +77,7 @@ SUBROUTINE CALEXP (ISTL_)
   ! *** *******************************************************************C
   DELT=DT2
   DELTD2=DT
-  IF( ISTL_ == 2 )THEN
+  IF( ISTL == 2 )THEN
     DELT=DT
     DELTD2=0.5*DT
   ENDIF
@@ -177,7 +177,7 @@ SUBROUTINE CALEXP (ISTL_)
   ! *** *******************************************************************C
   ! *** SELECT ADVECTIVE FLUX FORM
   ! ***
-  IF( ISTL_ == 2 )THEN
+  IF( ISTL == 2 )THEN
   
     ! *** THREE TIME LEVEL CORRECTOR STEP
     ! *** CALCULATE ADVECTIVE FLUXES BY UPWIND DIFFERENCE WITH ADVECTION
@@ -247,7 +247,7 @@ SUBROUTINE CALEXP (ISTL_)
     ENDIF
     !$OMP END PARALLEL
   
-  ELSEIF( ISTL_ /= 2 .AND. ISCDMA == 0 )THEN
+  ELSEIF( ISTL /= 2 .AND. ISCDMA == 0 )THEN
 
     ! *** THREE TIME LEVEL (LEAP-FROG) STEP
     ! *** WITH TRANSPORT AT (N) AND TRANSPORTED FIELD AT (N-1)
@@ -308,7 +308,7 @@ SUBROUTINE CALEXP (ISTL_)
     ENDIF
     !$OMP END PARALLEL
   
-  ELSEIF( ISTL_ /= 2 .AND. ISCDMA == 1 )THEN
+  ELSEIF( ISTL /= 2 .AND. ISCDMA == 1 )THEN
     
     ! *** THREE TIME LEVEL (LEAP-FROG) STEP
     ! *** AT (N) AND TRANSPORTED FIELD AT (N)
@@ -351,7 +351,7 @@ SUBROUTINE CALEXP (ISTL_)
     !$OMP END DO
     !$OMP END PARALLEL   
   
-  ELSEIF( ISTL_ /= 2 .AND. ISCDMA == 2 )THEN
+  ELSEIF( ISTL /= 2 .AND. ISCDMA == 2 )THEN
     
     ! *** THREE TIME LEVEL (LEAP-FROG) STEP
     ! *** FIRST HALF STEP CALCULATE ADVECTIVE FLUXES BY UPWIND DIFFERENCE
@@ -562,7 +562,7 @@ SUBROUTINE CALEXP (ISTL_)
           CAC(L,K) = ( FCORC(L)*DXYP(L) + 0.5*SNLT*(V(LN,K) + V(L,K))*DYDI(L) - 0.5*SNLT*(U(LE,K) + U(L,K))*DXDJ(L) )*HP(L)
           CFEFF = ABS(CAC(L,K))*DXYIP(L)*HPI(L)
           CFMAX = MAX(CFMAX,CFEFF)
-          CACSUM(ND) = CACSUM(ND)+CAC(L,K)
+          CACSUM(1) = CACSUM(1)+CAC(L,K)
         ENDDO
       ENDDO
       !$OMP END SINGLE
@@ -1253,7 +1253,7 @@ SUBROUTINE CALEXP (ISTL_)
   ENDIF
 
   ! *** ADD WIND SHEAR TO THE KC/KS INTERFACE
-  IF( ISTL_ == 2 .AND. NWSER > 0 )THEN
+  IF( ISTL == 2 .AND. NWSER > 0 )THEN
     !$OMP DO PRIVATE(ND,LF,LL,LP,L)
     DO ND=1,NDM  
       LF=(ND-1)*LDMWET+1  

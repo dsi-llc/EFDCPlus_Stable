@@ -678,11 +678,8 @@ SUBROUTINE TMSR
   !
   !----------------------------------------------------------------------C
   !
-  IF( ISDYNSTP == 0 )THEN
-    TIME=(DT*FLOAT(N)+TCON*TBEGIN)/TCTMSR
-  ELSE
-    TIME=TIMESEC/TCTMSR
-  ENDIF
+  TIME = TIMESEC/TCTMSR
+
   !
   FOURDPI=4./PI
   !

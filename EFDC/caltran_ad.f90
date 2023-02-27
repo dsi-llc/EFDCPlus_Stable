@@ -8,7 +8,7 @@
 ! ----------------------------------------------------------------------
 ! *** SUBROUTINE CALTRAN_AD CALCULATES THE ANTIDIFFION AND THE FLUX CORRECT, IF REQUESTED
   
-  SUBROUTINE CALTRAN_AD (ISTL_, IS2TL_, MVAR, MO, CON, CON1, IW, IT)  
+  SUBROUTINE CALTRAN_AD (MVAR, MO, CON, CON1, IW, IT)  
 
   ! CHANGE RECORD  
   ! DATE MODIFIED     BY               DESCRIPTION
@@ -24,7 +24,7 @@
   IMPLICIT NONE  
     
   ! *** Passed in variables
-  INTEGER, INTENT(IN) :: ISTL_, IS2TL_, MVAR, MO, IW, IT  
+  INTEGER, INTENT(IN) :: MVAR, MO, IW, IT  
   REAL, INTENT(INOUT) :: CON(LCM,KCM), CON1(LCM,KCM)  
   
   ! *** Local variables
@@ -50,7 +50,7 @@
     DDELT = DT2  
     DDELTA = DT2  
     IF( ISCDCA(MVAR) == 2 ) DDELTA = DT   ! *** Central Differencing (3TL) [EXPERIMENTAL]
-    IF( ISTL_/=3 )THEN  
+    IF( ISTL /= 3 )THEN  
       DDELT=DT  
       DDELTA=DT  
     ENDIF  
