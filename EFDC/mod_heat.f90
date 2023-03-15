@@ -30,22 +30,22 @@
   IMPLICIT NONE
 
   ! ******* PARAMETER DECLARATIONS
-  REAL, PARAMETER, PRIVATE :: MPS_TO_MPH          = 2.23714
-  REAL, PARAMETER, PRIVATE :: W_M2_TO_BTU_FT2_DAY = 7.60796
-  REAL, PARAMETER, PRIVATE :: FLUX_BR_TO_FLUX_SI  = 0.23659
-  REAL, PARAMETER, PRIVATE :: BTU_FT2_DAY_TO_W_M2 = 0.1314
-  REAL, PARAMETER, PRIVATE :: BCONV               = 1.520411
+  REAL, SAVE, PRIVATE :: MPS_TO_MPH          = 2.23714     ! *** W2 equilibrium temperature method (English units)
+  REAL, SAVE, PRIVATE :: W_M2_TO_BTU_FT2_DAY = 7.60796     ! *** W2 equilibrium temperature method (English units)
+  REAL, SAVE, PRIVATE :: FLUX_BR_TO_FLUX_SI  = 0.23659     ! *** W2 equilibrium temperature method (English units)
+  REAL, SAVE, PRIVATE :: BTU_FT2_DAY_TO_W_M2 = 0.1314      ! *** W2 equilibrium temperature method (English units)
+  REAL, SAVE, PRIVATE :: BCONV               = 1.520411    ! *** W2 equilibrium temperature method (English units)
 
-  REAL,PARAMETER,PRIVATE   :: LHF     = 333507.0    ! *** LATENT HEAT OF FUSION FOR ICE (J/KG)
-  REAL,PARAMETER,PRIVATE   :: CP      = 4179.0      ! *** SPECIFIC HEAT (J/KG/degC)
+  REAL, SAVE, PRIVATE :: LHF     = 333507.0                ! *** LATENT HEAT OF FUSION FOR ICE (J/KG)
+  REAL, SAVE, PRIVATE :: CP      = 4179.0                  ! *** SPECIFIC HEAT (J/KG/degC)    (Previously EFDC used 4179.0)   4184
 
-  REAL,SAVE,PRIVATE        :: REFICE
-  REAL,SAVE,PRIVATE        :: RHOWCP
-  REAL,SAVE,PRIVATE        :: RHOWCPI
-  REAL,SAVE,PRIVATE        :: RHOICP
-  REAL,SAVE,PRIVATE        :: RHOICPI
-  REAL,SAVE,PRIVATE        :: CREFLI
-  REAL,SAVE,PRIVATE        :: RHOILHFI
+  REAL, SAVE, PRIVATE :: REFICE                            ! *** 
+  REAL, SAVE, PRIVATE :: RHOWCP                            ! *** 1393725753 (W s)/(m^3 degC)
+  REAL, SAVE, PRIVATE :: RHOWCPI                           ! *** 0.2393E-6 (m^3 degC)/(W s)
+  REAL, SAVE, PRIVATE :: RHOICP                            ! *** 
+  REAL, SAVE, PRIVATE :: RHOICPI                           ! *** 
+  REAL, SAVE, PRIVATE :: CREFLI                            ! *** 
+  REAL, SAVE, PRIVATE :: RHOILHFI                          ! *** 
 
 CONTAINS
 

@@ -1630,8 +1630,8 @@ SUBROUTINE VARALLOC
                                           
   Call AllocateDSI( DZC,      LCM,   KCM,   0.0)
   Call AllocateDSI( DZCK,     KCM,   0.0)  
-  Call AllocateDSI( DZCU,     LCM,   KCM,   0.0)
-  Call AllocateDSI( DZCV,     LCM,   KCM,   0.0)
+  Call AllocateDSI( DZCU,     LCM,   KCM,   0.0)      ! *** Not used
+  Call AllocateDSI( DZCV,     LCM,   KCM,   0.0)      ! *** Not used
   Call AllocateDSI( DZG,      LCM,   KCM,   0.0)
   Call AllocateDSI( DZGU,     LCM,   KCM,   0.0)
   Call AllocateDSI( DZGV,     LCM,   KCM,   0.0)

@@ -37,54 +37,92 @@ Module Mod_Write_Cell_Map
     
         Call WriteBreak(mpi_log_unit)
 
-        write(mpi_log_unit, '(A)') ' ' 
-        write(mpi_log_unit, '(A)') 'IJCT Global: '
-        ! *** Write out XLOC-YLOC - local to a process
-        do j = jc_global,1,-1
-            write(mpi_log_unit, 900) (IJCT_Global(i,j), i=1, ic_global)
-        end do
-        write(mpi_log_unit, '(A)') ' '
-        Call WriteBreak(mpi_log_unit)
-        
-        write(mpi_log_unit, '(A)') ' ' 
-        write(mpi_log_unit, '(A)') 'IJCT Local: '
-        ! *** Write out IJCT - local to a process
-        do j = jc,1,-1 
-            write(mpi_log_unit, 900) (IJCT(i,j), i=1, ic)
-        end do
-        write(mpi_log_unit, '(A)') ' '
-        !**Format for the 2d matrix, max width of 100   
-        900 format (100(I3)) 
-        
-        ! *** Write out to MPI debug
-        write(mpi_log_unit, '(a)') ' ' 
-        write(mpi_log_unit, '(a)') 'In CellMap Routine'
-        write(mpi_log_unit, '(a,i5,i5)') 'IGRID=',IL2IG(1), IL2IG(IC)
-        write(mpi_log_unit, '(a,i5)') 'LA Global = ', LA_Global
-        ! *** End new section for MPI domain decomp
-        write(mpi_log_unit, '(a,i5)') 'LA  = ', LA
-        write(mpi_log_unit, '(a,i5)') 'LC  = ', LC 
-        write(mpi_log_unit, '(a,i5)') 'IC  = ', IC
-        write(mpi_log_unit, '(a,i5)') 'JC  = ', JC 
-        
-        Call WriteBreak(mpi_log_unit)
-        write(mpi_log_unit, '(a)') 'Global L indexing: '
-        do j = JC_Global,1,-1
-            write(mpi_log_unit, '(100I5)',advance="no") (lij_global(i,j), i= 1, ic_global)
-            write(mpi_log_unit, ' ' )
-        end do
-    
-        Call WriteBreak(mpi_log_unit)
-        write(mpi_log_unit, '(a)') 'Local L indexing: '
-        do j = JC, 1, -1
-            write(mpi_log_unit, '(100I5)',advance="no") (lij(i,j), i=1, IC)
-            write(mpi_log_unit, ' ' )
-        end do
-        Call WriteBreak(mpi_log_unit)
-        
-    end if
-    
-    End subroutine Write_LIJ
+    ! *** Write out XLOC-YLOC - local to a process
+    write(mpi_log_unit, '(A)') ' '
+    write(mpi_log_unit, '(A/)') 'IJCT Global: '
+
+    write(mpi_log_unit, '(a8,a5,i1)', advance="no") 'J', '  I: ', 1
+    do i = 10, ic_global, 10
+      write(mpi_log_unit, '(i9,1x)', advance="no") i
+    enddo
+    write(mpi_log_unit, ' ' )
+    do j = jc_global,1,-1
+      write(mpi_log_unit, '(i8,5x)', advance="no") j
+      do i = 1, ic_global
+        write(mpi_log_unit, '(i1)', advance="no") IJCT_Global(i,j)
+      enddo
+      write(mpi_log_unit, ' ' )
+    end do
+    write(mpi_log_unit, '(A)') ' '
+    Call WriteBreak(mpi_log_unit)
+
+    ! *** Write out IJCT - local to a process
+    write(mpi_log_unit, '(A)') ' '
+    write(mpi_log_unit, '(A/)') 'IJCT Local: '
+
+    write(mpi_log_unit, '(a8,a5,i1)', advance="no") 'J', '  I: ', 1
+    do i = 10, ic, 10
+      write(mpi_log_unit, '(i9,1x)', advance="no") i
+    enddo
+    write(mpi_log_unit, ' ' )
+    do j = jc,1,-1
+      write(mpi_log_unit, '(i8,5x)', advance="no") j
+      do i = 1, ic
+        write(mpi_log_unit, '(i1)', advance="no") IJCT(i,j)
+      enddo
+      write(mpi_log_unit, ' ' )
+    end do
+    write(mpi_log_unit, '(A)') ' '
+
+    ! *** Write out to MPI debug
+    write(mpi_log_unit, '(a)') ' '
+    write(mpi_log_unit, '(a)') 'In CellMap Routine'
+    write(mpi_log_unit, '(a,i5,i5)') 'IGRID=',IL2IG(1), IL2IG(IC)
+    write(mpi_log_unit, '(a,i5)') 'LA Global = ', LA_Global
+
+    ! *** End new section for MPI domain decomp
+    write(mpi_log_unit, '(a,i5)') 'LA  = ', LA
+    write(mpi_log_unit, '(a,i5)') 'LC  = ', LC
+    write(mpi_log_unit, '(a,i5)') 'IC  = ', IC
+    write(mpi_log_unit, '(a,i5)') 'JC  = ', JC
+    Call WriteBreak(mpi_log_unit)
+
+    write(mpi_log_unit, '(a/)') 'Global L indexing: '
+
+    write(mpi_log_unit, '(a8,a5)', advance="no") 'J', '  I: '
+    do i = 5, ic_global, 5
+      write(mpi_log_unit, '(20x,i10)', advance="no") i
+    enddo
+    write(mpi_log_unit, ' ' )
+    do j = JC_Global,1,-1
+      write(mpi_log_unit, '(i8,5x)', advance="no") j
+      do i = 1, ic_global
+        write(mpi_log_unit, '(I6)',advance="no") lij_global(i,j)
+      enddo
+      write(mpi_log_unit, ' ' )
+    end do
+
+    Call WriteBreak(mpi_log_unit)
+    write(mpi_log_unit, '(a/)') 'Local L indexing: '
+
+    write(mpi_log_unit, '(a8,a5)', advance="no") 'J', '  I: '
+    do i = 5, ic, 5
+      write(mpi_log_unit, '(20x,i10)', advance="no") i
+    enddo
+    write(mpi_log_unit, ' ' )
+    do j = jc, 1, -1
+      write(mpi_log_unit, '(i8,5x)', advance="no") j
+      do i = 1, ic
+        write(mpi_log_unit, '(I6)',advance="no") lij(i,j)
+      enddo
+      write(mpi_log_unit, ' ' )
+    end do
+    Call WriteBreak(mpi_log_unit)
+
+  end if
+
+End subroutine Write_LIJ
+
 !**********************************************************************
 ! @details Writes out LIJ global, LIJ local, and boundary mapping arrays
     Subroutine Write_Cell_Indexing(write_out)

@@ -19,20 +19,25 @@
   !    2015-06       PAUL M. CRAIG     IMPLEMENTED SIGMA-Z (SGZ) IN EE7.3
   !    2011-03       Paul M. Craig     Rewritten to F90 and added OMP
 
-  USE GLOBAL
+  Use GLOBAL
+  Use Allocate_Initialize
+  
+#ifdef _MPI  
   Use Variables_MPI
   USE MPI
   Use Variables_MPI_Mapping
   Use MPI_All_Reduce
+#endif
 
   IMPLICIT NONE
 
-  INTEGER :: ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX
+  INTEGER :: ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX, NDYN
   INTEGER :: NMD, LMDCHHT, LMDCHUT, LMDCHVT, ITMPR, LLOCOLD,  MINTYPE
   INTEGER,SAVE :: NUP
+  !INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: LDYN
   
   REAL      :: QUKTMP, QVKTMP, RTMPR, TESTTEMP, DTMAXX
-  REAL      :: TMPUUU, DTTMP, TMPVVV, TMPVAL
+  REAL      :: TMPUUU, DTTMP, TMPVVV, TMPVAL, THP1, THP2
   REAL      :: TOP, QXPLUS, QYPLUS, QZPLUS, QXMINS, QYMINS, QZMINS, QTOTAL, QSRC, BOT
   REAL      :: DTCOMP, DTWARN, DTDYNP
   REAL,SAVE :: HPLIM, HPLIMOLD
@@ -46,22 +51,19 @@
 
   REAL(RKD), EXTERNAL :: DSTIME
   REAL(RKD)           :: TTDS, TWAIT                 ! MODEL TIMING TEMPORARY VARIABLE
+  real(rkd) :: dtold
   
-  IF(  .NOT. ALLOCATED(DTL1) )THEN
-    ALLOCATE(DTL1(LCM))
-    ALLOCATE(DTL2(LCM))
-    ALLOCATE(DTL3(LCM))
-    ALLOCATE(DTL4(LCM))
-    ALLOCATE(QSUBINN(LCM,KCM))
-    ALLOCATE(QSUBOUT(LCM,KCM))
+  IF( .NOT. ALLOCATED(DTL1) )THEN
+    Call AllocateDSI(DTL1,    LCM,  2.*TIDALP)
+    Call AllocateDSI(DTL2,    LCM,  2.*TIDALP)
+    Call AllocateDSI(DTL3,    LCM,  2.*TIDALP)
+    Call AllocateDSI(DTL4,    LCM,  2.*TIDALP)
+    Call AllocateDSI(QSUBINN, LCM,  KCM,  0.0)
+    Call AllocateDSI(QSUBOUT, LCM,  KCM,  0.0)
+    !Call AllocateDSI(LDYN,    LCM,  0)
+
     ALLOCATE(DTHISTORY(10))
-    
-    DTL1 = 2.*TIDALP
-    DTL2 = 2.*TIDALP
-    DTL3 = 2.*TIDALP
-    DTL4 = 2.*TIDALP
-    QSUBINN = 0.0
-    QSUBOUT = 0.0
+   
     DTHISTORY = DT
     NUP = 0
   ENDIF
@@ -73,9 +75,6 @@
   DO NX=1,7
     ITRNTMP = ITRNTMP + ISTRAN(NX)
   ENDDO
-  !IF( ITRNTMP > 0 )THEN
-  !  IF( DTL2MN > 1.5*DTDYN ) ITRNTMP = 0   ! *** SKIP TRANSPORT CHECK IF THE LAST
-  !ENDIF
   
   IF( NITER <= 1 ) DTDYN = DT
 
@@ -119,22 +118,25 @@
     ENDDO
   ENDIF
 
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND, L, K, LF, LL, LP, LE, LN, KM) &
-  !$OMP  PRIVATE(TMPUUU, DTTMP, TMPVVV, TMPVAL, TESTTEMP) &
-  !$OMP  PRIVATE(TOP, QXPLUS, QYPLUS, QZPLUS, QXMINS, QYMINS, QZMINS, QTOTAL, QSRC, BOT)  SCHEDULE(STATIC,1)
+  ! *** Initialize
+  DTL1 = DTMAXX
+  IF( ITRNTMP > 0 )   DTL2 = DTMAXX
+  IF( DTSSDHDT > 0. ) DTL4 = DTMAXX
+  
+  !$OMP PARALLEL DO DEFAULT(NONE)                                                               &
+  !$OMP  SHARED(NDM, LDM, LA, LAWET, LWET, KC, ITRNTMP, LLWET, LKWET, LEC, LNC, IsGhost)        &
+  !$OMP  SHARED(DTSSDHDT, DTMAXX, DXYP, DZC, UHDY2, VHDX2, W2, QSUM, DTL1, DTL2, DTL3, DTL4)    &
+  !$OMP  SHARED(HDRY, HP, H1P, UHE, VHE, HUI, HVI, DXIU, DYIV, QSUBINN, QSUBOUT, DTDYN)         &
+  !$OMP  PRIVATE(ND, L, K, LF, LL, LP, LE, LN, KM)                                              &
+  !$OMP  PRIVATE(TMPUUU, DTTMP, TMPVVV, TMPVAL, TESTTEMP, TOP, QXPLUS, QYPLUS, QZPLUS)          &
+  !$OMP  PRIVATE(QXMINS, QYMINS, QZMINS, QTOTAL, QSRC, BOT, THP1, THP2)
   DO ND=1,NDM
     LF = 2+(ND-1)*LDM
     LL = MIN(LF+LDM-1,LA)
 
-    DTL1(LF:LL) = DTMAXX
-    IF( ITRNTMP > 0 )   DTL2(LF:LL) = DTMAXX
-    IF( DTSSDHDT > 0. ) DTL4(LF:LL) = DTMAXX
-
     ! *** METHOD 1: COURANT–FRIEDRICHS–LEWY
-    DO LP = 1,LLWET(KC,ND)
-      L = LKWET(LP,KC,ND)  
-      IF( IsGhost(L) ) CYCLE     ! *** Do not use ghost cells to set min DT
-      
+    DO LP = 1,LAWET
+      L = LWET(LP)   
       TMPVAL = 1.E-16
       TMPUUU = ABS(UHE(L))*HUI(L)*DXIU(L)
       TMPVVV = ABS(VHE(L))*HVI(L)*DYIV(L)
@@ -213,9 +215,11 @@
         L = LKWET(LP,KC,ND)  
         IF( IsGhost(L) ) CYCLE     ! *** Do not use ghost cells to set min DT
         
-        IF( HP(L) < HDRY/10.)  HP(L)  = HDRY/10.
-        IF( H1P(L) < HDRY/10.) H1P(L) = HDRY/10.
-        TESTTEMP = MAX(ABS(HP(L)-H1P(L)),1.E-06)
+        THP1 = HP(L) 
+        IF( THP1 < HDRY/10.) THP1 = HDRY/10.
+        THP2 = H1P(L) 
+        IF( THP2 < HDRY/10.) THP2 = HDRY/10.
+        TESTTEMP = MAX(ABS(THP1-THP2),1.E-06)
         TMPVAL   = DTDYN*HP(L)/TESTTEMP
         DTL4(L)  = DTSSDHDT*TMPVAL
       ENDDO

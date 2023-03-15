@@ -65,21 +65,21 @@ SUBROUTINE CELLMAP
   LIJ(:,:) = 0
   LIJ_GLOBAL(:,:) = 0
   
-  ! *** Set the global LA value
-  ! *** This becomes necessary for the reading in of Corners.inp
-
-  L = 1
+  ! *** Set the global LA and the global I and J mapping
+  LG = 1
   DO J = 1,JC_global
     DO I = 1,IC_global
       IF( IJCT_GLOBAL(I,J) > 0 .AND. IJCT_GLOBAL(I,J) < 9 )THEN
-        L = L + 1
-        LIJ_Global(I,J) = L
-        IL_GL(L)   = I
-        JL_GL(L)   = J
+        LG = LG + 1
+        LIJ_Global(I,J) = LG
+        IL_GL(LG)   = I
+        JL_GL(LG)   = J
+        Map2Local(LG).IG = I
+        Map2Local(LG).JG = J
       ENDIF
     ENDDO
   ENDDO
-  LA_Global = L
+  LA_Global = LG
 
   ! *** SET 1D CELL INDEX SEQUENCE AND MAPPINGS
   ! *** When using domain decomposition this routine gives the local LA value

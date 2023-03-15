@@ -32,10 +32,14 @@ SUBROUTINE CALTBXY
   USE GLOBAL  
   Use Variables_WQ
   
+  Use MPI
+  Use Variables_MPI 
+  Use Communicate_Ghost_Routines
+  
   IMPLICIT NONE
 
-  INTEGER :: L, K, LS, M, LW, LE, LN, LNW, LSE, MW, MS, LF, LL, ND, LP, IOBC
-  INTEGER :: NMD, LHOST, LCHNU, LCHNV, MH, MU, MV, NTMP, LDMW, LWAVE, NAL
+  INTEGER :: L, K, LS, M, LW, LE, LN, LNW, LSE, MW, MS, LF, LL, ND, LP, LG, IOBC
+  INTEGER :: NMD, LHOST, LCHNU, LCHNV, MH, MU, MV, NTMP, LDMW, LWAVE, NAL, IERR
 
   REAL :: CDTOTUM, CDTOTVM, CDMAXUM, CDMAXVM
   REAL :: UMAGTMP, VMAGTMP, CDMAXU, CDMAXV, ZBRATUC, ZBRATVC
@@ -198,7 +202,18 @@ SUBROUTINE CALTBXY
       ENDIF
     ENDDO
     
-  ENDIF
+#   ifdef _MPI
+    ! ****************************************************************************
+    ! *** MPI communication
+    Call MPI_barrier(MPI_Comm_World, ierr)
+    Call communicate_ghost_cells(ZBRATU, 'ZBRATU')
+    Call communicate_ghost_cells(ZBRATV, 'ZBRATV')
+    Call communicate_ghost_cells(SGZUU)
+    Call communicate_ghost_cells(SGZVV)
+    ! ****************************************************************************
+#   endif
+
+  ENDIF   ! *** End of first call initializations
 
   IF( ISWAVE > 0 )THEN
     ! *** COMPUTE RAMPUP FACTOR

@@ -17,7 +17,7 @@ Subroutine Scan_JSON_Decomp
   Use Variables_MPI
   Use Broadcast_Routines
   Use fson
-  Use fson_value_m, only: fson_value_count, fson_value_get
+  Use mod_fson_value, only: fson_value_count, fson_value_get
 #ifdef _MPI
   Use MPI
 #endif

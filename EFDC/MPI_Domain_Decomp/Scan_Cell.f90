@@ -55,7 +55,9 @@ Subroutine Scan_Cell
   ALLOCATE(JE_Decomp(0:active_domains))
 
   ALLOCATE(IJCT_Read_In(IC,JC))
-
+  
+  MPI_Write_Flag = DEBUG           ! *** Write out MPI details
+  
   ! *** Zero it out
   IB_Decomp = 0
   IE_Decomp = 0

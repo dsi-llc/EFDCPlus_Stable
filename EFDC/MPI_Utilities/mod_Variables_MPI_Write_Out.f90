@@ -68,6 +68,7 @@ Module Variables_MPI_Write_Out
   Integer,Target, Allocatable, Dimension(:)  :: ISCDRY_Global
   Integer,Target, Allocatable, Dimension(:)  :: NATDRY_Global
   Integer,Target, Allocatable, Dimension(:)  :: IDRY_Global
+  Integer,Target, Allocatable, Dimension(:)  :: MVEG_Global
 
   Real,Target, Allocatable, Dimension(:)     :: BELV_Global
   Real,Target, Allocatable, Dimension(:)     :: DXP_Global
@@ -76,6 +77,7 @@ Module Variables_MPI_Write_Out
   Real,Target, Allocatable, Dimension(:)     :: H1P_Global
   Real,Target, Allocatable, Dimension(:)     :: HWQ_Global
   Real,Target, Allocatable, Dimension(:)     :: H2WQ_Global
+  Real,Target, Allocatable, Dimension(:)     :: ZBR_Global
 
   Real,Target, Allocatable, Dimension(:)     :: SHEAR_Global
   Real,Target, Allocatable, Dimension(:)     :: SHEAR_Global2
@@ -178,6 +180,7 @@ Module Variables_MPI_Write_Out
   Real,Target, Allocatable, Dimension(:) :: WV_HEIGHT_Global
   Real,Target, Allocatable, Dimension(:) :: WV_FREQ_Global
   Real,Target, Allocatable, Dimension(:) :: WV_DIR_Global
+  Real,Target, Allocatable, Dimension(:) :: WV_DISSIPA_Global
   
   Real,Target, Allocatable, Dimension(:,:) :: FXWAVE_Global
   Real,Target, Allocatable, Dimension(:,:) :: FYWAVE_Global

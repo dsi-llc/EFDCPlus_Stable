@@ -27,16 +27,18 @@ SUBROUTINE CALCONC
 
   USE GLOBAL
   Use Budget
+  Use Allocate_Initialize      
+  Use Variables_Propwash
+  USE OMP_LIB
+  USE HEAT_MODULE, ONLY:CALHEAT
   
+# ifdef _MPI  
   Use MPI
   Use Variables_MPI
   Use Variables_MPI_Mapping
   Use Variables_MPI_Write_Out
   Use Communicate_Ghost_Routines
-  Use Variables_Propwash
-
-  USE OMP_LIB
-  USE HEAT_MODULE, ONLY:CALHEAT
+# endif
 
   IMPLICIT NONE
 
@@ -45,13 +47,12 @@ SUBROUTINE CALCONC
   INTEGER, SAVE :: NICE, IFIRST, NANTIDIFF
   INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: ISKIP
 
-  REAL      :: RCDZKMK, RCDZKK
-  REAL      :: DELTD2,  CDTMP
+  REAL      :: CDTMP, RCDZKMK, RCDZKK
   REAL,SAVE :: SEDTIME
 
   REAL(RKD), EXTERNAL :: DSTIME
-  REAL(RKD)           :: TTDS1, TTDS2, TMPCOMM, TWAIT   ! MODEL TIMING TEMPORARY VARIABLES
-  REAL(RKD)           :: CCUBTMP, CCMBTMP               ! VERTICAL DIFFUSION TEMPORARY VARIABLES
+  REAL(RKD)           :: TTDS, TTDS1, TTDS2, TMPCOMM, TWAIT   ! *** Model timing temporary variables
+  REAL(RKD)           :: CCUBTMP, CCMBTMP                     ! *** Vertical diffusion temporary variables
 
   ! *** VERTICAL DIFFUSION VARIABLES
   REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:,:) :: CCLBTMP
@@ -63,22 +64,17 @@ SUBROUTINE CALCONC
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: SNDASM
 
   IF( .NOT. ALLOCATED(EEB) )THEN
-    ALLOCATE(CCLBTMP(LCM,KCM))
-    ALLOCATE(EEB(LCM,KCM))
-    ALLOCATE(VCU(LCM,KCM))
-    ALLOCATE(TOXASM(NTXM))
-    ALLOCATE(SEDASM(NSCM2))
-    ALLOCATE(SNDASM(NSNM2))
-    ALLOCATE(ISKIP(NACTIVEWC))
-    EEB=0.0
-    CCLBTMP=0.0
-    VCU=0.
-    TOXASM=0.0
-    SEDASM=0.0
-    SNDASM=0.0
-    NICE=0
-    SEDTIME=0.0
-    ISKIP = 0
+    Call AllocateDSI(CCLBTMP,   LCM,  KCM,  0.0)
+    Call AllocateDSI(EEB,       LCM,  KCM,  0.0)
+    Call AllocateDSI(VCU,       LCM,  KCM,  0.0)
+    
+    Call AllocateDSI(TOXASM,  NTXM,     0.0)
+    Call AllocateDSI(SEDASM,  NSCM2,    0.0)
+    Call AllocateDSI(SNDASM,  NSNM2,    0.0)
+    Call AllocateDSI(ISKIP, NACTIVEWC,    0)
+
+    NICE = 0
+    SEDTIME = 0.0
     IFIRST = 0
     
     NANTIDIFF = 0
@@ -97,7 +93,6 @@ SUBROUTINE CALCONC
       DELT=DTDYN
     END IF
   ENDIF
-  DELTD2=DELT
 
   ! *** MASS BALANCE
   IF( IS2TIM >= 1 )THEN
@@ -215,7 +210,22 @@ SUBROUTINE CALCONC
     ENDIF
   ENDDO
   !$OMP END DO
+
+# ifdef _MPI
+  ! ****************************************************************************
+  ! *** MPI communication for FUHUD, FVHUD & FWUU
+  !$OMP SINGLE
+  Call MPI_barrier(MPI_Comm_World, ierr)
+  TTDS = DSTIME(0)
+
+  Call Communicate_CON2
   
+  TMPITMP = DSTIME(0) - TTDS
+  DSITIMING(6) = DSITIMING(6) + TMPITMP
+  !$OMP END SINGLE
+  ! ****************************************************************************
+# endif
+
   !$OMP DO PRIVATE(IW,K,LP,L,CDTMP) SCHEDULE(STATIC,1)
   DO IW=1,NACTIVEWC
     IF( ISADAC(IACTIVEWC1(IW)) == 1 .AND. ISCDCA(IACTIVEWC1(IW)) == 0 )THEN 
@@ -288,7 +298,7 @@ SUBROUTINE CALCONC
     ! *** BOTTOM LAYER
     DO LP=1,LLWET(KS,ND)
       L = LKWET(LP,KS,ND)
-      RCDZKK  = -DELTD2*CDZKK(L,KSZ(L))
+      RCDZKK  = -DELT*CDZKK(L,KSZ(L))
       CCUBTMP = RCDZKK*HPI(L)*AB(L,KSZ(L))
       CCMBTMP = 1._8-CCUBTMP
       EEB(L,KSZ(L)) = 1._8/CCMBTMP
@@ -299,8 +309,8 @@ SUBROUTINE CALCONC
     DO K=2,KS
       DO LP=1,LLWET(K-1,ND)
         L = LKWET(LP,K-1,ND)
-        RCDZKMK      = -DELTD2*CDZKMK(L,K)
-        RCDZKK       = -DELTD2*CDZKK(L,K)
+        RCDZKMK      = -DELT*CDZKMK(L,K)
+        RCDZKK       = -DELT*CDZKK(L,K)
         CCLBTMP(L,K) = RCDZKMK*HPI(L)*AB(L,K-1)
         CCUBTMP      = RCDZKK*HPI(L)*AB(L,K)
         CCMBTMP      = 1._8-CCLBTMP(L,K)-CCUBTMP
@@ -313,7 +323,7 @@ SUBROUTINE CALCONC
     K=KC
     DO LP=1,LLWET(KS,ND)
       L = LKWET(LP,KS,ND)
-      RCDZKMK      = -DELTD2*CDZKMK(L,K)
+      RCDZKMK      = -DELT*CDZKMK(L,K)
       CCLBTMP(L,K) = RCDZKMK*HPI(L)*AB(L,K-1)
       CCMBTMP      = 1._8-CCLBTMP(L,K)
       EEB(L,K)     = 1._8/( CCMBTMP - CCLBTMP(L,K)*VCU(L,K-1) )
@@ -473,7 +483,7 @@ SUBROUTINE CALCONC
     IF( ISTL/=2 .AND. ISBAL >= 1 )THEN
       CALL CALBAL2
       CALL CALBAL3
-      NTMP=MOD(N,2)
+      NTMP=MOD(NCTBC,2)
       IF( NTMP == 0 )THEN
         CALL CBALEV2
         CALL CBALEV3

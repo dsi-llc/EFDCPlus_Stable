@@ -31,7 +31,7 @@
 ! Created on March 7, 2012, 7:40 PM
 !
 
-module fson_string_m
+module mod_fson_string
 
     private
 
@@ -270,4 +270,4 @@ contains
         
     end function equals_string
 
-end module fson_string_m
+end module mod_fson_string

@@ -969,7 +969,6 @@ subroutine calc_erosive_flux(self, debug)
   d2 = w_depth - self.draft
   d2 = max(d2,prop_radius)
   c_f = 0.01 * self.ship.prop_diam/d2                               ! *** Bottom friction coefficient - Use constant c_f (2021-06-28)
-  !print '(i5,2f10.1,2f10.4,e12.4)', niter, self.pos.x_pos, self.pos.y_pos, z_bed, w_depth, c_f   ! delme
 
   ! *** Determine bottom shear stress at all intersection points
   !     of the bottom with propwash velocity field
@@ -1056,7 +1055,7 @@ subroutine calc_erosive_flux(self, debug)
         !c_f = 0.01 * self.ship.prop_diam/d2                                  ! *** Bottom friction coefficient - Use constant c_f (2021-06-28)
         shear = 0.5 * Rhow(cell,ksz(cell)) * c_f * vel2**2                    ! *** Bottom shear in N/m**2        Using resulant magnitude vel2
         self.subgrid_mesh(j,i).var(2) = shear                                 ! *** Shear in Pascals
-
+        !
         ! *** Determine erosion rate based on the shear stress
         if( ISTRAN(6)+ISTRAN(7) > 0 )then
           IF( LBED(cell) ) CYCLE                                              ! *** Bypass hard bottom cells

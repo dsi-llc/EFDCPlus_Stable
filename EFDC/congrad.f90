@@ -18,6 +18,7 @@ SUBROUTINE CONGRAD(NOPTIMAL, LDMOPT)
 
   USE GLOBAL  
   USE EFDCOUT
+  Use Allocate_Initialize      
   Use Variables_MPI
   Use Mod_Map_Write_EE_Binary
   
@@ -37,31 +38,22 @@ SUBROUTINE CONGRAD(NOPTIMAL, LDMOPT)
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: RCG
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: TMPCG  
   
-  ! *** delme
+  ! *** Reporting
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: ALPHAs
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: BETAs
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: RPCGs  
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: RSQs  
-  ! *** delme
 
   IF( .NOT. ALLOCATED(PCG) )THEN
-    ALLOCATE(PCG(LCM))  
-    ALLOCATE(RCG(LCM))  
-    ALLOCATE(TMPCG(LCM))
-    PCG=0.0
-    RCG=0.0
-    TMPCG=0.0 
+    Call AllocateDSI(PCG,   LCM, 0.0)  
+    Call AllocateDSI(RCG,   LCM, 0.0)  
+    Call AllocateDSI(TMPCG, LCM, 0.0)
     
-    ! *** delme
-    ALLOCATE(ALPHAs(ITERM+1))  
-    ALLOCATE(BETAs(ITERM+1))  
-    ALLOCATE(RPCGs(ITERM+1))  
-    ALLOCATE(RSQs(ITERM+1))  
-    ALPHAs = 0.
-    BETAS = 0.
-    RPCGs = 0.
-    RSQs = -1.
-    ! *** delme
+    ! *** Reporting
+    Call AllocateDSI(ALPHAs, ITERM+1,  0.0)  
+    Call AllocateDSI(BETAs,  ITERM+1,  0.0)  
+    Call AllocateDSI(RPCGs,  ITERM+1,  0.0)  
+    Call AllocateDSI(RSQs,   ITERM+1, -1.0)  
   ENDIF
 
   ! *** START THE TIMING
@@ -86,12 +78,11 @@ SUBROUTINE CONGRAD(NOPTIMAL, LDMOPT)
   ENDDO
   !$OMP END PARALLEL DO
     
-  ! *** delme
+  ! *** Initialize for reporting
   ALPHAs = 0.
   BETAS = 0.
   RPCGs = 0.
   RSQs = -1.
-  ! delme
   
   RPCG=0.  
   DO L=2,LA 
@@ -126,7 +117,7 @@ SUBROUTINE CONGRAD(NOPTIMAL, LDMOPT)
       PAPCG = PAPCG + APCG(L)*PCG(L)  
     ENDDO  
     ALPHA = RPCG/PAPCG  
-    ALPHAS(ITER) = ALPHA    ! *** delme
+    ALPHAS(ITER) = ALPHA
     !$OMP END SINGLE
     
     !$OMP DO PRIVATE(ND,L,LF,LL)
@@ -154,11 +145,11 @@ SUBROUTINE CONGRAD(NOPTIMAL, LDMOPT)
     RPCG = RPCGN  
     IF( ITER == 1 ) RSQ0 = RSQ*1.E-6
     
-    ! *** delme
+    ! *** Reporting
     BETAS(ITER) = BETA
     RPCGS(ITER) = RPCG
     RSQs(ITER) = RSQ
-    ! *** delme
+
     !$OMP END SINGLE
     
     IF( RSQ > RSQM )THEN
@@ -181,17 +172,6 @@ SUBROUTINE CONGRAD(NOPTIMAL, LDMOPT)
     ENDIF
   
   ENDDO  ! *** END OF ITERATION LOOP
-  
-  ! *** delme
-  if( ISINWV == 2 )then
-    DO L = 2,LA
-      PMCTESTX(1,L) = P(L)
-      PMCTESTX(2,L) = PCG(L)
-      PMCTESTX(3,L) = RCG(L)
-      PMCTESTX(4,L) = TMPCG(L)
-    ENDDO
-  endif
-  ! *** delme
 
   IF( RSQ > RSQM )THEN
     ! *** WET/DRY MAXIMUM ITERATIONS EXCEEDED   

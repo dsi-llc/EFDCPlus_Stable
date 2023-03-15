@@ -115,14 +115,16 @@
         CALL STOPP('ERROR READING SSCOHSEDPROP.INP FILE')
       ENDIF
     end if
-#ifdef _MPI
+#   ifdef _MPI
+    ! ****************************************************************************
     Call Broadcast_Array(TAUDSS, master_id)
     Call Broadcast_Array(WRSPOSS, master_id)
     Call Broadcast_Array(TAURSS, master_id)
     Call Broadcast_Array(TAUNSS, master_id)
     Call Broadcast_Array(TEXPSS, master_id)
     Call Broadcast_Array(DEPBBSS, master_id)
-#endif
+    ! ****************************************************************************
+#   endif
 
   ENDIF
 

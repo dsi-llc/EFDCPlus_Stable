@@ -748,10 +748,12 @@ SUBROUTINE SEDZLJ(L)
       K1 = MIN(MAX(KBT(L)+1,2),KB)
       TEMP = TSED(K1,L) - INITMASS(K1)
       
-      DO NT=1,NTOX
-        TOXB1(L,KBT(L),NT) = TOXB(L,KBT(L),NT)    ! *** Required for bedload transport
-      ENDDO
-    
+      IF( ICALC_BL > 0 )THEN
+        DO NT=1,NTOX
+          TOXB1(L,KBT(L),NT) = TOXB(L,KBT(L),NT)    ! *** Required for bedload transport
+        ENDDO
+      ENDIF
+      
       ! *** ADJUST TOXB CONCENTRATIONS FOR BED LAYER CHANGES
       IF( SURFACE > -1 .AND. TEMP /= 0. .AND. INITMASS(K1) > 0 )THEN
         TEMP1 = TEMP/INITMASS(K1)

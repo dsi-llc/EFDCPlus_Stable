@@ -120,11 +120,8 @@ SUBROUTINE CAL_RPEM
   ENDIF
   HDRY2 = 2.*HDRY
   
-  !$OMP PARALLEL DEFAULT(SHARED)
-  
   ! *** OBTAIN THE ACTIVE CELL LIST
   IF( (ISDRY > 0 .AND. LADRY > 0) .OR. JSRPEM == 1 )THEN
-    !$OMP DO PRIVATE(ND,LF,LL,LN,LP,L)
     DO ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
       LL = MIN(LF+LDMWET-1,LAWET)
@@ -144,26 +141,24 @@ SUBROUTINE CAL_RPEM
       ENDDO
       NLRPEM(ND) = LN
     ENDDO
-    !$OMP END DO
       
     ! *** Report only the fist instance
     IF( JSRPEM == 1 )THEN
-      !$OMP SINGLE
       DO ND = 1,NDM  
         if( process_id == master_id ) WRITE(6,*) 'RPEM DOMAIN LIST (Thread,Count):', ND, NLRPEM(ND)  
         OPEN(mpi_log_unit,FILE = OUTDIR//mpi_log_file,POSITION = 'APPEND')
         WRITE(mpi_log_unit,*) 'RPEM DOMAIN LIST (Thread,Count):', ND, NLRPEM(ND) 
         CLOSE(mpi_log_unit)
       ENDDO
-      !$OMP END SINGLE
     ENDIF
   ENDIF
-  
-  !$OMP DO PRIVATE(ND,LP,L,IWQTRPEM,K) &
-  !$OMP PRIVATE(RATION,TOP,TMPNIT,RATIOP,TMPPO4,WQAVGIO,TMP1)  &
-  !$OMP PRIVATE(RKESSAVG,ALPHATOP,ALPHABOT,TMPEXP,SOURSINK,FACIMP,DTDHWQ) & 
-  !$OMP PRIVATE(TMPWAT,TMPBED,TOP1,TOP2,BOT1,BOT2,BOT3,TMPNH4S,TMPNO3S)   &
-  !$OMP PRIVATE(TMPNH4E,TMPNO3E,WQKESS,RKESSTOP,RKESSBOT,RATIOHP)
+
+  ! *** Main loop over all the active RPEM cells
+  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND, LP, L, IWQTRPEM, K)              &
+  !$OMP PRIVATE(RATION, TOP, TMPNIT, RATIOP, TMPPO4, WQAVGIO, TMP1)              &
+  !$OMP PRIVATE(RKESSAVG, ALPHATOP, ALPHABOT, TMPEXP, SOURSINK, FACIMP, DTDHWQ)  & 
+  !$OMP PRIVATE(TMPWAT, TMPBED, TOP1, TOP2, BOT1, BOT2, BOT3, TMPNH4S, TMPNO3S)  &
+  !$OMP PRIVATE(TMPNH4E, TMPNO3E, WQKESS, RKESSTOP, RKESSBOT, RATIOHP)
   DO ND = 1,NDM  
     ! **********************************************************************C                                                
     ! *** SET TEMPERATURE DEPENDENCY FOR GROWTH AND RESPIRATION 
@@ -173,11 +168,11 @@ SUBROUTINE CAL_RPEM
       IWQTRPEM = NINT((TWQ(L)-WQTDMIN)/WQTDINC)+1
       IF( IWQTRPEM < 1) IWQTRPEM = 1
       IF( IWQTRPEM > NWQTD) IWQTRPEM = NWQTD
-      XLIMTPRPS(L) = RPEMTPRPS(IWQTRPEM)  ! Shoot Production (Growth)                           
-      XLIMTPRPE(L) = RPEMTPRPE(IWQTRPEM)  ! Epiphyte Production (Growth)
-      XLIMTRRPS(L) = RPEMTRRPS(IWQTRPEM)  ! Shoot Respiration
-      XLIMTRRPE(L) = RPEMTRRPE(IWQTRPEM)  ! Epiphyte Respiration
-      XLIMTRRPR(L) = RPEMTRRPR(IWQTRPEM)  ! Root Respiration
+      XLIMTPRPS(L) = RPEMTPRPS(IWQTRPEM)  ! *** Shoot Production (Growth)                           
+      XLIMTPRPE(L) = RPEMTPRPE(IWQTRPEM)  ! *** Epiphyte Production (Growth)
+      XLIMTRRPS(L) = RPEMTRRPS(IWQTRPEM)  ! *** Shoot Respiration
+      XLIMTRRPE(L) = RPEMTRRPE(IWQTRPEM)  ! *** Epiphyte Respiration
+      XLIMTRRPR(L) = RPEMTRRPR(IWQTRPEM)  ! *** Root Respiration
     ENDDO                                                                                                                  
    
     ! **********************************************************************C                                                
@@ -706,10 +701,8 @@ SUBROUTINE CAL_RPEM
     902   CONTINUE                                                                                                          
 
   ENDDO    ! *** END OF DOMAIN LOOP 
-  !$OMP END DO
+  !$OMP END PARALLEL DO
    
-  !$OMP END PARALLEL
-
   ! **********************************************************************C 
   ! *** RESTORE OPEN BOUNDARY CONCENTRATIONS                                               
   IF( IRPEMWC == 0 )THEN
@@ -746,7 +739,7 @@ END SUBROUTINE
 SUBROUTINE RPEMINP_JNP
 
   Use fson
-  Use fson_value_m, Only: fson_value_count, fson_value_get
+  Use mod_fson_value, Only: fson_value_count, fson_value_get
   Use INFOMOD,ONLY:SKIPCOM,READSTR
 
   Character(len = 79), allocatable :: TITLE(:)

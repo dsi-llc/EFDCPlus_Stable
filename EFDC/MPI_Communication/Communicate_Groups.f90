@@ -1613,7 +1613,7 @@ end subroutine Communicate_UVW3
 !                     EFDC+ Developed by DSI, LLC.
 !---------------------------------------------------------------------------!
 
-subroutine Communicate_CON1(IFLAG)
+subroutine Communicate_CON1()
 
   use GLOBAL
   use variables_mpi
@@ -1623,7 +1623,7 @@ subroutine Communicate_CON1(IFLAG)
   Implicit none
 
   !***local variables
-  Integer :: i, j, k, II, L, IW, NCLASS, IBL, IC1, IC2, NVAR, NS, NT, IFLAG
+  Integer :: i, j, k, II, L, IW, NCLASS, IBL, IC1, IC2, NVAR, NS, NT
   Integer :: length_arg
   Integer :: east_west_size   !< Size of the collapsed 1D array containing ghost cell values
   Integer :: north_south_size !< Size of the collapsed 1D array containing ghost cell values
@@ -1644,13 +1644,6 @@ subroutine Communicate_CON1(IFLAG)
   east_west_size   = max_width_y*kcm*2*NACTIVEWC                   ! *** 2 Columns and NACTIVEWC Variables
   north_south_size = max_width_x*kcm*2*NACTIVEWC                   ! *** 2 Rows    and NACTIVEWC Variables
   NVAR = KC*NACTIVEWC
-
-  IF( IFLAG == 1 )THEN
-    ! *** CON2
-    east_west_size   = east_west_size   + max_width_y*kcm*2*NACTIVEWC                   ! *** 2 Columns and NACTIVEWC Variables
-    north_south_size = north_south_size + max_width_x*kcm*2*NACTIVEWC                   ! *** 2 Rows    and NACTIVEWC Variables
-    NVAR = NVAR + KC*NACTIVEWC
-  ENDIF
   
   ! *** Morphology
   !IF( (ISTRAN(6) > 0 .OR. ISTRAN(7) > 0) .AND. IMORPH > 0 )THEN
@@ -1697,14 +1690,7 @@ subroutine Communicate_CON1(IFLAG)
           PSENDW(II) = WCV(IW).VAL0(L,K)
         ENDDO
       ENDDO
-      IF( IFLAG == 1 )THEN
-        DO IW=1,NACTIVEWC
-          DO K = KSZ(L),KC
-            II = II + 1
-            PSENDW(II) = CON2(L,K,IW)
-          ENDDO
-        ENDDO
-      ENDIF
+
     ENDDO
 
     ! *** Morphology
@@ -1732,7 +1718,6 @@ subroutine Communicate_CON1(IFLAG)
       
       NVAR = (KC-KSZ(L)+1)*NACTIVEWC
       II = II + NVAR
-      IF( IFLAG == 1 ) II = II + NVAR
     ENDDO
     length_arg = II 
     CALL DSI_RECV(PRECVE, length_arg, nbr_east)
@@ -1749,14 +1734,6 @@ subroutine Communicate_CON1(IFLAG)
           WCV(IW).VAL0(L,K) = PRECVE(II)
         ENDDO
       ENDDO
-      IF( IFLAG == 1 )THEN
-        DO IW=1,NACTIVEWC
-          DO K = KSZ(L),KC
-            II = II + 1
-            CON2(L,K,IW) = PRECVE(II)
-          ENDDO
-        ENDDO
-      ENDIF
     ENDDO
     
     !! *** Morphology
@@ -1788,14 +1765,6 @@ subroutine Communicate_CON1(IFLAG)
           PSENDE(II) = WCV(IW).VAL0(L,K)
         ENDDO
       ENDDO
-      IF( IFLAG == 1 )THEN
-        DO IW=1,NACTIVEWC
-          DO K = KSZ(L),KC
-            II = II + 1
-            PSENDE(II) = CON2(L,K,IW)
-          ENDDO
-        ENDDO
-      ENDIF
     ENDDO
 
     ! *** Morphology
@@ -1823,7 +1792,6 @@ subroutine Communicate_CON1(IFLAG)
       
       NVAR = (KC-KSZ(L)+1)*NACTIVEWC
       II = II + NVAR
-      IF( IFLAG == 1 ) II = II + NVAR
     ENDDO
     length_arg = II 
     CALL DSI_RECV(PRECVW, length_arg, nbr_west)
@@ -1840,14 +1808,6 @@ subroutine Communicate_CON1(IFLAG)
           WCV(IW).VAL0(L,K) = PRECVW(II)
         ENDDO
       ENDDO
-      IF( IFLAG == 1 )THEN
-        DO IW=1,NACTIVEWC
-          DO K = KSZ(L),KC
-            II = II + 1
-            CON2(L,K,IW) = PRECVW(II)
-          ENDDO
-        ENDDO
-      ENDIF
     ENDDO
     
     ! *** Morphology
@@ -1879,14 +1839,6 @@ subroutine Communicate_CON1(IFLAG)
           PSENDN(II) = WCV(IW).VAL0(L,K)
         ENDDO
       ENDDO
-      IF( IFLAG == 1 )THEN
-        DO IW=1,NACTIVEWC
-          DO K = KSZ(L),KC
-            II = II + 1
-            PSENDN(II) = CON2(L,K,IW)
-          ENDDO
-        ENDDO
-      ENDIF
     ENDDO
     
     ! *** Morphology
@@ -1914,7 +1866,6 @@ subroutine Communicate_CON1(IFLAG)
       
       NVAR = (KC-KSZ(L)+1)*NACTIVEWC
       II = II + NVAR
-      IF( IFLAG == 1 ) II = II + NVAR
     ENDDO
     length_arg = II 
     CALL DSI_RECV(PRECVS, length_arg, nbr_south)
@@ -1931,14 +1882,6 @@ subroutine Communicate_CON1(IFLAG)
           WCV(IW).VAL0(L,K) = PRECVS(II)
         ENDDO
       ENDDO
-      IF( IFLAG == 1 )THEN
-        DO IW=1,NACTIVEWC
-          DO K = KSZ(L),KC
-            II = II + 1
-            CON2(L,K,IW) = PRECVS(II)
-          ENDDO
-        ENDDO
-      ENDIF
     ENDDO
     
     ! *** Morphology
@@ -1970,14 +1913,6 @@ subroutine Communicate_CON1(IFLAG)
           PSENDS(II) = WCV(IW).VAL0(L,K)
         ENDDO
       ENDDO
-      IF( IFLAG == 1 )THEN
-        DO IW=1,NACTIVEWC
-          DO K = KSZ(L),KC
-            II = II + 1
-            PSENDS(II) = CON2(L,K,IW)
-          ENDDO
-        ENDDO
-      ENDIF
     ENDDO
     
     ! *** Morphology
@@ -2005,7 +1940,6 @@ subroutine Communicate_CON1(IFLAG)
       
       NVAR = (KC-KSZ(L)+1)*NACTIVEWC
       II = II + NVAR
-      IF( IFLAG == 1 ) II = II + NVAR
     ENDDO
     length_arg = II 
     CALL DSI_RECV(PRECVN, length_arg, nbr_north)
@@ -2022,14 +1956,6 @@ subroutine Communicate_CON1(IFLAG)
           WCV(IW).VAL0(L,K) = PRECVN(II)
         ENDDO
       ENDDO
-      IF( IFLAG == 1 )THEN
-        DO IW=1,NACTIVEWC
-          DO K = KSZ(L),KC
-            II = II + 1
-            CON2(L,K,IW) = PRECVN(II)
-          ENDDO
-        ENDDO
-      ENDIF
     ENDDO
     
     ! *** Morphology
@@ -2116,6 +2042,7 @@ subroutine Communicate_CON2()
       L = Comm_Cells(I,1,1)
       
       DO IW=1,NACTIVEWC
+        !IF( ISADAC(IACTIVEWC1(IW)) == 1 .AND. ISCDCA(IACTIVEWC1(IW)) == 0 )THEN     DELME - TO DO
         DO K = KSZ(L),KC
           II = II + 1
           PSENDW(II) = FUHUD(L,k,IW)
@@ -2410,6 +2337,8 @@ subroutine Communicate_BEDLOAD(I1, I2)
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: PRECVW
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: PRECVN
   REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: PRECVS
+
+  if( num_Processors == 1 ) return
 
   nSize = I2 - I1 + 1
   east_west_size   = max_width_y*2*2*nSize   ! *** 2 Columns and 2 Variables and nSize sediment classes

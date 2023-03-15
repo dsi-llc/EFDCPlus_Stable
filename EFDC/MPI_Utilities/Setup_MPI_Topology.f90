@@ -34,6 +34,7 @@ Subroutine Setup_MPI_Topology
 
   ! *** Local
   Integer :: ierr, maxsize, nnodes, i, j, i1, edge, inode, iedge
+  Integer :: ndim                                       !< Dimension of the problem, 1D, 2D, 3D, etc. Going to be 2D in our case
   Integer,Allocatable,dimension(:) :: index
   Integer,Allocatable,dimension(:) :: NearestNeighbor
   Integer,Allocatable,dimension(:) :: edges
@@ -75,14 +76,14 @@ Subroutine Setup_MPI_Topology
   else
     ! *** Graph Topology
     ! *** Initial Graph Topology Arrays
-    maxsize = n_x_partitions * n_y_partitions
-    Allocate(index(maxsize))
+    nnodes = active_domains
+    maxsize = n_x_partitions * n_y_partitions       ! *** nnodes
+    Allocate(index(maxsize))                        ! *** nnodes
     Allocate(NearestNeighbor(maxsize))
-    Allocate(edges(maxsize*4))
+    Allocate(edges(maxsize*4))                      ! *** 2*nnodes
     index = 0
     NearestNeighbor = 0
     edges = -1
-    nnodes = active_domains
     
     ! *** Get Index List
     inode = 0
@@ -117,6 +118,12 @@ Subroutine Setup_MPI_Topology
         endif
       enddo
     enddo
+    
+    if(inode /= nnodes) then
+        write(*,*) 'Warning: actual nnodes=',inode,'<>',nnodes
+        nnodes = inode
+    endif
+    if(iedge > 2*nnodes) write(*,*) 'actual nedges=',iedge,'>',2*nnodes
     
     ! *** Set the index array based on NearestNeighbor
     index(1) = NearestNeighbor(1)

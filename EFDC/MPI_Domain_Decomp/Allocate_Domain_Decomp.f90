@@ -68,6 +68,8 @@ Subroutine Allocate_Domain_Decomp
   Call AllocateDSI( H1P_Global,      LCM_Global, 0.0)
   Call AllocateDSI( HWQ_Global,      LCM_Global, 0.0)
   Call AllocateDSI( H2WQ_Global,     LCM_Global, 0.0)
+  Call AllocateDSI( ZBR_Global,      LCM_Global, 0.0)
+  Call AllocateDSI( MVEG_Global,     LCM_Global,   0)
 
   Call AllocateDSI( SHEAR_Global,    LCM_Global, 0.0)
   Call AllocateDSI( SHEAR_Global2,   LCM_Global, 0.0)
@@ -260,6 +262,7 @@ Subroutine Allocate_Domain_Decomp
     Call AllocateDSI( WV_HEIGHT_Global, LCM_Global, 0.0)
     Call AllocateDSI( WV_FREQ_Global,   LCM_Global, 0.0)
     Call AllocateDSI( WV_DIR_Global,    LCM_Global, 0.0)
+    Call AllocateDSI( WV_DISSIPA_Global,LCM_Global, 0.0)
                                        
     Call AllocateDSI( TBX_Global,       LCM_Global, 0.0) 
     Call AllocateDSI( TBY_Global,       LCM_Global, 0.0)

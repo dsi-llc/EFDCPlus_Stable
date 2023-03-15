@@ -67,6 +67,8 @@ Subroutine Communicate_Drifters_RK8(data_to_comm)
 
   Integer :: ierr, status_message(MPI_Status_Size)
 
+  if( num_Processors == 1 ) return
+
   Allocate(send_west_data (global_max_drifters_to_comm))
   Allocate(send_east_data (global_max_drifters_to_comm))
   Allocate(send_north_data(global_max_drifters_to_comm))
@@ -189,6 +191,8 @@ Subroutine Communicate_Drifters_Integer(data_to_comm, iLLA)
   Integer, Allocatable :: recv_south_data(:)
 
   Integer :: ierr, iMap, status_message(MPI_Status_Size)
+
+  if( num_Processors == 1 ) return
 
   Allocate(send_west_data (global_max_drifters_to_comm))
   Allocate(send_east_data (global_max_drifters_to_comm))
@@ -339,6 +343,8 @@ Subroutine Package_Drifters_in_Ghost_RK8(data_to_send, drifter_mapping, packaged
   Integer :: ii
   Integer :: local_drifter_id
 
+  if( num_Processors == 1 ) return
+
   Do ii = 1, global_max_drifters_to_comm
     ! *** Get the local drifter ID that needs to be communicated
     local_drifter_id = drifter_mapping(ii)
@@ -380,6 +386,8 @@ Subroutine Package_Mapping(data_to_send, ghost_drifter_ids, packaged_data, iMap)
   ! *** Local variables
   Integer :: ii
   Integer :: local_drifter_id
+
+  if( num_Processors == 1 ) return
 
   Do ii = 1, global_max_drifters_to_comm
     ! *** Get the local drifter ID that needs to be communicated
@@ -425,6 +433,8 @@ Subroutine Unpack_Recieved_Data_Integer(mapping_id, size_r, recvd_data, size, lo
   Integer :: ii, NP
   Integer :: drifter_val
 
+  if( num_Processors == 1 ) return
+
   Do ii = 1, size_r
     ! *** Add recvd drifter values to the end of the active list of drifters
     ! *** Get the global ID for the new drifter recieved
@@ -465,6 +475,8 @@ Subroutine Unpack_Recieved_Data_RK8(mapping_id, size_r, recvd_data, size, local_
   ! *** Local variables
   Integer :: ii, NP
   Real(RKD) :: drifter_val
+
+  if( num_Processors == 1 ) return
 
   Do ii = 1, size_r
     ! *** Add recvd drifter values to the end of the active list of drifters

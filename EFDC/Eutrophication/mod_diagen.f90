@@ -94,7 +94,7 @@
   !---------------------------------------------------------------------------! 
   SUBROUTINE SMRIN1_JNP    
   Use fson
-  Use fson_value_m, Only: fson_value_count, fson_value_get
+  Use mod_fson_value, Only: fson_value_count, fson_value_get
   Use INFOMOD,ONLY:SKIPCOM,READSTR
   
   Character(len=79), allocatable :: TITLE(:)

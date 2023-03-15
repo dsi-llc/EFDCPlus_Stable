@@ -10,8 +10,9 @@ SUBROUTINE SEDIC
   
   USE GLOBAL
   USE INFOMOD,ONLY:SKIPCOM,READSTR
-  Use Variables_MPI
+
 #ifdef _MPI
+  Use Variables_MPI
   Use Broadcast_Routines
   Use Variables_MPI_Write_Out
 #endif
@@ -727,7 +728,7 @@ SUBROUTINE SEDIC
         ENDIF
     
         ! *** Zero any layers above KBT
-        KT = MIN(KBT(L)-1,1)
+        KT = MAX(KBT(L)-1,1)
         DO K=KT,1,-1
           HBED(L,K)         = 0.
           SEDB(L,K,1:NSCM)  = 0.

@@ -15,7 +15,7 @@
 !> @date 8/29/2019
 !---------------------------------------------------------------------------!
 
-  subroutine communicate_3d_0(partem)
+  subroutine communicate_ghost_3d0(partem)
 
   Use MPI
   Use Variables_mpi
@@ -41,8 +41,9 @@
   Real,save,allocatable,dimension(:)::drecvn
   Real,save,allocatable,dimension(:)::drecvs
 
-  !east_west_size   = (jc-4)*(KC+1)*2 !*** Original
-  east_west_size   = max_width_y*(kcm+1)*4  !*** New
+  if( num_Processors == 1 ) return
+
+  east_west_size   = max_width_y*(kcm+1)*4  
   north_south_size = max_width_x*(kcm+1)*4
   
   IF(.not.allocated(dsendw))THEN
@@ -65,9 +66,7 @@
     drecvn = 0.0
     drecvs = 0.0
   ENDIF
-
-  !*** nbr_west, nbr_east, nbr_south, nbr_north set in Topology setup routines
-
+  
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
@@ -268,7 +267,7 @@
     ENDDO
   ENDIF
 
-  end subroutine communicate_3d_0
+  end subroutine communicate_ghost_3d0
 
     !-----------------------------------------------------------------------
   !---------------------------------------------------------------------------!
@@ -281,7 +280,7 @@
   ! @date 3/31/2020
   !---------------------------------------------------------------------------!
 
-  subroutine Communicate_3d_Real_Zero_LCM(partem)
+  subroutine Communicate_Ghost_LCM0(partem)
 
   use mpi
   use variables_mpi
@@ -306,8 +305,9 @@
   Real,save,allocatable,dimension(:)::drecvn
   Real,save,allocatable,dimension(:)::drecvs
 
-  !east_west_size   = (jc-4)*kc*2 !*** Original
-  east_west_size   = max_width_y*kcm*4  !*** New
+  if( num_Processors == 1 ) return
+
+  east_west_size   = max_width_y*kcm*4
   north_south_size = max_width_x*kcm*4
   
   IF(.not.allocated(dsendw))THEN
@@ -330,8 +330,6 @@
     drecvn = 0.0
     drecvs = 0.0
   ENDIF
-
-  !*** nbr_west, nbr_east, nbr_south, nbr_north set in Topology setup routines
 
   ! ********************************************************************************************
   ! ********************************************************************************************
@@ -501,4 +499,4 @@
   ENDIF
 
 
-  End Subroutine Communicate_3d_Real_Zero_LCM
+  End Subroutine Communicate_Ghost_LCM0

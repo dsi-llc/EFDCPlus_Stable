@@ -34,9 +34,9 @@
 !
 
 module fson
-    use fson_value_m, fson_print => fson_value_print, fson_destroy => fson_value_destroy
-    use fson_string_m
-    use fson_path_m, fson_get => fson_path_get
+    use mod_fson_value, fson_print => fson_value_print, fson_destroy => fson_value_destroy
+    use mod_fson_string
+    use mod_fson_path, fson_get => fson_path_get
 
     implicit none
 

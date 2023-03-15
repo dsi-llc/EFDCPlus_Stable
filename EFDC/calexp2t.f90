@@ -50,7 +50,6 @@ SUBROUTINE CALEXP2T
   USE GLOBAL  
   USE FIELDS
   USE CYCLONE
-  USE Variables_MPI
   Use Variables_Propwash
   Use Variables_Ship
   Use Mod_Active_Ship
@@ -720,6 +719,15 @@ SUBROUTINE CALEXP2T
         FVHJ(L,:)      = 0.0
         FVHJ(LNC(L),:) = 0.0
       ENDIF
+      IF( all_ships(i).ship.num_fixed_cells > 0 )THEN
+        DO NS = 1, all_ships(i).ship.num_fixed_cells
+          L = all_ships(i).ship.fixed_cells(NS)
+          FUHJ(L,:)      = 0.0
+          FUHJ(LEC(L),:) = 0.0
+          FVHJ(L,:)      = 0.0
+          FVHJ(LNC(L),:) = 0.0
+        ENDDO
+      ENDIF      
     ENDDO
   ENDIF
   

@@ -57,11 +57,11 @@
     subroutine ReadCyclones
         use convertwgs84
         use fson
-        use fson_value_m, only: fson_value_count, fson_value_get
+        use mod_fson_value, only: fson_value_count, fson_value_get
     
         type(fson_value), pointer :: json_data, tracks, track, points, item
         type(CycloneTrackPoint), pointer :: pt(:)
-        real(RKD) :: lon(1), lat(1), xutm(1), yutm(1), delT, delX, delY
+        real(RKD) :: lon(1), lat(1), xutm(1), yutm(1), delTT, delX, delY
         integer :: i, j, count
         logical :: file_exists
         
@@ -107,12 +107,12 @@
                 pt(j).Vfx = 0.
                 pt(j).Vfy = 0.
                 if (j > 1) then
-                    delT = 86400.*(pt(j).Time - pt(j-1).Time)
+                    delTT = 86400.*(pt(j).Time - pt(j-1).Time)
                     delX = pt(j).Xc - pt(j-1).Xc
                     delY = pt(j).Yc - pt(j-1).Yc
-                    if (ABS(delT) >= 1.0e-9) then
-                        pt(j).Vfx = delX/delT
-                        pt(j).Vfy = delY/delT
+                    if (ABS(delTT) >= 1.0e-9) then
+                        pt(j).Vfx = delX/delTT
+                        pt(j).Vfy = delY/delTT
                         if (j == 2) then
                             pt(j-1).Vfx = pt(j).Vfx
                             pt(j-1).Vfy = pt(j).Vfy

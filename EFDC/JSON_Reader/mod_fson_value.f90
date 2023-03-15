@@ -31,9 +31,9 @@
 ! Created on March 7, 2012, 10:14 PM
 !
 
-module fson_value_m
+module mod_fson_value
 
-    use fson_string_m
+    use mod_fson_string
 
     implicit none
 
@@ -316,4 +316,4 @@ contains
     end subroutine fson_value_print
        
 
-end module fson_value_m
+end module mod_fson_value

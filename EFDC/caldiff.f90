@@ -20,10 +20,6 @@ SUBROUTINE CALDIFF (CON1,IW)
   !    2014-09       PAUL M. CRAIG     ADDED THE LWET BYPASS APPROACH
 
   USE GLOBAL
-#ifdef _MPI
-  Use MPI
-  Use Variables_MPI
-#endif
 
   IMPLICIT NONE   
   INTEGER,INTENT(IN) :: IW                                                                                                                                                                                                       

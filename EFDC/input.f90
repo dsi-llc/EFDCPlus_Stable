@@ -647,7 +647,7 @@ SUBROUTINE INPUT(TITLE)
     READ(1,*,IOSTAT=ISO) ISTOPT(0), ISSQL, ISAVBMX, ISFAVB, ISINWV, ISLLIM, IFPROX, XYRATIO, BC_EDGEFACTOR
 
     WRITE(7,1002)NCARD
-    WRITE(7,*) ISTOPT(0), ISSQL, ISAVBMX, ISFAVB, ISINWV, IFPROX, XYRATIO, BC_EDGEFACTOR
+    WRITE(7,*) ISTOPT(0), ISSQL, ISAVBMX, ISFAVB, ISINWV, ISLLIM, IFPROX, XYRATIO, BC_EDGEFACTOR
     IF( ISO > 0 ) GOTO 100
   endif
 
@@ -656,6 +656,7 @@ SUBROUTINE INPUT(TITLE)
   Call Broadcast_Scalar(ISAVBMX      , master_id)
   Call Broadcast_Scalar(ISFAVB       , master_id)
   Call Broadcast_Scalar(ISINWV       , master_id)
+  Call Broadcast_Scalar(ISLLIM       , master_id)
   Call Broadcast_Scalar(IFPROX       , master_id)
   Call Broadcast_Scalar(XYRATIO      , master_id)
   Call Broadcast_Scalar(BC_EDGEFACTOR, master_id)
@@ -1888,7 +1889,7 @@ SUBROUTINE INPUT(TITLE)
         READ(1,*,IOSTAT=ISO)ISEDAL,ISNDAL,IALTYP,IALSTUP,ISEDEFF,HBEDAL,COEHEFF,COEHEFF2
 
         WRITE(7,1002)NCARD
-        WRITE(7,*)ISEDAL,ISNDAL,IALTYP,IALSTUP,HBEDAL,COEHEFF,COEHEFF2
+        WRITE(7,*)ISEDAL,ISNDAL,IALTYP,IALSTUP,ISEDEFF,HBEDAL,COEHEFF,COEHEFF2
         IF( ISO > 0 ) GOTO 100
       ENDIF
       ! *** FORCE BED ARMORING OPTION "INITIALIZATION AT STARTUP" TO BE OFF
@@ -1899,6 +1900,7 @@ SUBROUTINE INPUT(TITLE)
     Call Broadcast_Scalar(ISNDAL  , master_id)
     Call Broadcast_Scalar(IALTYP  , master_id)
     Call Broadcast_Scalar(IALSTUP , master_id)
+    Call Broadcast_Scalar(ISEDEFF , master_id)
     Call Broadcast_Scalar(HBEDAL  , master_id)
     Call Broadcast_Scalar(COEHEFF , master_id)
     Call Broadcast_Scalar(COEHEFF2, master_id)
@@ -1936,7 +1938,6 @@ SUBROUTINE INPUT(TITLE)
     Call Broadcast_Scalar(SEDVRDT , master_id)
 
     IF( IBMECH == 0 )THEN
-      SNDVDRD = BEDPORC/(1.-BEDPORC)
       SEDVDRM = SEDVDRD
     END IF
 
@@ -2110,6 +2111,7 @@ SUBROUTINE INPUT(TITLE)
     Call Broadcast_Array(TAUR           , master_id)
     Call Broadcast_Array(TAUN           , master_id)
     Call Broadcast_Array(TCSHIELDS      , master_id)
+    Call Broadcast_Array(SEDDIA         , master_id)
     Call Broadcast_Array(ISLTAUC        , master_id)
     Call Broadcast_Array(IBLTAUC        , master_id)
     Call Broadcast_Array(IROUSE         , master_id)
@@ -2212,7 +2214,7 @@ SUBROUTINE INPUT(TITLE)
         READ(1,*,IOSTAT=ISO) NDUM,TOX_BLK_KW(NT), TOX_BLK_KB(NT), TOX_BLK_MXD(NT), TOX_BIO_KW(NT), TOX_BIO_KB(NT), TOX_BIO_MXD(NT), &
           TOX_BIO_Q10W(NT), TOX_BIO_Q10B(NT), TOX_BIO_TW(NT), TOX_BIO_TB(NT)
         WRITE(7,1002)NCARD
-        WRITE(7,*)  NDUM,TOX_BLK_KW(NT), TOX_BLK_KB(NT), TOX_BIO_MXD(NT), TOX_BIO_KW(NT), TOX_BIO_KB(NT), TOX_BIO_MXD(NT), &
+        WRITE(7,*)  NDUM,TOX_BLK_KW(NT), TOX_BLK_KB(NT), TOX_BLK_MXD(NT), TOX_BIO_KW(NT), TOX_BIO_KB(NT), TOX_BIO_MXD(NT), &
           TOX_BIO_Q10W(NT), TOX_BIO_Q10B(NT), TOX_BIO_TW(NT), TOX_BIO_TB(NT)
         IF( ISO > 0 ) GOTO 100
       ENDDO
@@ -2221,7 +2223,7 @@ SUBROUTINE INPUT(TITLE)
 
     Call Broadcast_Array(TOX_BLK_KW     , master_id)
     Call Broadcast_Array(TOX_BLK_KB     , master_id)
-    Call Broadcast_Array(TOX_BIO_MXD    , master_id)
+    Call Broadcast_Array(TOX_BLK_MXD    , master_id)
     Call Broadcast_Array(TOX_BIO_KW      , master_id)
     Call Broadcast_Array(TOX_BIO_KB      , master_id)
     Call Broadcast_Array(TOX_BIO_MXD     , master_id)
@@ -3859,134 +3861,74 @@ SUBROUTINE INPUT(TITLE)
   IMX_Global = 0
   JMX_Global = 0
   
-  IF( ISVEG /= 1 )THEN
-    ! *** READ DXDY WITHOUT VEGETATION
-    DO LL=2,LA_GLOBAL
-      if( process_id == master_id )THEN
-        READ(1,*,IOSTAT=ISO) IGL, JGL, DXIJ, DYIJ, HIJ, BELVIJ, ZBRIJ
-        IF( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE DXDY.INP')
-        
-        ! *** get global versions as they are needed for the NETCDF writing out
-        IMN_Global = MIN(IMN_Global, IGL) 
-        JMN_Global = MIN(JMN_Global, JGL) 
-        IMX_Global = MAX(IMX_Global, IGL) 
-        JMX_Global = MAX(JMX_Global, JGL) 
-        
-      end if
-
-      ! *** Added MPI Domain decomp
-      Call Broadcast_Scalar(IGL,   master_id)
-      Call Broadcast_Scalar(JGL,   master_id)
-      Call Broadcast_Scalar(DXIJ,  master_id)
-      Call Broadcast_Scalar(DYIJ,  master_id)
-      Call Broadcast_Scalar(HIJ,   master_id)
-      Call Broadcast_Scalar(BELVIJ,master_id)
-      Call Broadcast_Scalar(ZBRIJ, master_id)
-
-      LG = LIJ_Global(IGL, JGL)
-      DXP_Global(LG) = DXIJ
-      DYP_Global(LG) = DYIJ
-      HP_Global(LG) = HADADJ + HCVRT*HIJ
-      HP_Global(LG) = MAX(HP_Global(LG), HMIN)
-
-      ! *** Get local i,j
-      I = IG2IL(igl)
-      J = JG2JL(jgl)
-
-      IF( I > 0 .AND. I <= IC )THEN
-        IF( J > 0 .AND. J <= JC )THEN
-          L = LIJ(I,J)
-          IF( L > 0 )THEN
-          
-            IMN = MIN(IMN,I)
-            JMN = MIN(JMN,J)
-            IMX = MAX(IMX,I)
-            JMX = MAX(JMX,J)
-          
-            DXP(L) = DXYCVT*DXIJ
-            DYP(L) = DXYCVT*DYIJ
-            HMP(L) = HADADJ + HCVRT*HIJ
-            HMP(L) = MAX(HMP(L), HMIN)
-
-            BELV(L)  = BELADJ + BELCVRT*BELVIJ
-            BELV1(L) = BELADJ + BELCVRT*BELVIJ
-            ZBR(L)   = ZBRADJ + ZBRCVRT*ZBRIJ
-          End if
-        End if
-      End if
-    ENDDO
-      
-  ELSE
-    ! *** READ DXDY WITH VEGETATION
-    DO LL=2,LA_GLOBAL
-      if( process_id == master_id )THEN
-        READ(1,*,IOSTAT=ISO) IGL, JGL, DXIJ, DYIJ, HIJ, BELVIJ, ZBRIJ, MVEGIJT  ! !SCJ adding MHK devices when MVEGIJT>90
-        IF( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE DXDY.INP')
-        
-        ! *** get global versions as they are needed for the NETCDF writing out
-        IMN_Global = MIN(IMN_Global, IGL) 
-        JMN_Global = MIN(JMN_Global, JGL) 
-        IMX_Global = MAX(IMX_Global, IGL) 
-        JMX_Global = MAX(JMX_Global, JGL) 
-        
-      endif
-
-      Call Broadcast_Scalar(IGL,     master_id)
-      Call Broadcast_Scalar(JGL,     master_id)
-      Call Broadcast_Scalar(DXIJ,    master_id)
-      Call Broadcast_Scalar(DYIJ,    master_id)
-      Call Broadcast_Scalar(HIJ,     master_id)
-      Call Broadcast_Scalar(BELVIJ,  master_id)
-      Call Broadcast_Scalar(ZBRIJ,   master_id)
-      Call Broadcast_Scalar(MVEGIJT, master_id)
-
-      ! *** Make sure the master gets HMP global exactly from input file
-      LG = LIJ_Global(IGL,JGL)
-      DXP_Global(LG) = DXIJ
-      DYP_Global(LG) = DYIJ
-      HP_Global(LG) = HADADJ + HCVRT*HIJ
-      HP_Global(LG) = MAX(HP_Global(LG), HMIN)
-        
-      ! *** Get local i,j
-      I = IG2IL(igl)
-      J = JG2JL(jgl)
-        
-      IF( I > 0 .AND. I <= IC )THEN
-        IF( J > 0 .AND. J <= JC )THEN
-          L = LIJ(I,J)
-          IF( L > 0 )THEN
-            L=LIJ(I,J)
-            IMN = MIN(IMN,I)
-            JMN = MIN(JMN,J)
-            IMX = MAX(IMX,I)
-            JMX = MAX(JMX,J)
-            DXP(L) = DXYCVT*DXIJ
-            DYP(L) = DXYCVT*DYIJ
-            HMP(L) = HADADJ + HCVRT*HIJ
-            HMP(L) = MAX(HMP(L),HMIN)
-        
-            BELV(L)  = BELADJ + BELCVRT*BELVIJ
-            BELV1(L) = BELADJ + BELCVRT*BELVIJ
-            ZBR(L)   = ZBRADJ + ZBRCVRT*ZBRIJ
-            MVEGL(L) = MVEGIJT
-              
-            ! ***  MHK
-            IF( MVEGIJT > 90 )THEN
-              LMHK = .TRUE.
-              ITURB = ITURB+1
-              IJLTURB(ITURB,1) = I
-              IJLTURB(ITURB,2) = J
-              IJLTURB(ITURB,3) = LIJ(I,J)
-            ENDIF
-          End if
-        End if
-      End if
-    ENDDO
-  ENDIF
-    
+  ! *** READ DXDY WITHOUT VEGETATION
   if( process_id == master_id )THEN
+    MVEGIJT = 0
+    DO LP = 2,LA_Global
+      IF( ISVEG > 0 )THEN
+        READ(1,*,IOSTAT=ISO) IGL, JGL, DXIJ, DYIJ, HIJ, BELVIJ, ZBRIJ, MVEGIJT
+      ELSE
+        READ(1,*,IOSTAT=ISO) IGL, JGL, DXIJ, DYIJ, HIJ, BELVIJ, ZBRIJ
+      ENDIF
+      IF( IGL < 2 .OR. IGL > IC_GLOBAL-1 ) ISO = 3
+      IF( JGL < 2 .OR. JGL > JC_GLOBAL-1 ) ISO = 4
+      IF( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE DXDY.INP')
+      
+      LG = LIJ_GLOBAL(IGL,JGL)
+        
+      DXP_Global(LG)  = DXIJ
+      DYP_Global(LG)  = DYIJ
+      HP_Global(LG)   = HADADJ + HCVRT*HIJ
+      HP_Global(LG)   = MAX(HP_Global(LG), HMIN)
+      BELV_GLOBAL(LG) = BELADJ + BELCVRT*BELVIJ
+      ZBR_GLOBAL(LG)  = ZBRADJ + ZBRCVRT*ZBRIJ
+      MVEG_GLOBAL(LG) = MVEGIJT
+      
+      ! *** get global versions as they are needed for the NETCDF writing out
+      IMN_Global = MIN(IMN_Global, IGL) 
+      JMN_Global = MIN(JMN_Global, JGL) 
+      IMX_Global = MAX(IMX_Global, IGL) 
+      JMX_Global = MAX(JMX_Global, JGL) 
+    ENDDO  
+    
     CLOSE(1)
   end if
+
+  Call Broadcast_Array(DXP_Global,  master_id)
+  Call Broadcast_Array(DYP_Global,  master_id)
+  Call Broadcast_Array(HP_Global,   master_id)
+  Call Broadcast_Array(BELV_Global, master_id)
+  Call Broadcast_Array(ZBR_Global,  master_id)
+  Call Broadcast_Array(MVEG_Global, master_id)
+
+  Call Broadcast_Scalar(IMN_Global, master_id)
+  Call Broadcast_Scalar(JMN_Global, master_id)
+  Call Broadcast_Scalar(IMX_Global, master_id)
+  Call Broadcast_Scalar(JMX_Global, master_id)
+
+  ! *** Map to Local Domain
+  DO LG=2,LA_Global
+    L = Map2Local(LG).LL
+    IF( L > 1 )THEN  
+      DXP(L) = DXP_Global(LG)
+      DYP(L) = DYP_Global(LG)
+      HP(L)  = HP_Global(LG)
+      HMP(L) = HP_Global(LG)
+      BELV(L)  = BELV_Global(LG)
+      BELV1(L) = BELV_Global(LG)
+      ZBR(L)   = ZBR_Global(LG)
+      MVEGL(L) = MVEG_Global(LG)
+      
+      ! ***  MHK
+      IF( MVEGL(L) > 90 )THEN
+        LMHK = .TRUE.
+        ITURB = ITURB + 1
+        IJLTURB(ITURB,1) = Map2Local(LG).IL
+        IJLTURB(ITURB,2) = Map2Local(LG).JL
+        IJLTURB(ITURB,3) = L
+      ENDIF
+    ENDIF
+  ENDDO
 
   ! *** OPEN FILE MODDXDY.INP TO MODIFY INPUT VALUES OF DX AND DY
   IF( IMDXDY > 0 )THEN
@@ -6231,6 +6173,7 @@ SUBROUTINE INPUT(TITLE)
     Call Broadcast_Array(TAGWSER, master_id)
     Call Broadcast_Array(IGWSER, master_id)
     Call Broadcast_Array(GWSER,  master_id)
+    Call Broadcast_Array(GWCSER,  master_id)
     Call Broadcast_Array(TGWSER, master_id)
 
   ENDIF
@@ -7464,15 +7407,15 @@ SUBROUTINE INPUT(TITLE)
               IF( ISO > 0 ) CALL STOPP('ISER.INP: READING ERROR')
             
               DO M=1,TSICE(NS).NREC
-                ! *** TSICE(NS).VAL(M,1) is the fraction of ice coverage.  
-                ! *** Ice thickness (RICETHKS from ICECOVER.INP) was a legacy approach that was not used in EFDC.  Removed in EFDC+
+                ! *** TSICE(NS).VAL(M,1) ice on/off flag.  
+                ! *** TSICE(NS).VAL(M,2) is ice thickness, a legacy approach that was never used in EFDC
                 READ(1,*,IOSTAT=ISO) TSICE(NS).TIM(M),TSICE(NS).VAL(M,1)
             
-                IF( TSICE(NS).VAL(M,1) > 1.0 )THEN
-                  TSICE(NS).VAL(M,2) = 1.0
-                ELSE
-                  TSICE(NS).VAL(M,2) = 0.0
-                ENDIF
+                IF( TSICE(NS).VAL(M,1) > 0.0 )THEN    ! *** VAL(M,2) is not used, for display only
+                  TSICE(NS).VAL(M,2) = RICETHK0       ! *** VAL(M,2) is not used, for display only
+                ELSE                                  ! *** VAL(M,2) is not used, for display only
+                  TSICE(NS).VAL(M,2) = 0.0            ! *** VAL(M,2) is not used, for display only
+                ENDIF                                 ! *** VAL(M,2) is not used, for display only
                 IF( ISO > 0 ) CALL STOPP('ISER.INP: READING ERROR')
               ENDDO
             

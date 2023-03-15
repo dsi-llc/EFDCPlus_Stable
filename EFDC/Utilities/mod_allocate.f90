@@ -177,11 +177,11 @@ SUBROUTINE AllocateDSI_Real3(ArrIn, size1, size2, size3, val)
   
   if( size1 > 0 .and. size2 > 0  .and. size3 > 0 )then
     Allocate(ArrIn(size1, size2, size3))
-  elseif( size1 < 0 .and. size2 > 0 .and. size3 > 0 )then
+  elseif( size1 <= 0 .and. size2 > 0 .and. size3 > 0 )then
     Allocate(ArrIn(0:abs(size1), size2, size3))
-  elseif( size1 > 0 .and. size2 < 0 .and. size3 > 0 )then
+  elseif( size1 > 0 .and. size2 <= 0 .and. size3 > 0 )then
     Allocate(ArrIn(size1, 0:abs(size2), size3))
-  elseif( size1 > 0 .and. size2 > 0 .and. size3 < 0 )then
+  elseif( size1 > 0 .and. size2 > 0 .and. size3 <= 0 )then
     Allocate(ArrIn(size1, size2, 0:abs(size3)))
   else
     Allocate(ArrIn(0:abs(size1), 0:abs(size2), 0:abs(size3)))

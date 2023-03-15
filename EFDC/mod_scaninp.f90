@@ -1387,7 +1387,7 @@ END SUBROUTINE
 
 SUBROUTINE SCANQWSER
   Use fson
-  Use fson_value_m, Only: fson_value_count, fson_value_get
+  Use mod_fson_value, Only: fson_value_count, fson_value_get
   INTEGER :: NTMP,I,J,M,NV,NS
   REAL(RKD)   :: R,T,Q
   Type(fson_value), Pointer :: json_data
@@ -1599,7 +1599,7 @@ SUBROUTINE SCANWQ
   Use SHELLFISHMOD
   Use WQ_RPEM_MODULE
   Use fson
-  Use fson_value_m, Only: fson_value_count, fson_value_get
+  Use mod_fson_value, Only: fson_value_count, fson_value_get
   Use INFOMOD, Only:SKIPCOM 
   
   Character(len=2)   :: SNUM 
@@ -2215,7 +2215,7 @@ END SUBROUTINE SCNTXSED
 SUBROUTINE SCANPROPWASH
 
   Use fson
-  Use fson_value_m, Only: fson_value_count, fson_value_get
+  Use mod_fson_value, Only: fson_value_count, fson_value_get
 
   Type(fson_value), Pointer :: json_data
   

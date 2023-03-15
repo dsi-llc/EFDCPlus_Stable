@@ -412,7 +412,7 @@
       !
       IF( NCTBC /= NTSTBC .AND. ISBAL >= 1 )THEN
         CALL CALBAL1
-        NTMP=MOD(N,2)
+        NTMP=MOD(NCTBC,2)
         IF( NTMP == 0 )THEN
           CALL CBALEV1
         ELSE
@@ -701,7 +701,8 @@
       !
       !----------------------------------------------------------------------C
       IF( ISWQFLUX == 1 )THEN
-        NTMP=MOD(N,2)
+        NTMP1 = MOD(N,2)  ! delme
+        NTMP = MOD(NCTBC,2)
         IF( ISTL == 3 ) DTWQ = DTWQ + DT
         IF( NTMP == 0 .AND. ISTL == 3 )THEN
 
@@ -801,7 +802,7 @@
 
       IF( NCTBC /= NTSTBC .AND. ISBAL >= 1 )THEN
         CALL CALBAL4
-        NTMP=MOD(N,2)
+        NTMP=MOD(NCTBC,2)
         IF( NTMP == 0 )THEN
           CALL CBALEV4
         ELSE
@@ -1045,7 +1046,7 @@
       ! *** *******************************************************************C
       ! *** CALCULATE MEAN MASS TRANSPORT FIELD
       IF( (ISSSMMT > 0 .OR. ISWASP > 0) .AND. RESSTEP > 0. )THEN
-        NTMP = MOD(N,2)
+        NTMP = MOD(NCTBC,2)
         IF( ISTL == 3 .AND. NTMP == 0 ) CALL CALMMT
       ENDIF
 
@@ -1141,7 +1142,7 @@
       !
       IF( ISBAL >= 1 )THEN
         CALL CALBAL5
-        NTMP=MOD(N,2)
+        NTMP=MOD(NCTBC,2)
         IF( NTMP == 0 )THEN
           CALL CBALEV5
         ELSE

@@ -6,16 +6,17 @@
 ! Copyright 2021-2022 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-  !---------------------------------------------------------------------------!
-  ! Module: Mod_Map_Write_EE_Binary
-  !
-  !> @details
-  !
-  !> @author Zander Mausolff
-  !> @date 1/8/2019
-  !> @Updated in 2020 and 2021 by Paul M. Craig and Duc Kien TRAN
-  !---------------------------------------------------------------------------!
-  Module Mod_Map_Write_EE_Binary
+
+!---------------------------------------------------------------------------!
+! Module: Mod_Map_Write_EE_Binary
+!
+!> @details
+!
+!> @author Zander Mausolff
+!> @date 1/8/2019
+!> @Updated in 2020 and 2021 by Paul M. Craig and Duc Kien TRAN
+!---------------------------------------------------------------------------!
+Module Mod_Map_Write_EE_Binary
 
   Use GLOBAL
   USE WQ_DIAGENESIS
@@ -80,7 +81,7 @@ Subroutine Map_Write_EE_Binary
     !IF( ISFFARM > 0) CALL SHELLFISHOUT() ! @todo shellfish update
   ENDIF
 
-  End Subroutine Map_Write_EE_Binary
+End Subroutine Map_Write_EE_Binary
 
 !---------------------------------------------------------------------------!
 ! Subroutine: Map_Write_WSOUT
@@ -210,7 +211,7 @@ Subroutine Map_Write_WCOUT
   Implicit None
 
   ! *** Local variables
-  Integer :: i,j,m
+  Integer :: i,j,l
 
   INTEGER,TARGET,ALLOCATABLE,DIMENSION(:) :: LWC_temp_gl
   INTEGER,TARGET,ALLOCATABLE,DIMENSION(:) :: LEC_temp_gl
@@ -219,6 +220,7 @@ Subroutine Map_Write_WCOUT
   REAL,TARGET,ALLOCATABLE,DIMENSION(:) :: WVHEIGHT_temp_gl
   REAL,TARGET,ALLOCATABLE,DIMENSION(:) :: WVFREQ_temp_gl
   REAL,TARGET,ALLOCATABLE,DIMENSION(:) :: WVDIR_temp_gl
+  REAL,TARGET,ALLOCATABLE,DIMENSION(:) :: WVDISSIPA_temp_gl
 
   Allocate(LWC_temp_gl(LCM))
   Allocate(LEC_temp_gl(LCM))
@@ -227,6 +229,7 @@ Subroutine Map_Write_WCOUT
   Allocate(WVHEIGHT_temp_gl(LCM))
   Allocate(WVFREQ_temp_gl(LCM))
   Allocate(WVDIR_temp_gl(LCM))
+  Allocate(WVDISSIPA_temp_gl(LCM))
 
   LEC_temp_gl      = 0
   LNC_temp_gl      = 0
@@ -270,32 +273,32 @@ Subroutine Map_Write_WCOUT
   !*** Need global versions of these for the shear calculation which occurs during the writing out
   j = j + 1
   ! *** need to convert local L to global L
-  do m = 1, LA
-    LWC_temp_gl(m) = Map2Global(LWC(m)).LG
+  do l = 1, LA
+    LWC_temp_gl(l) = Map2Global(LWC(l)).LG
   end do
 
   Call Assign_Loc_Glob_For_Write(j, size(LWC_temp_gl,1), LWC_temp_gl, size(LWC_Global, 1), LWC_Global)
 
   j = j + 1
   ! *** need to convert local L to global L
-  do m = 1, LA
-    LEC_temp_gl(m) = Map2Global(LEC(m)).LG
+  do l = 1, LA
+    LEC_temp_gl(l) = Map2Global(LEC(l)).LG
   end do
 
   Call Assign_Loc_Glob_For_Write(j, size(LEC_temp_gl,1), LEC_temp_gl, size(LEC_Global, 1), LEC_Global)
 
   j = j + 1
   ! *** need to convert local L to global L
-  do m = 1, LA
-    LSC_temp_gl(m) = Map2Global(LSC(m)).LG
+  do l = 1, LA
+    LSC_temp_gl(l) = Map2Global(LSC(l)).LG
   end do
 
   Call Assign_Loc_Glob_For_Write(j, size(LSC_temp_gl,1), LSC_temp_gl, size(LSC_Global, 1), LSC_Global)
 
   j = j + 1
   ! *** need to convert local L to global L
-  do m = 1, LA
-    LNC_temp_gl(m) = Map2Global(LNC(m)).LG
+  do l = 1, LA
+    LNC_temp_gl(l) = Map2Global(LNC(l)).LG
   end do
 
   Call Assign_Loc_Glob_For_Write(j, size(LNC_temp_gl,1), LNC_temp_gl, size(LNC_Global, 1), LNC_Global)
@@ -303,21 +306,21 @@ Subroutine Map_Write_WCOUT
   ! @todo develop interface for handling these types
   IF( ISWAVE >= 3 )THEN
     j = j + 1
-    do m = 1, LA
-      WVHEIGHT_temp_gl(m) = WV(m).HEIGHT
+    do l = 1, LA
+      WVHEIGHT_temp_gl(l) = WV(l).HEIGHT
     end do
 
     Call Assign_Loc_Glob_For_Write(j, size(WVHEIGHT_temp_gl,1), WVHEIGHT_temp_gl, size(WV_HEIGHT_Global,1), WV_HEIGHT_Global)
 
     j = j + 1
-    do m = 1, LA
-      WVFREQ_temp_gl(m) = WV(m).FREQ
+    do l = 1, LA
+      WVFREQ_temp_gl(l) = WV(l).FREQ
     end do
     Call Assign_Loc_Glob_For_Write(j, size(WVFREQ_temp_gl,1), WVFREQ_temp_gl, size(WV_FREQ_Global,1), WV_FREQ_Global)
 
     j = j + 1
-    do m = 1, LA
-      WVDIR_temp_gl(m) = WV(m).DIR
+    do l = 1, LA
+      WVDIR_temp_gl(l) = WV(l).DIR
     end do
     Call Assign_Loc_Glob_For_Write(j, size(WVDIR_temp_gl,1), WVDIR_temp_gl, size(WV_DIR_Global, 1), WV_DIR_Global)
 
@@ -325,8 +328,11 @@ Subroutine Map_Write_WCOUT
 
   IF( ISWAVE == 4 )THEN
     j = j + 1
-    Call Assign_Loc_Glob_For_Write(j, size(WV.DISSIPA(KC),1), WV.DISSIPA(KC), &
-      size(WV_Global.DISSIPA(KC),1), WV_Global.DISSIPA(KC))
+    do l = 1, LA
+      WVDISSIPA_temp_gl(l) = WV(l).DISSIPA(KC)
+    enddo
+    Call Assign_Loc_Glob_For_Write(j, size(WVDISSIPA_temp_gl,1), WVDISSIPA_temp_gl, &
+      size(WV_DISSIPA_Global,1), WV_DISSIPA_Global)
 
     j = j + 1
     Call Assign_Loc_Glob_For_Write(j, size(WVHUU,1), size(WVHUU,2), WVHUU, &
@@ -479,7 +485,7 @@ Subroutine Map_Write_WCOUT
   deallocate(WVFREQ_temp_gl)
   deallocate(WVDIR_temp_gl)
 
-  End Subroutine Map_Write_WCOUT
+End Subroutine Map_Write_WCOUT
 
 !---------------------------------------------------------------------------!
 ! Subroutine: Map_Write_SEDZLJOUT
@@ -628,7 +634,7 @@ Subroutine Map_Write_SEDZLJOUT
   Deallocate(Gl_Reverse_Temp_2D_BULKDENS)
   Deallocate(Gl_Reverse_Temp_3D)
 
-  End Subroutine Map_Write_SEDZLJOUT
+End Subroutine Map_Write_SEDZLJOUT
 
 !---------------------------------------------------------------------------!
 ! Subroutine: Map_Write_BEDOUT
@@ -683,7 +689,7 @@ Subroutine Map_Write_BEDOUT
   ! *** Call routine that maps, gathers, and sorts to produce the final Global value
   Call Handle_Calls_MapGatherSort(num_arrays_to_write_out)
 
-  End Subroutine Map_Write_BEDOUT
+End Subroutine Map_Write_BEDOUT
 
 !---------------------------------------------------------------------------!
 ! Subroutine: Map_Write_WQOUT
@@ -709,7 +715,7 @@ Subroutine Map_Write_WQOUT
 
   Call Handle_Calls_MapGatherSort(num_arrays_to_write_out)
 
-  End Subroutine Map_Write_WQOUT
+End Subroutine Map_Write_WQOUT
 
 !---------------------------------------------------------------------------!
 ! Subroutine: Map_Write_SDOUT
@@ -725,7 +731,7 @@ Subroutine Map_Write_SDOUT
   ! *** Local variables
   Integer :: i, j, l
   real :: TEMFAC
-  
+
   j = 0
 
   j = j + 1
@@ -859,19 +865,22 @@ Subroutine Map_Write_RPEMOUT
 
 End Subroutine Map_Write_RPEMOUT
 
-  ! @todo Develop method for handling arrays out
-  !---------------------------------------------------------------------------!
-  ! Subroutine: Handle_Calls_MapGatherSort
-  !
-  !> @details makes calls to 1D,2D,3D Map/Gather/Sort subroutines
-  !
-  !> @param[in] num_arrays_to_write: max number of arrays to write out for the
-  ! respective routine
-  !
-  !> @author Zander Mausolff
-  !> @date 1/9/2019
-  !---------------------------------------------------------------------------!
-  Subroutine Handle_Calls_MapGatherSort(num_arrays_to_write)
+
+! @todo Develop method for handling arrays out
+
+
+!---------------------------------------------------------------------------!
+! Subroutine: Handle_Calls_MapGatherSort
+!
+!> @details makes calls to 1D,2D,3D Map/Gather/Sort subroutines
+!
+!> @param[in] num_arrays_to_write: max number of arrays to write out for the
+! respective routine
+!
+!> @author Zander Mausolff
+!> @date 1/9/2019
+!---------------------------------------------------------------------------!
+Subroutine Handle_Calls_MapGatherSort(num_arrays_to_write)
 
   Use Mod_Map_Gather_Sort
 
@@ -1010,6 +1019,6 @@ End Subroutine Map_Write_RPEMOUT
 
   Dim_Array_Written_Out(:) = 0
 
-  End Subroutine Handle_Calls_MapGatherSort
+End Subroutine Handle_Calls_MapGatherSort
 
-  End module Mod_Map_Write_EE_Binary
+End module Mod_Map_Write_EE_Binary

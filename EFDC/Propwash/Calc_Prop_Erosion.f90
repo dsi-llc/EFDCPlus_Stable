@@ -613,7 +613,7 @@ subroutine add_ship_momentum(FUHJ, FVHJ)
 
   ! *** Local variables
   integer :: i, L, k, ip
-  real    :: DZPU, UHC, UHC1, UHC2, VHB, VHB1, VHB2
+  real    :: DZPU, PSGZU, PSGZV, UHC, UHC1, UHC2, VHB, VHB1, VHB2
   real    :: ANG, COS1, SIN1, PTOP, PBOT, PAREA, FRAC, RATIO, FRAC_POWER
     
   ip = 1
@@ -673,22 +673,26 @@ subroutine add_ship_momentum(FUHJ, FVHJ)
           ENDIF
             
           ! *** Add momentum to layer
+          PSGZU = 0.0
+          IF( SGZU(L,K) > 0.0 ) PSGZU = 1.0/SGZU(L,K)
           UHC2  = -RATIO*ABS(UHC1*PAREA)*UHC1
           IF( SUB(L) < 0.5 .OR. UHC1 > 0.0 )THEN
             ! *** Apply momentum to east face
-            FUHJ(LEC(L),K) = FSGZU(L,K)*UHC2
+            FUHJ(LEC(L),K) = PSGZU*UHC2
           ELSE
             ! *** Apply momentum to west face
-            FUHJ(L,K)      = FSGZU(L,K)*UHC2
+            FUHJ(L,K)      = PSGZU*UHC2
           ENDIF
           
+          PSGZV = 0.0
+          IF( SGZV(L,K) > 0.0 ) PSGZV = 1.0/SGZV(L,K)
           VHB2  = -RATIO*ABS(VHB1*PAREA)*VHB1
           IF( SVB(L) < 0.5 .OR. VHB1 > 0.0 )THEN
             ! *** Apply momentum to north face
-            FVHJ(LNC(L),K) = FSGZV(L,K)*VHB2
+            FVHJ(LNC(L),K) = PSGZV*VHB2
           ELSE
             ! *** Apply momentum to south face
-            FVHJ(L,K)      = FSGZV(L,K)*VHB2
+            FVHJ(L,K)      = PSGZV*VHB2
           ENDIF
           IF( FRAC >= 1.0 ) EXIT
         ENDDO    ! *** Layer Loop

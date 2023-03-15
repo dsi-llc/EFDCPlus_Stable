@@ -25,11 +25,6 @@
   !    2014-09       PAUL M. CRAIG     ADDED THE LWET BYPASS APPROACH
 
   USE GLOBAL 
-  Use Variables_MPI
-
-#ifdef _MPI
-  Use MPI
-#endif
 
   IMPLICIT NONE  
     

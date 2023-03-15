@@ -372,8 +372,7 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
 ! !INPUT/OUTPUT PARAMETERS:
 
-   real(4) , dimension(:,:), intent(inout) :: &
-     array                ! array to be broadcast
+   real(4) , dimension(:,:), intent(inout) :: array                ! array to be broadcast
 
 !EOP
 !BOC

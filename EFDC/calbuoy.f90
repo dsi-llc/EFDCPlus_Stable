@@ -78,10 +78,9 @@ SUBROUTINE CALBUOY(UPDATE)
         DO LP=1,LLWET(K,ND)
           L=LKWET(LP,K,ND)  
 
-          ! *** REPLACE DENSITY B(L,K) WITH BUOYANCY B(L,K)  
-          B(L,K) = 0.  
-        ENDDO  
-      ENDDO  
+          B(L,K) = 0.0                    ! *** Buoyancy [dimensionless]
+        ENDDO
+      ENDDO
 
     ! *** CASE: SALINITY AND NO TEMPERATURE
     ELSEIF( ISTRAN(1) >= 1 .AND. ISTRAN(2) == 0 )THEN  

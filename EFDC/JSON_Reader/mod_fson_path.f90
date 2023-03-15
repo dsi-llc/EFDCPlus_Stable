@@ -25,16 +25,16 @@
 ! DEALINGS IN THE SOFTWARE.
 
 !     
-! File:   fson_path_m.f95
+! File:   mod_fson_path.f95
 ! Author: Joseph A. Levin
 !
 ! Created on March 10, 2012, 11:01 PM
 !
 
-module fson_path_m
+module mod_fson_path
     
-    use fson_value_m 
-    use fson_string_m
+    use mod_fson_value 
+    use mod_fson_string
 
     private
     
@@ -63,7 +63,7 @@ module fson_path_m
     abstract interface
 
        subroutine array_callback_1d(element, i, count)
-         use fson_value_m
+         use mod_fson_value
          implicit none
          type(fson_value), pointer,intent(in) :: element
          integer, intent(in) :: i        ! index
@@ -71,7 +71,7 @@ module fson_path_m
        end subroutine array_callback_1d
 
        subroutine array_callback_2d(element, i1, i2, count1, count2)
-         use fson_value_m
+         use mod_fson_value
          implicit none
          type(fson_value), pointer,intent(in) :: element
          integer, intent(in) :: i1, i2
@@ -775,4 +775,4 @@ contains
 
     end subroutine get_array_2d_char
 
-end module fson_path_m
+end module mod_fson_path

@@ -19,12 +19,13 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !----------------------------------------------------------------------!
 !
-!  RELEASE:         EFDCPlus_11.5
+!  RELEASE:         EFDCPlus_11.6
 !                   Domain Decomposition with MPI
 !                   Propeller Wash 
 !                   New WQ kinetics with user defined algal groups and zooplankton
 !                   SIGMA-Zed (SGZ) Vertical Layering
-!  DATE:            2022-10-06
+!
+!  DATE:            2023-02-04
 !  BY:              DSI, LLC
 !                   EDMONDS, WASHINGTON  98020
 !                   USA
@@ -163,8 +164,9 @@ PROGRAM EFDC
   INTEGER :: COUNT, NSNAPMAX, NT, iStatus, NS, NTMP, NSHOTS, ISNAP, NFDCHIJ
   INTEGER :: ITMPVAL, IFIRST, ILAST, ISO, JDUMY, IISTMP, LPBTMP, LBELMIN
   INTEGER :: L, K, I, J, IP, IS, M, LL, LP, LF, LT, LN, LS, NX, LW, KM, LE, LG, ND, IYEAR, NP, NC, MD
-
-  INTEGER(IK4) :: IERROR, NWR, IU, JU, LU, ID, JD, LD, NJP
+  INTEGER :: IU, JU, KU, LU, ID, JD, KD, LD, NWR, NJP
+  
+  INTEGER(IK4) :: IERROR
   INTEGER(IK4) :: IRET
   INTEGER(IK8) :: NREST,NN
   INTEGER(1)   :: VERSION
@@ -180,30 +182,31 @@ PROGRAM EFDC
   ! *** MPI Variables
   INTEGER(4) :: IERR     !< local MPI error flag
   Integer    :: IIN, JIN
-  Integer    :: size_mpi
   Double Precision :: starting_time, ending_time
   
   ! *** When updating the version data also update the EXE date in the project settings
-  EFDC_VER = '2022-10-06'
+  EFDC_VER = '2023-02-04'
   
   IERR = 0
 #ifdef DEBUGGING
-  !call sleep(20)
+  call sleep(6)
 #endif
 
 #ifdef _MPI
+  ! ****************************************************************************
   ! *** Initialize MPI communicator
   Call Initialize_MPI
 
   ! ***  Write to screen how manh processes/domains are being used for each process
   WRITE(*,11) num_Processors, process_id
 11 FORMAT( '***********************************************************************************',/, &
-           '***  This EFDCPlus run is using:',I6,' MPI domains(s). Preparing domain:',i6,'  ***',/, &
+           '***  This EFDCPlus run is using:',I6,' MPI domain(s).  Preparing domain:',i6,'  ***',/, &
            '***********************************************************************************',/)
 #else
   process_id = 0
   master_id  = 0
   num_Processors   = 1
+  ! ****************************************************************************
 #endif
 
   ! *** GET START TIME OF ELAPSED TIME COUNTER
@@ -263,7 +266,7 @@ PROGRAM EFDC
     !$    WRITE(*,1) num_Processors, NTHREADS
 
 1   FORMAT( '***********************************************************************************',/, &
-            '***  This EFDC+ run will use:',I6,' MPI domains(s) and ',I2,' thread(s) per domain  ***',/, &
+            '***  This EFDC+ run will use:',I6,' MPI domain(s) and ',I2,' thread(s) per domain   ***',/, &
             '***********************************************************************************',/)
   ENDIF
 
@@ -316,8 +319,10 @@ PROGRAM EFDC
   ENDIF !***end calculation on master process
 
 #ifdef _MPI
+  ! ****************************************************************************
   call MPI_BCAST(NTHREADS, 1, MPI_Int, master_id, MPI_Comm_World,ierr)
   call MPI_BARRIER(MPI_Comm_World, ierr)
+  ! ****************************************************************************
 #endif 
 
   ! **  CALL INPUT SUBROUTINE
@@ -836,7 +841,21 @@ PROGRAM EFDC
   ISHELTERVARY = 0
 
   ierr = 0
-  Call MPI_Barrier(MPI_Comm_World, ierr)
+# ifdef _MPI
+  ! ****************************************************************************
+  ! *** MPI communication
+  Call MPI_barrier(MPI_Comm_World, ierr)
+  Call communicate_ghost_cells(DXU, 'DXU')
+  Call communicate_ghost_cells(DYU, 'DYU')
+  Call communicate_ghost_cells(DXV, 'DXV')
+  Call communicate_ghost_cells(DYV, 'DYV')
+  Call communicate_ghost_cells(HMU, 'HMU')
+  Call communicate_ghost_cells(HMV, 'HMV')
+  ! ****************************************************************************
+# endif
+
+  ! *** Read LXLY.INP and set curvature flag
+  ISCURVATURE = .FALSE.
   IF( ISCLO == 1 )THEN
     Call AllocateDSI( R2D_Global, LCM_Global, 8, 0.0)
     
@@ -895,7 +914,7 @@ PROGRAM EFDC
         CUN_Global(LG) = SIN(ANG)
         CVN_Global(LG) = COS(ANG)
       ENDDO
-    ENDIF
+    ENDIF   ! *** End of master process
     
     Call MPI_Barrier(comm_2d, ierr)
     Call Broadcast_Array(R2D_Global, master_id)
@@ -906,12 +925,16 @@ PROGRAM EFDC
     Call Broadcast_Array(CUN_Global, master_id)  
     Call Broadcast_Array(CVN_Global, master_id)  
     
+    FORCSUM = 0.
+
     ! *** Map to Local Domain
-    DO LG=2,LA_GLOBAL
+    DO LG = 2,LA_GLOBAL
+      FORCSUM = FORCSUM + R2D_Global(LG,8)
+      
       L = Map2Local(LG).LL
       IF( L > 1 )THEN
-        DLON(L) = R2D_Global(LG,1)
-        DLAT(L) = R2D_Global(LG,2)
+        DLON(L) = R2D_Global(LG,1)      ! *** This is easting coordinate in meters
+        DLAT(L) = R2D_Global(LG,2)      ! *** This is northing coordinate in meters
           
         CUE(L) = CUE_Global(LG)
         CVE(L) = CVE_Global(LG)
@@ -930,6 +953,10 @@ PROGRAM EFDC
         ENDIF
       ENDIF
     ENDDO
+    FCORC(1)=FCORC(2)
+    FCORC(LC)=FCORC(LA)
+    IF( FORCSUM > 1.0E-6 ) ISCURVATURE = .TRUE.
+
     DEALLOCATE(R2D_Global)
     
 6262 FORMAT('  SINGULAR INVERSE TRANSFORM FROM E,N TO CURV X,Y')
@@ -947,17 +974,6 @@ PROGRAM EFDC
   IF( LSEDZLJ )THEN
     CALL SEDIC
   ENDIF
-
-  ! *** SET CURVATURE FLAG
-  ISCURVATURE = .FALSE.
-  FORCSUM = 0.
-  DO L=2,LA
-    FORCSUM=FORCSUM + FCORC(L)
-  ENDDO
-  IF( FORCSUM > 1.0E-6 ) ISCURVATURE=.TRUE.
-
-  FCORC(1)=FCORC(2)
-  FCORC(LC)=FCORC(LA)
 
   GOTO 3002
 3000 CALL STOPP('READ ERROR FOR FILE LXLY.INP')
@@ -1078,29 +1094,22 @@ PROGRAM EFDC
   ! **  SET BOUNDARY CONDITION SWITCHES
   CALL SETBCS
 
-#ifdef _MPI
-  Call communicate_ghost_cells(DXU, 'DXU')
-  Call communicate_ghost_cells(DYU, 'DYU')
-  Call communicate_ghost_cells(DXV, 'DXV')
-  Call communicate_ghost_cells(DYV, 'DYV')
-  Call communicate_ghost_cells(HMU, 'HMU')
-  Call communicate_ghost_cells(HMV, 'HMV')
-
-  Call communicate_ghost_cells(SUBO, 'SUBO')
-  Call communicate_ghost_cells(SVBO, 'SVBO')
-  Call communicate_ghost_cells(SUB,  'SUB')
-  Call communicate_ghost_cells(SVB,  'SVB')
-  Call communicate_ghost_cells(SAAX, 'SAAX')
-  Call communicate_ghost_cells(SAAY, 'SAAY')
-  Call communicate_ghost_cells(SCAX, 'SCAX')
-  Call communicate_ghost_cells(SCAY, 'SCAY')
-  Call communicate_ghost_cells(SDX,  'SDX')
-  Call communicate_ghost_cells(SDY,  'SDY')
-  Call communicate_ghost_cells(SWB,  'SWB')
-#endif
-
   !---------------------------------------------------------------------------!
 
+  
+# ifdef _MPI
+  ! ****************************************************************************
+  ! *** MPI communication
+  ! *** Communicate SUB/SVB switches
+  Call communicate_ghost_cells(SUB, 'SUB')
+  Call communicate_ghost_cells(SVB, 'SVB')
+  Call communicate_ghost_cells(RSSBCE, 'RSSBCE')
+  Call communicate_ghost_cells(RSSBCW, 'RSSBCW')
+  Call communicate_ghost_cells(RSSBCN, 'RSSBCN')
+  Call communicate_ghost_cells(RSSBCS, 'RSSBCS')
+  ! ****************************************************************************
+# endif
+  
   ! *** ALLOCATE MEMORY FOR VARIABLE TO STORE CONCENTRATIONS AT OPEN BOUNDARIES
   Call AllocateDSI( WQBCCON,  NBCSOP, KCM, NACTIVEWC, 0.0)
   Call AllocateDSI( WQBCCON1, NBCSOP, KCM, NACTIVEWC, 0.0)
@@ -1183,6 +1192,14 @@ PROGRAM EFDC
     ENDIF
   ENDDO
 
+# ifdef _MPI
+  ! ****************************************************************************
+  ! *** MPI communication
+  Call communicate_ghost_cells(DYDI, 'DYDI')
+  Call communicate_ghost_cells(DXDJ, 'DXDJ')
+  ! ****************************************************************************
+# endif
+  
   ! *** SETUP UP EDGE OF HARD BOTTOM REGIONS TO HANDLE BEDLOAD TRYING TO EXIT THE HARD BOTTOM REGION
   IF( ISBEDMAP > 0 )THEN
     IF( (ISTRAN(7) > 0 .AND. ICALC_BL > 0) .OR. (NSEDFLUME > 0 .AND. ICALC_BL > 0) )THEN
@@ -1544,21 +1561,23 @@ PROGRAM EFDC
     ENDDO
 
   ENDDO
-
-#ifdef _MPI
-  Call communicate_ghost_cells(DZC)
-  Call communicate_ghost_cells(DZG)
+  
+# ifdef _MPI
+  ! ****************************************************************************
+  ! *** MPI communication
+  Call Communicate_Ghost_LCM0(SUB3DO)         ! *** Handles special case of having a zero as the starting index for LCM
+  Call Communicate_Ghost_LCM0(SVB3DO)         ! *** Handles special case of having a zero as the starting index for LCM
+  Call Communicate_Ghost_LCM0(SUB3D)          ! *** Handles special case of having a zero as the starting index for LCM
+  Call Communicate_Ghost_LCM0(SVB3D)          ! *** Handles special case of having a zero as the starting index for LCM
   Call communicate_ghost_cells(KSZU, 'KSZU')
   Call communicate_ghost_cells(KSZV, 'KSZV')
-  Call communicate_ghost_cells(CDZKMK)
-  Call communicate_ghost_cells(CDZKK)
-  Call communicate_ghost_cells(CDZKKP)
-  Call communicate_3d_0(DZIC)
-  Call Communicate_3D_0(DZIG)
-  Call Communicate_3D_0(Z)
-  Call Communicate_3D_0(ZZ)
-#endif
-
+  Call communicate_ghost_cells(LSGZU)
+  Call communicate_ghost_cells(LSGZV)
+  !Call communicate_ghost_cells(CDZKK)    ! delme
+  !Call communicate_ghost_cells(CDZKKP)   ! delme
+  ! ****************************************************************************
+# endif
+  
   ! *** SET ACTIVE CELL LIST (WITHOUT WET/DRY CELL CONSIDERATION)
   DO ND=1,NDM
     LF = 2 + (ND-1)*LDM
@@ -2494,6 +2513,29 @@ PROGRAM EFDC
   Call AllocateDSI( LLWETZ, KCM, -NDM,       0)
   Call AllocateDSI( LKWETZ, LCM,  KCM, -NDM, 0)
 
+# ifdef _MPI
+  ! ****************************************************************************
+  ! *** MPI communication - Communicate face values
+  Call communicate_ghost_cells(SGZU)
+  Call communicate_ghost_cells(SGZV) 
+  
+  Call communicate_ghost_cells(CDZDU)
+  Call communicate_ghost_cells(CDZDV)
+  
+  Call communicate_ghost_cells(CDZFU)
+  Call communicate_ghost_cells(CDZFV)
+  
+  Call communicate_ghost_cells(CDZLU)
+  Call communicate_ghost_cells(CDZLV)
+
+  Call communicate_ghost_cells(CDZRU)
+  Call communicate_ghost_cells(CDZRV)
+  
+  Call communicate_ghost_cells(CDZUU)
+  Call communicate_ghost_cells(CDZUV)
+  ! ****************************************************************************
+# endif
+
   DO ND=1,NDM
     DO K=1,KS
       LLWETZ(K,ND) = LLWET(K,ND)
@@ -2529,6 +2571,18 @@ PROGRAM EFDC
     SBXO(L)  = 0.5*SUBO(L)*DYU(L)
     SBYO(L)  = 0.5*SVBO(L)*DXV(L)
   ENDDO
+  
+# ifdef _MPI
+  ! ****************************************************************************
+  ! *** MPI communication - Communicate face values
+  Call communicate_ghost_cells(SBX, 'SBX')
+  Call communicate_ghost_cells(SBY, 'SBY')
+  Call communicate_ghost_cells(SBY, 'SBXO')
+  Call communicate_ghost_cells(SBY, 'SBYO')
+  Call communicate_ghost_cells(SBY, 'HRUO')
+  Call communicate_ghost_cells(SBY, 'HRVO')
+  ! ****************************************************************************
+# endif
 
   ! *** DETERMINE FSGZU/FSGZV FOR GROSS MOMENTUM
   DO L=2,LA
@@ -2538,12 +2592,12 @@ PROGRAM EFDC
       IF( SGZU(L,K) > 0. )THEN
         FSGZU(L,K) = 1./SGZU(L,K)
       ELSE
-        FSGZU(L,K) = 0.
+        FSGZU(L,K) = 0.0
       ENDIF
       IF( SGZV(L,K) > 0. )THEN
         FSGZV(L,K) = 1./SGZV(L,K)
       ELSE
-        FSGZV(L,K) = 0.
+        FSGZV(L,K) = 0.0
       ENDIF
     ENDDO
   ENDDO
@@ -2731,10 +2785,24 @@ PROGRAM EFDC
 
   ENDDO
 
-#ifdef _MPI
-  Call communicate_ghost_cells(SGZV)
-  Call communicate_ghost_cells(SGZU)
-  IF( IGRIDV > 0 .OR. ISBLOCKED > 0 )THEN
+  ! *** Zero momentum switches for cells along active sub-domain boundaries. (MPI)
+  DO L = 1, LC  
+    IF( IL(L) == IC )THEN
+      FSGZU(L,:) = 0.0
+      FSGZV(L,:) = 0.0
+    ENDIF
+    IF( JL(L) == JC )THEN
+      FSGZU(L,:) = 0.0
+      FSGZV(L,:) = 0.0
+    ENDIF
+  ENDDO
+  
+# ifdef _MPI
+  ! ****************************************************************************
+  ! *** MPI communication - Communicate face values
+  Call communicate_ghost_cells(SBX, 'SBX')
+  Call communicate_ghost_cells(SBY, 'SBY')
+  IF( IGRIDV > 0 )THEN
     Call communicate_ghost_cells(BELVW, 'BELVW')
     Call communicate_ghost_cells(BELVE, 'BELVE')
     Call communicate_ghost_cells(BELVS, 'BELVS')
@@ -2747,20 +2815,14 @@ PROGRAM EFDC
     Call communicate_ghost_cells(SGZE)
     Call communicate_ghost_cells(SGZS)
     Call communicate_ghost_cells(SGZN)
-    !Call communicate_ghost_cells(SGZKW)   Reversed indicies.  Uses 0:KCM,LCM
-    !Call communicate_ghost_cells(SGZKE)
-    !Call communicate_ghost_cells(SGZKS)
-    !Call communicate_ghost_cells(SGZKN)
-    Call Communicate_3D_0(ZW)
-    Call Communicate_3D_0(ZE)
-    Call Communicate_3D_0(ZS)
-    Call Communicate_3D_0(ZN)
-    !Call communicate_ghost_cells(ZZW)   Reversed indicies.  Uses 0:KCM,LCM
-    !Call communicate_ghost_cells(ZZE)
-    !Call communicate_ghost_cells(ZZS)
-    !Call communicate_ghost_cells(ZZN)
+  
+    Call communicate_ghost_3d0(ZW)
+    Call communicate_ghost_3d0(ZE)
+    Call communicate_ghost_3d0(ZS)
+    Call communicate_ghost_3d0(ZN)
   ENDIF
-#endif
+  ! ****************************************************************************
+# endif
 
   IF( IGRIDV > 0 )THEN
     DO L=2,LA
@@ -2775,31 +2837,33 @@ PROGRAM EFDC
   ENDIF
 
   ! *** COMPUTE HU/HV FOR INITIAL CONDITIONS
-  DO L=2,LA
-    LW=LWC(L)
-    LS=LSC(L)
-
-    IF( KSZ(LW) > KSZ(L) )THEN
-      HU(L) = MAX( 0.5*HPK(L,KSZ(LW)), HP(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
-    ELSEIF( KSZ(LW) < KSZ(L) )THEN
-      HU(L) = MAX( 0.5*HPK(LW,KSZ(L)), HP(L)*(1.+DZC(LW,KSZ(L))*0.1) )
-    ELSE
-      HU(L) = ( DXYP(L)*HP(L) + DXYP(LW)*HP(LW) )/(DXYP(L) + DXYP(LW))
-    ENDIF
-
-    IF( KSZ(LS) > KSZ(L) )THEN
-      HV(L) = MAX( 0.5*HPK(L,KSZ(LS)), HP(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
-    ELSEIF( KSZ(LS) < KSZ(L) )THEN
-      HV(L) = MAX( 0.5*HPK(LS,KSZ(L)), HP(L)*(1.+DZC(LS,KSZ(L))*0.1) )
-    ELSE
-      HV(L) = ( DXYP(L)*HP(L) + DXYP(LS)*HP(LS) )/(DXYP(L) + DXYP(LS))
-    ENDIF
-
-    HPI(L) = 1./HP(L)
-    HUI(L) = 1./HU(L)
-    HVI(L) = 1./HV(L)
-
-  ENDDO
+  IF( ISRESTI == 0 )THEN
+    DO L=2,LA
+      LW=LWC(L)
+      LS=LSC(L)
+    
+      IF( KSZ(LW) > KSZ(L) )THEN
+        HU(L) = MAX( 0.5*HPK(L,KSZ(LW)), HP(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
+      ELSEIF( KSZ(LW) < KSZ(L) )THEN
+        HU(L) = MAX( 0.5*HPK(LW,KSZ(L)), HP(L)*(1.+DZC(LW,KSZ(L))*0.1) )
+      ELSE
+        HU(L) = ( DXYP(L)*HP(L) + DXYP(LW)*HP(LW) )/(DXYP(L) + DXYP(LW))
+      ENDIF
+    
+      IF( KSZ(LS) > KSZ(L) )THEN
+        HV(L) = MAX( 0.5*HPK(L,KSZ(LS)), HP(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
+      ELSEIF( KSZ(LS) < KSZ(L) )THEN
+        HV(L) = MAX( 0.5*HPK(LS,KSZ(L)), HP(L)*(1.+DZC(LS,KSZ(L))*0.1) )
+      ELSE
+        HV(L) = ( DXYP(L)*HP(L) + DXYP(LS)*HP(LS) )/(DXYP(L) + DXYP(LS))
+      ENDIF
+    
+      HPI(L) = 1./HP(L)
+      HUI(L) = 1./HU(L)
+      HVI(L) = 1./HV(L)
+    
+    ENDDO
+  ENDIF
 
   ! **  INITIALIZE BUOYANCY AND EQUATION OF STATE - ALL CELLS
   N=0
@@ -2807,13 +2871,15 @@ PROGRAM EFDC
   ! *** Make sure to check IF density effects are turned on and bouyancy is intialized correctly
   IF( BSC > 1.E-6 )THEN
     CALL CALBUOY(.FALSE.)
-#ifdef _MPI
-    ! *** Communicate updated B values
+#   ifdef _MPI
+    ! ****************************************************************************
+    ! *** MPI communication
     Call communicate_ghost_cells(B)
     IF( ISTRAN(2) > 0 .AND. ISICE == 4 )THEN
       Call communicate_ghost_cells(RHOW)
     ENDIF
-#endif
+    ! ****************************************************************************
+#   endif
   ENDIF
 
   ! *** COMPUTATIONAL CELL LIST BY SUB-DOMAIN AND LAYER (WET/DRY CONSIDERED)
@@ -3139,22 +3205,6 @@ PROGRAM EFDC
     ENDDO
   ENDIF
 
-#ifdef _MPI
-  Call Broadcast_Scalar(ISCURVATURE, master_id )
-  Call communicate_ghost_cells(DYDI, 'DYDI')
-  Call communicate_ghost_cells(DXDJ, 'DXDJ')
-  Call Communicate_3d_Real_Zero_LCM(SUB3DO) ! Handles special case of having a zero as the starting index
-  Call Communicate_3d_Real_Zero_LCM(SVB3DO) ! Handles special case of having a zero as the starting index
-  Call communicate_ghost_cells(SUB3D)
-  Call communicate_ghost_cells(SVB3D)
-  !Call communicate_ghost_cells(LKSZ)
-  !Call communicate_ghost_cells(LSGZU)
-  !Call communicate_ghost_cells(LSGZV)
-  Call communicate_ghost_cells(FSGZU)
-  Call communicate_ghost_cells(FSGZV)
-#endif
-
-
   ! *** *********************************************************************
   ! *** Call Propwash initialization if specified
   IF( propwash_on )THEN
@@ -3193,7 +3243,8 @@ PROGRAM EFDC
   ! *** INITIALIZE EFDC EXPLORER OUTPUT (SKIP IF CONTINUATION)
   NITER = 0
   IF( ISPPH == 1 .AND. (ISRESTI == 0 .OR. (ISRESTI /= 0 .AND. ICONTINUE == 0)))THEN
-#ifdef _MPI
+#   ifdef _MPI
+    ! ****************************************************************************
     ! *** Get local LA
     Call Get_LA_Local_No_Ghost
     
@@ -3208,7 +3259,8 @@ PROGRAM EFDC
     End if
   
     Call Map_Write_EE_Binary
-#endif
+    ! ****************************************************************************
+#   endif
 
     IF( process_id == master_id )THEN
       CALL EE_LINKAGE(1)
@@ -3348,9 +3400,11 @@ PROGRAM EFDC
     IF( ISPROPWASH > 0 )THEN
       WRITE(6,2005) TPROPW  ,0.
     ENDIF
-#ifdef _MPI
+#   ifdef _MPI
+    ! ****************************************************************************
     WRITE(6,2006) TMPIEE    ,TMPIGH
-#endif
+    ! ****************************************************************************
+#   endif
     WRITE(6,2007) CPUTIME(1),CPUTIME(2)
     WRITE(6,2008) TIME_END  ,TCPU
     WRITE(6,'(//,20(A8,F14.5,/))') ((DSITIME(I),DSITIMING(I)),I=1,13)
@@ -3412,7 +3466,7 @@ PROGRAM EFDC
     WRITE(9,7002) THMDF     ,TVDIF
     WRITE(9,7003) TWQKIN    ,TWQRPEM
     WRITE(9,7004) TWQSED    ,0.
-    WRITE(9,7005) TWQSED    ,0.
+    WRITE(9,7005) TPROPW    ,0.
     WRITE(9,7006) TMPIEE    ,TMPIGH
     WRITE(9,7007) CPUTIME(1),CPUTIME(2)
     WRITE(9,7008) TIME_END  ,TCPU
@@ -3537,7 +3591,7 @@ PROGRAM EFDC
   WRITE(mpi_log_unit,7002) THMDF     ,TVDIF
   WRITE(mpi_log_unit,7003) TWQKIN    ,TWQRPEM
   WRITE(mpi_log_unit,7004) TWQSED    ,0.
-  WRITE(mpi_log_unit,7005) TWQSED    ,0.
+  WRITE(mpi_log_unit,7005) TPROPW    ,0.
   WRITE(mpi_log_unit,7006) TMPIEE    ,TMPIGH
   WRITE(mpi_log_unit,7007) CPUTIME(1),CPUTIME(2)
   WRITE(mpi_log_unit,7008) TIME_END  ,TCPU

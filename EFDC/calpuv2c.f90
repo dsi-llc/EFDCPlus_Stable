@@ -48,7 +48,7 @@ SUBROUTINE CALPUV2C
   IMPLICIT NONE
 
   INTEGER :: NMD, ITERHP, NCORDRY, ICORDRY, ND, LF, LL, L, LP, LS, LN, LW, LE, LHOST, LCHNU, LCHNV, LG
-  INTEGER :: IUW, IUE, IVS, IVN, IFACE, LMAX, LMIN, NTMP, IMAX, IMIN, JMAX, JMIN, I, J, K, NNEGFLG, KM
+  INTEGER :: IUW, IUE, IVS, IVN, IFACE, LMAX, LMIN, NTMP, IFLAG, IMAX, IMIN, JMAX, JMIN, I, J, K, NNEGFLG, KM
   INTEGER, SAVE :: INOTICE, NCORDRYMAX, NCORDRYAVG, ITERMAX, ITERAVG, NITERAVG, NCOUNT
   INTEGER, SAVE :: NOPTIMAL
   INTEGER, SAVE :: LDMOPT
@@ -188,13 +188,15 @@ SUBROUTINE CALPUV2C
   End if
 
   ! *** BEGIN DOMAIN LOOP
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LE,LS,LN,LW,LG,K,TMPX,TMPY,C1,RDRY,EL,EW,ES,NTMP)
-  DO ND=1,NOPTIMAL  
-    LF=2+(ND-1)*LDMOPT  
-    LL=MIN(LF+LDMOPT-1,LA)
+  !$OMP PARALLEL DEFAULT(SHARED)
+  
+  IF( ISDRY > 0 )THEN
+    !$OMP DO PRIVATE(ND,LF,LL,L)
+    DO ND=1,NOPTIMAL  
+      LF=2+(ND-1)*LDMOPT  
+      LL=MIN(LF+LDMOPT-1,LA)
     
-    ! *** SET SWITCHES FOR DRYING AND WETTING  
-    IF( ISDRY > 0 )THEN
+      ! *** SET SWITCHES FOR DRYING AND WETTING  
       DO L=LF,LL  
         ISCDRY(L) = 0
         SUB1(L) = SUB(L)
@@ -207,17 +209,22 @@ SUBROUTINE CALPUV2C
         NNATDRY(ND)=0
         IF( ISBAL > 0 )THEN
           DO L=LF,LL  
-            QDWASTE(L)=0.
+            QDWASTE(L) = 0.0
           ENDDO
         ENDIF
       ENDIF
-
-    ENDIF
+    ENDDO
+    !$OMP END DO
+  ENDIF
+  
+  !$OMP DO PRIVATE(ND,LF,LL,L,LS,LW,IFLAG,TMPX,TMPY)
+  DO ND=1,NOPTIMAL  
+    LF = 2+(ND-1)*LDMOPT  
+    LL = MIN(LF+LDMOPT-1,LA)
 
     IF( BSC > 1.E-6 )THEN
       ! *** CALCULATE EXPLICIT EXTERNAL DENSITY GRADIENTS  
       IF( IGRIDV == 0 )THEN
-        !$OMP SIMD PRIVATE(LW,LS)
         DO L = LF,LL  
           LW=LWC(L) 
           FPGXE(L) = -SBX(L)*HU(L)*GP*((BI2W(L)+BI2W(LW))*(HP(L)-HP(LW))+2.0*HU(L)*(BI1W(L)-BI1W(LW))+(BEW(L)+BEW(LW))*(BELV(L)-BELV(LW)))  
@@ -226,7 +233,6 @@ SUBROUTINE CALPUV2C
           FPGYE(L) = -SBY(L)*HV(L)*GP*((BI2S(L)+BI2S(LS))*(HP(L)-HP(LS))+2.0*HV(L)*(BI1S(L)-BI1S(LS))+(BES(L)+BES(LS))*(BELV(L)-BELV(LS)))  
         ENDDO  
       ELSE
-        !$OMP SIMD PRIVATE(LW,LS)
         DO L=LF,LL  
           LW = LWC(L) 
           FPGXE(L) = -SBX(L)*HU(L)*GP*( (BI2W(L)+BI2E(LW))*(HPW(L)-HPE(LW)) + 2.0*HU(L)*(BI1W(L)-BI1E(LW)) + (BEW(L)+BEE(LW))*(BELVW(L)-BELVE(LW)) )  
@@ -238,7 +244,6 @@ SUBROUTINE CALPUV2C
     ENDIF
     
     ! *** CALCULATE EXPLICIT EXTERNAL UHDYE AND VHDXE EQUATION TERMS  
-    !$OMP SIMD PRIVATE(LW,LS)
     DO L=LF,LL
       LS = LSC(L)
       LW = LWC(L) 
@@ -248,6 +253,7 @@ SUBROUTINE CALPUV2C
     ENDDO  
 
     ! *** SET IMPLICIT BOTTOM AND VEGETATION DRAG AS APPROPRIATE  
+    IFLAG = 0
     IF( ISITB >= 1 )THEN  
       ! *** IMPLICIT BOTTOM DRAG WITH VEGETATION  
       DO L=LF,LL
@@ -257,23 +263,38 @@ SUBROUTINE CALPUV2C
         IF( VHE(L) /= 0.0) TMPY=V(L,KSZV(L))*HV(L)/VHE(L)
         RCX(L) = 1./( 1. + TMPX*RITB*DELT*HUI(L)*STBX(L)*SQRT(VU(L)*VU(L) + U(L,KSZU(L))*U(L,KSZU(L))) + DELT*FXVEGE(L) )
         RCY(L) = 1./( 1. + TMPY*RITB*DELT*HVI(L)*STBY(L)*SQRT(UV(L)*UV(L) + V(L,KSZV(L))*V(L,KSZV(L))) + DELT*FYVEGE(L) )
-        FUHDYE(L) = FUHDYE(L)*RCX(L)
-        FVHDXE(L) = FVHDXE(L)*RCY(L)
       ENDDO
+      IFLAG = 1
     ELSEIF( ISVEG > 0 )THEN
       ! *** IMPLICIT VEGETATION DRAG ONLY.  REDUCE BY THE TOTAL OF ENERGY
       DO L=LF,LL
         !                    S    1/S
         RCX(L) = 1./( 1. + DELT*FXVEGE(L) )  ! *** dimensionless
         RCY(L) = 1./( 1. + DELT*FYVEGE(L) )  ! *** dimensionless
+      ENDDO
+      IFLAG = 1
+    ENDIF
+
+    ! *** Apply implicit momentum adjustment
+    IF( IFLAG > 0 )THEN
+
+      DO L=LF,LL
         FUHDYE(L) = FUHDYE(L)*RCX(L)
         FVHDXE(L) = FVHDXE(L)*RCY(L)
       ENDDO
     ENDIF
+  ENDDO
+  !$OMP END DO
+  
+  !$OMP DO PRIVATE(ND,LF,LL,L,LE,LS,LN,LW,RDRY,EL,EW,ES,K)
+  DO ND=1,NOPTIMAL  
+    LF = 2+(ND-1)*LDMOPT  
+    LL = MIN(LF+LDMOPT-1,LA)
 
     ! *** RESET BOUNDARY CONDITIONS SWITCHES
     IF( ISDRY > 0 )THEN  
 #ifdef _MPI 
+      ! ****************************************************************************
       IF( NITER < 100 .OR. MOD(NITER,50) == 0 .OR. ITERHPM == 0 )THEN
         ! *** FORCE A COMPLETE UPDATE EVERY 100 INTERATIONS
         DO L=LF,LL
@@ -287,7 +308,7 @@ SUBROUTINE CALPUV2C
         DO L=LF,LL
           LE = LEC(L)
           LN = LNC(L)
-          RDRY = SUB(L) + SUB(LE) + SVB(L) + SVB(LN)
+          RDRY = SUB1(L) + SUB1(LE) + SVB1(L) + SVB1(LN)
           
           IF( RDRY < 0.5 )THEN
             IF( HP(L) > HDRY )THEN
@@ -318,7 +339,7 @@ SUBROUTINE CALPUV2C
             ! *** AT LEAST ONE FACE IS INACTIVE.  CHECK DEPTHS
             
             ! *** CHECK EAST/WEST FACES
-            IF( SUB(L) < 0.5 .AND. SUBO(L) > 0.5 )THEN
+            IF( SUB1(L) < 0.5 .AND. SUBO(L) > 0.5 )THEN
               LW = LWC(L)
               IF( LW > 1 )THEN
                 EL = BELV(L)  + HP(L)                       ! *** WSEL OF CURRENT CELL
@@ -373,7 +394,7 @@ SUBROUTINE CALPUV2C
             ENDIF
 
             ! *** CHECK NORTH/SOUTH FACES
-            IF( SVB(L) < 0.5 .AND. SVBO(L) > 0.5 )THEN
+            IF( SVB1(L) < 0.5 .AND. SVBO(L) > 0.5 )THEN
               LS = LSC(L)
               IF( LS > 1 )THEN
                 EL = BELV(L)  + HP(L)
@@ -458,8 +479,16 @@ SUBROUTINE CALPUV2C
         SBX(L) = SBXO(L)  
         SBY(L) = SBYO(L)  
       ENDDO  
-#endif
+      ! ****************************************************************************
+#   endif
     ENDIF
+  ENDDO
+  !$OMP END DO
+  
+  !$OMP DO PRIVATE(ND,LF,LL,L,LE,LS,LN,LW,LG,K,TMPX,TMPY,C1,RDRY,EL,EW,ES)
+  DO ND=1,NOPTIMAL  
+    LF = 2+(ND-1)*LDMOPT  
+    LL = MIN(LF+LDMOPT-1,LA)
 
     ! *** ADVANCE EXTERNAL VARIABLES  
     DO L=LF,LL  
@@ -496,7 +525,6 @@ SUBROUTINE CALPUV2C
     ! *** SET OLD TIME LEVEL TERMS IN CONTINUITY EQUATION FOR NON BOUNDARY POINTS  
     ! *** DXYP = DXP*DYP (M^2),  G-9.82 (M/S^2), P (M2/S2), FP1 (M4/S3)
     C1=0.5*G
-    !$OMP SIMD PRIVATE(LE,LN)
     DO L=LF,LL
       LE = LEC(L)
       LN = LNC(L)
@@ -504,7 +532,8 @@ SUBROUTINE CALPUV2C
     ENDDO  
 
   ENDDO   ! *** END OF DOMAIN LOOP
-  !$OMP END PARALLEL DO
+  !$OMP END DO
+  !$OMP END PARALLEL
 
   ! *** LAYER FACE BLOCKING
   IF( BSC > 0.0 .AND. NBLOCKED > 0 .AND. N > 1 )THEN
@@ -557,7 +586,6 @@ SUBROUTINE CALPUV2C
     LL = MIN(LF+LDMOPT-1,LA)
 
     C1 = 0.5*G
-    !$OMP SIMD PRIVATE(LE,LN)
     DO L=LF,LL
       LE = LEC(L)
       LN = LNC(L)
@@ -579,7 +607,6 @@ SUBROUTINE CALPUV2C
       CW(L) = C1*SUB(L)*HRUO(L)*RCX(L)*HU(L)  
     ENDDO
     !DIR$ NOFUSION
-    !$OMP SIMD PRIVATE(LE,LN)
     DO L=LF,LL
       LE = LEC(L)
       LN = LNC(L) 
@@ -627,11 +654,13 @@ SUBROUTINE CALPUV2C
   ENDDO
 
 #ifdef _MPI 
+  ! ****************************************************************************
   Call DSI_All_Reduce(CCMNM_Local, CCMNM, MPI_Min, TTDS, 1, TWAIT)
   DSITIMING(11) = DSITIMING(11) + TTDS
   TTWAIT = TTWAIT + TWAIT
 #else
   CCMNM = CCMNM_Local
+  ! ****************************************************************************
 #endif
   CCMNMI = 1./CCMNM
 
@@ -665,16 +694,9 @@ SUBROUTINE CALPUV2C
   ! *********************************************************************************************
   ! *** CALL THE PRECONDITIONED CONJUGATE GRADIENT SOLVER
 #ifdef _MPI
+  ! ****************************************************************************
   IF( num_processors > 1 )THEN
     IF( MDCHH == 0 ) Call Congrad_MPI(NOPTIMAL,LDMOPT)   ! *** MSCHH>=1 not parallelized yet @todo
-
-    TTDS = DSTIME(0)
-    Call MPI_barrier(MPI_Comm_World, ierr)
-    TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
-
-    TTDS = DSTIME(0)
-    Call communicate_ghost_cells(P, 'P')
-    TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
   ELSE
     IF( MDCHH == 0 ) CALL CONGRAD(NOPTIMAL,LDMOPT)
     IF( MDCHH >= 1 ) CALL CONGRADC
@@ -682,8 +704,8 @@ SUBROUTINE CALPUV2C
 #else
   IF( MDCHH == 0 ) CALL CONGRAD(NOPTIMAL,LDMOPT)
   IF( MDCHH >= 1 ) CALL CONGRADC
+  ! ****************************************************************************
 #endif  
-  ! *********************************************************************************************
   
   ITERMAX   = MAX(ITERMAX,ITER)
   ITERAVG   = ITERAVG + ITER
@@ -698,7 +720,6 @@ SUBROUTINE CALPUV2C
     LL = MIN(LF+LDMOPT-1,LA)
     
     ! *** CELL FACE DISCHARGE (M3/S)
-    !$OMP SIMD PRIVATE(LW,LS)
     DO L=LF,LL
       LS = LSC(L)  
       LW = LWC(L) 
@@ -749,7 +770,6 @@ SUBROUTINE CALPUV2C
     LL = MIN(LF+LDMOPT-1,LA)
 
     ! *** CALCULATE REVISED CELL DEPTHS BASED ON NEW HORIZONTAL TRANSPORTS AT (N+1)  
-    !$OMP SIMD PRIVATE(LE,LN)
     DO L=LF,LL  
       LE = LEC(L)
       LN = LNC(L)  
@@ -766,41 +786,6 @@ SUBROUTINE CALPUV2C
   ENDDO   ! *** END OF DOMAIN LOOP
   !$OMP END DO
   !$OMP END PARALLEL
-  
-  !
-  !L = 2860
-  !L = 2862
-  !l = 2295     ! delme
-  !
-  ! L = 2860
-  !LW = 2295
-  !WRITE(L,'(F12.6,I10,2(I5,8E15.7))') TIMEDAY, NITER, L,  HP(L), QSUME(L), UHDYE(L+1), U(L+1,1), STBX(L+1), VU(L+1), TBX(L+1), FUHDYE(L+1),  &  ! DELME
-  !                                                   LW, HP(LW), QSUME(LW), UHDYE(LW), U(LW,1), STBX(L), VU(LW), TBX(LW), FUHDYE(LW)
-  !WRITE(100,*) 'NITER = ', NITER
-  !DO L = 2,LA
-  !  WRITE(100,'(3I5,4F5.1,25E15.7)') L, IL(L), JL(L), SUB(L), SVB(L), SAAX(L), SAAY(L), HP(L), HU(L), HV(L), HPI(L), HUI(L), HVI(L),  &  ! DELME
-  !                                   QSUME(L), UHDYE(L), VHDXE(L), TBX(L), TBY(L), FUHDYE(L), FVHDXE(L), P(L), FCAXE(L), FCAYE(L), FXE(L), FYE(L)    ! DELME
-  !ENDDO
-  !L = 2295
-  !IF( MOD(NITER,10) == 0 )THEN
-  !  L = 2295   ! DELME
-  !ENDIF
-  !IF( MOD(NITER,100) == 0 )THEN
-  !  L = 2295   ! DELME
-  !ENDIF
-  !IF( MOD(NITER,1000) == 0 )THEN
-  !  L = 2295  ! DELME
-  !ENDIF
-  !IF( MOD(NITER,8000) == 0 )THEN
-  !  L = 2862  ! DELME
-  !ENDIF
-  !IF( NITER == 3701 )THEN
-  !  L = 2295   ! DELME
-  !ENDIF
-  !IF( MOD(NITER,10) == 0 )THEN
-  !  L = 2295   ! DELME
-  !  CLOSE(100,STATUS='DELETE')
-  !ENDIF
   
   ! ***  APPLY OPEN BOUNDARYS
   DO LL=1,NBCSOP
@@ -851,6 +836,7 @@ SUBROUTINE CALPUV2C
 
   ! *** Exchange HP ghost values
 #ifdef _MPI
+  ! ****************************************************************************
   TTDS = DSTIME(0)
   Call MPI_barrier(MPI_Comm_World, ierr)
   TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
@@ -858,6 +844,7 @@ SUBROUTINE CALPUV2C
   TTDS = DSTIME(0)
   Call communicate_ghost_cells(HP, 'HP')
   TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
+  ! ****************************************************************************
 #endif
 
   ! *** ADD CHANNEL INTERACTION EXCHANGES
@@ -1036,6 +1023,7 @@ SUBROUTINE CALPUV2C
   ICORDRY = SUM(ICORDRYD(:))   ! *** OMP flag
   
 #ifdef _MPI
+  ! ****************************************************************************
   ! *** Now gather sum of ICCORDRY
   TTDS = DSTIME(0)
   Call MPI_barrier(MPI_Comm_World, ierr)
@@ -1048,7 +1036,7 @@ SUBROUTINE CALPUV2C
   Call DSI_All_Reduce(ICORDRY, ICORDRY_Global, MPI_SUM, TTDS, 1, TWAIT)
   DSITIMING(11) = DSITIMING(11) + TTDS
   TTWAIT = TTWAIT + TWAIT
-
+  ! ****************************************************************************
 #else
   ICORDRY_Global = ICORDRY
 #endif
@@ -1079,6 +1067,7 @@ SUBROUTINE CALPUV2C
   ELSEIF( ISDRY > 0 )THEN
     
 #ifdef _MPI
+    ! ****************************************************************************
     ! ***  IF SUB/SVB CHANGED THEN COMMUNICATE TO OTHER NODES
     TTDS = DSTIME(0)
     Call MPI_barrier(MPI_Comm_World, ierr)
@@ -1087,6 +1076,7 @@ SUBROUTINE CALPUV2C
     TTDS = DSTIME(0)
     Call Communicate_PUV1
     TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
+    ! ****************************************************************************
 #endif
   ENDIF    ! *** END OF CHECKING FOR ISDRY ITERATIONS
 
@@ -1194,12 +1184,6 @@ SUBROUTINE CALPUV2C
                 HP(L)   = 0.90*HDRY
                 P(L)    = G*(HP(L) + BELV(L))
 
-                ! *** UPDATE H1P FOR THE DRY/WASTED CELL
-                H1P(L)  = HP(L)
-                DO K=KSZ(L),KC 
-                  H1PK(L,K) = H1P(L)*DZC(L,K)
-                ENDDO
-
                 NATDRY(L) = 0
                 QDWASTE(L) = DELTI*DXYP(L)*(HOLDTMP-HP(L))
                 VDWASTE(L) = VDWASTE(L) + DXYP(L)*(HOLDTMP-HP(L))
@@ -1211,11 +1195,12 @@ SUBROUTINE CALPUV2C
           ENDIF
         ENDIF  ! *** END OF WET CELL TEST
       ENDDO
-    ENDDO
+    ENDDO      ! *** End of Domain loop
     !$OMP END PARALLEL DO
   END IF
 
 #ifdef _MPI 
+  ! ****************************************************************************
   Call DSI_All_Reduce(IUPDATE, IUPDATE_Global, MPI_SUM, TTDS, 1, TWAIT)
   DSITIMING(11) = DSITIMING(11) + TTDS
   TTWAIT = TTWAIT + TWAIT
@@ -1225,9 +1210,10 @@ SUBROUTINE CALPUV2C
     Call communicate_1D2(P, HP)
     TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
   ENDIF
+  ! ****************************************************************************
 #endif
 
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LS,LN,LE,LW,NTMP,IUW,IUE,IVS,IVN,IFACE,K)  &
+  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LS,LN,LE,LW,IUW,IUE,IVS,IVN,IFACE,K)  &
   !$OMP                             PRIVATE(RDRY,BELVAVG,RVAL,HOLDTMP,TMPVAL,SVPW1,RNPORI,ETGWTMP,ETGWAVL)
   DO ND=1,NOPTIMAL
     LF = 2+(ND-1)*LDMOPT
@@ -1236,20 +1222,13 @@ SUBROUTINE CALPUV2C
     ! *** *******************************************************************C
     ! *** PERFORM FINAL UPDATES OF HU, AND HV FOR SIGMA STRETCH GRID
     IF( IGRIDV == 0 )THEN
-      !$OMP SIMD PRIVATE(LS,LW)
       DO L=LF,LL  
         LS = LSC(L)
         LW = LWC(L)
         HU(L) = ( DXYP(L)*HP(L) + DXYP(LW)*HP(LW) )*FSGZUDXYPI(L)
         HV(L) = ( DXYP(L)*HP(L) + DXYP(LS)*HP(LS) )*FSGZVDXYPI(L)
       ENDDO  
-
-      !DIR$ NOFUSION
-      DO L=LF,LL  
-        HPI(L) = 1./HP(L)  
-        HUI(L) = 1./HU(L)  
-        HVI(L) = 1./HV(L)  
-      ENDDO  
+ 
     ENDIF
 
     ! *** SET TRANSPORT MASK FOR DRY CELLS  
@@ -1282,7 +1261,6 @@ SUBROUTINE CALPUV2C
 
     ! *** PERFORM UPDATE ON GROUNDWATER ELEVATION  
     IF( ISGWIE >= 1 )THEN
-      !$OMP SIMD
       DO L=LF,LL  
         QSUM(L,KC)     = QSUM(L,KC)     - EVAPSW(L)  
         QSUM(L,KSZ(L)) = QSUM(L,KSZ(L)) + QGW(L)   ! *** 2018-10-24 PMC CHANGED SIGN CONVENTION FOR SEEPAGE +(IN), -(OUT) 
@@ -1326,7 +1304,6 @@ SUBROUTINE CALPUV2C
 
     IF( ISDRY > 0 )THEN
       DO K=1,KC
-        !$OMP SIMD
         DO L=LF,LL
           SUB3D(L,K) = SUB(L)*SUB3DO(L,K)
           SVB3D(L,K) = SVB(L)*SVB3DO(L,K)
@@ -1372,7 +1349,7 @@ SUBROUTINE CALPUV2C
       IF( SPB(L) /= 0 )THEN  
         LN=LNC(L)  
         DIVEX=SPB(L)*(DXYP(L)*(HP(L)-H1P(L))*DELTI+0.5*(UHDYE(LEC(L))+UHDY1E(LEC(L))-UHDYE(L)-UHDY1E(L)+VHDXE(LN)+VHDX1E(LN)-VHDXE(L)-VHDX1E(L))-QSUME(L)-QGW(L)+EVAPSW(L))  
-        IF( ISDIVEX == 2 ) DIVEX = DIVEX*DXYIP(L)*HPI(L)  !  *** RELATIVE DIVERGENCE
+        IF( ISDIVEX == 2 ) DIVEX = DIVEX*DXYIP(L)/HP(L)  !  *** RELATIVE DIVERGENCE
         IF( DIVEX > DIVEXMX )THEN  
           DIVEXMX=DIVEX  
           LMAX=L  
@@ -1412,7 +1389,6 @@ SUBROUTINE CALPUV2C
         ! *** UPDATE DEPTHS FOR DRY CELLS
         DO K=KSZ(L),KC
           HPK(L,K)  = HP(L)*DZC(L,K)
-          HPKI(L,K) = 1./HPK(L,K)
         ENDDO    
         HU(L) = ( DXYP(L)*HP(L) + DXYP(LWC(L))*HP(LWC(L)) )*FSGZUDXYPI(L)
         HV(L) = ( DXYP(L)*HP(L) + DXYP(LSC(L))*HP(LSC(L)) )*FSGZVDXYPI(L)
@@ -1494,8 +1470,8 @@ SUBROUTINE CALPUV2C
 
   ! *** THIRD PASS CELL CONSTANTS
   IF( IGRIDV > 0 )THEN
-    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NOPTIMAL,LDMOPT,LA,KC,LWC,LSC,KSZ,DZC,HP,HPK,HPKI,HU,HV,HPI,HUI,HVI)  &
-    !$OMP                           SHARED(DXYP,FSGZUDXYPI,FSGZVDXYPI,LLWET,LKWET)                               &
+    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NOPTIMAL,LDMOPT,LA,KC,LWC,LSC,KSZ,DZC,HP,HPK,HPKI,HU,HV)  &
+    !$OMP                           SHARED(DXYP,FSGZUDXYPI,FSGZVDXYPI,LLWET,LKWET)                   &
     !$OMP                           PRIVATE(ND,LF,LL,K,LP,L,LW,LS) 
     DO ND=1,NOPTIMAL
       LF=2+(ND-1)*LDMOPT
@@ -1503,11 +1479,9 @@ SUBROUTINE CALPUV2C
 
       ! *** GLOBAL UPDATE OF LAYER THICKNESSES
       DO K=1,KC
-        !$OMP SIMD PRIVATE(L)
         DO LP=1,LLWET(K,ND)
           L = LKWET(LP,K,ND)
           HPK(L,K)  = HP(L)*DZC(L,K)
-          HPKI(L,K) = 1./HPK(L,K)
         ENDDO
       ENDDO
 
@@ -1533,13 +1507,6 @@ SUBROUTINE CALPUV2C
         ENDIF
       ENDDO
   
-      !DIR$ NOFUSION
-      DO L=LF,LL
-        HPI(L) = 1./HP(L)  
-        HUI(L) = 1./HU(L)  
-        HVI(L) = 1./HV(L)  
-      ENDDO  
-
     ENDDO
     !$OMP END PARALLEL DO
   ENDIF
@@ -1755,6 +1722,7 @@ SUBROUTINE CALPUV2C
   ENDIF
   
 #ifdef _MPI
+  ! ****************************************************************************
   TTDS = DSTIME(0)
   Call MPI_barrier(MPI_Comm_World, ierr)
   TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
@@ -1762,7 +1730,22 @@ SUBROUTINE CALPUV2C
   TTDS = DSTIME(0)
   Call Communicate_PUV3
   TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
+  ! ****************************************************************************
 #endif
+
+  ! *** Update variables that are dependent on MPI communicated values
+  !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NOPTIMAL, LDMOPT, LA, HP, HPI, HU, HUI, HV, HVI) PRIVATE(ND,LF,LL,L)
+  DO ND=1,NOPTIMAL
+    LF = 2+(ND-1)*LDMOPT
+    LL = MIN(LF+LDMOPT-1,LA)
+    
+    DO L=LF,LL  
+      HPI(L) = 1./HP(L)  
+      HUI(L) = 1./HU(L)  
+      HVI(L) = 1./HV(L)  
+    ENDDO  
+  ENDDO
+  !$OMP END PARALLEL DO
 
   RETURN
 

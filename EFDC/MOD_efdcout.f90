@@ -109,45 +109,6 @@
   IF( ISINWV == 2 .AND. JSEXPLORER /= 1 ) CALL ARRAYSOUT
   IF( ISPD > 0 .AND. JSEXPLORER == -1 ) CALL DRIFTER_OUT(.TRUE.)
 
-  ! *** Newtown Creek Hardwwire Flux Output  (delme)
-  if( la == 1640 )then
-    NS = 0
-  
-    ! *** CM 1.5
-    I = 69
-    NS = NS + 1
-    WRITE(900+I,'(F12.5,100E14.6)') TIMEDAY, SUM(WC_QD(NS,:))+SUM(WC_QU(NS,:)), SUM(WC_QD(NS,:)), (SUM(WC_DN(NS,:,IW)),IW=1,NACTIVEWC), SUM(WC_QU(NS,:)), (SUM(WC_UP(NS,:,IW)),IW=1,NACTIVEWC)
-  
-    ! *** CM 1.7
-    I = 76
-    NS = NS + 1
-    WRITE(900+I,'(F12.5,100E14.6)') TIMEDAY, SUM(WC_QD(NS,:))+SUM(WC_QU(NS,:)), SUM(WC_QD(NS,:)), (SUM(WC_DN(NS,:,IW)),IW=1,NACTIVEWC), SUM(WC_QU(NS,:)), (SUM(WC_UP(NS,:,IW)),IW=1,NACTIVEWC)
-  
-    ! *** CM 2.0
-    I = 89
-    NS = NS + 1
-    WRITE(900+I,'(F12.5,100E14.6)') TIMEDAY, SUM(WC_QD(NS,:))+SUM(WC_QU(NS,:)), SUM(WC_QD(NS,:)), (SUM(WC_DN(NS,:,IW)),IW=1,NACTIVEWC), SUM(WC_QU(NS,:)), (SUM(WC_UP(NS,:,IW)),IW=1,NACTIVEWC)
-  
-    ! *** CM 2.4/Turning Basin
-    I = 99
-    NS = NS + 1
-    WRITE(900+I,'(F12.5,100E14.6)') TIMEDAY, SUM(WC_QD(NS,:))+SUM(WC_QU(NS,:)), SUM(WC_QD(NS,:)), (SUM(WC_DN(NS,:,IW)),IW=1,NACTIVEWC), SUM(WC_QU(NS,:)), (SUM(WC_UP(NS,:,IW)),IW=1,NACTIVEWC)
-  
-    ! *** Upstream end of Turning Basin
-    I = 116
-    NS = NS + 1
-    WRITE(900+I,'(F12.5,100E14.6)') TIMEDAY, SUM(WC_QD(NS,:))+SUM(WC_QU(NS,:)), SUM(WC_QD(NS,:)), (SUM(WC_DN(NS,:,IW)),IW=1,NACTIVEWC), SUM(WC_QU(NS,:)), (SUM(WC_UP(NS,:,IW)),IW=1,NACTIVEWC)
-  
-    ! *** Maspeth Creek
-    J = 42
-    NS = NS + 1
-    WRITE(900+42,'(F12.5,100E14.6)') TIMEDAY, SUM(WC_QD(NS,:))+SUM(WC_QU(NS,:)), SUM(WC_QD(NS,:)), (SUM(WC_DN(NS,:,IW)),IW=1,NACTIVEWC), SUM(WC_QU(NS,:)), (SUM(WC_UP(NS,:,IW)),IW=1,NACTIVEWC)
-  
-    WC_QD = 0.
-    WC_DN = 0. 
-    WC_QU = 0.
-    WC_UP = 0. 
-  endif
   
   END SUBROUTINE
 
@@ -236,6 +197,7 @@
     WRITE(EE_UNIT) (INT(ISTRAN(I),4),I=1,7)
     WRITE(EE_UNIT) INT(NSCM,4),INT(ITBM,4),INT(NSICM,4),INT(NTOX,4),INT(ICALC_BL,4)
     CLOSE(EE_UNIT,STATUS='KEEP')
+    NBEDSTEPS = ISBEXP - 1            ! *** The very first bed snapshot will be saved
   ELSE
     ! *** SEDIMENT BED LAYERS FOR ORIGINAL SEDIMENT TRANSPORT APPROACH
     IF( ISBEXP >= 1 .AND. KB > 1 )THEN
@@ -713,7 +675,7 @@ SUBROUTINE WCOUT
     FSIZE = FILESIZE(FILENAME)
     OPEN(EE_UNIT,FILE=FILENAME,ACTION='READWRITE',STATUS='OLD',FORM='BINARY',SHARED)
     READ(EE_UNIT) VER,HSIZE,BSIZE
-    IF( VER /= 8400 .AND. VER /= 8500 .AND. VER /=10300) WRITE(*,*)'FILE IS CORRUPTED OR VERSION IS INVALID!'
+    IF( VER /= 8400 .AND. VER /= 8500 .AND. VER /=11300) WRITE(*,*)'FILE IS CORRUPTED OR VERSION IS INVALID!'
     OFFSET = HSIZE
 
     NS = 0
@@ -783,7 +745,7 @@ SUBROUTINE WCOUT
       WRITE(EE_UNIT) (REAL(WV_FREQ_Global(L),4), L=2,LA_Global)
       WRITE(EE_UNIT) (REAL(WV_DIR_Global(L),4), L=2,LA_Global)
       IF( ISWAVE == 4 )THEN
-        WRITE(EE_UNIT) (REAL(WV_Global(L).DISSIPA(KC),4), L=2,LA_Global)  ! *** DISSIPATION
+        WRITE(EE_UNIT) (REAL(WV_DISSIPA_Global(L),4), L=2,LA_Global)      ! *** DISSIPATION
         WRITE(EE_UNIT) (REAL(WVHUU_Global(L,KC),4), L=2,LA_Global)        ! *** SXX (M3/S2)
         WRITE(EE_UNIT) (REAL(WVHVV_Global(L,KC),4), L=2,LA_Global)        ! *** SYY (M3/S2)
         WRITE(EE_UNIT) (REAL(WVHUV_Global(L,KC),4), L=2,LA_Global)        ! *** SXY (M3/S2)

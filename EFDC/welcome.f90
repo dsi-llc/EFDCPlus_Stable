@@ -33,13 +33,13 @@ SUBROUTINE WELCOME
       ,/,'*                                                                                 *'  &  
       ,/,'*        EFDC+   BY DSI, LLC,  EDMONDS WA, USA                                    *'  &  
       ,/,'*                   VERTICAL LAYERING WITH SIGMA-STRETCHED OR SIGMA-ZED           *'  &  
-      ,/,'*                   MULTI-THREADED VERSION USING OpenMP                           *'  &  
-      ,/,'*                   MULTI-PROCESSOR VERSION USING OpenMPI                         *'  &  
       ,/,'*                   PROPELLER WASH, LAGRANGIAN PARTICLE TRACKING,                 *'  &  
       ,/,'*                   NEW EUTROPHICATION WITH ZOOPLANKTON AND RPEM SUB-MODELS       *'  &  
       ,/,'*                   WITH SEDZLJ, HYDROKINETIC DEVICES (SNL)                       *'  &  
+      ,/,'*                   MULTI-THREADED VERSION USING OpenMP                           *'  &  
+      ,/,'*                   MULTI-PROCESSOR VERSION USING OpenMPI                         *'  &  
       ,/,'*                                                                                 *'  &  
-      ,/,'*        EFDC+ HAS BEEN CUSTOMIZED TO WORK WITH DSI''s EFDC_EXPLORER 11.5.0        *'  &  
+      ,/,'*        EFDC+ HAS BEEN CUSTOMIZED TO WORK WITH DSI''s EFDC_EXPLORER 11.6.0        *'  &  
       ,/,'*                                                                                 *'  &  
       ,/,'*                         VERSION DATE: MPI ',A10,'                            *'  &  
       ,/,'*                                                                                 *'  &  

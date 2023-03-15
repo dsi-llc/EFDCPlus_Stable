@@ -22,6 +22,8 @@ SUBROUTINE CALTOX
   !**********************************************************************!
 
   USE GLOBAL
+  USE Variables_MPI
+  
   IMPLICIT NONE
 
   INTEGER :: ND, LF, LL, LP, L, IVAL, NT, NS, NX, K, NFD, LUTMP, LDTMP, KTOPM1, NP
@@ -1104,18 +1106,16 @@ SUBROUTINE CALTOX
           TMPVAL = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
           IF( TMPVAL < 0.0 )THEN
             BB11 = TOXB(L,KBT(L),NT)*DELTI - BB22 - TOXFBL(L,NT)
-            IF( BB11 < 0.0 )THEN
-              PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB correction', TIMEDAY, L, KBT(L), BB11, TOXB(L,KBT(L),NT)   ! DELME
-              pause
-              BB11 = 0.0   ! delme
-            ENDIF
+            BB11 = MAX(BB11,0.0)
           ENDIF
             
           ! *** MASS BALANCE AROUND WATER COLUMN BOTTOM LAYER
           TOX(L,KSZ(L),NT) = TOX(L,KSZ(L),NT) + DTSED*( BB11 + BB22 )*HPKI(L,KSZ(L))
           IF( TOX(L,KSZ(L),NT) < 0.0 )THEN
-            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOX correction', TIMEDAY, L, KSZ(L), BB22, TOX(L,KSZ(L),NT)   ! DELME
-            pause
+            OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
+            WRITE(mpi_log_unit, '(A,F15.6,I7,I5,E14.6,I5,2E14.6)' ) 'Bad TOX:  TIMEDAY, L, KBT, HBED, NT, TOX1,  TOX:  ', TIMEDAY, MAP2GLOBAL(L).LG, KBT(L), HBED(L,KBT(L)), NT, TOX1(L,KSZ(L),NT) , TOX(L,KSZ(L),NT)
+            CLOSE(mpi_log_unit)
+            PRINT '(A,F15.6,I7,I5,E14.6,I5,2E14.6)', 'Bad TOX', TIMEDAY, MAP2GLOBAL(L).LG, KBT(L), HBED(L,KBT(L)), NT, BB22, TOX(L,KSZ(L),NT) 
             TOX(L,KSZ(L),NT) = 0.0
           ENDIF
           
@@ -1123,9 +1123,14 @@ SUBROUTINE CALTOX
           TOXB1(L,KBT(L),NT) = TOXB(L,KBT(L),NT)
           TOXB(L,KBT(L),NT) = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
           IF( TOXB(L,KBT(L),NT) < 0.0 )THEN
-            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB', TIMEDAY, L, KBT(L), TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)   ! DELME
-            pause
-            TOXB(L,KBT(L),NT) = 0.0    !  delme
+            OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
+            WRITE(mpi_log_unit, '(A,F15.6,I7,I5,E14.6,I5,2E14.6)' ) 'Bad TOXB: TIMEDAY, L, KBT, HBED, NT, TOXB1, TOXB: ', TIMEDAY, MAP2GLOBAL(L).LG, KBT(L), HBED(L,KBT(L)), NT, TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)
+            CLOSE(mpi_log_unit)
+            PRINT '(A,F15.6,I7,I5,E14.6,I5,2E14.6)', 'Bad TOXB', TIMEDAY, MAP2GLOBAL(L).LG, KBT(L), HBED(L,KBT(L)), NT, TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT) 
+            IF( ABS(TOXB(L,KBT(L),NT)) > 1E-5*TOXB1(L,KBT(L),NT) )THEN
+              PAUSE  
+            ENDIF
+            TOXB(L,KBT(L),NT) = 0.0 
           ENDIF          
         ENDDO
       ENDDO   ! *** NTOX
@@ -1187,8 +1192,13 @@ SUBROUTINE CALTOX
           TOXB1(L,KBT(L),NT) = TOXB(L,KBT(L),NT)
           TOXB(L,KBT(L),NT) = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
           IF( TOXB(L,KBT(L),NT) < 0.0 )THEN
-            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB', TIMEDAY, L, KBT(L), TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)   ! DELME
-            pause
+            OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
+            WRITE(mpi_log_unit, '(A,F10.6,I7,I5,E14.6,I5,2E14.6)' ) 'Bad TOXB: TIMEDAY, L, KBT, HBED, NT, TOXB1, TOXB: ', TIMEDAY, L, KBT(L), HBED(L,KBT(L)), NT, TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)
+            CLOSE(mpi_log_unit)
+            PRINT '(A,F10.6,I7,I5,E14.6,I5,2E14.6)', 'Bad TOXB', TIMEDAY, L, KBT(L), HBED(L,KBT(L)), NT, TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)   ! DELME
+            IF( ABS(TOXB(L,KBT(L),NT)) > 1E-5*TOXB1(L,KBT(L),NT) )THEN
+              pause   ! delme
+            ENDIF
             TOXB(L,KBT(L),NT) = 0.0    !  delme
           ENDIF
         ENDDO
@@ -1278,10 +1288,15 @@ SUBROUTINE CALTOX
           TOXB1(L,KBT(L),NT) = TOXB(L,KBT(L),NT)
           TOXB(L,KBT(L),NT) = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
           IF( TOXB(L,KBT(L),NT) < 0.0 )THEN
-            PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB', TIMEDAY, L, KBT(L), TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)   ! DELME
-            pause
-            TOXB(L,KBT(L),NT) = 0.0    !  delme
-          ENDIF
+            OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
+            WRITE(mpi_log_unit, '(A,2F10.6,I7,I5,E14.6,I5,2E14.6)' ) 'Bad TOXB: TIMEDAY, DELT, L, KBT, HBED, NT, TOXB1, TOXB: ', TIMEDAY, L, KBT(L), HBED(L,KBT(L)), NT, TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)
+            CLOSE(mpi_log_unit)
+            PRINT '(A,F10.6,I7,I5,E14.6,I5,2E14.6)', 'Bad TOXB', TIMEDAY, L, KBT(L), HBED(L,KBT(L)), NT, TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)   ! DELME
+            !IF( ABS(TOXB(L,KBT(L),NT)) > 1E-5*TOXB1(L,KBT(L),NT) )THEN
+            !  pause   ! delme
+            !ENDIF
+            TOXB(L,KBT(L),NT) = 0.0
+          ENDIF   
         ENDDO
       ENDDO   ! *** NTOX
     ENDIF     ! *** KC >= 3

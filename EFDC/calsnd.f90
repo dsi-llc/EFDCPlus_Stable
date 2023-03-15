@@ -287,6 +287,7 @@ SUBROUTINE CALSND
   ! *** Communicate Bedload, if needed
   IF( ICALC_BL > 0 )THEN
 #ifdef _MPI
+    ! ****************************************************************************
     TTDS = DSTIME(0)
     Call MPI_barrier(MPI_Comm_World, ierr)
     TWAIT = DSTIME(0) - TTDS
@@ -295,6 +296,7 @@ SUBROUTINE CALSND
     TTDS = DSTIME(0)
     CALL Communicate_BEDLOAD(1,NSND)
     DSITIMING(8) = DSITIMING(8) + (DSTIME(0) - TTDS)
+    ! ****************************************************************************
 #endif                
 
     ! *****************************************************************************************

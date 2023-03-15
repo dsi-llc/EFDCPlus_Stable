@@ -14,7 +14,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="64SP_R_MPI|x64" OutputDirectory="$(ConfigurationName)" IntermediateDirectory="$(ConfigurationName)" TargetName="$(ProjectName)_221006">
+		<Configuration Name="64SP_R_MPI|x64" OutputDirectory="$(ConfigurationName)" IntermediateDirectory="$(ConfigurationName)" TargetName="$(ProjectName)_230204">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ROOT)\intel64\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT;WASPOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" RuntimeLibrary="rtMultiThreadedDLL"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(I_MPI_ROOT)\intel64\lib\release;..\NetCDFLib\x64\lib;..\WASP" IgnoreDefaultLibraryNames="libcmt.lib;mscvrt.lib;libifcoremt.lib" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
@@ -35,7 +35,7 @@
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
 		<Configuration Name="64SP_D_MPI|x64" OutputDirectory="$(ConfigurationName)" IntermediateDirectory="$(ConfigurationName)">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" MultiProcessorCompilation="true" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ROOT)\intel64\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT;WASPOUT;DEBUGGING" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPSequentialCode" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksAll" NullPointerCheck="true" BoundsCheck="true" ArrayShapeCheck="true" UninitializedVariablesCheck="true" DescriptorDataTypeCheck="true" DescriptorDataSizeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" MultiProcessorCompilation="true" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ROOT)\intel64\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT;WASPOUT;DEBUGGING" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksAll" NullPointerCheck="true" BoundsCheck="true" ArrayShapeCheck="true" UninitializedVariablesCheck="true" DescriptorDataTypeCheck="true" DescriptorDataSizeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(I_MPI_ROOT)\intel64\lib\debug;..\NetCDFLib\x64\lib;..\WASP" IgnoreDefaultLibraryNames="libcmtd.lib;mscvrtd.lib;libifcoremt.lib" GenerateDebugInformation="true" GenerateMapFile="true" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -64,8 +64,8 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="64DP_R_MPI|x64" OutputDirectory="$(ConfigurationName)" IntermediateDirectory="$(ConfigurationName)" TargetName="$(ProjectName)_220620DP">
-				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ROOT)\intel64\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT" UndefinePreprocessorDefinitions="_WIN32" RealKIND="realKIND8" LocalSavedScalarsZero="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" BoundsCheck="true" ArrayShapeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDLL"/>
+		<Configuration Name="64DP_R_MPI|x64" OutputDirectory="$(ConfigurationName)" IntermediateDirectory="$(ConfigurationName)" TargetName="$(ProjectName)_230204DP">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ROOT)\intel64\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" RealKIND="realKIND8" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" BoundsCheck="true" ArrayShapeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDLL"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(I_MPI_ROOT)\intel64\lib\release;..\NetCDFLib\x64\lib;..\WASP" IgnoreDefaultLibraryNames="libcmtd.lib;mscvrtd.lib;libifcoremt.lib" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -94,7 +94,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="64SP_Rel_OneApi_MPI|x64">
+		<Configuration Name="64SP_Rel_OneApi_MPI|x64" TargetName="$(ProjectName)_230204_fast">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ONEAPI_ROOT)\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" RuntimeLibrary="rtMultiThreadedDLL"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(I_MPI_ONEAPI_ROOT)\lib\release;..\NetCDFLib\x64\lib" IgnoreDefaultLibraryNames="libcmt.lib;mscvrt.lib;libifcoremt.lib" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
@@ -114,7 +114,7 @@
 				<Tool Name="VFPreBuildEventTool"/>
 				<Tool Name="VFPostBuildEventTool"/>
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
-		<Configuration Name="64DP_Rel_OneApi_MPI|x64" TargetName="$(ProjectName)_220327_fast">
+		<Configuration Name="64DP_Rel_OneApi_MPI|x64" TargetName="$(ProjectName)_230204DP_fast">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(I_MPI_ONEAPI_ROOT)\include;..\NetCDFLib\x64\include" PreprocessorDefinitions="_WIN64;_WIN;_MPI;NCOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" RealKIND="realKIND8" LocalSavedScalarsZero="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" BuildDependencies="true" EmitBuildDependencies="true" Traceback="true" RuntimeChecks="rtChecksNone" RuntimeLibrary="rtMultiThreadedDLL"/>
 				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(I_MPI_ONEAPI_ROOT)\lib\release;..\NetCDFLib\x64\lib" IgnoreDefaultLibraryNames="libcmt.lib;mscvrt.lib;libifcoremt.lib" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib"/>
 				<Tool Name="VFResourceCompilerTool"/>
@@ -130,7 +130,7 @@
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="Drifter">
 		<File RelativePath=".\Drifter\mod_drifter.f90"/>
-		<File RelativePath=".\Drifter\Variables_MPI_Drifter.f90"/></Filter>
+		<File RelativePath=".\Drifter\mod_Variables_MPI_Drifter.f90"/></Filter>
 		<Filter Name="Eutrophication">
 		<File RelativePath=".\Eutrophication\mod_diagen.f90"/>
 		<File RelativePath=".\Eutrophication\mod_macrohydro.f90"/>
@@ -141,27 +141,27 @@
 		<File RelativePath=".\Eutrophication\mod_zoopl.f90"/>
 		<File RelativePath=".\Eutrophication\wwqnc.f90"/></Filter>
 		<Filter Name="JSON_Reader">
-		<File RelativePath=".\JSON_Reader\fson.f90">
+		<File RelativePath=".\JSON_Reader\mod_fson.f90">
 			<FileConfiguration Name="64SP_D_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" RuntimeChecks="rtChecksCustom" NullPointerCheck="false"/></FileConfiguration>
 			<FileConfiguration Name="64DP_D_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" RealKIND="realKIND4"/></FileConfiguration></File>
-		<File RelativePath=".\JSON_Reader\fson_path_m.f90">
+		<File RelativePath=".\JSON_Reader\mod_fson_path.f90">
 			<FileConfiguration Name="64DP_D_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" RealKIND="realKIND4"/></FileConfiguration></File>
-		<File RelativePath=".\JSON_Reader\fson_string_m.f90">
+		<File RelativePath=".\JSON_Reader\mod_fson_string.f90">
 			<FileConfiguration Name="64DP_D_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" RealKIND="realKIND4"/></FileConfiguration></File>
-		<File RelativePath=".\JSON_Reader\fson_value_m.f90">
+		<File RelativePath=".\JSON_Reader\mod_fson_value.f90">
 			<FileConfiguration Name="64DP_D_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" RealKIND="realKIND4"/></FileConfiguration></File></Filter>
 		<Filter Name="MPI_Communication">
 		<File RelativePath=".\MPI_Communication\Communicate_3D_0.f90"/>
-		<File RelativePath=".\MPI_Communication\Communicate_Drifters.f90"/>
-		<File RelativePath=".\MPI_Communication\Communicate_Ghost_Routines.f90"/>
 		<File RelativePath=".\MPI_Communication\Communicate_Groups.f90"/>
 		<File RelativePath=".\MPI_Communication\Mod_Allreduce.f90"/>
 		<File RelativePath=".\MPI_Communication\Mod_Broadcast_Routines.f90"/>
+		<File RelativePath=".\MPI_Communication\mod_Communicate_Drifters.f90"/>
+		<File RelativePath=".\MPI_Communication\mod_Communicate_Ghost_Routines.f90"/>
 		<File RelativePath=".\MPI_Communication\Mod_Gather_Drifter.f90"/>
 		<File RelativePath=".\MPI_Communication\Mod_Gather_Soln.f90"/>
 		<File RelativePath=".\MPI_Communication\Mod_SEND_RECV.f90"/></Filter>
@@ -206,13 +206,13 @@
 		<Filter Name="MPI_Utilities">
 		<File RelativePath=".\MPI_Utilities\Initialize_MPI.f90"/>
 		<File RelativePath=".\MPI_Utilities\Mod_MPI_Helper_Functions.f90"/>
+		<File RelativePath=".\MPI_Utilities\mod_Variables_MPI.f90"/>
+		<File RelativePath=".\MPI_Utilities\mod_Variables_MPI_MapGatherSort.f90"/>
+		<File RelativePath=".\MPI_Utilities\mod_Variables_MPI_Mapping.f90"/>
+		<File RelativePath=".\MPI_Utilities\mod_Variables_MPI_Write_Out.f90"/>
 		<File RelativePath=".\MPI_Utilities\Report_Max_Min_Timing.f90"/>
 		<File RelativePath=".\MPI_Utilities\Setup_MPI_Debug_File.f90"/>
-		<File RelativePath=".\MPI_Utilities\Setup_MPI_Topology.f90"/>
-		<File RelativePath=".\MPI_Utilities\Variables_MPI.f90"/>
-		<File RelativePath=".\MPI_Utilities\Variables_MPI_MapGatherSort.f90"/>
-		<File RelativePath=".\MPI_Utilities\Variables_MPI_Mapping.f90"/>
-		<File RelativePath=".\MPI_Utilities\Variables_MPI_Write_Out.f90"/></Filter>
+		<File RelativePath=".\MPI_Utilities\Setup_MPI_Topology.f90"/></Filter>
 		<Filter Name="Propwash">
 		<File RelativePath=".\Propwash\Calc_Prop_Erosion.f90"/>
 		<File RelativePath=".\Propwash\Det_Adjacent_Cells.f90"/>
@@ -225,20 +225,20 @@
 		<File RelativePath=".\Propwash\Mod_Position_Cell.f90"/>
 		<File RelativePath=".\Propwash\Mod_Position_Elev.f90"/>
 		<File RelativePath=".\Propwash\Mod_Read_Propwash.f90"/>
+		<File RelativePath=".\Propwash\mod_Setup_Ships.f90"/>
 		<File RelativePath=".\Propwash\Mod_Ship.f90"/>
-		<File RelativePath=".\Propwash\Propwash_Calc_Sequence.f90"/>
-		<File RelativePath=".\Propwash\Setup_Ships.f90"/>
-		<File RelativePath=".\Propwash\Variables_Propwash.f90"/>
-		<File RelativePath=".\Propwash\Variables_Ship.f90"/></Filter>
+		<File RelativePath=".\Propwash\mod_Variables_Propwash.f90"/>
+		<File RelativePath=".\Propwash\mod_Variables_Ship.f90"/>
+		<File RelativePath=".\Propwash\Propwash_Calc_Sequence.f90"/></Filter>
 		<Filter Name="Utilities">
-		<File RelativePath=".\Utilities\convertwgs84.f90"/>
 		<File RelativePath=".\Utilities\dstime.f90"/>
 		<File RelativePath=".\Utilities\linspace.f90"/>
 		<File RelativePath=".\Utilities\mod_allocate.f90"/>
+		<File RelativePath=".\Utilities\mod_convertwgs84.f90"/>
 		<File RelativePath=".\Utilities\mod_info.f90"/>
 		<File RelativePath=".\Utilities\mod_julian.f90"/>
-		<File RelativePath=".\Utilities\seek.f90"/>
-		<File RelativePath=".\Utilities\xyijconv.f90"/></Filter>
+		<File RelativePath=".\Utilities\mod_xyijconv.f90"/>
+		<File RelativePath=".\Utilities\seek.f90"/></Filter>
 		<File RelativePath=".\aaefdc.f90">
 			<FileConfiguration Name="64DP_Rel_OneApi_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
@@ -263,7 +263,6 @@
 			<FileConfiguration Name="64SP_Rel_OneApi_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration></File>
 		<File RelativePath=".\bedload.f90"/>
-		<File RelativePath=".\budget.f90"/>
 		<File RelativePath=".\calavb.f90"/>
 		<File RelativePath=".\calbal.f90"/>
 		<File RelativePath=".\calbed.f90"/>
@@ -329,7 +328,6 @@
 		<File RelativePath=".\fstrse.f90"/>
 		<File RelativePath=".\hdmt.f90"/>
 		<File RelativePath=".\hdmt2t.f90"/>
-		<File RelativePath=".\hifreqout.f90"/>
 		<File RelativePath=".\input.f90">
 			<FileConfiguration Name="64DP_R_MPI|x64">
 				<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/></FileConfiguration>
@@ -343,6 +341,7 @@
 		<File RelativePath=".\lubksb.f90"/>
 		<File RelativePath=".\ludcmp.f90"/>
 		<File RelativePath=".\mhkpwr.f90"/>
+		<File RelativePath=".\mod_budget.f90"/>
 		<File RelativePath=".\mod_calcser.f90"/>
 		<File RelativePath=".\mod_cyclone.f90"/>
 		<File RelativePath=".\mod_diffuser.f90"/>
@@ -350,11 +349,13 @@
 		<File RelativePath=".\mod_fields.f90"/>
 		<File RelativePath=".\mod_getswan.f90"/>
 		<File RelativePath=".\mod_heat.f90"/>
+		<File RelativePath=".\mod_hifreqout.f90"/>
 		<File RelativePath=".\mod_hydstructure.f90"/>
 		<File RelativePath=".\mod_netcdf.f90"/>
 		<File RelativePath=".\mod_restart.f90"/>
 		<File RelativePath=".\mod_scaninp.f90"/>
 		<File RelativePath=".\mod_var_global.f90"/>
+		<File RelativePath=".\mod_wavelength.f90"/>
 		<File RelativePath=".\mod_windwave.f90"/>
 		<File RelativePath=".\negdep.f90"/>
 		<File RelativePath=".\out3d.f90"/>
@@ -421,7 +422,6 @@
 		<File RelativePath=".\wasp7hydro.f90"/>
 		<File RelativePath=".\wasp8hydro.f90"/>
 		<File RelativePath=".\wavebl.f90"/>
-		<File RelativePath=".\wavelength.f90"/>
 		<File RelativePath=".\wavesxy.f90"/>
 		<File RelativePath=".\welcome.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>

@@ -659,7 +659,7 @@ SUBROUTINE CALTSXY
         LL=MIN(LF+LDMWET-1,LAWET)
         
         DO LP=LF,LL
-          L=LWET(LP)  
+          L=LWET(LP)
           ICECOVL = NINT(ICECOVER(L))
           ICECOVER(L) = MIN(FLOAT(ICECOVL),1.0)
           IF( ICECOVL == 0 )THEN
@@ -704,12 +704,14 @@ SUBROUTINE CALTSXY
   
 
 #ifdef _MPI
+  ! ****************************************************************************
   IF( NWSER > 1 )THEN
     Call MPI_barrier(MPI_Comm_World, ierr)
     TTDS = DSTIME(0)
     Call Communicate_1D2(TSX, TSY)
     TMPITMP = DSTIME(0) - TTDS
   ENDIF
+  ! ****************************************************************************
 #endif
 
   RETURN  

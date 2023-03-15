@@ -610,7 +610,7 @@ MODULE SHELLFISHMOD
   
   SUBROUTINE READ_SHELLFISH_JSON(LCM,NK)
     USE fson
-    USE fson_value_m, ONLY: fson_value_count, fson_value_get
+    USE mod_fson_value, ONLY: fson_value_count, fson_value_get
       
     TYPE(fson_value), POINTER :: json_data, items, item
     CHARACTER*80 :: STR*200

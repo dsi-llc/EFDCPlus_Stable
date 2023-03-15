@@ -16,10 +16,7 @@
   !    2020-01       PAUL M. CRAIG     Split CALTRAN to two components for MPI
 
   USE GLOBAL 
-  Use Variables_MPI
-#ifdef _MPI
-  Use MPI
-#endif
+  Use Allocate_Initialize   
 
   IMPLICIT NONE  
     
@@ -40,11 +37,11 @@
 
   ! ****************************************************************************************
   
-  ! **  ANTI-DIFFUSIVE ADVECTIVE FLUX CALCULATIONS WITH FLUX CORRECTOR  
+  ! *** ANTI-DIFFUSIVE ADVECTIVE FLUX CALCULATIONS WITH FLUX CORRECTOR  
   IF( ISADAC(MVAR) == 0 ) RETURN    ! *** SKIP IF NOT USING ANTI-DIFFUSION
   IF( ISCDCA(MVAR) == 1 ) RETURN    ! *** SKIP IF CENTRAL DIFFERENCE (3TL)
 
-  BSMALL=1.0E-6  
+  BSMALL = 1.0E-18
   IF( ISDYNSTP == 0 )THEN 
     ! *** FIXED DELTA T
     DDELT = DT2  
@@ -61,7 +58,7 @@
   END IF  
  
   ! ----------------------------------------------------------------------------------------
-  ! **  STANDARD ANTI-DIFFUSIVE ADVECTIVE FLUX CALCULATION  
+  ! *** STANDARD ANTI-DIFFUSIVE ADVECTIVE FLUX CALCULATION  
   
   ! *** SAVE OLD WQ CONCENTRATIONS FOR OPEN BOUNDARY CELLS
   DO IOBC=1,NBCSOP  
@@ -154,27 +151,27 @@
   ENDIF
 
   ! ----------------------------------------------------------------------------------------
-  ! ** ZERO ANTIDIFFUSIVE FLUXES FOR SELECTED CELLS
+  ! *** ZERO ANTIDIFFUSIVE FLUXES FOR SELECTED CELLS
   
-  ! ** SET ANTIDIFFUSIVE FLUXES TO ZERO FOR SOURCE CELLS  
+  ! *** SET ANTIDIFFUSIVE FLUXES TO ZERO FOR SOURCE CELLS  
   IF( ISADAC(MVAR) == 1 )THEN  
     ! *** ANTI-DIFFUSION TURNED OFF FOR SOURCE CELLS
     DO K=1,KC  
       DO LP=1,LLWET(K,0)
         L = LKWET(LP,K,0)  
         IF( ABS(QSUM(L,K)) > 1.E-8 )THEN
-          FUHUD(L     , K,IW) = 0.  
-          FUHUD(LEC(L), K,IW) = 0.  
-          FVHUD(L     , K,IW) = 0.  
-          FVHUD(LNC(L), K,IW) = 0.  
-          FWUU(L,K  ,IW)  = 0.  
-          FWVV(L,K-1,IT)  = 0.  
+          FUHUD(L     , K,IW) = 0.0  
+          FUHUD(LEC(L), K,IW) = 0.0  
+          FVHUD(L     , K,IW) = 0.0  
+          FVHUD(LNC(L), K,IW) = 0.0  
+          FWUU(L,K  ,IW)  = 0.0  
+          FWVV(L,K-1,IT)  = 0.0  
         ENDIF  
       ENDDO  
     ENDDO  
   ENDIF  
   
-  ! ** SET ANTIDIFFUSIVE FLUXES TO ZERO FOR OPEN BOUNDARY CELLS  
+  ! *** SET ANTIDIFFUSIVE FLUXES TO ZERO FOR OPEN BOUNDARY CELLS  
   DO K=1,KC  
     DO LL=1,NCBS  
       L = LCBS(LL)  
@@ -195,10 +192,10 @@
   ENDDO  
   
   ! ----------------------------------------------------------------------------------------
-  ! **  CALCULATE AND APPLY FLUX CORRECTED TRANSPORT LIMITERS  
+  ! *** CALCULATE AND APPLY FLUX CORRECTED TRANSPORT LIMITERS  
   IF( ISFCT(MVAR) /= 0 )THEN  
   
-    ! **  DETERMINE MAX AND MIN CONCENTRATIONS  
+    ! *** DETERMINE MAX AND MIN CONCENTRATIONS  
     DO K=1,KC
       DO LP=1,LLWET(K,0)
         L = LKWET(LP,K,0)  
@@ -207,6 +204,7 @@
       ENDDO  
     ENDDO
 
+    ! *** Vertical gradients
     DO LP=1,LAWET
       L = LWET(LP) 
       CMAX(L,KSZ(L),IT) = MAX(CONTMX(L,KSZ(L),IT), CONTMX(L,KSZ(L)+1,IT))  
@@ -242,10 +240,10 @@
         CMAXT = MAX(CMAXT,CWMAX)  
         CMAX(L,K,IT) = MAX(CMAX(L,K,IT),CMAXT)  
         
-        CWMIN = SUB3D(L,K) *CONTMN(LW,K,IT) + 1.E+6*(1.-SUB3D(L,K))
-        CEMIN = SUB3D(LE,K)*CONTMN(LE,K,IT) + 1.E+6*(1.-SUB3D(LE,K))  
-        CSMIN = SVB3D(L,K) *CONTMN(LS,K,IT) + 1.E+6*(1.-SVB3D(L,K))
-        CNMIN = SVB3D(LN,K)*CONTMN(LN,K,IT) + 1.E+6*(1.-SVB3D(LN,K))  
+        CWMIN = SUB3D(L,K) *CONTMN(LW,K,IT) + 1.E+18*(1.-SUB3D(L,K))
+        CEMIN = SUB3D(LE,K)*CONTMN(LE,K,IT) + 1.E+18*(1.-SUB3D(LE,K))  
+        CSMIN = SVB3D(L,K) *CONTMN(LS,K,IT) + 1.E+18*(1.-SVB3D(L,K))
+        CNMIN = SVB3D(LN,K)*CONTMN(LN,K,IT) + 1.E+18*(1.-SVB3D(LN,K))  
         CMINT = MIN(CNMIN,CEMIN)  
         CMINT = MIN(CMINT,CSMIN)  
         CMINT = MIN(CMINT,CWMIN)  
@@ -253,8 +251,8 @@
       ENDDO  
     ENDDO  
   
-    ! **  SEPARATE POSITIVE AND NEGATIVE FLUXES  
-    ! **  PUT NEGATIVE FLUXES INTO FUHVD, FVHVD, AND FWVV  
+    ! *** SEPARATE POSITIVE AND NEGATIVE ANTI-DIFFUSION FLUXES  
+    ! *** PUT NEGATIVE FLUXES INTO FUHVD, FVHVD, AND FWVV  
     DO K=1,KC
       DO LP=1,LLWET(K,0)
         L = LKWET(LP,K,0)  
@@ -275,8 +273,8 @@
       ENDDO  
     ENDIF
 
-    ! **  CALCULATE INFLUX AND OUTFLUX IN CONCENTRATION UNITS  
-    ! **  LOAD INTO DUU AND DVV, THEN ZERO VALUES AT BOUNDARIES  
+    ! *** CALCULATE ANTI-DIFFUSION INFLUX AND OUTFLUX IN CONCENTRATION UNITS  
+    ! *** LOAD INTO DUU AND DVV, THEN ZERO VALUES AT BOUNDARIES  
     DO K=1,KC
       DO LP=1,LLWET(K,0)
         L = LKWET(LP,K,0)  
@@ -297,7 +295,7 @@
       ENDDO  
     END DO  
   
-    ! **  CALCULATE BETA COEFFICIENTS WITH BETAUP AND BETADOWN IN DUU AND DVV  
+    ! *** CALCULATE BETA COEFFICIENTS WITH BETAUP AND BETADOWN IN DUU AND DVV  
     DO K=1,KC
       DO LP=1,LLWET(K,0)
         L = LKWET(LP,K,0)  
@@ -308,7 +306,7 @@
       ENDDO  
     ENDDO  
   
-    ! **  LIMIT FLUXES  
+    ! *** LIMIT FLUXES  
     DO K=1,KC
       DO LP=1,LLWET(K,0)
         L = LKWET(LP,K,0)  
@@ -326,7 +324,7 @@
       ENDDO  
     ENDDO  
     
-    ! *** APPLY OPEN BOUNDARYS 
+    ! *** APPLY OPEN BOUNDARIES
     DO LL=1,NBCSOP
       L=LOBCS(LL)
       DO K=1,KS  

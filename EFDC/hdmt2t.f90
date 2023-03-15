@@ -25,6 +25,7 @@ SUBROUTINE HDMT2T
 
   ! *** *******************************************************************!
   USE GLOBAL
+  Use Allocate_Initialize      
   USE DRIFTER  ,ONLY:DRIFTER_CALC
   USE WINDWAVE ,ONLY:WINDWAVEINIT,WINDWAVETUR,READWAVECELLS
   USE HIFREQOUT
@@ -42,12 +43,15 @@ SUBROUTINE HDMT2T
 #ifdef NCOUT
   USE MOD_NETCDF
 #endif
+
+# ifdef _MPI
   USE MPI
   Use Communicate_Ghost_Routines
   Use Mod_Map_Write_EE_Binary
   Use Mod_Map_Gather_Sort
   Use Mod_Map_Write_NetCDF
   Use MPI_All_Reduce
+# endif
 
   IMPLICIT NONE
 
@@ -85,17 +89,12 @@ SUBROUTINE HDMT2T
   REAL, DIMENSION(2) :: DYN_IN, DYN_OUT
   
   ! *** ALLOCATE LOCAL ARRAYS
-  IF(  .NOT. ALLOCATED(WCOREW) )THEN
-    ALLOCATE(WCOREW(LCM))
-    ALLOCATE(WCORNS(LCM))
-    ALLOCATE(LCORNER(LCM))
-    ALLOCATE(LCORNWE(LCM))
-    ALLOCATE(LCORNSN(LCM))
-    WCOREW=0.0
-    WCORNS=0.0
-    LCORNER=0
-    LCORNWE=0
-    LCORNSN=0
+  IF( .NOT. ALLOCATED(WCOREW) )THEN
+    Call AllocateDSI( WCOREW,   LCM,    0.0)
+    Call AllocateDSI( WCORNS,   LCM,    0.0)
+    Call AllocateDSI( LCORNER,  LCM,      0)
+    Call AllocateDSI( LCORNWE,  LCM,      0)
+    Call AllocateDSI( LCORNSN,  LCM,      0)
 
     IF( KC > 1 )THEN
       ADJC = 1.0
@@ -208,10 +207,12 @@ SUBROUTINE HDMT2T
 
   ! *** MPI Communication of ghost cells
 #ifdef _MPI
+  ! ****************************************************************************
   Call communicate_ghost_cells(UV,  'UV')
   Call communicate_ghost_cells(U1V, 'U1V')
   Call communicate_ghost_cells(VU,  'VU')
   Call communicate_ghost_cells(V1U, 'V1U')
+  ! ****************************************************************************
 #endif
 
   ! *** *******************************************************************!
@@ -290,10 +291,12 @@ SUBROUTINE HDMT2T
   ENDDO
 
   ! *** MPI Communication routines
-#ifdef _MPI
+# ifdef _MPI
+  ! ****************************************************************************
   Call communicate_ghost_cells(TBX, 'TBX')
   Call communicate_ghost_cells(TBY, 'TBY')
-#endif
+  ! ****************************************************************************
+# endif
 
   N=0
 
@@ -363,7 +366,6 @@ SUBROUTINE HDMT2T
           L=LWET(LP)
           QQ(L,0)  = 0.5*CTURB2*SQRT( (RSSBCE(L)*TVAR3E(L)+RSSBCW(L)*TBX(L))**2 + (RSSBCN(L)*TVAR3N(L)+RSSBCS(L)*TBY(L))**2 )
           QQ(L,KC) = 0.5*CTURB2*SQRT( (RSSBCE(L)*TVAR3W(L)+RSSBCW(L)*TSX(L))**2 + (RSSBCN(L)*TVAR3S(L)+RSSBCS(L)*TSY(L))**2 )
-          QQSQR(L,0) = SQRT(QQ(L,0))
         ENDDO
       ENDDO
       !$OMP END DO
@@ -403,7 +405,6 @@ SUBROUTINE HDMT2T
       DO L=2,LA
         QQ(L,0 )=CTURB2*SQRT(  (RSSBCE(L)*WCOREST(L)*TVAR3E(L) + RSSBCW(L)*WCORWST(L)*TBX(L))**2  + (RSSBCN(L)*WCORNTH(L)*TVAR3N(L) + RSSBCS(L)*WCORSTH(L)*TBY(L))**2)
         QQ(L,KC)=0.5*CTURB2*SQRT(  (RSSBCE(L)*TVAR3W(L)+RSSBCW(L)*TSX(L))**2  +(RSSBCN(L)*TVAR3S(L)+RSSBCS(L)*TSY(L))**2)
-        QQSQR(L,0)=SQRT(QQ(L,0))
       ENDDO
 
     ENDIF
@@ -432,7 +433,6 @@ SUBROUTINE HDMT2T
       TAUB2=MAX(TAUB2,0.)          ! *** CURRENT & WAVE
       QQ(L,0 )=CTURB2*SQRT(TAUB2)  ! *** CELL CENTERED TURBULENT INTENSITY DUE TO CURRENTS & WAVES
       QQ(L,KC)=0.5*CTURB2*SQRT((TVAR3W(L)+TSX(L))**2 + (TVAR3S(L)+TSY(L))**2)
-      QQSQR(L,0)=SQRT(QQ(L,0))
     ENDDO
   ENDIF
 
@@ -641,14 +641,15 @@ SUBROUTINE HDMT2T
   ENDIF
   
   ! *** Communicate variables with MPI calls before writing to files and looping computations
-#ifdef _MPI
+# ifdef _MPI
+  ! ****************************************************************************
   Call MPI_barrier(MPI_Comm_World, ierr)
   TTDS = DSTIME(0)
-  Call Communicate_CON1(0)
-  
+  Call Communicate_CON1
   TMPITMP = DSTIME(0) - TTDS
   DSITIMING(6) = DSITIMING(6) + TMPITMP
-#endif
+  ! ****************************************************************************
+# endif
 
   ! *** *******************************************************************!
   ! *** CALCULATE SHELL FISH LARVAE AND/OR WATER QUALITY CONSTITUENT
@@ -848,7 +849,7 @@ SUBROUTINE HDMT2T
       !$OMP PARALLEL DO DEFAULT(NONE) PRIVATE(ND,L,K,LF,LL,LP,TMP)           &
       !$OMP             SHARED(NDM,LDMWET,LAWET,LWET,KC,LEC,LNC)             &
       !$OMP             SHARED(TVAR3S,TVAR3W,TVAR3E,TVAR3N,TBX,TBY,TSX,TSY)  &
-      !$OMP             SHARED(CTURB2,RSSBCE,RSSBCW,RSSBCN,RSSBCS,QQ,QQSQR)
+      !$OMP             SHARED(CTURB2,RSSBCE,RSSBCW,RSSBCN,RSSBCS,QQ)
       DO ND=1,NDM
         LF = (ND-1)*LDMWET+1
         LL = MIN(LF+LDMWET-1,LAWET)
@@ -868,8 +869,6 @@ SUBROUTINE HDMT2T
 
           TMP = ( RSSBCE(L)*TVAR3W(L) + RSSBCW(L)*TSX(L) )**2 + ( RSSBCN(L)*TVAR3S(L) + RSSBCS(L)*TSY(L) )**2
           QQ(L,KC) = 0.5*CTURB2*SQRT(TMP)
-
-          QQSQR(L,0)=SQRT(QQ(L,0))
         ENDDO
       ENDDO
       !$OMP END PARALLEL DO
@@ -914,7 +913,6 @@ SUBROUTINE HDMT2T
       DO L=2,LA
         QQ(L,0 )   =     CTURB2*SQRT((RSSBCE(L)*WCOREST(L)*TVAR3E(L) + RSSBCW(L)*WCORWST(L)*TBX(L))**2 + (RSSBCN(L)*WCORNTH(L)*TVAR3N(L) + RSSBCS(L)*WCORSTH(L)*TBY(L))**2)
         QQ(L,KC)   = 0.5*CTURB2*SQRT((RSSBCE(L)*TVAR3W(L)            + RSSBCW(L)*TSX(L))**2            + (RSSBCN(L)*TVAR3S(L)+RSSBCS(L)*TSY(L))**2)
-        QQSQR(L,0) = SQRT(QQ(L,0))
       ENDDO
     ENDIF  ! *** END OF ISCORTBC BLOCK
   ENDIF    ! *** END OF ISWAVE=0
@@ -949,15 +947,12 @@ SUBROUTINE HDMT2T
           TAUB2  = MAX(TAUB2,0.)              ! *** CURRENT & WAVE
           QQ(L,0 )   = CTURB2*SQRT(TAUB2)  ! *** CELL CENTERED TURBULENT INTENSITY DUE TO CURRENTS & WAVES
           QQ(L,KC)   = 0.5*CTURB2*SQRT((TVAR3W(L)+TSX(L))**2 + (TVAR3S(L)+TSY(L))**2)
-          QQSQR(L,0) = SQRT(QQ(L,0))
         ELSE
           TMP = ( RSSBCE(L)*TVAR3E(L) + RSSBCW(L)*TBX(L) )**2 + ( RSSBCN(L)*TVAR3N(L) + RSSBCS(L)*TBY(L) )**2
           QQ(L,0 ) = 0.5*CTURB2*SQRT(TMP)
 
           TMP = ( RSSBCE(L)*TVAR3W(L) + RSSBCW(L)*TSX(L) )**2 + ( RSSBCN(L)*TVAR3S(L) + RSSBCS(L)*TSY(L) )**2
           QQ(L,KC) = 0.5*CTURB2*SQRT(TMP)
-
-          QQSQR(L,0) = SQRT(QQ(L,0))
         ENDIF
       ENDDO
 
@@ -973,34 +968,43 @@ SUBROUTINE HDMT2T
   ENDIF
   TQQQ = TQQQ + (DSTIME(0)-TTDS)
       
-#ifdef _MPI
+# ifdef _MPI
+  ! ****************************************************************************
+  ! *** MPI communication
   Call MPI_barrier(MPI_Comm_World, ierr)
   TTDS = DSTIME(0)
-  Call Communicate_1D2(UV, VU)
-
-  IF( BSC > 1E-6 )THEN
-    ! *** Communicate updated B values
-    Call communicate_ghost_cells(B)
-    IF( ISTRAN(2) > 0 .AND. ISICE == 4 )THEN
-      Call communicate_ghost_cells(RHOW)
-    ENDIF
-  ENDIF
-  
   Call Communicate_1D2(TBX, TBY)
-
-  TMPITMP = DSTIME(0) - TTDS
-  DSITIMING(9) = DSITIMING(9) + TMPITMP
-
-  TTDS = DSTIME(0)
+  Call Communicate_1D2(UV, VU)
   IF( KC > 1 )THEN
     Call Communicate_QQ
   ELSE
-    Call Communicate_3D_0(QQ)
+    Call communicate_ghost_3d0(QQ)
   ENDIF
-
   DSITIMING(7) = DSITIMING(7) + (DSTIME(0)-TTDS)
-#endif
+  ! ****************************************************************************
+# endif
 
+  ! *** COMPUTE THE SQRT OF THE TURBULENCE (M/S)
+  !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,KS,LDMWET,LAWET,LWET,LLWET,LKWET,QQ,QQSQR) PRIVATE(ND,K,LF,LL,LP,L)
+  DO ND=1,NDM  
+    DO K=0,KS
+      IF( K == 0 )THEN
+        LF = (ND-1)*LDMWET+1
+        LL = MIN(LF+LDMWET-1,LAWET)
+        DO LP=LF,LL
+          L = LWET(LP)
+          QQSQR(L,0) = SQRT(QQ(L,0))  
+        ENDDO
+      ELSE
+        DO LP=1,LLWET(K,ND)
+          L = LKWET(LP,K,ND)  
+          QQSQR(L,K) = SQRT(QQ(L,K))  
+        ENDDO
+      ENDIF
+    ENDDO
+  ENDDO 
+  !$OMP END PARALLEL DO
+  
   ! *** *******************************************************************!
   ! *** *******************************************************************!
   ! *** HYDRODYNAMIC CALCULATIONS FOR THIS TIME STEP ARE COMPLETED

@@ -126,7 +126,7 @@ Module Mod_Read_Propwash
 
     use Variables_Propwash
     use fson
-    use fson_value_m, only: fson_value_count, fson_value_get
+    use mod_fson_value, only: fson_value_count, fson_value_get
 
     implicit none
 
@@ -197,6 +197,9 @@ Module Mod_Read_Propwash
         ENDIF
       ENDDO
       
+      ! *** Trim the active constituent list from unneeded fast classes
+      NACTIVEWC = NACTIVEWC - (NSED2 - NSCM2 - NSND)
+      
       ! *** Chemical Fate and Transport Parameters
       IF( ISTRAN(5) > 0 .AND. NTOX > 0 )THEN
         ! *** Set the new fast class CFT variables based on the source sediment class
@@ -238,7 +241,7 @@ Module Mod_Read_Propwash
     use Variables_Propwash
     Use Allocate_Initialize      
     use fson
-    use fson_value_m, only: fson_value_count, fson_value_get
+    use mod_fson_value, only: fson_value_count, fson_value_get
     Use Variables_MPI, only : mpi_log_unit
 
     implicit none
@@ -375,7 +378,7 @@ Module Mod_Read_Propwash
 
     use Variables_Propwash
     use fson
-    use fson_value_m, only: fson_value_count, fson_value_get
+    use mod_fson_value, only: fson_value_count, fson_value_get
     Use Variables_MPI, only : mpi_log_unit
 
     implicit none

@@ -41,7 +41,7 @@ MODULE WQ_ZOOPLANKTON
   !---------------------------------------------------------------------------!
   SUBROUTINE ZOOPL_CONTROL
     USE fson
-    USE fson_value_m, ONLY: fson_value_count, fson_value_get
+    USE mod_fson_value, ONLY: fson_value_count, fson_value_get
     
     TYPE(fson_value), POINTER :: json_data, zoogroups, pointsource, item
     

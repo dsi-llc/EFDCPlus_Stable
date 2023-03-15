@@ -259,8 +259,7 @@ SUBROUTINE BEDLOADJ
   !$OMP END DO
      
 #ifdef _MPI
-  !$OMP BARRIER
-  !$OMP MASTER
+  !$OMP SINGLE
   TTDS = DSTIME(0)
   Call MPI_barrier(MPI_Comm_World, ierr)
   TWAIT = DSTIME(0) - TTDS
@@ -269,8 +268,7 @@ SUBROUTINE BEDLOADJ
   TTDS = DSTIME(0)
   CALL Communicate_BEDLOAD(1,NSCM)
   DSITIMING(8) = DSITIMING(8) + (DSTIME(0) - TTDS)
-  !$OMP END MASTER
-  !$OMP BARRIER
+  !$OMP END SINGLE
 #endif                
 
   ! *** *************************************************************************

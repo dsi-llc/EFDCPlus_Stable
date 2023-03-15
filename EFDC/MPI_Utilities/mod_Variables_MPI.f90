@@ -76,7 +76,6 @@
 
   ! *** For MPI Topology routines
   Integer, dimension(2) :: domain_coords  !< Assumes 2D decomposition
-  Integer :: ndim                         !< Dimension of the problem, 1D, 2D, 3D, etc. Going to be 2D in our case
   Integer, dimension(2)  :: dimensions    !< keeps track of dimensions of the problem
   Logical, dimension(2)  :: is_periodic   !< tells you if one of the directions is periodic
   Logical :: reorder                      !< Boolean indicating if MPI should reorder and find a good way to assign
@@ -165,6 +164,7 @@
   Integer, Allocatable, Dimension(:,:)   :: nComm_Cells    !< Sub-Domain active cell interface count
 
   Integer :: lmap
+  Integer :: size_mpi  !< Number of MPI sub-domains a single domain is to write debugging information
 
   !------------------------------------------------------------------
   !***These variables are likely no longer needed

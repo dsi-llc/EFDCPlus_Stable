@@ -17,6 +17,7 @@ SUBROUTINE CALUVW
 
   USE GLOBAL
   Use Variables_MPI
+  Use Allocate_Initialize      
 #ifdef _MPI
   Use MPI 
   Use Communicate_Ghost_Routines
@@ -26,7 +27,7 @@ SUBROUTINE CALUVW
 
   INTEGER :: NMD, ND, LF, LL, L, LS, LN, K, LE, LW, LNN, LP, LHOST, LCHNU, LCHNV, LG
   INTEGER :: ICFL, JCFL, KCFL, IVAL, IDTCFL, LTMP, L1P, IOBC, IFILE
-  INTEGER, SAVE :: NKCE, NKCN, NHOLE, NSTEP
+  INTEGER, SAVE :: NKCE, NKCN, NHOLE, NSTEP, IUPDATE_UVHE
 
   REAL      :: Q1, Q2, CMU, CMV, CRU, CRV, EU, EV, RCDZM, RCDZU, RCDZL, HPPTMP, TMPVALN, DTMAXX, HPDEL
   REAL      :: RLAMN, RLAMO, TMPVAL, CFLUUUT, CFLVVVT, CFLWWWT, CFLCACT, DTCFL, UWTMP, UETMP, VSTMP, VNTMP, WBTMP, WTTMP, DTMAXI
@@ -56,41 +57,25 @@ SUBROUTINE CALUVW
   Integer :: ierr
 
   IF( .NOT. ALLOCATED(RCXX) )THEN
-    ALLOCATE(LKCE(LCM))
-    ALLOCATE(LKCN(LCM))
-    ALLOCATE(LHOLE(LCM))
-    ALLOCATE(LSTEP(LCM))
-    ALLOCATE(UHDYEE(LCM))
-    ALLOCATE(VHDXEE(LCM))
-    ALLOCATE(RCXX(LCM))
-    ALLOCATE(RCYY(LCM))
-    ALLOCATE(TVARE(LCM))
-    ALLOCATE(TVARN(LCM))
-    ALLOCATE(TVARW(LCM))
-    ALLOCATE(TVARS(LCM))
-    ALLOCATE(CERRU(LCM,KCM))
-    ALLOCATE(CERRV(LCM,KCM))
+    Call AllocateDSI(LKCE,   LCM,   0)
+    Call AllocateDSI(LKCN,   LCM,   0)
+    Call AllocateDSI(LHOLE,  LCM,   0)
+    Call AllocateDSI(LSTEP,  LCM,   0)
+    Call AllocateDSI(UHDYEE, LCM, 0.0)
+    Call AllocateDSI(VHDXEE, LCM, 0.0)
+    Call AllocateDSI(RCXX,   LCM, 0.0)
+    Call AllocateDSI(RCYY,   LCM, 0.0)
+    Call AllocateDSI(TVARE,  LCM, 0.0)
+    Call AllocateDSI(TVARN,  LCM, 0.0)
+    Call AllocateDSI(TVARW,  LCM, 0.0)
+    Call AllocateDSI(TVARS,  LCM, 0.0)
+    Call AllocateDSI(CERRU,  LCM, KCM, 0.0)
+    Call AllocateDSI(CERRV,  LCM, KCM, 0.0)
 
     IF(  (ISWAVE == 2 .OR. ISWAVE == 4) .AND. ISWVSD >= 1 )THEN
-      ALLOCATE(SINH2(LCM))
-      ALLOCATE(SINH4(LCM))
-      SINH2 = 0.
-      SINH4 = 0.
+      Call AllocateDSI(SINH2, LCM, 0.0)
+      Call AllocateDSI(SINH4, LCM, 0.0)
     ENDIF
-    LKCE=0
-    LKCN=0
-    LHOLE=0
-    LSTEP=0
-    UHDYEE=0.0
-    VHDXEE=0.0
-    RCXX=0.0
-    RCYY=0.0
-    TVARE=0.
-    TVARN=0.
-    TVARW=0.
-    TVARS=0.
-    CERRU=0.
-    CERRV=0.
 
     DO L=2,LA
       ! *** CERRU
@@ -238,6 +223,18 @@ SUBROUTINE CALUVW
       ENDDO
     ENDIF
     
+    ! *** Set skip flag for updating UHE and VHE
+    IUPDATE_UVHE = 0
+    IF( ISDYNSTP > 0 .OR. ISITB >= 1 .OR. LSEDZLJ .OR. (ISTRAN(5) > 0 .AND. ISTRAN(2) > 0 .AND. ANY(ITOXKIN(3,:) > 0)) ) IUPDATE_UVHE = 1
+      
+#   ifdef _MPI
+    ! ****************************************************************************
+    Call MPI_barrier(MPI_Comm_World, ierr)
+    Call communicate_ghost_cells(CERRU)
+    Call communicate_ghost_cells(CERRV)
+    ! ****************************************************************************
+#   endif
+
   ENDIF
 
   IF( ISDYNSTP == 0 )THEN
@@ -725,16 +722,9 @@ SUBROUTINE CALUVW
     LF=(ND-1)*LDMWET+1
     LL=MIN(LF+LDMWET-1,LAWET)
 
-    DO LP=1,LLWETZ(KC,ND)
-      L=LKWETZ(LP,KC,ND)
-      UHE(L)=0.
-      VHE(L)=0.
-    ENDDO
     DO K=1,KC
       DO LP=1,LLWETZ(K,ND)
-        L=LKWETZ(LP,K,ND)
-        UHE(L) = UHE(L) + UHDYF(L,K)*SGZU(L,K)
-        VHE(L) = VHE(L) + VHDXF(L,K)*SGZV(L,K)
+        L = LKWETZ(LP,K,ND)
         U(L,K) = UHDYF(L,K)*HUI(L)
         V(L,K) = VHDXF(L,K)*HVI(L)
       ENDDO
@@ -746,29 +736,44 @@ SUBROUTINE CALUVW
         V(L,K) = V(L,K)*DXIV(L)
       ENDDO
     ENDDO
-    DO LP=1,LLWETZ(KC,ND)
-      L=LKWETZ(LP,KC,ND)
-      UHE(L) = UHE(L)*DYIU(L)
-      VHE(L) = VHE(L)*DXIV(L)
-    ENDDO
+    
+    ! *** Only needed for specific computational options
+    IF( IUPDATE_UVHE > 0 )THEN 
+      DO LP=1,LLWETZ(KC,ND)
+        L = LKWETZ(LP,KC,ND)
+        UHE(L)=0.
+        VHE(L)=0.
+      ENDDO
+
+      DO K=1,KC
+        DO LP=1,LLWETZ(K,ND)
+          L = LKWETZ(LP,K,ND)
+          UHE(L) = UHE(L) + UHDYF(L,K)*SGZU(L,K)
+          VHE(L) = VHE(L) + VHDXF(L,K)*SGZV(L,K)
+        ENDDO
+      ENDDO
+
+      DO LP=1,LLWETZ(KC,ND)
+        L = LKWETZ(LP,KC,ND)
+        UHE(L) = UHE(L)*DYIU(L)
+        VHE(L) = VHE(L)*DXIV(L)
+      ENDDO
+    ENDIF
   ENDDO    ! ***  END OF DOMAIN LOOP
   !$OMP END DO
 
-  ! ***************************************************************************
-  ! *** CALCULATE W
 #ifdef _MPI
-  !$OMP BARRIER
-  !$OMP MASTER
+  !$OMP SINGLE
   Call MPI_barrier(MPI_Comm_World, ierr)
   TTDS = DSTIME(0)
-  !Call communicate_ghost_cells(UHDY)
-  !Call communicate_ghost_cells(VHDX)
-  Call Communicate_UVW1
+  Call Communicate_UVW1   ! *** Communicate UHDY and VHDX before W calculations
+  
   TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
-  !$OMP END MASTER
-  !$OMP BARRIER
+  !$OMP END SINGLE
 #endif
 
+  ! ***************************************************************************
+  ! *** CALCULATE W
   IF( ISTL == 3 )THEN
     !$OMP DO PRIVATE(ND,K,LP,L,LN,LE)
     DO ND=1,NDM
@@ -886,16 +891,16 @@ SUBROUTINE CALUVW
     ENDDO
   ENDDO
 
-#ifdef _MPI
+# ifdef _MPI
+  ! ***************************************************************************
+  ! *** MPI Communication
   Call MPI_barrier(MPI_Comm_World, ierr)
   TTDS = DSTIME(0)
-  !Call communicate_ghost_cells(U)
-  !Call communicate_ghost_cells(V)
-  !Call communicate_3d_0(W)
-  Call Communicate_UVW3
+  Call Communicate_UVW3   ! *** Communicate U, V, and W
 
   TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
-#endif
+  ! ***************************************************************************
+# endif
 
   !$OMP PARALLEL DEFAULT(SHARED)
 
@@ -947,9 +952,6 @@ SUBROUTINE CALUVW
   IF( KC > 1 )THEN
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,K)
     DO ND=1,NDM
-      LF=(ND-1)*LDMWET+1
-      LL=MIN(LF+LDMWET-1,LAWET)
-
       DO LP=1,LLWETZ(KC,ND)
         L = LKWETZ(LP,KC,ND)
         TVARE(L)=0.
@@ -1264,8 +1266,7 @@ SUBROUTINE CALUVW
     !$OMP END DO
   ENDIF
 
-  !$OMP BARRIER
-  !$OMP MASTER
+  !$OMP SINGLE
   ! *** RESET OPEN BC CONCENTRATIONS
   DO IOBC=1,NBCSOP
     L = LOBCS(IOBC)
@@ -1300,13 +1301,12 @@ SUBROUTINE CALUVW
 #ifdef _MPI
   Call MPI_barrier(MPI_Comm_World, ierr)
   TTDS = DSTIME(0)
-  !Call communicate_ghost_cells(HP,'HP')
-  !Call communicate_ghost_cells(HPI,'HPI')
-  Call Communicate_1D2(HP, HPI)
+  Call Communicate_1D2(HP, HPI)   ! *** Communicate HP and HPI after continuity checks
+  !Call communicate_ghost_cells(HP, 'HP')   ! *** Communicate HP after continuity checks
+
   TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
 #endif
-  !$OMP END MASTER
-  !$OMP BARRIER
+  !$OMP END SINGLE
 
   ! *** COMPUTE FACE DEPTHS AND LAYER THICKNESSES
   !$OMP DO PRIVATE(ND,LF,LL,K,LP,L)
