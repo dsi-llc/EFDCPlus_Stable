@@ -552,13 +552,15 @@ SUBROUTINE SSEDTOX
     ENDIF
     
     ! *** INITIALIZE GRAIN SHEARS WITH TOTAL
-    DO LP=LF,LL
-      L = LSED(LP)
-      TAUBSED(L)  = TAUB(L)
-      TAUBSND(L)  = TAUB(L)
-      USTARSED(L) = USTAR(L)
-      USTARSND(L) = USTAR(L)
-    ENDDO
+    IF( .NOT. LSEDZLJ )THEN
+      DO LP=LF,LL
+        L = LSED(LP)
+        TAUBSED(L)  = TAUB(L)
+        TAUBSND(L)  = TAUB(L)
+        USTARSED(L) = USTAR(L)
+        USTARSND(L) = USTAR(L)
+      ENDDO
+    ENDIF
 
     ! *** CALCULATE CELL CENTER DEPTH DEVIATION FROM UNIFORM FLOW                                                           
     IF( .NOT. LSEDZLJ )THEN

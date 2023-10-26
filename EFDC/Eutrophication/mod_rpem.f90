@@ -1287,15 +1287,16 @@ SUBROUTINE RPEMINP_JNP
     ENDIF
   
   ENDDO                                                                                                                  
-
-  ! *** Write out the temperature dependencies for RPEM
-  WRITE(2,'(//,A,//,3(A11,F10.5),A10,I5)') "Look-up Table for RPEM Temperature Dependency",                               &
-                                            "WQTDMIN = ", WQTDMIN, "WQTDMAX = ", WQTDMAX, "WQTDINC = ", WQTDINC, "NWQTD = ", NWQTD
-  WRITE(2,'(/,A5,A10,A15,20A10)') "IT", "TEMP", "RPEMTPrps", "RPEMTPrpe", "RPEMTRrps", "RPEMTRrpe", "RPEMTRrpr"
-                                            
-  DO NT = 1,NWQTD
-    WRITE(2,'(I5,F10.3,F15.3,20F10.5)') NT, WQTDTEMP(NT), RPEMTPrps(NT), RPEMTPrpe(NT), RPEMTRrps(NT), RPEMTRrpe(NT), RPEMTRrpr(NT)
-  ENDDO
+  if( process_id == master_id )then
+    ! *** Write out the temperature dependencies for RPEM
+    WRITE(2,'(//,A,//,3(A11,F10.5),A10,I5)') "Look-up Table for RPEM Temperature Dependency",                               &
+                                              "WQTDMIN = ", WQTDMIN, "WQTDMAX = ", WQTDMAX, "WQTDINC = ", WQTDINC, "NWQTD = ", NWQTD
+    WRITE(2,'(/,A5,A10,A15,20A10)') "IT", "TEMP", "RPEMTPrps", "RPEMTPrpe", "RPEMTRrps", "RPEMTRrpe", "RPEMTRrpr"
+                                              
+    DO NT = 1,NWQTD
+      WRITE(2,'(I5,F10.3,F15.3,20F10.5)') NT, WQTDTEMP(NT), RPEMTPrps(NT), RPEMTPrpe(NT), RPEMTRrps(NT), RPEMTRrpe(NT), RPEMTRrpr(NT)
+    ENDDO
+  endif
   
   ! *** ASSIGN BED POREWATER CONCENTRATIONS IF SEDIMENT DIAGENESIS NOT SIMULATED
   IF( IWQBEN /= 1 )THEN

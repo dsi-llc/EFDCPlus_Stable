@@ -273,7 +273,7 @@ SUBROUTINE CALTBXY
 
   ! *********************************************************************************
   ! *** WAVE-CURRENT BOUNDARY LAYER  
-  IF( ISWAVE == 2 .OR. ISWAVE == 4 )THEN
+  IF( (ISWAVE == 2 .OR. ISWAVE == 4) .AND. .NOT. LSEDZLJ )THEN
     !$OMP DO PRIVATE(ND,L,LF,LL,LWAVE)  &
     !$OMP    PRIVATE(QQWCTMP,TWCTMP,AEXTMP,TAUTMP,TMPVAL,USTARC,CDRGTMP) &
     !$OMP    PRIVATE(TAUBTMP,TAUE,RIPAMP,RIPSTP,RIPFAC,QQWVTMP)
@@ -281,7 +281,7 @@ SUBROUTINE CALTBXY
       LF = 1 + (ND-1)*LDMW  
       LL = MIN(LF + LDMW-1,NWVCELLS)
 
-      ! *** UPDATE WATER COLUMN TURBULENT INTENSITY BY WAVE ACTION
+      ! *** Update water column turbulent intensity by wave action
       DO LWAVE = LF,LL  
         L = LWVCELL(LWAVE)
 
@@ -317,7 +317,7 @@ SUBROUTINE CALTBXY
           
           ! *** COMPUTE MOVING BED EFFECTS
           IF( ISTRAN(7) > 0 .AND. ISWCBL == 2 )THEN
-            QQWC(L) = SQRT( QQWVTMP*QQWVTMP + QQ(L,0)*QQ(L,0) )
+            QQWC(L) = SQRT( QQWVTMP*QQWVTMP + QQ(L,0)*QQ(L,0) )   ! *** Combined wave/current for stationary bed (m2/s2)
             TWCTMP = QQWC(L)/CTURB2
             TAUBTMP = QQWVTMP/CTURB2
             TAUE = TWCTMP/TAUN(NSED + 1)
@@ -341,6 +341,7 @@ SUBROUTINE CALTBXY
             QQWV3(L) = QQWVTMP  
           ENDIF
 
+          ! *** Maximum magnitude without accounting for wave/current interactions (m2/s2)
           QQWCR(L) = SQRT( QQWV3(L)*QQWV3(L) + QQ(L,0)*QQ(L,0) )
 
         ELSE  
@@ -351,7 +352,7 @@ SUBROUTINE CALTBXY
     ENDDO     ! *** END OF DOMAIN
     !$OMP END DO
   
-    ! *** BED SHEAR STRESS BY CURRENT & WAVE
+    ! *** Bed shear stress by current & wave
     !$OMP DO PRIVATE(ND,L,LF,LL,LE,LS,LN,LW,LWAVE)  &
     !$OMP    PRIVATE(UTMP,VTMP,CURANG,COSWC,UMAGTMP,VMAGTMP,CDMAXU,CDMAXV,CDTMPU,CDTMPV,WVDTMP,WVDELU,WVDELV)  &
     !$OMP    PRIVATE(QWCTMPU,QWCTMPV,QCTMPU,QCTMPV,QWDQCU,QWDQCV,HZREFU,HZREFV,ZBREU,ZBREV,BOTTMP )  &
@@ -360,7 +361,7 @@ SUBROUTINE CALTBXY
       LF = 1 + (ND-1)*LDMW  
       LL = MIN(LF + LDMW-1,NWVCELLS)
 
-      ! *** UPDATE WATER COLUMN TURBULENT INTENSITY BY WAVE ACTION
+      ! *** Update bed drag coefficients STBX and STBY based on wave and current angles
       DO LWAVE = LF,LL  
         L = LWVCELL(LWAVE)
 
@@ -489,7 +490,7 @@ SUBROUTINE CALTBXY
     ENDDO    ! *** END OF DOMAIN
     !$OMP END DO
   
-  ELSEIF ( ISWAVE == 1 .OR. ISWAVE == 3 )THEN
+  ELSEIF( (ISWAVE == 1 .OR. ISWAVE == 3) .AND. .NOT. LSEDZLJ )THEN
     !$OMP SINGLE
     QQWV3 = QQWV1
     !$OMP END SINGLE

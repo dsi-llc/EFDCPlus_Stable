@@ -174,15 +174,15 @@ SUBROUTINE Macro_Veg(NAL)
 
   ENDDO        ! *** End of L index loop  
     
-  TVAL1 = SUM( WQV(2,:,20)*HPK(2,:) ) ! DELME
+  !TVAL1 = SUM( WQV(2,:,20)*HPK(2,:) ) ! DELME
   
-  L = 2  ! DELME
-  IF( KTOP == KC )THEN
-    K = 0  ! DELME
-  ENDIF
-  IF( WQV(2,KC,19+NAL) > ALGAES(NAL).THRESHOLD .AND. Ktop == KC )THEN
-    K = 0  ! DELME
-  ENDIF
+  !L = 2  ! DELME
+  !IF( KTOP == KC )THEN
+  !  K = 0  ! DELME
+  !ENDIF
+  !IF( WQV(2,KC,19+NAL) > ALGAES(NAL).THRESHOLD .AND. Ktop == KC )THEN
+  !  K = 0  ! DELME
+  !ENDIF
   
   
 END SUBROUTINE Macro_Veg

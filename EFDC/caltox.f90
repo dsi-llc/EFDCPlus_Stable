@@ -1128,7 +1128,7 @@ SUBROUTINE CALTOX
             CLOSE(mpi_log_unit)
             PRINT '(A,F15.6,I7,I5,E14.6,I5,2E14.6)', 'Bad TOXB', TIMEDAY, MAP2GLOBAL(L).LG, KBT(L), HBED(L,KBT(L)), NT, TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT) 
             IF( ABS(TOXB(L,KBT(L),NT)) > 1E-5*TOXB1(L,KBT(L),NT) )THEN
-              PAUSE  
+             ! PAUSE  
             ENDIF
             TOXB(L,KBT(L),NT) = 0.0 
           ENDIF          
@@ -1175,7 +1175,7 @@ SUBROUTINE CALTOX
             BB11 = TOXB(L,KBT(L),NT)*DELTI - BB22 - TOXFBL(L,NT)
             IF( BB11 < 0.0 )THEN
               PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB correction', TIMEDAY, L, KBT(L), BB11, TOXB(L,KBT(L),NT)   ! DELME
-              pause
+              !pause
               BB11 = 0.0   ! delme
             ENDIF
           ENDIF
@@ -1184,7 +1184,7 @@ SUBROUTINE CALTOX
           TOX(L,KSZ(L),NT) = TOX(L,KSZ(L),NT) + DTSED*( BB11 + BB22 - AA11 )*HPKI(L,KSZ(L))
           IF( TOX(L,KSZ(L),NT) < 0.0 )THEN
             PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOX correction', TIMEDAY, L, KSZ(L), BB22, TOX(L,KSZ(L),NT)   ! DELME
-            pause
+            !pause
             TOX(L,KSZ(L),NT) = 0.0
           ENDIF
           
@@ -1197,7 +1197,7 @@ SUBROUTINE CALTOX
             CLOSE(mpi_log_unit)
             PRINT '(A,F10.6,I7,I5,E14.6,I5,2E14.6)', 'Bad TOXB', TIMEDAY, L, KBT(L), HBED(L,KBT(L)), NT, TOXB1(L,KBT(L),NT), TOXB(L,KBT(L),NT)   ! DELME
             IF( ABS(TOXB(L,KBT(L),NT)) > 1E-5*TOXB1(L,KBT(L),NT) )THEN
-              pause   ! delme
+              !pause   ! delme
             ENDIF
             TOXB(L,KBT(L),NT) = 0.0    !  delme
           ENDIF
@@ -1271,7 +1271,7 @@ SUBROUTINE CALTOX
             BB11 = TOXB(L,KBT(L),NT)*DELTI - BB22 - TOXFBL(L,NT)
             IF( BB11 < 0.0 )THEN
               PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOXB correction', TIMEDAY, L, KBT(L), BB11, TOXB(L,KBT(L),NT)   ! DELME
-              pause
+              !pause
               BB11 = 0.0   ! delme
             ENDIF
           ENDIF
@@ -1280,7 +1280,7 @@ SUBROUTINE CALTOX
           TOX(L,KSZ(L),NT) = TOX(L,KSZ(L),NT) + DTSED*( BB11 + BB22 - AA11 )*HPKI(L,KSZ(L))
           IF( TOX(L,KSZ(L),NT) < 0.0 )THEN
             PRINT '(A,F10.6,I7,I5,2E14.6)', 'Bad TOX correction', TIMEDAY, L, KSZ(L), BB22, TOX(L,KSZ(L),NT)   ! DELME
-            pause
+            !pause
             TOX(L,KSZ(L),NT) = 0.0
           ENDIF
           

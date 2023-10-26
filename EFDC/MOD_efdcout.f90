@@ -732,14 +732,25 @@ SUBROUTINE WCOUT
   ENDIF
 
   IF( ISWAVE >= 1 )THEN
+    IF( LSEDZLJ )THEN
+      QQWV3_Global = QQWV3_Global* 0.1 / (WATERDENS*1000.)   ! *** Convert from dyne/cm2 to Pa and density normalize
+    ENDIF
     WRITE(EE_UNIT) (REAL(QQWV3_Global(L),4), L=2,LA_Global)  ! *** Bed Shear due to Waves Only
     ! *** Shear due to Current Only
-    DO L=2,LA_Global
-      SHEAR = ( RSSBCE_Global(L)*TBX_Global(LEC_Global(L)) + RSSBCW_Global(L)*TBX_Global(L) )**2  + &
-              ( RSSBCN_Global(L)*TBY_Global(LNC_Global(L)) + RSSBCS_Global(L)*TBY_Global(L) )**2
-      SHEAR = 0.5*SQRT(SHEAR)
-      WRITE(EE_UNIT) SHEAR             ! *** Bed Shear due to Current Only
-    ENDDO
+    IF( LSEDZLJ )THEN
+      DO L=2,LA_Global
+        SHEAR = SHEAR_Global(L) - QQWV3_Global(L)
+        !SHEAR = MAX(SHEAR,0.0)
+        WRITE(EE_UNIT) SHEAR             ! *** Bed Shear due to Current Only
+      ENDDO
+    ELSE
+      DO L=2,LA_Global
+        SHEAR = ( RSSBCE_Global(L)*TBX_Global(LEC_Global(L)) + RSSBCW_Global(L)*TBX_Global(L) )**2  + &
+                ( RSSBCN_Global(L)*TBY_Global(LNC_Global(L)) + RSSBCS_Global(L)*TBY_Global(L) )**2
+        SHEAR = 0.5*SQRT(SHEAR)
+        WRITE(EE_UNIT) SHEAR             ! *** Bed Shear due to Current Only
+      ENDDO
+    ENDIF
     IF( ISWAVE >= 3 )THEN
       WRITE(EE_UNIT) (REAL(WV_HEIGHT_Global(L),4), L=2,LA_Global)
       WRITE(EE_UNIT) (REAL(WV_FREQ_Global(L),4), L=2,LA_Global)

@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29503.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "EFDCPlus_MPI_11.6", "EFDC\EFDCPlus_MPI_11.6.vfproj", "{8F3F0269-93FE-4360-B2AD-B35BE7DA4202}"
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "EFDCPlus_MPI_11.7", "EFDC\EFDCPlus_MPI_11.7.vfproj", "{8F3F0269-93FE-4360-B2AD-B35BE7DA4202}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

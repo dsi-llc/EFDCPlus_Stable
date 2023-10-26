@@ -40,6 +40,7 @@ Subroutine Calculate_Local_Shear
           SHEAR_Local(L) = TAU(L) * 0.1 / (WATERDENS*1000.)
         ENDIF
       ENDDO
+
     ELSEIF( ISBEDSTR >= 1 )THEN
       DO L=2,LA
         IF( LBED(L) )THEN

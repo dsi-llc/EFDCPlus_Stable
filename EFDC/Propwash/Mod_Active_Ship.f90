@@ -197,31 +197,17 @@ subroutine interp_track(self, track_id, prev_pos_id, next_pos_id, debug)
                                self.tracks(track_id).track_pos(next_pos_id).course, ratio)
 
   ! *** Deceleration
-  if( self.tracks(track_id).track_pos(prev_pos_id).power < -1  .or. self.tracks(track_id).track_pos(next_pos_id).power < -1 )then
+  if( self.power < 0.0 )then
     self.heading = self.heading + pi                         !< Deceleration - Reverse heading to reflect propeller reversing
-    
-    if( self.tracks(track_id).track_pos(prev_pos_id).power > -1  .and. self.tracks(track_id).track_pos(next_pos_id).power < -1 )then
-      ! *** Next point is declerating but previous point was not
-      p1 = self.tracks(track_id).track_pos(prev_pos_id).power
-      p2 = abs(self.tracks(track_id).track_pos(next_pos_id).power)/100.
-    elseif( self.tracks(track_id).track_pos(prev_pos_id).power < -1  .and. self.tracks(track_id).track_pos(next_pos_id).power > -1 )then
-      ! *** Previous point was declerating but next point is not
-      p1 = abs(self.tracks(track_id).track_pos(prev_pos_id).power)/100.
-      p2 = self.tracks(track_id).track_pos(next_pos_id).power
-    else
-      p1 = abs(self.tracks(track_id).track_pos(prev_pos_id).power)/100.
-      p2 = abs(self.tracks(track_id).track_pos(next_pos_id).power)/100.
-    endif
-    
-    self.power   = interp_value(p1, p2, ratio)
+    self.power = abs(self.power)
   endif
   
-  if( self.power < -0.001 )then
-    self.rps   = -self.power*self.ship.max_rps               !< Fraction of max RPS
-    self.power = -1.                                         !< Set to inactive
-  elseif( self.power > 0.001 )then
+  if( self.ship.power_source == 0 )then
     self.power = self.power*self.ship.max_power              !< Fraction of max HP
     self.rps   = -1.                                         !< Set to inactive
+  elseif( self.ship.power_source == 1 )then
+    self.rps   = self.power*self.ship.max_rps                !< Fraction of max RPS
+    self.power = -1.                                         !< Set to inactive
   else
     self.power =  0.                                         !< Power off
     self.rps   =  0.                                         !< Power off
@@ -1109,6 +1095,7 @@ subroutine calc_erosive_flux(self, debug)
   
   self.max_bot_vel = 0.25 * vb_max          ! *** Fraction of maximum bottom velocity to be used to prevent double counting if ISPROPWASH = 2
 
+  ! *** Write pw_mesh files, one for each ship
   if( self.freq_out > 0. )then
     if( timeday >= self.timesnap )then
       if( self.power /= 0.0 .or. self.nsnap == 0 )then
@@ -1120,7 +1107,7 @@ subroutine calc_erosive_flux(self, debug)
         endif
         close(801)
         open(unit = 801,file = OUTDIR//filename,status='OLD',position='APPEND',form='BINARY',shared)
-
+  
         write(801) timeday
         write(801) real(self.pos.x_pos - center_x, 4)
         write(801) real(self.pos.y_pos - center_y, 4)

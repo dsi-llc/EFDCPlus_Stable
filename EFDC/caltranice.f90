@@ -115,24 +115,6 @@ SUBROUTINE CALTRANICE(CON, CON1, IT)
     ENDDO
   ENDIF     ! *** ENDIF ON TIME LEVEL CHOICE FOR ISCDCA=0  
   
-  IF( ISTL == 3 .AND. .FALSE. )THEN     ! delme - not needed - delete
-    ! *** ADVANCE CON1 TO CON
-    DO K=1,KC  
-      DO LP=1,LLWET(K,0)
-        L=LKWET(LP,K,0)  
-        CON1(L,K)=CON(L,K)  
-      ENDDO
-      
-  !    ! *** RESET OPEN BC CONCENTRATIONS  
-  !    IF( ISUD == 1 )THEN
-  !      DO IOBC=1,NBCSOP  
-  !        L=LOBCS(IOBC)  
-  !        CON1(L,K)=WQBCCON1(IOBC,K,IT)  
-  !      ENDDO  
-  !    ENDIF
-    ENDDO  
-  ENDIF  
-      
   ! *** UPDATE NEW CONCENTRATIONS  
   DO K=1,KC  
     DO LP=1,LLWET(K,0)

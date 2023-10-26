@@ -67,6 +67,7 @@ Module Mod_Read_Propwash
       Call Broadcast_Scalar(all_new_ships(i).beam               , master_id)
       Call Broadcast_Scalar(all_new_ships(i).max_draft          , master_id)
       Call Broadcast_Scalar(all_new_ships(i).min_draft          , master_id)
+      Call Broadcast_Scalar(all_new_ships(i).power_source       , master_id)
       Call Broadcast_Scalar(all_new_ships(i).max_power          , master_id)
       Call Broadcast_Scalar(all_new_ships(i).max_rps            , master_id)
       Call Broadcast_Scalar(all_new_ships(i).ais_to_stern       , master_id)
@@ -295,6 +296,7 @@ Module Mod_Read_Propwash
       call fson_get(prop_item, "dist_between_props", new_ship.dist_between_props)
       call fson_get(prop_item, "prop_offset",        new_ship.prop_offset)
       call fson_get(prop_item, "freq_out",           new_ship.freq_out)
+      call fson_get(prop_item, "power_source",       new_ship.power_source)
 
       call fson_get(prop_item, "num_props",          new_ship.num_props)
       call fson_get(prop_item, "num_blades",         new_ship.num_blades)
@@ -493,12 +495,12 @@ Module Mod_Read_Propwash
           ! *** QC track points.  Other QC will be done when creating active_ship object
           if( new_position.time == -999. .or. new_position.x_pos == -999. .or. new_position.y_pos == -999 ) CYCLE
           if( new_position.power /= -999. .and. abs(new_position.power) > 1.0 )then
-            if( new_position.power < -100. .or. new_position.power > 1. )then    ! delme - testing
+            if( new_position.power < -1. .or. new_position.power > 1. )then
               print *, 'Invalid applied power fraction for ship, Track, Pt:  ' , i, j, k, all_new_ships(i).name 
               Call Stopp('.')
             endif
           endif
-          if( all_new_ships(i).max_power == -999. .and. new_position.power > 0.0 )then
+          if( all_new_ships(i).max_power == -999. .and. all_new_ships(i).power_source == 0 )then
             print *, 'Invalid applied HP for ship, Track, Pt:  ' , i, j, k, all_new_ships(i).name 
             Call Stopp('.')
           endif

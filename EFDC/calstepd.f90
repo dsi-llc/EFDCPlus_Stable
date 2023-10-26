@@ -31,7 +31,7 @@
 
   IMPLICIT NONE
 
-  INTEGER :: ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX, NDYN
+  INTEGER :: ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX
   INTEGER :: NMD, LMDCHHT, LMDCHUT, LMDCHVT, ITMPR, LLOCOLD,  MINTYPE
   INTEGER,SAVE :: NUP
   !INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: LDYN
@@ -51,7 +51,6 @@
 
   REAL(RKD), EXTERNAL :: DSTIME
   REAL(RKD)           :: TTDS, TWAIT                 ! MODEL TIMING TEMPORARY VARIABLE
-  real(rkd) :: dtold
   
   IF( .NOT. ALLOCATED(DTL1) )THEN
     Call AllocateDSI(DTL1,    LCM,  2.*TIDALP)
@@ -60,7 +59,6 @@
     Call AllocateDSI(DTL4,    LCM,  2.*TIDALP)
     Call AllocateDSI(QSUBINN, LCM,  KCM,  0.0)
     Call AllocateDSI(QSUBOUT, LCM,  KCM,  0.0)
-    !Call AllocateDSI(LDYN,    LCM,  0)
 
     ALLOCATE(DTHISTORY(10))
    
@@ -71,10 +69,7 @@
   ! ********************************************************************************
   
   ! *** SET WATER COLUMN CONSTITUENT TRANSPORT FLAG
-  ITRNTMP=0
-  DO NX=1,7
-    ITRNTMP = ITRNTMP + ISTRAN(NX)
-  ENDDO
+  ITRNTMP = SUM(ISTRAN)
   
   IF( NITER <= 1 ) DTDYN = DT
 
@@ -88,6 +83,7 @@
         QSUBOUT(L,K)=0.0
         QSUBINN(L,K)=0.0
       ENDDO
+      
     ENDDO
 
     DO K = 1,KC

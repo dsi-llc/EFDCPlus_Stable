@@ -27,7 +27,7 @@
   USE GLOBAL
   Use Budget
   USE DRIFTER  ,ONLY:DRIFTER_CALC
-  USE WINDWAVE ,ONLY:WINDWAVEINIT,WINDWAVETUR,READWAVECELLS
+  USE WINDWAVE ,ONLY:WINDWAVEINIT,WINDWAVECAL,WINDWAVETUR,READWAVECELLS
   USE HIFREQOUT
   USE RESTART_MODULE
   USE EFDCOUT
@@ -155,16 +155,21 @@
   ! *** *******************************************************************!
   ! *** CALCULATE WAVE BOUNDARY LAYER AND WAVE REYNOLDS STRESS FORCINGS
   TIMEDAY = DBLE(TCON)*DBLE(TBEGIN)/86400._8
-  IF( ISWAVE == 1 ) CALL WAVEBL
-  IF( ISWAVE == 2 ) CALL WAVESXY
-  IF( ISWAVE >= 3 .AND. NWSER > 0 )THEN
-    CALL WINDWAVEINIT
-    CALL WINDWAVETUR   !DHC FIRST CALL
 
-    ! *** READ IN WAVE COMPUTATIONAL CELL LIST
-    IF( IUSEWVCELLS /= 0 )THEN
-      CALL READWAVECELLS
+  IF( ISWAVE > 2 .AND. LSEDZLJ )THEN
+    CALL WINDWAVEINIT
+    CALL WINDWAVECAL
+  ELSE
+    IF( ISWAVE == 1 ) CALL WAVEBL
+    IF( ISWAVE == 2 ) CALL WAVESXY
+    IF( ISWAVE >= 3 .AND. NWSER > 0 )THEN
+      CALL WINDWAVEINIT
+      CALL WINDWAVETUR
     ENDIF
+  ENDIF
+  ! *** READ IN WAVE COMPUTATIONAL CELL LIST
+  IF( ISWAVE >=3 .AND. IUSEWVCELLS /= 0 )THEN
+    CALL READWAVECELLS
   ENDIF
 
 !> @todo make this work with MPI
@@ -260,7 +265,7 @@
 
   ! *** *******************************************************************!
   ! *** SET BOTTOM AND SURFACE TURBULENT INTENSITY SQUARED
-  IF( ISWAVE == 0 )THEN
+  IF( ISWAVE == 0 .OR. LSEDZLJ )THEN
     DO L=2,LA
       TVAR3W(L)=TSX1(LEC(L))
       TVAR3S(L)=TSY1(LNC(L))
@@ -290,7 +295,7 @@
   ! *** *******************************************************************!
   ! *** SET BOTTOM AND SURFACE TURBULENT INTENSITY SQUARED
   !----------------------------------------------------------------------!
-  IF( ISWAVE >= 1 )THEN
+  IF( ISWAVE >= 1 .AND. .NOT. LSEDZLJ )THEN
     DO L=2,LA
       TVAR3S(L)=TSY1(LNC(L))
       TVAR3W(L)=TSX1(LEC(L))
@@ -333,8 +338,8 @@
     ENDDO
   ENDIF
 
-  ! ***  SET GRAIN STRESS
-  IF( ISTRAN(6) >= 1 .OR. ISTRAN(7) >= 1 )THEN
+  ! *** SET GRAIN STRESS
+  IF( (ISTRAN(6) >= 1 .OR. ISTRAN(7) >= 1) .AND. .NOT. LSEDZLJ )THEN
     DO L=2,LA
       TAUBSED(L) = QQ(L,0)/CTURB2
       TAUBSND(L) = QQ(L,0)/CTURB2
@@ -443,9 +448,13 @@
       ! *** CALCULATE WAVE BOUNDARY LAYER AND WAVE REYNOLDS STRESS FORCINGS
       IF( ISTL == 3 )THEN
         TTDS = DSTIME(0)
-        IF( ISWAVE == 1 ) CALL WAVEBL
-        IF( ISWAVE == 2 ) CALL WAVESXY
-        IF( ISWAVE >= 3 .AND. NWSER > 0 ) CALL WINDWAVETUR   !DHC NEXT CALL
+        IF( ISWAVE > 2 .AND. LSEDZLJ )THEN
+          CALL WINDWAVECAL
+        ELSE
+          IF( ISWAVE == 1 ) CALL WAVEBL
+          IF( ISWAVE == 2 ) CALL WAVESXY
+          IF( ISWAVE >= 3 .AND. NWSER > 0 ) CALL WINDWAVETUR
+        ENDIF
         TTBXY = TTBXY + (DSTIME(0)-TTDS)
       ENDIF
 
@@ -940,13 +949,13 @@
       !
       !----------------------------------------------------------------------C
       TTDS = DSTIME(0)
-      IF( ISWAVE == 0 )THEN
+      IF( ISWAVE == 0 .OR. LSEDZLJ )THEN
 
         ! ***  STANDARD CALCULATIONS - NO CORNER CORRECTS
       !$OMP PARALLEL DO DEFAULT(NONE) PRIVATE(ND,L,K,LF,LL,LP,TMP)           &
       !$OMP             SHARED(NDM,LDMWET,LAWET,LWET,KC,LEC,LNC)             &
       !$OMP             SHARED(TVAR3S,TVAR3W,TVAR3E,TVAR3N,TBX,TBY,TSX,TSY)  &
-      !$OMP             SHARED(CTURB2,RSSBCE,RSSBCW,RSSBCN,RSSBCS,QQ,QQSQR)
+      !$OMP             SHARED(CTURB2,RSSBCE,RSSBCW,RSSBCN,RSSBCS,QQ)
       DO ND=1,NDM
         LF = (ND-1)*LDMWET+1
         LL = MIN(LF+LDMWET-1,LAWET)
@@ -963,13 +972,9 @@
             L = LWET(LP)
             TMP = ( RSSBCE(L)*TVAR3E(L) + RSSBCW(L)*TBX(L) )**2 + ( RSSBCN(L)*TVAR3N(L) + RSSBCS(L)*TBY(L) )**2
             QQ(L,0)  = 0.5*CTURB2*SQRT(TMP)
-            !QQ(L,0)  = 0.5*CTURB2*SQRT( (TVAR3E(L)+TBX(L))**2 + (TVAR3N(L)+TBY(L))**2 )
 
             TMP = ( RSSBCE(L)*TVAR3W(L) + RSSBCW(L)*TSX(L) )**2 + ( RSSBCN(L)*TVAR3S(L) + RSSBCS(L)*TSY(L) )**2
             QQ(L,KC) = 0.5*CTURB2*SQRT(TMP)
-            !QQ(L,KC) = 0.5*CTURB2*SQRT( (TVAR3W(L)+TSX(L))**2 + (TVAR3S(L)+TSY(L))**2 )
-
-            QQSQR(L,0) = SQRT(QQ(L,0))
           ENDDO
         ENDDO
         !$OMP END PARALLEL DO
@@ -981,7 +986,7 @@
       ! *** SET BOTTOM AND SURFACE TURBULENT INTENSITY SQUARED AT (N+1)
       !
       !----------------------------------------------------------------------C
-      IF( ISWAVE >= 1 )THEN
+      IF( ISWAVE >= 1 .AND. .NOT. LSEDZLJ )THEN
 
         !$OMP PARALLEL DEFAULT(SHARED)
         !$OMP DO PRIVATE(ND,LF,LL,LP,L)
@@ -1016,17 +1021,12 @@
               QQ(L,0 )   = CTURB2*SQRT(TAUB2)  ! *** CELL CENTERED TURBULENT INTENSITY DUE TO CURRENTS & WAVES
 
               QQ(L,KC)   = 0.5*CTURB2*SQRT((TVAR3W(L)+TSX(L))**2 + (TVAR3S(L)+TSY(L))**2)
-              QQSQR(L,0) = SQRT(QQ(L,0))
             ELSE
               TMP = ( RSSBCE(L)*TVAR3E(L) + RSSBCW(L)*TBX(L) )**2 + ( RSSBCN(L)*TVAR3N(L) + RSSBCS(L)*TBY(L) )**2
               QQ(L,0 ) = 0.5*CTURB2*SQRT(TMP)
-              !QQ(L,0 ) = 0.5*CTURB2*SQRT( (TVAR3E(L)+TBX(L))**2 + (TVAR3N(L)+TBY(L))**2 )
 
               TMP = ( RSSBCE(L)*TVAR3W(L) + RSSBCW(L)*TSX(L) )**2 + ( RSSBCN(L)*TVAR3S(L) + RSSBCS(L)*TSY(L) )**2
               QQ(L,KC) = 0.5*CTURB2*SQRT(TMP)
-              !QQ(L,KC) = 0.5*CTURB2*SQRT( (TVAR3W(L)+TSX(L))**2 + (TVAR3S(L)+TSY(L))**2 )
-
-              QQSQR(L,0)=SQRT(QQ(L,0))
             ENDIF
           ENDDO
         ENDDO

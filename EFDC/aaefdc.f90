@@ -19,13 +19,13 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !----------------------------------------------------------------------!
 !
-!  RELEASE:         EFDCPlus_11.6
+!  RELEASE:         EFDCPlus_11.7
 !                   Domain Decomposition with MPI
 !                   Propeller Wash 
 !                   New WQ kinetics with user defined algal groups and zooplankton
 !                   SIGMA-Zed (SGZ) Vertical Layering
 !
-!  DATE:            2023-02-04
+!  DATE:            2023-02-23
 !  BY:              DSI, LLC
 !                   EDMONDS, WASHINGTON  98020
 !                   USA
@@ -185,7 +185,7 @@ PROGRAM EFDC
   Double Precision :: starting_time, ending_time
   
   ! *** When updating the version data also update the EXE date in the project settings
-  EFDC_VER = '2023-02-04'
+  EFDC_VER = '2023-02-23'
   
   IERR = 0
 #ifdef DEBUGGING

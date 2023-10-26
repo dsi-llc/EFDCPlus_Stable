@@ -34,7 +34,7 @@ SUBROUTINE CALSED
   
   IMPLICIT NONE
   
-  INTEGER :: K, LP, L, NS, ND, LF, LL, LN, K1, IOBC, IFLAG
+  INTEGER :: K, LP, L, NS, ND, LF, LL, LE, LN, K1, IOBC, IFLAG
   REAL    :: TIME, STRESS, SHEAR, TAUBC, UTMP, VTMP, CURANG, TAUB2, UUSTARTMP, TAUDSS
   REAL    :: WVEL, CLEFT, CRIGHT, WESE, TAUE, TMPSTR, TMPSEDHID, TAUBHYDRO, PROBDEP, WSETMP
   REAL    :: SEDBTMP, CRNUM, GRADSED, SEDAVG, WESEMX, TAURTMP
@@ -83,7 +83,7 @@ SUBROUTINE CALSED
   DO NS = 1,NSED2
     DSEDGMM = 1./(1.E6*SSG(NS))    ! *** SPECIFIC VOLUME (M**3/G)
 
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,K,K1,LN,IOBC)  &
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,K,K1,LE,LN,IOBC)  &
     !$OMP             PRIVATE(STRESS,SHEAR,TAUBC,UTMP,VTMP,CURANG,TAUB2,UUSTARTMP,TAUDSS) &
     !$OMP             PRIVATE(WVEL,CLEFT,CRIGHT,WESE,TAUE,TMPSTR,TMPSEDHID,TAUBHYDRO,PROBDEP,WSETMP) &
     !$OMP             PRIVATE(SEDBTMP,CRNUM,GRADSED,SEDAVG,WESEMX,TAURTMP)
@@ -132,7 +132,7 @@ SUBROUTINE CALSED
             K1 = KSZ(L)
             IF( LWVMASK(L) )THEN
               TAUBC = QQ(L,0)/CTURB2
-              UTMP = 0.5*STCUV(L)*(U(LEC(L),   K1) + U(L,K1))+1.E-12
+              UTMP = 0.5*STCUV(L)*(U(LEC(L),K1) + U(L,K1)) + 1.E-12
               VTMP = 0.5*STCUV(L)*(V(LNC(L),K1) + V(L,K1))
               CURANG = ATAN2(VTMP,UTMP)
               TAUB2 = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
@@ -151,8 +151,8 @@ SUBROUTINE CALSED
               DO LP = 1,LLWET(K+1,ND)
                 L = LKWET(LP,K+1,ND)  
                 IF( LWVMASK(L) )THEN
-                  SHEAR = HPI(L)*SQRT( DZIGSD4U(L,K) )*SQRT( (U(LEC(L),K+1)-U(LEC(L),K)+U(L,K+1)-U(L,K))**2  &
-                                                           + (V(LNC(L),K+1)-V(LNC(L),K)+V(L,K+1)-V(L,K))**2 )
+                  SHEAR = HPI(L)*SQRT( DZIGSD4U(L,K) )*SQRT( (U(LEC(L),K+1) - U(LEC(L),K) + U(L,K+1) - U(L,K))**2  &
+                                                           + (V(LNC(L),K+1) - V(LNC(L),K) + V(L,K+1) - V(L,K))**2 )
                   WSETA(L,K,NS) = CSEDSET(SEDT(L,K+1),SHEAR,ISEDVW)
                 ELSE
                   STRESS = QQ(L,0)/CTURB2
@@ -182,7 +182,7 @@ SUBROUTINE CALSED
             K1 = KSZ(L)
             IF( LWVMASK(L) )THEN
               TAUBC = QQ(L,0)/CTURB2
-              UTMP = 0.5*STCUV(L)*(U(LEC(L),   K1) + U(L,K1))+1.E-12
+              UTMP = 0.5*STCUV(L)*(U(LEC(L),K1) + U(L,K1)) + 1.E-12
               VTMP = 0.5*STCUV(L)*(V(LNC(L),K1) + V(L,K1))
               CURANG = ATAN2(VTMP,UTMP)
               TAUB2 = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
@@ -200,9 +200,10 @@ SUBROUTINE CALSED
               DO LP = 1,LLWET(K+1,ND)
                 L = LKWET(LP,K+1,ND)  
                 IF( LWVMASK(L) )THEN
+                  LE = LEC(L)
                   LN = LNC(L)
-                  STRESS = AV(L,K)*SQRT( DZIGSD4U(L,K)*(U(LEC(L),K+1)-U(LEC(L),K) + U(L,K+1)-U(L,K))**2  &
-                                    +  DZIGSD4V(L,K)*(V(LN ,K+1)-V(LN ,K) + V(L,K+1)-V(L,K))**2 )
+                  STRESS = AV(L,K)*SQRT( DZIGSD4U(L,K)*(U(LE,K+1) - U(LE,K) + U(L,K+1) - U(L,K))**2  &
+                                      +  DZIGSD4V(L,K)*(V(LN,K+1) - V(LN,K) + V(L,K+1) - V(L,K))**2 )
                   WSETA(L,K,NS) = CSEDSET(SEDT(L,K+1),STRESS,ISEDVW)
                 ELSE
                   STRESS = 0.5*QQ(L,0)/CTURB2

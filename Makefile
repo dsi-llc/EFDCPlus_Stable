@@ -36,10 +36,10 @@ CDFLIBS  =   #-Bstatic -lnetcdf -lnetcdff -lhdf5_hl -lhdf5
 # list directories containing other files
 SRCS=*.f90 */*.f90 
 	  
-OBJS= EFDC/Propwash/Setup_Ships.o  EFDC/aaefdc.o EFDC/csedress.o EFDC/fsedmode.o EFDC/fdstrse.o EFDC/MPI_Out/FormatOutputMPI.o EFDC/csedvis.o EFDC/csndset.o \
+OBJS= EFDC/Propwash/mod_Setup_Ships.o  EFDC/aaefdc.o EFDC/csedress.o EFDC/fsedmode.o EFDC/fdstrse.o EFDC/MPI_Out/FormatOutputMPI.o EFDC/csedvis.o EFDC/csndset.o \
       EFDC/fsbdld.o EFDC/csndeqc.o EFDC/fstrse.o EFDC/svbksb.o EFDC/setshld.o EFDC/csedresb.o EFDC/csedtaus.o EFDC/fprobdep.o \
       EFDC/setstvel.o EFDC/csndzeq.o EFDC/csedset.o EFDC/ludcmp.o EFDC/fhydcn.o EFDC/csedtaub.o EFDC/lubksb.o \
-      EFDC/budget.o EFDC/welcome.o \
+      EFDC/mod_budget.o EFDC/welcome.o \
 	  EFDC/subchan.o EFDC/rsalpltv.o EFDC/calvegser.o EFDC/caltox_kinetics.o \
 	  EFDC/caldiff.o EFDC/bankerosed.o EFDC/Propwash/Propwash_Calc_Sequence.o EFDC/MPI_Out/Write_Array_Sizes.o EFDC/bal2t.o EFDC/MPI_Utilities/Report_Max_Min_Timing.o EFDC/MPI_Communication/Communicate_Groups.o \
 	  EFDC/s_slope.o  EFDC/s_bedload.o EFDC/caltox.o \
@@ -76,9 +76,9 @@ OBJS= EFDC/Propwash/Setup_Ships.o  EFDC/aaefdc.o EFDC/csedress.o EFDC/fsedmode.o
 	  EFDC/partmix.o EFDC/congradc.o EFDC/caltbxy.o  EFDC/calpuv9c.o \
 	  EFDC/caldisp3.o \
 	  
-OBJSLINK= Setup_Ships.o aaefdc.o csedress.o fsedmode.o fdstrse.o FormatOutputMPI.o csedvis.o csndset.o fsbdld.o \
+OBJSLINK= mod_Setup_Ships.o aaefdc.o csedress.o fsedmode.o fdstrse.o FormatOutputMPI.o csedvis.o csndset.o fsbdld.o \
        csndeqc.o fstrse.o svbksb.o setshld.o csedresb.o csedtaus.o fprobdep.o \
-       setstvel.o csndzeq.o csedset.o ludcmp.o fhydcn.o csedtaub.o lubksb.o budget.o \
+       setstvel.o csndzeq.o csedset.o ludcmp.o fhydcn.o csedtaub.o lubksb.o mod_budget.o \
        welcome.o \
 	  subchan.o rsalpltv.o calvegser.o caltox_kinetics.o \
 	  caldiff.o bankerosed.o Propwash_Calc_Sequence.o Write_Array_Sizes.o bal2t.o Report_Max_Min_Timing.o Communicate_Groups.o \
@@ -115,36 +115,36 @@ OBJSLINK= Setup_Ships.o aaefdc.o csedress.o fsedmode.o fdstrse.o FormatOutputMPI
 	  partmix.o congradc.o caltbxy.o calpuv9c.o \
 	  caldisp3.o \
   	  	 	  	  	 	 	  	 							 
-MODS    = EFDC/JSON_Reader/fson_string_m.o EFDC/mod_var_global.o EFDC/MPI_Utilities/Variables_MPI_Mapping.o EFDC/Utilities/convertwgs84.o EFDC/MPI_Utilities/Variables_MPI_MapGatherSort.o \
-              EFDC/Propwash/Mod_Erosive_Flux.o EFDC/Utilities/mod_julian.o EFDC/Propwash/Variables_Propwash.o EFDC/Drifter/Variables_MPI_Drifter.o \
-	      EFDC/Utilities/mod_info.o EFDC/MPI_Utilities/Variables_MPI_Write_Out.o EFDC/Utilities/mod_allocate.o EFDC/Eutrophication/mod_wq_vars.o \
-              EFDC/wavelength.o EFDC/Propwash/Mod_Ship.o EFDC/JSON_Reader/fson_value_m.o EFDC/MPI_Utilities/Variables_MPI.o EFDC/MPI_Mapping/Mod_Map_Soln.o \
-		  EFDC/MPI_Mapping/Mod_Assign_Loc_Glob_For_Write.o EFDC/MPI_Out/Mod_Write_Cell_Map_.o EFDC/MPI_Communication/Communicate_Ghost_Routines.o \
+MODS    = EFDC/JSON_Reader/mod_fson_string.o EFDC/mod_var_global.o EFDC/MPI_Utilities/mod_Variables_MPI_Mapping.o EFDC/Utilities/mod_convertwgs84.o EFDC/MPI_Utilities/mod_Variables_MPI_MapGatherSort.o \
+              EFDC/Propwash/Mod_Erosive_Flux.o EFDC/Utilities/mod_julian.o EFDC/Propwash/mod_Variables_Propwash.o EFDC/Drifter/mod_Variables_MPI_Drifter.o \
+	      EFDC/Utilities/mod_info.o EFDC/MPI_Utilities/mod_Variables_MPI_Write_Out.o EFDC/Utilities/mod_allocate.o EFDC/Eutrophication/mod_wq_vars.o \
+              EFDC/mod_wavelength.o EFDC/Propwash/Mod_Ship.o EFDC/JSON_Reader/mod_fson_value.o EFDC/MPI_Utilities/mod_Variables_MPI.o EFDC/MPI_Mapping/Mod_Map_Soln.o \
+		  EFDC/MPI_Mapping/Mod_Assign_Loc_Glob_For_Write.o EFDC/MPI_Out/Mod_Write_Cell_Map_.o EFDC/MPI_Communication/mod_Communicate_Ghost_Routines.o \
 		  EFDC/MPI_Communication/Mod_SEND_RECV.o EFDC/mod_diffuser.o EFDC/mod_calcser.o EFDC/mod_hydstructure.o EFDC/Eutrophication/mod_macrohydro.o \
-                  EFDC/MPI_Communication/Mod_Broadcast_Routines.o EFDC/JSON_Reader/fson_path_m.o EFDC/Utilities/xyijconv.o \
+                  EFDC/MPI_Communication/Mod_Broadcast_Routines.o EFDC/JSON_Reader/mod_fson_path.o EFDC/Utilities/mod_xyijconv.o \
 		  EFDC/MPI_Communication/Mod_Gather_Drifter.o EFDC/MPI_Utilities/Mod_MPI_Helper_Functions.o EFDC/MPI_Mapping/Mod_Sort_Global_Soln.o \
-		  EFDC/MPI_Communication/Mod_Gather_Soln.o EFDC/MPI_Communication/mod_allreduce.o EFDC/JSON_Reader/fson.o EFDC/Eutrophication/mod_shellfish.o EFDC/mod_fields.o \
+		  EFDC/MPI_Communication/Mod_Gather_Soln.o EFDC/MPI_Communication/mod_allreduce.o EFDC/JSON_Reader/mod_fson.o EFDC/Eutrophication/mod_shellfish.o EFDC/mod_fields.o \
 		  EFDC/Propwash/Mod_Position.o EFDC/MPI_Mapping/Mod_Map_Gather_Sort.o EFDC/mod_cyclone.o EFDC/Propwash/Mod_Mesh.o EFDC/Eutrophication/mod_zoopl.o \
 		  EFDC/MPI_Mapping/Mod_Map_Global_to_Local.o  EFDC/Eutrophication/mod_diagen.o EFDC/Propwash/Mod_Position_Cell.o EFDC/Propwash/Mod_Position_Elev.o \
                   EFDC/Propwash/Mod_All_Tracks.o EFDC/Eutrophication/mod_rpem.o EFDC/Propwash/Mod_All_Ship_Tracks.o EFDC/Propwash/Mod_Active_Ship.o \
-                  EFDC/mod_scaninp.o EFDC/hifreqout.o EFDC/MPI_Out/Mod_Map_Write_EE_Binary.o EFDC/Propwash/Variables_Ship.o \
-		  EFDC/mod_restart.o EFDC/MPI_Communication/Communicate_Drifters.o EFDC/Drifter/mod_drifter.o EFDC/mod_windwave.o EFDC/Eutrophication/mod_wq.o \
+                  EFDC/mod_scaninp.o EFDC/mod_hifreqout.o EFDC/MPI_Out/Mod_Map_Write_EE_Binary.o EFDC/Propwash/mod_Variables_Ship.o \
+		  EFDC/mod_restart.o EFDC/MPI_Communication/mod_Communicate_Drifters.o EFDC/Drifter/mod_drifter.o EFDC/mod_windwave.o EFDC/Eutrophication/mod_wq.o \
                   EFDC/Propwash/Mod_Read_Propwash.o EFDC/mod_heat.o \
 		  EFDC/MOD_efdcout.o EFDC/mod_getswan.o EFDC/MPI_Out/Mod_Map_Write_NetCDF.o EFDC/mod_netcdf.o \
-		  EFDC/MPI_Utilities/Variables_MPI_Concentration.o \
+		  EFDC/MPI_Utilities/mod_Variables_MPI_Concentration.o \
 
-MODSLINK  = fson_string_m.o mod_var_global.o Variables_MPI_Mapping.o convertwgs84.o Variables_MPI_MapGatherSort.o Mod_Erosive_Flux.o \
-	      mod_julian.o Variables_Propwash.o Variables_MPI_Drifter.o mod_info.o Variables_MPI_Write_Out.o \
-              mod_allocate.o mod_wq_vars.o wavelength.o Mod_Ship.o fson_value_m.o Variables_MPI.o Mod_Map_Soln.o Mod_Assign_Loc_Glob_For_Write.o \
-		  Mod_Write_Cell_Map_.o Communicate_Ghost_Routines.o Mod_SEND_RECV.o mod_diffuser.o mod_calcser.o mod_hydstructure.o \
-		  mod_macrohydro.o Mod_Broadcast_Routines.o fson_path_m.o xyijconv.o \
-		  Mod_Gather_Drifter.o Communicate_Drifters.o Mod_MPI_Helper_Functions.o Mod_Sort_Global_Soln.o Mod_Gather_Soln.o mod_allreduce.o \
-		  fson.o mod_shellfish.o mod_fields.o Mod_Position.o Mod_Map_Gather_Sort.o mod_cyclone.o \
+MODSLINK  = mod_fson_string.o mod_var_global.o mod_Variables_MPI_Mapping.o mod_convertwgs84.o mod_Variables_MPI_MapGatherSort.o Mod_Erosive_Flux.o \
+	      mod_julian.o mod_Variables_Propwash.o mod_Variables_MPI_Drifter.o mod_info.o mod_Variables_MPI_Write_Out.o \
+              mod_allocate.o mod_wq_vars.o mod_wavelength.o Mod_Ship.o mod_fson_value.o mod_Variables_MPI.o Mod_Map_Soln.o Mod_Assign_Loc_Glob_For_Write.o \
+		  Mod_Write_Cell_Map_.o mod_Communicate_Ghost_Routines.o Mod_SEND_RECV.o mod_diffuser.o mod_calcser.o mod_hydstructure.o \
+		  mod_macrohydro.o Mod_Broadcast_Routines.o mod_fson_path.o mod_xyijconv.o \
+		  Mod_Gather_Drifter.o mod_Communicate_Drifters.o Mod_MPI_Helper_Functions.o Mod_Sort_Global_Soln.o Mod_Gather_Soln.o mod_allreduce.o \
+		  mod_fson.o mod_shellfish.o mod_fields.o Mod_Position.o Mod_Map_Gather_Sort.o mod_cyclone.o \
                   Mod_Mesh.o mod_zoopl.o Mod_Map_Global_to_Local.o mod_diagen.o Mod_Position_Cell.o Mod_Position_Elev.o \
-                  Mod_All_Tracks.o mod_rpem.o Mod_All_Ship_Tracks.o Mod_Active_Ship.o mod_scaninp.o hifreqout.o \
-                  Mod_Map_Write_EE_Binary.o Variables_Ship.o \
+                  Mod_All_Tracks.o mod_rpem.o Mod_All_Ship_Tracks.o Mod_Active_Ship.o mod_scaninp.o mod_hifreqout.o \
+                  Mod_Map_Write_EE_Binary.o mod_Variables_Ship.o \
 		  mod_drifter.o MOD_efdcout.o Mod_Map_Write_NetCDF.o mod_restart.o mod_windwave.o mod_netcdf.o mod_wq.o Mod_Read_Propwash.o mod_heat.o \
-		  mod_getswan.o Variables_MPI_Concentration.o \
+		  mod_getswan.o mod_Variables_MPI_Concentration.o \
 
 MAIN    = 
 

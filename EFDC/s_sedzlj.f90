@@ -105,7 +105,7 @@ SUBROUTINE SEDZLJ(L)
   ! *** Convert Bottom Concentrations and estimate bottom concentration for KC=1
   IF( KSZ(L) == KC )THEN    ! *** Alberta
     ! *** Estimate bottom concentration assuming exponential sediment concentration profile in single layer
-    USTAR(L) = SQRT(TAU(L)/10000.0)                                     ! *** USTAR m/s
+    USTAR(L) = SQRT(TAU(L)/10000.0)                                     ! *** USTAR (m/s) = SQRT(Tau/RhoH2O) and RhoH2O is 1000 kg/cm^3. 
     DO NS=1,NSCM2
       VZDIF = MAX(20.0,0.067*HPCM(L)*USTAR(L)*100._8)                   ! *** Convert units of USTAR to cm/s
       TEMP2 = HPCM(L)*DWS(NS)/VZDIF
