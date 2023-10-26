@@ -912,11 +912,11 @@ subroutine Communicate_UVW1()
       
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDW(II) = UHDY(L,k)
+        PSENDW(II) = UHDY(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDW(II) = VHDX(L,k)
+        PSENDW(II) = VHDX(L,K)
       ENDDO
     ENDDO
     length_arg = II 
@@ -943,11 +943,11 @@ subroutine Communicate_UVW1()
       
       DO K = KSZ(L),KC
         II = II + 1
-        UHDY(L,k) = PRECVE(II)
+        UHDY(L,K) = PRECVE(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        VHDX(L,k) = PRECVE(II)
+        VHDX(L,K) = PRECVE(II)
       ENDDO
     ENDDO
   Endif
@@ -962,11 +962,11 @@ subroutine Communicate_UVW1()
       
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDE(II) = UHDY(L,k)
+        PSENDE(II) = UHDY(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDE(II) = VHDX(L,k)
+        PSENDE(II) = VHDX(L,K)
       ENDDO
     ENDDO
     length_arg = II 
@@ -993,11 +993,11 @@ subroutine Communicate_UVW1()
       
       DO K = KSZ(L),KC
         II = II + 1
-        UHDY(L,k) = PRECVW(II)
+        UHDY(L,K) = PRECVW(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        VHDX(L,k) = PRECVW(II)
+        VHDX(L,K) = PRECVW(II)
       ENDDO
     ENDDO
   ENDIF
@@ -1012,11 +1012,11 @@ subroutine Communicate_UVW1()
       
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDN(II) = UHDY(L,k)
+        PSENDN(II) = UHDY(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDN(II) = VHDX(L,k)
+        PSENDN(II) = VHDX(L,K)
       ENDDO
     ENDDO
     length_arg = II  
@@ -1043,11 +1043,11 @@ subroutine Communicate_UVW1()
       
       DO K = KSZ(L),KC
         II = II + 1
-        UHDY(L,k) = PRECVS(II)
+        UHDY(L,K) = PRECVS(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        VHDX(L,k) = PRECVS(II)
+        VHDX(L,K) = PRECVS(II)
       ENDDO
     ENDDO
   ENDIF
@@ -1062,11 +1062,11 @@ subroutine Communicate_UVW1()
       
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDS(II) = UHDY(L,k)
+        PSENDS(II) = UHDY(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDS(II) = VHDX(L,k)
+        PSENDS(II) = VHDX(L,K)
       ENDDO
     ENDDO
     length_arg = II 
@@ -1093,11 +1093,11 @@ subroutine Communicate_UVW1()
       
       DO K = KSZ(L),KC
         II = II + 1
-        UHDY(L,k) = PRECVN(II)
+        UHDY(L,K) = PRECVN(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        VHDX(L,k) = PRECVN(II)
+        VHDX(L,K) = PRECVN(II)
       ENDDO
     ENDDO
   ENDIF
@@ -1389,15 +1389,15 @@ subroutine Communicate_UVW3()
       
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDW(II) = U(L,k)
+        PSENDW(II) = U(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDW(II) = V(L,k)
+        PSENDW(II) = V(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDW(II) = W(L,k)
+        PSENDW(II) = W(L,K)
       ENDDO
     ENDDO
     length_arg = II 
@@ -1423,15 +1423,15 @@ subroutine Communicate_UVW3()
       
       DO K = KSZ(L),KC
         II = II + 1
-        U(L,k) = PRECVE(II)
+        U(L,K) = PRECVE(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        V(L,k) = PRECVE(II)
+        V(L,K) = PRECVE(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        W(L,k) = PRECVE(II)
+        W(L,K) = PRECVE(II)
       ENDDO
     ENDDO
   Endif
@@ -1446,15 +1446,15 @@ subroutine Communicate_UVW3()
       
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDE(II) = U(L,k)
+        PSENDE(II) = U(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDE(II) = V(L,k)
+        PSENDE(II) = V(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDE(II) = W(L,k)
+        PSENDE(II) = W(L,K)
       ENDDO
     ENDDO
     length_arg = II 
@@ -1480,15 +1480,15 @@ subroutine Communicate_UVW3()
       
       DO K = KSZ(L),KC
         II = II + 1
-        U(L,k) = PRECVW(II)
+        U(L,K) = PRECVW(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        V(L,k) = PRECVW(II)
+        V(L,K) = PRECVW(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        W(L,k) = PRECVW(II)
+        W(L,K) = PRECVW(II)
       ENDDO
     ENDDO
   ENDIF
@@ -1503,15 +1503,15 @@ subroutine Communicate_UVW3()
       
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDN(II) = U(L,k)
+        PSENDN(II) = U(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDN(II) = V(L,k)
+        PSENDN(II) = V(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDN(II) = W(L,k)
+        PSENDN(II) = W(L,K)
       ENDDO
     ENDDO
     length_arg = II 
@@ -1537,15 +1537,15 @@ subroutine Communicate_UVW3()
       
       DO K = KSZ(L),KC
         II = II + 1
-        U(L,k) = PRECVS(II)
+        U(L,K) = PRECVS(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        V(L,k) = PRECVS(II)
+        V(L,K) = PRECVS(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        W(L,k) = PRECVS(II)
+        W(L,K) = PRECVS(II)
       ENDDO
     ENDDO
   ENDIF
@@ -1560,15 +1560,15 @@ subroutine Communicate_UVW3()
       
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDS(II) = U(L,k)
+        PSENDS(II) = U(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDS(II) = V(L,k)
+        PSENDS(II) = V(L,K)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDS(II) = W(L,k)
+        PSENDS(II) = W(L,K)
       ENDDO
     ENDDO
     length_arg = II  
@@ -1594,15 +1594,15 @@ subroutine Communicate_UVW3()
       
       DO K = KSZ(L),KC
         II = II + 1
-        U(L,k) = PRECVN(II)
+        U(L,K) = PRECVN(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        V(L,k) = PRECVN(II)
+        V(L,K) = PRECVN(II)
       ENDDO
       DO K = KSZ(L),KC
         II = II + 1
-        W(L,k) = PRECVN(II)
+        W(L,K) = PRECVN(II)
       ENDDO
     ENDDO
   ENDIF
@@ -2042,7 +2042,6 @@ subroutine Communicate_CON2()
       L = Comm_Cells(I,1,1)
       
       DO IW=1,NACTIVEWC
-        !IF( ISADAC(IACTIVEWC1(IW)) == 1 .AND. ISCDCA(IACTIVEWC1(IW)) == 0 )THEN     DELME - TO DO
         DO K = KSZ(L),KC
           II = II + 1
           PSENDW(II) = FUHUD(L,k,IW)
@@ -2580,10 +2579,10 @@ subroutine Communicate_QQ()
   
   if( num_Processors == 1 ) return
 
-  east_west_size   = max_width_y*kcm*2*3   ! *** 2 Columns and 3 Variables
-  north_south_size = max_width_x*kcm*2*3   ! *** 2 Rows    and 3 Variables
+  east_west_size   = max_width_y*2*(kcm*3 + 4)   ! *** 2 Columns and 3 2D Variables and 4 1D Variables
+  north_south_size = max_width_x*2*(kcm*3 + 4)   ! *** 2 Rows    and 3 2D Variables and 4 1D Variables
   
-  IF(.not.allocated(PSENDW))THEN
+  IF( .not. allocated(PSENDW) )THEN
     allocate(PSENDE(east_west_size))
     allocate(PSENDW(east_west_size))
     allocate(PRECVE(east_west_size))
@@ -2618,22 +2617,32 @@ subroutine Communicate_QQ()
       PSENDW(II) = QQ(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDW(II) = QQ(L,k)
+        PSENDW(II) = QQ(L,K)
       ENDDO
           
       II = II + 1
       PSENDW(II) = QQL(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDW(II) = QQL(L,k)
+        PSENDW(II) = QQL(L,K)
       ENDDO
           
       II = II + 1
       PSENDW(II) = DML(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDW(II) = DML(L,k)
+        PSENDW(II) = DML(L,K)
       ENDDO
+      
+      II = II + 1
+      PSENDW(II) = TBX(L)
+      II = II + 1
+      PSENDW(II) = TBY(L)
+      II = II + 1
+      PSENDW(II) = UV(L)
+      II = II + 1
+      PSENDW(II) = VU(L)
+      
     ENDDO
     length_arg = II 
     
@@ -2646,7 +2655,7 @@ subroutine Communicate_QQ()
     DO I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      II = II + 3 + (KC-KSZ(L)+1)*3
+      II = II + 7 + (KC-KSZ(L)+1)*3
     ENDDO
     length_arg = II 
     CALL DSI_RECV(PRECVE, length_arg, nbr_east)
@@ -2660,25 +2669,32 @@ subroutine Communicate_QQ()
       QQ(L,0) = PRECVE(II)
       DO K = KSZ(L),KC
         II = II + 1
-        QQ(L,k) = PRECVE(II)
-      ENDDO
-      DO K = KSZ(L),KC
-        QQSQR(L,K) = SQRT(QQ(L,K))
+        QQ(L,K) = PRECVE(II)
       ENDDO
 
       II = II + 1
       QQL(L,0) = PRECVE(II)
       DO K = KSZ(L),KC
         II = II + 1
-        QQL(L,k) = PRECVE(II)
+        QQL(L,K) = PRECVE(II)
       ENDDO
           
       II = II + 1
       DML(L,0) = PRECVE(II)
       DO K = KSZ(L),KC
         II = II + 1
-        DML(L,k) = PRECVE(II)
+        DML(L,K) = PRECVE(II)
       ENDDO
+      
+      II = II + 1
+      TBX(L) = PRECVE(II)
+      II = II + 1
+      TBY(L) = PRECVE(II)
+      II = II + 1
+      UV(L) = PRECVE(II)
+      II = II + 1
+      VU(L) = PRECVE(II)
+      
     ENDDO
   Endif
   
@@ -2694,22 +2710,32 @@ subroutine Communicate_QQ()
       PSENDE(II) = QQ(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDE(II) = QQ(L,k)
+        PSENDE(II) = QQ(L,K)
       ENDDO
 
       II = II + 1
       PSENDE(II) = QQL(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDE(II) = QQL(L,k)
+        PSENDE(II) = QQL(L,K)
       ENDDO
           
       II = II + 1
       PSENDE(II) = DML(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDE(II) = DML(L,k)
+        PSENDE(II) = DML(L,K)
       ENDDO
+
+      II = II + 1
+      PSENDE(II) = TBX(L)
+      II = II + 1
+      PSENDE(II) = TBY(L)
+      II = II + 1
+      PSENDE(II) = UV(L)
+      II = II + 1
+      PSENDE(II) = VU(L)
+      
     ENDDO
     length_arg = II 
     
@@ -2722,7 +2748,7 @@ subroutine Communicate_QQ()
     DO I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      II = II + 3 + (KC-KSZ(L)+1)*3
+      II = II + 7 + (KC-KSZ(L)+1)*3
     ENDDO
     length_arg = II 
     CALL DSI_RECV(PRECVW, length_arg, nbr_west)
@@ -2736,25 +2762,32 @@ subroutine Communicate_QQ()
       QQ(L,0) = PRECVW(II)
       DO K = KSZ(L),KC
         II = II + 1
-        QQ(L,k) = PRECVW(II)
-      ENDDO
-      DO K = KSZ(L),KC
-        QQSQR(L,K) = SQRT(QQ(L,K))
+        QQ(L,K) = PRECVW(II)
       ENDDO
 
       II = II + 1
       QQL(L,0) = PRECVW(II)
       DO K = KSZ(L),KC
         II = II + 1
-        QQL(L,k) = PRECVW(II)
+        QQL(L,K) = PRECVW(II)
       ENDDO
 
       II = II + 1
       DML(L,0) = PRECVW(II)
       DO K = KSZ(L),KC
         II = II + 1
-        DML(L,k) = PRECVW(II)
+        DML(L,K) = PRECVW(II)
       ENDDO
+      
+      II = II + 1
+      TBX(L) = PRECVW(II)
+      II = II + 1
+      TBY(L) = PRECVW(II)
+      II = II + 1
+      UV(L) = PRECVW(II)
+      II = II + 1
+      VU(L) = PRECVW(II)
+      
     ENDDO
   ENDIF
 
@@ -2770,22 +2803,32 @@ subroutine Communicate_QQ()
       PSENDN(II) = QQ(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDN(II) = QQ(L,k)
+        PSENDN(II) = QQ(L,K)
       ENDDO
           
       II = II + 1
       PSENDN(II) = QQL(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDN(II) = QQL(L,k)
+        PSENDN(II) = QQL(L,K)
       ENDDO
           
       II = II + 1
       PSENDN(II) = DML(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDN(II) = DML(L,k)
+        PSENDN(II) = DML(L,K)
       ENDDO
+      
+      II = II + 1
+      PSENDN(II) = TBX(L)
+      II = II + 1
+      PSENDN(II) = TBY(L)
+      II = II + 1
+      PSENDN(II) = UV(L)
+      II = II + 1
+      PSENDN(II) = VU(L)
+      
     ENDDO
     length_arg = II 
     
@@ -2798,7 +2841,7 @@ subroutine Communicate_QQ()
     DO I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      II = II + 3 + (KC-KSZ(L)+1)*3
+      II = II + 7 + (KC-KSZ(L)+1)*3
     ENDDO
     length_arg = II 
     CALL DSI_RECV(PRECVS, length_arg, nbr_south)
@@ -2812,25 +2855,32 @@ subroutine Communicate_QQ()
       QQ(L,0) = PRECVS(II)
       DO K = KSZ(L),KC
         II = II + 1
-        QQ(L,k) = PRECVS(II)
-      ENDDO
-      DO K = KSZ(L),KC
-        QQSQR(L,K) = SQRT(QQ(L,K))
+        QQ(L,K) = PRECVS(II)
       ENDDO
           
       II = II + 1
       QQL(L,0) = PRECVS(II)
       DO K = KSZ(L),KC
         II = II + 1
-        QQL(L,k) = PRECVS(II)
+        QQL(L,K) = PRECVS(II)
       ENDDO
 
       II = II + 1
       DML(L,0) = PRECVS(II)
       DO K = KSZ(L),KC
         II = II + 1
-        DML(L,k) = PRECVS(II)
+        DML(L,K) = PRECVS(II)
       ENDDO
+      
+      II = II + 1
+      TBX(L) = PRECVS(II)
+      II = II + 1
+      TBY(L) = PRECVS(II)
+      II = II + 1
+      UV(L) = PRECVS(II)
+      II = II + 1
+      VU(L) = PRECVS(II)
+      
     ENDDO
   ENDIF
 
@@ -2846,22 +2896,32 @@ subroutine Communicate_QQ()
       PSENDS(II) = QQ(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDS(II) = QQ(L,k)
+        PSENDS(II) = QQ(L,K)
       ENDDO
           
       II = II + 1
       PSENDS(II) = QQL(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDS(II) = QQL(L,k)
+        PSENDS(II) = QQL(L,K)
       ENDDO
           
       II = II + 1
       PSENDS(II) = DML(L,0)
       DO K = KSZ(L),KC
         II = II + 1
-        PSENDS(II) = DML(L,k)
+        PSENDS(II) = DML(L,K)
       ENDDO
+      
+      II = II + 1
+      PSENDS(II) = TBX(L)
+      II = II + 1
+      PSENDS(II) = TBY(L)
+      II = II + 1
+      PSENDS(II) = UV(L)
+      II = II + 1
+      PSENDS(II) = VU(L)      
+      
     ENDDO
     length_arg = II  
     
@@ -2874,7 +2934,7 @@ subroutine Communicate_QQ()
     DO I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      II = II + 3 + (KC-KSZ(L)+1)*3
+      II = II + 7 + (KC-KSZ(L)+1)*3
     ENDDO
     length_arg = II 
     CALL DSI_RECV(PRECVN, length_arg, nbr_north)
@@ -2888,25 +2948,32 @@ subroutine Communicate_QQ()
       QQ(L,0) = PRECVN(II)
       DO K = KSZ(L),KC
         II = II + 1
-        QQ(L,k) = PRECVN(II)
-      ENDDO
-      DO K = KSZ(L),KC
-        QQSQR(L,K) = SQRT(QQ(L,K))
+        QQ(L,K) = PRECVN(II)
       ENDDO
 
       II = II + 1
       QQL(L,0) = PRECVN(II)
       DO K = KSZ(L),KC
         II = II + 1
-        QQL(L,k) = PRECVN(II)
+        QQL(L,K) = PRECVN(II)
       ENDDO
 
       II = II + 1
       DML(L,0) = PRECVN(II)
       DO K = KSZ(L),KC
         II = II + 1
-        DML(L,k) = PRECVN(II)
+        DML(L,K) = PRECVN(II)
       ENDDO
+      
+      II = II + 1
+      TBX(L) = PRECVN(II)
+      II = II + 1
+      TBY(L) = PRECVN(II)
+      II = II + 1
+      UV(L) = PRECVN(II)
+      II = II + 1
+      VU(L) = PRECVN(II)
+      
     ENDDO
   ENDIF
 

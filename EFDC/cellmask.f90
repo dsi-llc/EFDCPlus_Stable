@@ -25,7 +25,7 @@
 
   IMPLICIT NONE
 
-  INTEGER :: I,J,K,L,LN,LE,M,MMASK,MTYPE
+  INTEGER :: I, J, K, L, LG, LN, LE, M, MMASK, MTYPE
   INTEGER :: I_GL, J_GL
   CHARACTER(200) :: STR
 
@@ -42,11 +42,21 @@
 
     if( process_id == master_id )THEN
       READ(1,*,ERR=1000,END=999) I_GL, J_GL, MTYPE
+
+      LG= LIJ_Global(I_GL,J_GL)
+      IF( MTYPE == 1 )THEN
+        UMASK_Global(LG) = 1
+      ELSEIF( MTYPE == 2 )THEN
+        VMASK_Global(LG) = 1
+      ELSEIF( MTYPE == 3 )THEN
+        UMASK_Global(LG) = 1
+        VMASK_Global(LG) = 1
+      ENDIF
     end if
 
     Call Broadcast_Scalar(I_GL  ,master_id)
-    Call Broadcast_Scalar(J_GL 	,master_id)
-    Call Broadcast_Scalar(MTYPE	,master_id)
+    Call Broadcast_Scalar(J_GL  ,master_id)
+    Call Broadcast_Scalar(MTYPE ,master_id)
 
     !***Remap to local values
     I = IG2IL(I_GL)
@@ -95,7 +105,7 @@
           ENDDO
         ENDIF
 
-        IF( MTYPE == 3 )THEN   ! *** PMC
+        IF( MTYPE == 3 )THEN
           ! *** U Face
           SUB(L) = 0.
           SUBO(L) = 0.
@@ -278,12 +288,16 @@ SUBROUTINE BLOCKING
       NBLOCKED = NBLOCKED + 1
       LBLOCKED(NBLOCKED) = L
 
-      BLANCHORU(NBLOCKED) = BLANCHORUM
-      BLDRAFTUO(NBLOCKED) = BLDRAFTUOM
-      BLSILLU(NBLOCKED)   = BLSILLUM
-      BLANCHORV(NBLOCKED) = BLANCHORVM
-      BLDRAFTVO(NBLOCKED) = BLDRAFTVOM
-      BLSILLV(NBLOCKED)   = BLSILLVM
+      IF( SUBO(L) > 0.0 )THEN
+        BLANCHORU(NBLOCKED) = BLANCHORUM
+        BLDRAFTUO(NBLOCKED) = BLDRAFTUOM
+        BLSILLU(NBLOCKED)   = BLSILLUM
+      ENDIF
+      IF( SVBO(L) > 0.0 )THEN
+        BLANCHORV(NBLOCKED) = BLANCHORVM
+        BLDRAFTVO(NBLOCKED) = BLDRAFTVOM
+        BLSILLV(NBLOCKED)   = BLSILLVM
+      ENDIF
       
       ! *** SET WAVE FETCH FLAGS
       IF( BLDRAFTUO(NBLOCKED) > 0.0 .OR. BLSILLU(NBLOCKED) > HP(L) ) UMASK(L) = 1
@@ -296,16 +310,6 @@ SUBROUTINE BLOCKING
   if( process_id == master_id )then
     CLOSE(1)  
   endif
-  
-  !Call Broadcast_Scalar(NBLOCKED, master_id)
-  !Call Broadcast_Array(BLANCHORU, master_id)
-  !Call Broadcast_Array(BLDRAFTUO, master_id)
-  !Call Broadcast_Array(BLSILLU,   master_id)
-  !Call Broadcast_Array(BLANCHORV, master_id)
-  !Call Broadcast_Array(BLDRAFTVO, master_id)
-  !Call Broadcast_Array(BLSILLV,   master_id)
-  !Call Broadcast_Array(UMASK,     master_id)
-  !Call Broadcast_Array(VMASK,     master_id)
   
   RETURN
 

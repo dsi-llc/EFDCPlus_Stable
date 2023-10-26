@@ -39,7 +39,7 @@ SUBROUTINE WELCOME
       ,/,'*                   MULTI-THREADED VERSION USING OpenMP                           *'  &  
       ,/,'*                   MULTI-PROCESSOR VERSION USING OpenMPI                         *'  &  
       ,/,'*                                                                                 *'  &  
-      ,/,'*        EFDC+ HAS BEEN CUSTOMIZED TO WORK WITH DSI''s EFDC_EXPLORER 11.7.0        *'  &  
+      ,/,'*        EFDC+ HAS BEEN CUSTOMIZED TO WORK WITH DSI''s EFDC_EXPLORER 11.8.0        *'  &  
       ,/,'*                                                                                 *'  &  
       ,/,'*                         VERSION DATE: MPI ',A10,'                            *'  &  
       ,/,'*                                                                                 *'  &  

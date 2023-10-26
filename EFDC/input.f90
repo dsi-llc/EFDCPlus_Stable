@@ -61,7 +61,7 @@ SUBROUTINE INPUT(TITLE)
   INTEGER :: ISO, ITIDASM, NPFOR, NPFORS, NPFORW, NPFORE, ITSSS
   INTEGER :: NDUM1, NDUM2, NTMP, ITYPE, IFLAG
   INTEGER :: MTMP
-  INTEGER :: MMAX, MS, MMIN
+  INTEGER :: MMAX, MS, MMIN, NJP
   INTEGER :: JSFDCH, IDUMMY, NPP, MD, MU
   INTEGER :: MTSSS, IACROSS, JCTMP, JACROSS, JT, JF, JLAST, NMD
   INTEGER :: IFIRST, ILAST, IT, NP, LT, MVEGIJT, NMDXDY, INITTEMP
@@ -92,14 +92,16 @@ SUBROUTINE INPUT(TITLE)
   
   REAL,ALLOCATABLE,DIMENSION(:) :: CONINIT
   REAL,ALLOCATABLE,DIMENSION(:) :: CONBINIT
+  REAL,ALLOCATABLE,DIMENSION(:) :: CQSTMP          
 
-  Call AllocateDSI(RMULADS,  NSTM2,  0.0)      
-  Call AllocateDSI(ADDADS,   NSTM2,  0.0)      
-  Call AllocateDSI(QSERSM,   NDQSER, KCM, 0.0)
-  Call AllocateDSI(PFX2,     NPFORM, MTM, 0.0)
-  Call AllocateDSI(IPARTSP,  NTXM,     0)
-  Call AllocateDSI(CONINIT,  KCM,    0.0)
-  Call AllocateDSI(CONBINIT, KBM,    0.0)
+  Call AllocateDSI( RMULADS,  NSTM2,  0.0)      
+  Call AllocateDSI( ADDADS,   NSTM2,  0.0)      
+  Call AllocateDSI( IPARTSP,  NTXM,     0)
+  Call AllocateDSI( CONINIT,  KCM,    0.0)
+  Call AllocateDSI( CONBINIT, KBM,    0.0)
+  Call AllocateDSI( CQSTMP,     NSTVM2, 0.0)     
+  Call AllocateDSI( QSERSM,   NDQSER, KCM, 0.0)
+  Call AllocateDSI( PFX2,     NPFORM, MTM, 0.0)
 
   G=9.81
   PI=3.1415926535898
@@ -1352,7 +1354,7 @@ SUBROUTINE INPUT(TITLE)
                                                                                                NCSERQ_GL(NS,6), NCSERQ_GL(NS,7), QWIDTH_GL(NS),   QFACTOR_GL(NS),  GRPID_GL(NS)
         IF( ISO > 0 ) GOTO 100
         
-        ! *** MOVED TO MAP_RIVER
+        ! *** MOVED TO Map_Dischrage_BCs
         !DO K=1,KC
         !  QSS(K,NS) = QSSE(NS)*DZCK(K)
         !ENDDO
@@ -1415,92 +1417,58 @@ SUBROUTINE INPUT(TITLE)
     NCARD='27'
     if( process_id == master_id )THEN
       CALL SEEK('C27')
-      DO L=1,NQJPIJ
-        READ(1,*,IOSTAT=ISO) IDUM,ICALJP(L),IQJP_GL(L),JQJP_GL(L),KQJP_GL(L),NPORTJP_GL(L),XJETL_GL(L),&
-                             YJETL_GL(L),ZJET_GL(L),PHJET_GL(L),THJET_GL(L),DJET_GL(L),CFRD_GL(L),DJPER_GL(L)
+      DO NJP=1,NQJPIJ
+        READ(1,*,IOSTAT=ISO) IDUM, JET_PLM_GL(NJP).ICALJP, JET_PLM_GL(NJP).IQJP,  JET_PLM_GL(NJP).JQJP, JET_PLM_GL(NJP).KQJP,  JET_PLM_GL(NJP).NPORTJP,   &
+                                   JET_PLM_GL(NJP).XJETL,  JET_PLM_GL(NJP).YJETL, JET_PLM_GL(NJP).ZJET, JET_PLM_GL(NJP).PHJET, JET_PLM_GL(NJP).THJET,     &
+                                   JET_PLM_GL(NJP).DJET,   JET_PLM_GL(NJP).CFRD,  JET_PLM_GL(NJP).DJPER
 
         WRITE(7,1002)NCARD
-        WRITE(7,*)IDUM,ICALJP(L),IQJP_GL(L),JQJP_GL(L),KQJP_GL(L),NPORTJP_GL(L),XJETL_GL(L),&
-                       YJETL_GL(L),ZJET_GL(L),PHJET_GL(L),THJET_GL(L),DJET_GL(L),CFRD_GL(L),DJPER_GL(L)
+        WRITE(7,*) IDUM, JET_PLM_GL(NJP).ICALJP, JET_PLM_GL(NJP).IQJP,  JET_PLM_GL(NJP).JQJP, JET_PLM_GL(NJP).KQJP,  JET_PLM_GL(NJP).NPORTJP,   &
+                         JET_PLM_GL(NJP).XJETL,  JET_PLM_GL(NJP).YJETL, JET_PLM_GL(NJP).ZJET, JET_PLM_GL(NJP).PHJET, JET_PLM_GL(NJP).THJET,     &
+                         JET_PLM_GL(NJP).DJET,   JET_PLM_GL(NJP).CFRD,  JET_PLM_GL(NJP).DJPER
         IF( ISO > 0 ) GOTO 100
       ENDDO
     endif
-
-    Call Broadcast_Array(ICALJP, master_id)
-    Call Broadcast_Array(IQJP_GL  , master_id)
-    Call Broadcast_Array(JQJP_GL  , master_id)
-    Call Broadcast_Array(KQJP_GL  , master_id)
-    Call Broadcast_Array(NPORTJP_GL, master_id)
-    Call Broadcast_Array(XJETL_GL , master_id)
-    Call Broadcast_Array(YJETL_GL , master_id)
-    Call Broadcast_Array(ZJET_GL  , master_id)
-    Call Broadcast_Array(PHJET_GL  , master_id)
-    Call Broadcast_Array(THJET_GL  , master_id)
-    Call Broadcast_Array(DJET_GL  , master_id)
-    Call Broadcast_Array(CFRD_GL   , master_id)
-    Call Broadcast_Array(DJPER_GL  , master_id)
-
 
     !C28*  READ JET/PLUME SOURCE LOCATIONS AND PARAMETERS
     NCARD='28'
     if( process_id == master_id )THEN
 
       CALL SEEK('C28')
-      DO L=1,NQJPIJ
-        READ(1,*,IOSTAT=ISO) IDUM,NJEL(L),NJPMX(L),ISENT(L),ISTJP(L),NUDJP(L),IOUTJP(L),NZPRJP(L),ISDJP(L),IUPCJP(L),JUPCJP(L),KUPCJP(L)
+      DO NJP=1,NQJPIJ
+        READ(1,*,IOSTAT=ISO) IDUM, JET_PLM_GL(NJP).NJEL,   JET_PLM_GL(NJP).NJPMX, JET_PLM_GL(NJP).ISENT,  JET_PLM_GL(NJP).ISTJP,  NDUM, JET_PLM_GL(NJP).IOUTJP,  &
+                                   JET_PLM_GL(NJP).NZPRJP, JET_PLM_GL(NJP).ISDJP, JET_PLM_GL(NJP).IUPCJP, JET_PLM_GL(NJP).JUPCJP, JET_PLM_GL(NJP).KUPCJP
 
         WRITE(7,1002)NCARD
-        WRITE(7,*) IDUM,NJEL(L),NJPMX(L),ISENT(L),ISTJP(L),NUDJP(L),IOUTJP(L),NZPRJP(L),ISDJP(L),IUPCJP(L),JUPCJP(L),KUPCJP(L)
+        WRITE(7,*) IDUM, JET_PLM_GL(NJP).NJEL,   JET_PLM_GL(NJP).NJPMX, JET_PLM_GL(NJP).ISENT,  JET_PLM_GL(NJP).ISTJP,  NDUM, JET_PLM_GL(NJP).IOUTJP,  &
+                         JET_PLM_GL(NJP).NZPRJP, JET_PLM_GL(NJP).ISDJP, JET_PLM_GL(NJP).IUPCJP, JET_PLM_GL(NJP).JUPCJP, JET_PLM_GL(NJP).KUPCJP
         IF( ISO > 0 ) GOTO 100
+        IF( NJP == 1 ) NUDJP = NDUM
       ENDDO
 
     endif
-
-    Call Broadcast_Array(NJEL  , master_id)
-    Call Broadcast_Array(NJPMX , master_id)
-    Call Broadcast_Array(ISENT , master_id)
-    Call Broadcast_Array(ISTJP , master_id)
-    Call Broadcast_Array(NUDJP , master_id)
-    Call Broadcast_Array(IOUTJP, master_id)
-    Call Broadcast_Array(NZPRJP, master_id)
-    Call Broadcast_Array(ISDJP , master_id)
-    Call Broadcast_Array(IUPCJP, master_id)
-    Call Broadcast_Array(JUPCJP, master_id)
-    Call Broadcast_Array(KUPCJP, master_id)
 
     !C29*  READ ADDITIONAL JET/PLUME PARAMETERS
     NCARD='29'
     if( process_id == master_id )THEN
       CALL SEEK('C29')
-      DO L=1,NQJPIJ
-        READ(1,*,IOSTAT=ISO) IDUM,QQCJP(L),NQSERJP(L),NQWRSERJP(L),NCSERJP(L,1),NCSERJP(L,2),NCSERJP(L,3),NCSERJP(L,4),NCSERJP(L,5),NCSERJP(L,6),NCSERJP(L,7)
+      DO NJP=1,NQJPIJ
+        READ(1,*,IOSTAT=ISO) IDUM, JET_PLM_GL(NJP).QQCJP,      JET_PLM_GL(NJP).NQSERJP,    JET_PLM_GL(NJP).NQWRSERJP,  JET_PLM_GL(NJP).NCSERJP(1), JET_PLM_GL(NJP).NCSERJP(2),   &
+                                   JET_PLM_GL(NJP).NCSERJP(3), JET_PLM_GL(NJP).NCSERJP(4), JET_PLM_GL(NJP).NCSERJP(5), JET_PLM_GL(NJP).NCSERJP(6), JET_PLM_GL(NJP).NCSERJP(7)
 
         WRITE(7,1002)NCARD
-        WRITE(7,*) IDUM,QQCJP(L),NQSERJP(L),NQWRSERJP(L),NCSERJP(L,1),NCSERJP(L,2),NCSERJP(L,3),NCSERJP(L,4),NCSERJP(L,5),NCSERJP(L,6),NCSERJP(L,7)
+        WRITE(7,*) IDUM, JET_PLM_GL(NJP).QQCJP, JET_PLM_GL(NJP).NQSERJP, JET_PLM_GL(NJP).NQWRSERJP, JET_PLM_GL(NJP).NCSERJP(1:7)
         
-        NUDJPC(L) = 1
         IF( ISO > 0 ) GOTO 100
 
-        IF( ICALJP(L) == 2 )THEN
-          QWRCJP(L)=QQCJP(L)
-          QQCJP(L)=0.
+        IF( JET_PLM_GL(NJP).ICALJP == 2 )THEN
+          JET_PLM_GL(NJP).QWRCJP = JET_PLM_GL(NJP).QQCJP
+          JET_PLM_GL(NJP).QQCJP = 0.
         ELSE
-          QWRCJP(L)=0.
+          JET_PLM_GL(NJP).QWRCJP = 0.
         ENDIF
       ENDDO
     endif
-
-    Call Broadcast_Array(QQCJP,     master_id)
-    Call Broadcast_Array(NQSERJP,   master_id)
-    Call Broadcast_Array(NQWRSERJP, master_id)
-    Call Broadcast_Array(NCSERJP  , master_id)
-
-    IF( NQJPIJ > 1 )THEN
-      DO L=2,NQJPIJ
-        NUDJP(L)=NUDJP(1)
-      ENDDO
-    ENDIF
-
 
     !C30*  READ TIME CONSTANT INFLOW CONCENTRATIONS FOR TIME CONSTANT
     !     JET/PLUME SOURCES SAL,TEM,DYE,SFL,TOX(1 TO NOTX)
@@ -1508,35 +1476,31 @@ SUBROUTINE INPUT(TITLE)
     if( process_id == master_id )THEN
       CALL SEEK('C30')
       MMAX = 3 + NDYM + NTOX
-      DO L=1,NQJPIJ
-        READ(1,*,IOSTAT=ISO) (CQSE(M),M=1,MMAX)
+      DO NJP=1,NQJPIJ
+        READ(1,*,IOSTAT=ISO) (CQSTMP(M),M=1,MMAX)
         WRITE(7,1002)NCARD
         
-        WRITE(7,*) (CQSE(M),M=1,MMAX)
+        WRITE(7,*) (CQSTMP(M),M=1,MMAX)
         IF( ISO > 0 ) GOTO 100
         
-        IF( ICALJP(L) == 1 )THEN
+        IF( JET_PLM_GL(NJP).ICALJP == 1 )THEN
           DO MS=1,MMAX
-            CWRCJP(L,MS)=0.0
+            JET_PLM_GL(NJP).CWRCJP(MS) = 0.0
             DO K=1,KC
-              CQCJP(K,L,MS)=CQSE(MS)
+              JET_PLM_GL(NJP).CQCJP(K,MS) = CQSTMP(MS)
             ENDDO
           ENDDO
         ELSE
           DO MS=1,MMAX
-            CWRCJP(L,MS)=CQSE(MS)
+            JET_PLM_GL(NJP).CWRCJP(MS) = CQSTMP(MS)
             DO K=1,KC
-              CQCJP(K,L,MS)=0.0
+              JET_PLM_GL(NJP).CQCJP(K,MS) = 0.0
             ENDDO
           ENDDO
         ENDIF
       ENDDO
 
     endif
-
-    Call Broadcast_Array(CQCJP, master_id)
-    Call Broadcast_Array(CWRCJP, master_id)
-    Call Broadcast_Array(CQSE, master_id)
 
     !C31*  READ TIME CONSTANT INFLOW CONCENTRATIONS FOR TIME CONSTANT
     !     JET/PLUME SOURCES SED(1 TO NSED),SND(1 TO NSND)
@@ -1548,38 +1512,78 @@ SUBROUTINE INPUT(TITLE)
       IF( ISTRAN(8) > 0 )THEN
         MMAX = MMAX + NWQV
       ENDIF
-      DO L=1,NQJPIJ
-        READ(1,*,IOSTAT=ISO) (CQSE(M),M=MMIN,MMAX)
+      DO NJP=1,NQJPIJ
+        READ(1,*,IOSTAT=ISO) (CQSTMP(M),M=MMIN,MMAX)
         
         WRITE(7,1002)NCARD
-        WRITE(7,*) (CQSE(M),M=MMIN,MMAX)
+        WRITE(7,*) (CQSTMP(M),M=MMIN,MMAX)
         IF( ISO > 0 ) GOTO 100
         
         MS = MAX(MMIN-1, 0)
-        IF( ICALJP(L) == 1 )THEN
+        IF( JET_PLM_GL(NJP).ICALJP == 1 )THEN
+          DO MS=MMIN,MMAX
+            JET_PLM_GL(NJP).CWRCJP(MS) = 0.0
+            DO K=1,KC
+              JET_PLM_GL(NJP).CQCJP(K,MS) = CQSTMP(MS)
+            ENDDO
+          ENDDO
+          
           DO M = 1,NWQV
             IF( ISKINETICS(M) > 0 )THEN
               MS = MS + 1
               DO K=1,KC
-                CQCJP(K,L,MS) = CQSE(M + MMIN - 1)        ! *** Only used constituents that will be simulated
+                JET_PLM_GL(NJP).CQCJP(K,MS) = CQSTMP(M + MMIN - 1)        ! *** Only used constituents that will be simulated
               ENDDO
             ENDIF
           ENDDO
         ELSE
           DO MS=MMIN,MMAX
-            CWRCJP(L,MS)=CQSE(MS)
+            JET_PLM_GL(NJP).CWRCJP(MS) = CQSTMP(MS)
             DO K=1,KC
-              CQCJP(K,L,MS)=0.
+              JET_PLM_GL(NJP).CQCJP(K,MS) = 0.
             ENDDO
           ENDDO
         ENDIF
       ENDDO
 
     endif
-    Call Broadcast_Array(CQCJP, master_id)
-    Call Broadcast_Array(CWRCJP, master_id)
-    Call Broadcast_Array(CQSE, master_id)
+      
+    Call Broadcast_Scalar( NUDJP,     master_id)
+    DO NJP=1,NQJPIJ
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).ICALJP,    master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).IQJP,      master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).JQJP,      master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).KQJP,      master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).IUPCJP,    master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).JUPCJP,    master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).KUPCJP,    master_id)
 
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).CFRD,      master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).DJET,      master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).DJPER,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).PHJET,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).QQCJP,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).THJET,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).XJETL,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).YJETL,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).ZJET,      master_id)
+
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).IOUTJP,    master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).ISENT,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).ISTJP,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).ISDJP,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).NJEL,      master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).NJPMX,     master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).NPORTJP,   master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).NQSERJP,   master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).NQWRSERJP, master_id)
+      Call Broadcast_Scalar( JET_PLM_GL(NJP).NZPRJP,    master_id)
+
+      Call Broadcast_Array( JET_PLM_GL(NJP).NCSERJP,    master_id)
+      Call Broadcast_Array( JET_PLM_GL(NJP).CQCJP,      master_id)
+      Call Broadcast_Array( JET_PLM_GL(NJP).CWRCJP,     master_id)
+    ENDDO
+    
   ENDIF
 
   IF( NQCTL > 0 )THEN
@@ -7549,7 +7553,7 @@ SUBROUTINE INPUT(TITLE)
 
     ! *** READ VEGETATION DATA FROM VEGE.INP AND VEGSER.INP
 
-  IF( ISVEG == 1 )THEN
+  IF( ISVEG > 0 )THEN
     if( process_id == master_id )THEN
       WRITE(*,'(A)')'READING VEGE.INP'
       OPEN(1,FILE='vege.inp',STATUS='UNKNOWN',SHARED)

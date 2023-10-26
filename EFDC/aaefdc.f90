@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------!
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2023 DSI, LLC
 !
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 !                   New WQ kinetics with user defined algal groups and zooplankton
 !                   SIGMA-Zed (SGZ) Vertical Layering
 !
-!  DATE:            2023-02-23
+!  DATE:            2023-03-27
 !  BY:              DSI, LLC
 !                   EDMONDS, WASHINGTON  98020
 !                   USA
@@ -185,7 +185,7 @@ PROGRAM EFDC
   Double Precision :: starting_time, ending_time
   
   ! *** When updating the version data also update the EXE date in the project settings
-  EFDC_VER = '2023-02-23'
+  EFDC_VER = '2023-08-04'
   
   IERR = 0
 #ifdef DEBUGGING
@@ -476,17 +476,27 @@ PROGRAM EFDC
         Call AllocateDSI( HFREGRP(IS).JCEL, NPNT(IS), 0)
         Call AllocateDSI( HFREGRP(IS).XCEL, NPNT(IS), 0.)
         Call AllocateDSI( HFREGRP(IS).YCEL, NPNT(IS), 0.)
+        allocate(HFREGRP(IS).NAME(NPNT(IS)))
 
         DO NP=1,NPNT(IS)
           CALL SKIPCOM(1,'*',2)
+          read(1,'(a)') STR
+          STR = adjustl(trim(STR))
           IF( IJHFRE(IS) == 1 )THEN
-            READ(1,*,IOSTAT=ISO) HFREGRP(IS).ICEL(NP), HFREGRP(IS).JCEL(NP)
+            call PARSESTRING(STR, BUFFER)
+            read(BUFFER,*) HFREGRP(IS).ICEL(NP)
+            call PARSESTRING(STR, BUFFER)
+            read(BUFFER,*) HFREGRP(IS).JCEL(NP)
           ELSE
-            READ(1,*,IOSTAT=ISO) HFREGRP(IS).XCEL(NP), HFREGRP(IS).YCEL(NP)
+            call PARSESTRING(STR, BUFFER)
+            read(BUFFER,*) HFREGRP(IS).XCEL(NP)
+            call PARSESTRING(STR, BUFFER)
+            read(BUFFER,*) HFREGRP(IS).YCEL(NP)
           ENDIF
-          IF( ISO > 0 )THEN
-            CALL STOPP('SUBSET.INP: READING ERROR!')
-          ENDIF
+          IF( ISO > 0 ) CALL STOPP('SUBSET.INP: READING ERROR!')
+          STR = TRIM(STR)
+          IF (STR(1:1)=='!') STR = STR(2:20)
+          HFREGRP(IS).NAME(NP) = TRIM(STR)          
         ENDDO
       ENDDO
       CLOSE(1)
@@ -515,49 +525,53 @@ PROGRAM EFDC
     ENDDO
     
     ! *** UPDATE LOCATIONS TO LOCAL DOMAIN, REMOVING ANY POINTS NOT IN THE CURRENT PROCESS
-    DO NS=1,NSUBSET
-      IF( IJHFRE(NS) == 0 )THEN
-        ! *** CONVERT IJ TO LOCAL
-        CALL XY2IJ(HFREGRP(NS), 1)          ! *** Get I & J from X and Y
-      ENDIF
-      HFREDAY(NS)   = HFREDAYBG(NS)
-      HFREDAYEN(NS) = HFREDAYBG(NS) + HFREDUR(NS)/24.
-      
-      ! *** REMOVE POINTS THAT ARE NOT IN DOMAIN
-      IP = 0
-      DO NP = 1,NPNT(NS)
-        IP = IP + 1
+    IF( .NOT. ALLOCATED(XCOR) ) CALL AREA_CENTRD
+    if( process_id == master_id )then
+      DO NS=1,NSUBSET
         IF( IJHFRE(NS) == 0 )THEN
-          ! *** ICEL AND JCEL ARE LOCAL DOMAIN INDICIES
-          IF( HFREGRP(NS).ICEL(NP) > 1 )THEN
-            L = LIJ(HFREGRP(NS).ICEL(NP), HFREGRP(NS).JCEL(NP))       ! *** Point is in the domain
-          ELSE
-            L = 0                                                     ! *** Point is outside the domain
-          ENDIF
-        ELSE
-          ! *** ICEL AND JCEL ARE GLOBAL DOMAIN INDICIES
-          LG = LIJ_Global(HFREGRP(NS).ICEL(NP), HFREGRP(NS).JCEL(NP))
-          L = Map2Local(LG).LL
+          ! *** CONVERT IJ TO LOCAL
+          CALL XY2IJ(HFREGRP(NS), 1)          ! *** Get I & J from X and Y
         ENDIF
+        HFREDAY(NS)   = HFREDAYBG(NS)
+        HFREDAYEN(NS) = HFREDAYBG(NS) + HFREDUR(NS)/24.
+      ENDDO 
+    endif
       
-        ! *** Check if valid.  Otherwise skip point
-        IF( L > 1 )THEN
-          ! *** Point in domain
-          HFREGRP(NS).ICEL(NP) = IL(L)
-          HFREGRP(NS).JCEL(NP) = JL(L)
-          
-          IF( NP > IP )THEN
-            HFREGRP(NS).ICEL(IP) = HFREGRP(NS).ICEL(NP)
-            HFREGRP(NS).JCEL(IP) = HFREGRP(NS).JCEL(NP)
-            HFREGRP(NS).XCEL(IP) = HFREGRP(NS).XCEL(NP)
-            HFREGRP(NS).YCEL(IP) = HFREGRP(NS).YCEL(NP)
-          ENDIF
-        ELSE
-          IP = IP - 1
-        ENDIF
-      ENDDO
-      NPNT(NS) = IP 
-    ENDDO
+    ! *** REMOVE POINTS THAT ARE NOT IN DOMAIN
+    !  IP = 0
+    !  DO NP = 1,NPNT(NS)
+    !    IP = IP + 1
+    !    IF( IJHFRE(NS) == 0 )THEN
+    !      ! *** ICEL AND JCEL ARE LOCAL DOMAIN INDICIES
+    !      IF( HFREGRP(NS).ICEL(NP) > 1 )THEN
+    !        L = LIJ(HFREGRP(NS).ICEL(NP), HFREGRP(NS).JCEL(NP))       ! *** Point is in the domain
+    !      ELSE
+    !        L = 0                                                     ! *** Point is outside the domain
+    !      ENDIF
+    !    ELSE
+    !      ! *** ICEL AND JCEL ARE GLOBAL DOMAIN INDICIES
+    !      LG = LIJ_Global(HFREGRP(NS).ICEL(NP), HFREGRP(NS).JCEL(NP))
+    !      L = Map2Local(LG).LL
+    !    ENDIF
+    !  
+    !    ! *** Check if valid.  Otherwise skip point
+    !    IF( L > 1 )THEN
+    !      ! *** Point in domain
+    !      HFREGRP(NS).ICEL(NP) = IL(L)
+    !      HFREGRP(NS).JCEL(NP) = JL(L)
+    !      
+    !      IF( NP > IP )THEN
+    !        HFREGRP(NS).ICEL(IP) = HFREGRP(NS).ICEL(NP)
+    !        HFREGRP(NS).JCEL(IP) = HFREGRP(NS).JCEL(NP)
+    !        HFREGRP(NS).XCEL(IP) = HFREGRP(NS).XCEL(NP)
+    !        HFREGRP(NS).YCEL(IP) = HFREGRP(NS).YCEL(NP)
+    !      ENDIF
+    !    ELSE
+    !      IP = IP - 1
+    !    ENDIF
+    !  ENDDO
+    !  NPNT(NS) = IP 
+    !ENDDO
   ENDIF
 
   ! ***  TCON:    CONVERSION MULTIPLIER TO CHANGE TBEGIN TO SECONDS
@@ -786,7 +800,7 @@ PROGRAM EFDC
   PI   = 3.1415926535898
   PI2  = 2.*PI
   TCVP = 0.0625*TIDALP/PI
-  TIMERST = (TIDALP*ISRESTO)/86400.
+  TIMERST = (TIDALP*ABS(ISRESTO))/86400.
 
   ! **  SET CONSTANTS FOR M2 TIDAL CYCLE HARMONIC ANALYSIS
   IF( ISHTA > 0 )THEN
@@ -1608,8 +1622,8 @@ PROGRAM EFDC
     ENDIF
   ENDDO
   DO NJP=1,NQJPIJ
-    LU = LIJ(IQJP(NJP),JQJP(NJP))
-    KUPCJP(NJP) = MAX(KUPCJP(NJP), KSZ(LU))
+    LU = LIJ(JET_PLM(NJP).IQJP,JET_PLM(NJP).JQJP)
+    JET_PLM(NJP).KUPCJP = MAX(JET_PLM(NJP).KUPCJP, KSZ(LU))
   ENDDO
   
   If( process_id == master_id )THEN

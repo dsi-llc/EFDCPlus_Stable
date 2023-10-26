@@ -17,6 +17,7 @@ MODULE WINDWAVE
 !                   Paul M. Craig
 
 USE GLOBAL
+Use Allocate_Initialize
 USE INFOMOD,ONLY:SKIPCOM
 Use MPI
 Use Variables_MPI
@@ -36,7 +37,7 @@ REAL(RKD)             :: ROTAT            ! *** COUNTER-CLOCKWISE ROTATION OF DO
 
 REAL(RKD) ,PRIVATE,PARAMETER :: FETANG(NZONE) = (/0.0,22.5,45.0,67.5,90.0,112.5,135.0,157.5,180.0,202.5,225.0,247.5,270.0,292.5,315.0,337.5/)
 
-PRIVATE              :: FETZONE
+PRIVATE                      :: FETZONE
 
 CONTAINS
 
@@ -50,7 +51,7 @@ SUBROUTINE WINDWAVETUR
   REAL :: TMPVAL,TAUTMP,CORZBR,CDRGTMP
   REAL,EXTERNAL :: CSEDVIS
 
-  CALL WINDWAVECAL         !OUTPUT: WV(L).HEIGHT,UDEL,WDIR,WV.FREQ,RLS
+  CALL WINDWAVECAL         !OUTPUT: WV(L).HEIGHT,UDEL,WINDDIR,WV.FREQ,RLS
 
   ! ***  INITIALIZE WAVE-CURRENT BOUNDARY LAYER MODEL CALCULATING
   ! ***  THE WAVE TURBULENT INTENSITY, QQWV
@@ -153,47 +154,34 @@ SUBROUTINE WINDWAVETUR
 END SUBROUTINE
 
 SUBROUTINE WINDWAVECAL
-  ! *** CALCULATING WAVE PARAMETERS FOR EVERY CELL
-  ! *** BASED ON COMPUTED WIND PARAMETERS FROM WSER.INP AND SHELTERING
+  ! *** Calculating wave parameters for every cell using the SMB model using
+  ! *** wind parameters from WSER.INP and wind sheltering
+  ! ***
   ! *** INPUT:
-  ! *** WNDVELE(L),WNDVELN(L),HP(L)
+  ! *** WNDVELE(L), WNDVELN(L), HP(L)
+  ! ***
   ! *** OUTPUT:
-  ! ***   WV(L).HEIGHT, WV(L).FREQ, WV(L).DIR, WV(L).UDEL
-  ! ***   WV(L).HEIGHT  - WAVE HEIGHT (M)
-  ! ***   WV(L).DIR - WAVE ANGLE (RADIANS)
-  ! ***   WV(L).FREQ - WAVE FREQENCY (SEC)
-  ! ***   WV(L).TWX, WV(L).TWY
-  INTEGER :: L, ZONE, ND, LF, LL, LP
-  REAL(RKD)  :: AVEDEP, WVEL2, FC1, FC2, FC3, FLWET
-  REAL(RKD)  :: WDIR            ! *** WIND DIRECTION IN DEG [0, 360]
-  REAL(RKD)  :: WINX, WINY      ! *** IN CURVI-LINEAR SYS
-  REAL(RKD)  :: WVEL            ! *** INTERPOLATED WIND VELOCITY
+  ! ***   WV(L).HEIGHT - Wave height (m)
+  ! ***   WV(L).DIR    - Wave angle (radians)
+  ! ***   WV(L).PERIOD - Wave period (sec)
+  ! ***   WV(L).FREQ   - Wave freqency (rad/sec)
+  ! ***   WV(L).UDEL   - Maximum orbital velocity
+  ! ***   WV(L).TWX    - Surface shear stress in the U direction
+  ! ***   WV(L).TWY    - Surface shear stress in the V direction
+
+  INTEGER :: L, ZONE, ND, LF, LL, LP, NH
+  REAL(RKD)  :: AVEDEP, FC0, FC1, FC2, FC3, L0, L1, WL0, WL1, FLWET
+  REAL(RKD)  :: WINDDIR              ! *** Wind direction in deg [0, 360]
+  REAL(RKD)  :: WINX, WINY           ! *** Wind components in X and Y
+  REAL(RKD)  :: WINDVEL, WINDVEL2    ! *** Wind magnitudes
 
   ! *** CALCULATING WAVE HEIGHT,PERIOD,ORBITAL VELOCITY AND LENGTH
   FLWET = FLOAT(LAWET)
-  AVEDEP = 0.
 
   !$OMP PARALLEL DEFAULT(SHARED)
 
-  ! *** Get the average depth of the wet/active cells
-  !$OMP DO PRIVATE(ND,LF,LL,LP,L) REDUCTION(+:AVEDEP)
-  DO ND = 1,NDM
-    LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
-
-    DO LP = LF,LL
-      L = LWET(LP)
-      AVEDEP = AVEDEP + HP(L)
-    ENDDO
-  ENDDO
-  !$OMP END DO
-
-  !$OMP SINGLE
-  AVEDEP = AVEDEP/FLWET
-  !$OMP END SINGLE
-  
-  !$OMP DO PRIVATE(ND,LF,LL,LP,L)  &
-  !$OMP    PRIVATE(WINX,WINY,WVEL2,WVEL,WDIR,ZONE,FC1,FC2,FC3)
+  !$OMP DO PRIVATE(ND, LF, LL, LP, L, NH)  &
+  !$OMP    PRIVATE(WINX, WINY, WINDVEL2, WINDVEL, WINDDIR, ZONE, FC0, FC1, FC2, FC3, L0, L1, WL0, WL1)
   DO ND = 1,NDM
     LF = (ND-1)*LDMWET+1
     LL = MIN(LF+LDMWET-1,LAWET)
@@ -201,59 +189,62 @@ SUBROUTINE WINDWAVECAL
     DO LP = LF,LL
       L = LWET(LP)
       IF( LWVMASK(L) )THEN
-        ! *** 10 METER WINDS WNDVELE, WNDVELN ALREADY ADJUSTED FOR WIND SHELTERING
+        ! *** 10 meter winds WNDVELE, WNDVELN already adjusted for wind sheltering
         WINX = WNDVELE(L)    ! *** X IS TRUE EAST
         WINY = WNDVELN(L)    ! *** Y IS TRUE NORTH
 
-        WVEL2 = WINX*WINX + WINY*WINY
-        WVEL  = SQRT(WVEL2)
+        WINDVEL2 = WINX*WINX + WINY*WINY
+        WINDVEL = SQRT(WINDVEL2)                   ! *** 10m wind magnitude
 
-        IF( HP(L) > HDRY .AND. WVEL > 1D-3 )THEN
-          WV(L).TWX = WINX/WVEL
-          WV(L).TWY = WINY/WVEL
+        IF( HP(L) > HDRY .AND. WINDVEL > 1D-3 )THEN
+          WV(L).TWX = WINX/WINDVEL
+          WV(L).TWY = WINY/WINDVEL
           IF( WINX  >= 0 )THEN
-            WDIR  = ACOS(WV(L).TWY)*180./PI     !DEG. (NORTH,WIND TO)
+            WINDDIR  = ACOS(WV(L).TWY)*180./PI      !DEG. (NORTH,WIND TO)
           ELSE
-            WDIR  = 360-ACOS(WV(L).TWY)*180./PI
+            WINDDIR  = 360-ACOS(WV(L).TWY)*180./PI
           ENDIF
-          ZONE = FETZONE(WDIR)
+          ZONE = FETZONE(WINDDIR)
+          AVEDEP = Fetch_Depth(L,ZONE)                                                 ! *** Get the average depth along the fetch (m)
           
-          ! *** WAVE HEIGHT
-          FC3 = TANH(0.530*(9.81*AVEDEP/WVEL2)**0.75)
-          FC1 = WVEL2/9.81*0.283*FC3
-          FC2 = TANH(0.0125*(9.81*FWDIR(L,ZONE)/WVEL2)**0.42/FC3)
-          WV(L).HEIGHT = MIN(0.75*HP(L),0.7*FC1*FC2)                 ! *** WAVE HEIGHT INCLUDING BREAKING WAVE
+          ! *** Wave height (m)
+          FC0 = (G*AVEDEP/WINDVEL2)**0.75
+          FC1 = TANH(0.530*FC0)
+          FC2 = WINDVEL2*GI*0.283*FC1
+          FC3 = TANH(0.0125*(G*FWDIR(L,ZONE)/WINDVEL2)**0.42/FC1)
+          WV(L).HEIGHT = MIN(0.75*HP(L), FC2*FC3)                                      ! *** Wave height (m)
 
-          ! *** VEGETATION EFFECT
-          IF( ISVEG > 0 )THEN
-            IF( MVEGL(L) /= MVEGOW )THEN
-              WV(L).HEIGHT = 0.
-            ELSE
-              IF( (MVEGL(LWC(L)) /= MVEGOW) .OR. &
-                  (MVEGL(LEC(L)) /= MVEGOW) .OR. &
-                  (MVEGL(LSC(L)) /= MVEGOW) .OR. &
-                  (MVEGL(LNC(L)) /= MVEGOW) )       WV(L).HEIGHT = 0.5*WV(L).HEIGHT
-            ENDIF
-          ENDIF
+          ! *** Vegetation effect    delme - Disable for now.  Add more robust way of treating wave/veg interactions
+          !IF( ISVEG > 0 )THEN
+          !  IF( MVEGL(L) /= MVEGOW )THEN
+          !    WV(L).HEIGHT = 0.
+          !  ELSE
+          !    IF( (MVEGL(LWC(L)) /= MVEGOW) .OR. &
+          !        (MVEGL(LEC(L)) /= MVEGOW) .OR. &
+          !        (MVEGL(LSC(L)) /= MVEGOW) .OR. &
+          !        (MVEGL(LNC(L)) /= MVEGOW) )       WV(L).HEIGHT = 0.5*WV(L).HEIGHT
+          !  ENDIF
+          !ENDIF
 
-          ! *** WAVE FREQUENCY
-          FC3 = TANH(0.833*(9.81*AVEDEP/WVEL2)**0.375)
-          FC1 = (WVEL/9.81)*7.54*FC3
-          FC2 = TANH(0.077*(9.81*FWDIR(L,ZONE)/WVEL2)**0.25/FC3)
-          WV(L).PERIOD = MAX(1D-3,1.1*FC1*FC2)
+          ! *** Wave frequency (rad/s)
+          FC0 = TANH(0.833*(G*AVEDEP/WINDVEL2)**0.375)
+          FC1 = 7.54*WINDVEL*GI*FC0
+          FC2 = TANH(0.077*(G*FWDIR(L,ZONE)/WINDVEL2)**0.25/FC0)
+          WV(L).PERIOD = MAX(1D-3, FC1*FC2)
           WV(L).FREQ   = 2.0*PI/WV(L).PERIOD
 
-          FC1 = WV(L).FREQ**2*HP(L)*GI
-          FC2 = FC1 + 1.0/( 1.0 + 0.6522*FC1 + 0.4622*FC1**2 + 0.0864*FC1**4 + 0.0675*FC1**5 )
-          WV(L).LENGTH = WV(L).PERIOD*SQRT(G*HP(L)/FC2)
+          ! *** Wave length, Hunt approximation (1979) (m)
+          FC1 = WV(L).FREQ**2*HP(L)*GI                                                          ! *** EFDC+ Eq. 2.55
+          FC2 = FC1 + 1.0/( 1.0 + 0.6522*FC1 + 0.4622*FC1**2 + 0.0864*FC1**4 + 0.0675*FC1**5 )  ! *** EFDC+ Eq. 2.54
+          WV(L).LENGTH = WV(L).PERIOD*SQRT(G*HP(L)/FC2)                                         ! *** EFDC+ Eq. 2.53
 
+          ! *** Orbital velocity (m/s)
           WV(L).K = MAX( 2.*PI/WV(L).LENGTH, 0.01 )
           WV(L).KHP = MIN(WV(L).K*HP(L),SHLIM)
-          WV(L).UDEL = MAX(1D-6,PI*WV(L).HEIGHT/(WV(L).PERIOD*SINH(WV(L).KHP)))        ! *** Orbital velocity
+          WV(L).UDEL = MAX(1D-6, PI*WV(L).HEIGHT/( WV(L).PERIOD*SINH(WV(L).KHP) ))              ! *** Orbital velocity    Eq. 2.59
 
-          ! *** WAVE DIRECTION (RADIANS) COUNTER-CLOCKWISE (CELL-EAST AXIS,WAVE)
-          ! WV(L).DIR = (90-WDIR-ROTAT)*PI/180._8
-          WINX =  CVN(L)*WNDVELE(L) - CVE(L)*WNDVELN(L)                                ! *** Curvilinear system
+          ! *** Wave direction (radians) counter-clockwise (cell-east axis,wave)
+          WINX =  CVN(L)*WNDVELE(L) - CVE(L)*WNDVELN(L)                                         ! *** Curvilinear system
           WINY = -CUN(L)*WNDVELE(L) + CUE(L)*WNDVELN(L)
           WV(L).DIR= ATAN2(WINY,WINX)
 
@@ -277,10 +268,10 @@ SUBROUTINE WINDWAVECAL
 
 END SUBROUTINE
 
-FUNCTION FETZONE8(WDIR) RESULT(ZONE)
+FUNCTION FETZONE8(WINDDIR) RESULT(ZONE)
   ! * DETERMINING FETCH ZONE AND FETCH MAIN ANGLE
-  ! * BASED ON THE GIVEN WIND DIRECTION WDIR
-  ! * WDIR     : INTERPOLATED WIND DIRECTION FROM WSER.INP
+  ! * BASED ON THE GIVEN WIND DIRECTION WINDDIR
+  ! * WINDDIR     : INTERPOLATED WIND DIRECTION FROM WSER.INP
   ! * UNIT     : [0,360]
   ! * FORMATION: ANGLE BY (NORTH,WIND TO)IN CLOCKWISE DIRECTION
   ! * ZONE 1: NORTH        > 337.5 OR   <= 22.5
@@ -291,68 +282,87 @@ FUNCTION FETZONE8(WDIR) RESULT(ZONE)
   ! * ZONE 6: SOUTH-WEST
   ! * ZONE 7: WEST
   ! * ZONE 8: NORTH-WEST
-  REAL(RKD) ,INTENT(IN ) :: WDIR   ![0,360]
+  REAL(RKD) ,INTENT(IN ) :: WINDDIR   ![0,360]
   INTEGER :: ZONE
 
-  IF( WDIR > 337.5 .OR. WDIR  <= 22.5 )THEN
+  IF( WINDDIR > 337.5 .OR. WINDDIR  <= 22.5 )THEN
     ZONE = 1
-  ELSEIF( WDIR > 22.5 .AND. WDIR  <= 67.5 )THEN
+  ELSEIF( WINDDIR > 22.5 .AND. WINDDIR  <= 67.5 )THEN
     ZONE = 2
-  ELSEIF( WDIR > 67.5 .AND. WDIR  <= 112.5 )THEN
+  ELSEIF( WINDDIR > 67.5 .AND. WINDDIR  <= 112.5 )THEN
     ZONE = 3
-  ELSEIF( WDIR > 112.5 .AND. WDIR  <= 157.5 )THEN
+  ELSEIF( WINDDIR > 112.5 .AND. WINDDIR  <= 157.5 )THEN
     ZONE = 4
-  ELSEIF( WDIR > 157.5 .AND. WDIR  <= 202.5 )THEN
+  ELSEIF( WINDDIR > 157.5 .AND. WINDDIR  <= 202.5 )THEN
     ZONE = 5
-  ELSEIF( WDIR > 202.5 .AND. WDIR  <= 247.5 )THEN
+  ELSEIF( WINDDIR > 202.5 .AND. WINDDIR  <= 247.5 )THEN
     ZONE = 6
-  ELSEIF( WDIR > 247.5 .AND. WDIR  <= 292.5 )THEN
+  ELSEIF( WINDDIR > 247.5 .AND. WINDDIR  <= 292.5 )THEN
     ZONE = 7
-  ELSEIF( WDIR > 292.5 .AND. WDIR  <= 337.5 )THEN
+  ELSEIF( WINDDIR > 292.5 .AND. WINDDIR  <= 337.5 )THEN
     ZONE = 8
   ENDIF
 END FUNCTION
 
-FUNCTION FETZONE(WDIR) RESULT(ZONE)
+REAL FUNCTION Fetch_Depth(L,NZ)
+  ! *** Compute the average depth of wet cells along the fetch
+
+  INTEGER,INTENT(IN) :: L, NZ
+  INTEGER :: ICELL, LF, NF
+  REAL :: DEPTH
+ 
+  DEPTH = 0.0
+  NF = 0
+  DO ICELL = 1, LWDIR(L,NZ,0)
+    LF = LWDIR(L,NZ,ICELL)
+    IF( HP(LF) < HDRY ) CYCLE                            ! *** Ignore dry cells and exit
+    NF = NF + 1
+    DEPTH = DEPTH + HP(LF)
+  ENDDO 
+  Fetch_Depth = DEPTH/FLOAT(NF)
+  
+END FUNCTION Fetch_Depth
+
+FUNCTION FETZONE(WINDDIR) RESULT(ZONE)
   ! *** DETERMINING FETCH ZONE AND FETCH MAIN ANGLE
-  ! *** BASED ON THE GIVEN WIND DIRECTION WDIR
-  ! *** WDIR     : INTERPOLATED WIND DIRECTION FROM WSER.INP
+  ! *** BASED ON THE GIVEN WIND DIRECTION WINDDIR
+  ! *** WINDDIR     : INTERPOLATED WIND DIRECTION FROM WSER.INP
   ! *** UNIT     : [0,360]
   ! *** FORMATION: ANGLE BY (NORTH,WIND TO)IN CLOCKWISE DIRECTION
-  REAL(RKD) ,INTENT(IN ) :: WDIR   ![0,360]
+  REAL(RKD) ,INTENT(IN ) :: WINDDIR   ![0,360]
   INTEGER :: ZONE
 
-  IF( WDIR > 348.75 .OR. WDIR  <= 11.25 )THEN
+  IF( WINDDIR > 348.75 .OR. WINDDIR  <= 11.25 )THEN
     ZONE = 1
-  ELSEIF( WDIR >  11.25 .AND. WDIR  <=  33.75 )THEN
+  ELSEIF( WINDDIR >  11.25 .AND. WINDDIR  <=  33.75 )THEN
     ZONE = 2                            
-  ELSEIF( WDIR >  33.75 .AND. WDIR  <=  56.25 )THEN
+  ELSEIF( WINDDIR >  33.75 .AND. WINDDIR  <=  56.25 )THEN
     ZONE = 3                            
-  ELSEIF( WDIR >  56.25 .AND. WDIR  <=  78.75 )THEN
+  ELSEIF( WINDDIR >  56.25 .AND. WINDDIR  <=  78.75 )THEN
     ZONE = 4            
-  ELSEIF( WDIR >  78.75 .AND. WDIR  <= 101.25 )THEN
+  ELSEIF( WINDDIR >  78.75 .AND. WINDDIR  <= 101.25 )THEN
     ZONE = 5
-  ELSEIF( WDIR > 101.25 .AND. WDIR  <= 123.75 )THEN
+  ELSEIF( WINDDIR > 101.25 .AND. WINDDIR  <= 123.75 )THEN
     ZONE = 6
-  ELSEIF( WDIR > 123.75 .AND. WDIR  <= 146.25 )THEN
+  ELSEIF( WINDDIR > 123.75 .AND. WINDDIR  <= 146.25 )THEN
     ZONE = 7
-  ELSEIF( WDIR > 146.25 .AND. WDIR  <= 168.75 )THEN
+  ELSEIF( WINDDIR > 146.25 .AND. WINDDIR  <= 168.75 )THEN
     ZONE = 8
-  ELSEIF( WDIR > 168.75 .AND. WDIR  <= 191.25 )THEN
+  ELSEIF( WINDDIR > 168.75 .AND. WINDDIR  <= 191.25 )THEN
     ZONE = 9
-  ELSEIF( WDIR > 191.25 .AND. WDIR  <= 213.75 )THEN
+  ELSEIF( WINDDIR > 191.25 .AND. WINDDIR  <= 213.75 )THEN
     ZONE = 10
-  ELSEIF( WDIR > 213.75 .AND. WDIR  <= 236.25 )THEN
+  ELSEIF( WINDDIR > 213.75 .AND. WINDDIR  <= 236.25 )THEN
     ZONE = 11
-  ELSEIF( WDIR > 236.25 .AND. WDIR  <= 258.75 )THEN
+  ELSEIF( WINDDIR > 236.25 .AND. WINDDIR  <= 258.75 )THEN
     ZONE = 12
-  ELSEIF( WDIR > 258.75 .AND. WDIR  <= 281.25 )THEN
+  ELSEIF( WINDDIR > 258.75 .AND. WINDDIR  <= 281.25 )THEN
     ZONE = 13
-  ELSEIF( WDIR > 281.25 .AND. WDIR  <= 303.75 )THEN
+  ELSEIF( WINDDIR > 281.25 .AND. WINDDIR  <= 303.75 )THEN
     ZONE = 14
-  ELSEIF( WDIR > 303.75 .AND. WDIR  <= 326.25 )THEN
+  ELSEIF( WINDDIR > 303.75 .AND. WINDDIR  <= 326.25 )THEN
     ZONE = 15
-  ELSEIF( WDIR > 326.25 .AND. WDIR  <= 348.75 )THEN
+  ELSEIF( WINDDIR > 326.25 .AND. WINDDIR  <= 348.75 )THEN
     ZONE = 16
   ENDIF
 END FUNCTION
@@ -361,106 +371,140 @@ SUBROUTINE FETCH_Global
   ! *** DETERMINING THE FETCH FOR EACH CELL:
   ! *** OUTPUT: FWDIR(2:LA,1:NZONE) IN M
   USE DRIFTER,ONLY:INSIDECELL_GL
-  REAL(RKD) :: AL(NZONE),RL,XM,YM,RL0,DOTX,DOTY
-  INTEGER   :: I, J, L, LG, NZ, IM, JM, LM, STATUS, LE, LN, LS, LW, ND, LF, LL, LP
+  REAL(RKD) :: AL(NZONE), RL, XM, YM, RL0, DOTX, DOTY
+  INTEGER   :: I, J, LG, LL, LM, LE, LN, LS, LW, NZ, NCELLS, IM, JM, STATUS
   LOGICAL   :: ULOG, VLOG
 
-  AL  = (180_8 + 90_8 - FETANG - ROTAT)*PI/180._8       ! *** COUNTER-CLOCKWISE (TRUE EAST,WIND FR)
-  RL0 = 0.25*MIN(MINVAL(DXP_Global(2:LA_Global)),MINVAL(DYP_Global(2:LA_Global)))
+  AL  = (90_8 - FETANG - ROTAT)*PI/180._8                                          ! *** Angle (trig) to check fetch moving up the wind fetch (away from the cell).  Fetch angle the direction wind is coming from
+  AL  = PI + AL                                                                    ! *** Angle (trig) to check fetch moving up the wind fetch (away from the cell).  Fetch angle the direction wind is coming from
+  RL0 = 0.25*MIN(MINVAL(DXP_Global(2:LA_Global)),MINVAL(DYP_Global(2:LA_Global)))  ! *** Distance increment to seach along the fetch.  MIN(DX,DY)/4
 
-  DO L = 2, LA_GLOBAL
-    IF( LWVMASK_Global(L) )THEN
-      DO NZ = 1,NZONE
+  DO LG = 2, LA_GLOBAL
+    IF( LWVMASK_Global(LG) )THEN
+      DO NZ = 1, NZONE
         RL = 0
-        IM = IL_GL(L)
-        JM = JL_GL(L)
+        IM = IL_GL(LG)
+        JM = JL_GL(LG)
+        
+        LL = 0
+        NCELLS = 1
+        LWDIR_Global(LG,NZ,NCELLS) = LG        ! *** Current cell is always included in fetch
+        
+        ! *** Search for the 9 cells around the current fetch endpoint
         LOOP1:DO WHILE(1)
           STATUS = 0
-          RL = RL + RL0                                   ! *** SEARCH FETCH FOR MIN (DX,DY)/4
-          XM = XCOR_Global(L,5) + RL*COS(AL(NZ))          ! *** UPWIND DISTANCE = FETCH
-          YM = YCOR_Global(L,5) + RL*SIN(AL(NZ))
+          RL = RL + RL0                                    ! *** Current fetch
+          XM = XCOR_Global(LG,5) + RL*COS(AL(NZ))          ! *** X coordinate in global model coordinate system
+          YM = YCOR_Global(LG,5) + RL*SIN(AL(NZ))          ! *** Y coordinate in global model coordinate system
+          
+          ! *** Search a radius +/- one cell around the current cell to find an adjacent cell
           LOOP2:DO J = JM-1,JM + 1
             IF ( J < 1 ) CYCLE
+            
             DO I = IM-1,IM + 1
               IF ( I < 1 ) CYCLE
               
+              ! *** Found an adjacent cell.  Check if XM,YM are contained in the cell
               LM = LIJ_GLOBAL(I,J)
               IF( LM < 2 ) CYCLE
               IF( INSIDECELL_GL(LM,XM,YM) )THEN
-                DOTX = CUE_Global(L)*COS(AL(NZ)) + CUN_Global(L)*SIN(AL(NZ))
-                DOTY = CVE_Global(L)*COS(AL(NZ)) + CVN_Global(L)*SIN(AL(NZ))
+                ! *** Found a cell along the fetch
+                LL = LM
+                
+                ! *** Build list of unique cells along fetch
+                IF( LWDIR_Global(LG,NZ,NCELLS) /= LM )THEN
+                  NCELLS = NCELLS + 1
+                  LWDIR_Global(LG,NZ,NCELLS) = LM
+                ENDIF
+
+                ! *** Now check for masks
+                DOTX = CUE_Global(LG)*COS(AL(NZ)) + CUN_Global(LG)*SIN(AL(NZ))
+                DOTY = CVE_Global(LG)*COS(AL(NZ)) + CVN_Global(LG)*SIN(AL(NZ))
                 IF( ABS(DOTX) < 0.001_8 )THEN
                   DOTX = 0
-                  DOTY = 1
+                  DOTY = 1.0
                 ENDIF
                 IF( ABS(DOTX) > 0.999_8 )THEN
-                  DOTX = 1
+                  DOTX = 1.0
                   DOTY = 0
                 ENDIF
                 IF( ABS(DOTY) < 0.001_8 )THEN
-                  DOTX = 1
+                  DOTX = 1.0
                   DOTY = 0
                 ENDIF
                 IF( ABS(DOTY) > 0.999_8 )THEN
                   DOTX = 0
-                  DOTY = 1
+                  DOTY = 1.0
                 ENDIF
+
                 LW = LWC_Global(LM)
                 LE = LEC_Global(LM)
                 LS = LSC_Global(LM)
                 LN = LNC_Global(LM)
+                
+                ! ***            1    2    3    4    5     6     7     8     9   10     11    12    13    14    15    16
+                ! *** FETANG = 0.0,22.5,45.0,67.5,90.0,112.5,135.0,157.5,180.0,202.5,225.0,247.5,270.0,292.5,315.0,337.5
                 IF( NZ == 1 )THEN
-                  ULOG = ABS(DOTX) /= 1 .AND. (VMASK_Global(LM) == 1)
-                  VLOG = ABS(DOTY) /= 1 .AND. (UMASK_Global(LM) == 1 .OR. UMASK_Global(LE) == 1)
+                  ULOG = ABS(DOTX) /= 1.0 .AND. (VMASK_Global(LM) == 1)
+                  VLOG = ABS(DOTY) /= 1.0 .AND. (UMASK_Global(LM) == 1 .OR. UMASK_Global(LE) == 1)
                 ELSEIF( NZ > 1 .AND. NZ  <= 4 )THEN
-                  ULOG = ABS(DOTX) /= 1 .AND. (VMASK_Global(LM) == 1 .OR. VMASK_Global(LW) == 1)
-                  VLOG = ABS(DOTY) /= 1 .AND. (UMASK_Global(LM) == 1 .OR. UMASK_Global(LS) == 1)
+                  ULOG = ABS(DOTX) /= 1.0 .AND. (VMASK_Global(LM) == 1 .OR. VMASK_Global(LW) == 1)
+                  VLOG = ABS(DOTY) /= 1.0 .AND. (UMASK_Global(LM) == 1 .OR. UMASK_Global(LS) == 1)
                 ELSEIF( NZ == 5 )THEN
-                  ULOG = ABS(DOTX) /= 1 .AND. (VMASK_Global(LM) == 1 .OR. VMASK_Global(LN) == 1)
-                  VLOG = ABS(DOTY) /= 1 .AND. (UMASK_Global(LM) == 1)
+                  ULOG = ABS(DOTX) /= 1.0 .AND. (VMASK_Global(LM) == 1 .OR. VMASK_Global(LN) == 1)
+                  VLOG = ABS(DOTY) /= 1.0 .AND. (UMASK_Global(LM) == 1)
                 ELSEIF( NZ > 5 .AND. NZ  <= 8 )THEN
-                  ULOG = ABS(DOTX) /= 1 .AND. (VMASK_Global(LN) == 1 .OR. VMASK_Global(LWC_Global(LN)) == 1)
-                  VLOG = ABS(DOTY) /= 1 .AND. (UMASK_Global(LM) == 1 .OR. UMASK_Global(LN) == 1)
+                  ULOG = ABS(DOTX) /= 1.0 .AND. (VMASK_Global(LN) == 1 .OR. VMASK_Global(LWC_Global(LN)) == 1)
+                  VLOG = ABS(DOTY) /= 1.0 .AND. (UMASK_Global(LM) == 1 .OR. UMASK_Global(LN) == 1)
                 ELSEIF( NZ == 9 )THEN
-                  ULOG = ABS(DOTX) /= 1 .AND. (VMASK_Global(LN) == 1)
-                  VLOG = ABS(DOTY) /= 1 .AND. (UMASK_Global(LM) == 1 .OR. UMASK_Global(LE) == 1)
+                  ULOG = ABS(DOTX) /= 1.0 .AND. (VMASK_Global(LN) == 1)
+                  VLOG = ABS(DOTY) /= 1.0 .AND. (UMASK_Global(LM) == 1 .OR. UMASK_Global(LE) == 1)
                 ELSEIF( NZ > 9 .AND. NZ  <= 12 )THEN
-                  ULOG = ABS(DOTX) /= 1 .AND. (VMASK_Global(LN) == 1 .OR. VMASK_Global(LEC_Global(LN)) == 1)
-                  VLOG = ABS(DOTY) /= 1 .AND. (UMASK_Global(LE) == 1 .OR. UMASK_Global(LEC_Global(LN)) == 1)
+                  ULOG = ABS(DOTX) /= 1.0 .AND. (VMASK_Global(LN) == 1 .OR. VMASK_Global(LEC_Global(LN)) == 1)
+                  VLOG = ABS(DOTY) /= 1.0 .AND. (UMASK_Global(LE) == 1 .OR. UMASK_Global(LEC_Global(LN)) == 1)
                 ELSEIF( NZ == 13 )THEN
-                  ULOG = ABS(DOTX) /= 1 .AND. (VMASK_Global(LM) == 1 .OR. VMASK_Global(LN) == 1)
-                  VLOG = ABS(DOTY) /= 1 .AND. (UMASK_Global(LE) == 1)
+                  ULOG = ABS(DOTX) /= 1.0 .AND. (VMASK_Global(LM) == 1 .OR. VMASK_Global(LN) == 1)
+                  VLOG = ABS(DOTY) /= 1.0 .AND. (UMASK_Global(LE) == 1)
                 ELSEIF( NZ > 13 .AND. NZ  <= 16 )THEN
-                  ULOG = ABS(DOTX) /= 1 .AND. (VMASK_Global(LM) == 1 .OR. VMASK_Global(LE) == 1)
-                  VLOG = ABS(DOTY) /= 1 .AND. (UMASK_Global(LE) == 1 .OR. UMASK_Global(LEC_Global(LS)) == 1)
+                  ULOG = ABS(DOTX) /= 1.0 .AND. (VMASK_Global(LM) == 1 .OR. VMASK_Global(LE) == 1)
+                  VLOG = ABS(DOTY) /= 1.0 .AND. (UMASK_Global(LE) == 1 .OR. UMASK_Global(LEC_Global(LS)) == 1)
                 ENDIF
 
                 IF( ULOG .OR. VLOG )THEN
-                  EXIT LOOP1
+                  EXIT LOOP1           ! *** Found a mask in either the U or V face that blocks waves.  End fetch
                 ELSE
-                  STATUS = 1
+                  STATUS = 1           ! *** Fetch is inside the cell LM and LM has not changed
                 ENDIF
                 EXIT LOOP2
+              ELSE
+                LM = 0                 ! ***  Fetch not found in cell LM
               ENDIF
             ENDDO
           ENDDO LOOP2
-          IF( STATUS == 0) EXIT LOOP1
+          IF( STATUS == 0 )THEN
+            EXIT LOOP1                 ! *** Found edge of domain.  End fetch
+          ENDIF
           IM = IL_GL(LM)
           JM = JL_GL(LM)
         ENDDO LOOP1
-        !if( L == 1799 )then
-        !  PRINT '(2I5,F8.1,I5,F8.1)', L, NZ, AL(NZ)*180./PI, LM, RL   ! DELME
-        !  ipmc = 0   ! delme
-        !endif
-        FWDIR_Global(L,NZ) = RL
+
+        LWDIR_Global(LG,NZ,0) = NCELLS
+        FWDIR_Global(LG,NZ)   = RL
       ENDDO
     ENDIF
   ENDDO
 
-  ! *** SAVE THE FETCH OUT TO A FILE
+  ! *** Convert to wind direction from
+  DO NZ = 1,NZONE
+    AL(NZ) = FETANG(NZ) - 180.
+    IF( AL(NZ) < 0. ) AL(NZ) = AL(NZ) + 360.
+  ENDDO
+  
+  ! *** Save the fetch out to a file
   OPEN(UFET,FILE = OUTDIR//'FETCH.OUT')
-  DO L = 2,LA_GLOBAL
-    WRITE(UFET,'(I10,2I6,16F15.4)') L, IL_GL(L), JL_GL(L), (FWDIR_Global(L,NZ),NZ = 1,NZONE)
+  WRITE(UFET,'(15X,A7,16F15.1)') 'Angle: ', (AL(NZ),NZ = 1,NZONE)
+  DO LG = 2,LA_GLOBAL
+    WRITE(UFET,'(I10,2I6,16F15.4)') LG, IL_GL(LG), JL_GL(LG), (FWDIR_Global(LG,NZ),NZ = 1,NZONE)
   ENDDO
   CLOSE(UFET)
 
@@ -470,12 +514,13 @@ END SUBROUTINE FETCH_Global
 SUBROUTINE WINDWAVEINIT
   ! *** INITIALIZES WAVE VARIABLES AND GENERATES FETCH.OUT
   USE GLOBAL
-  INTEGER   :: L,K,LG,NZ
+  INTEGER    :: L, K, LG, LL, NZ, NF, LGF, LLF
   INTEGER(4) :: IERR = 0     ! <  local MPI error flag
 
-  Allocate(LWVMASK_Global(LCM_GLobal))
-  ALLOCATE(FWDIR_Global(LCM_Global,16))
-  FWDIR_Global = 0
+  Call AllocateDSI(LWVMASK_Global, LCM_GLobal, .false.)
+  Call AllocateDSI(FWDIR_Global,   LCM_GLobal, 16, 0.0)
+  Call AllocateDSI(LWDIR_Global,   LCM_GLobal, 16, -(IC_Global+JC_Global), 0)
+  
   RSWRSR = FLOAT(ISWRSR)
   RSWRSI = FLOAT(ISWRSI)
   ROTAT   = 0
@@ -491,6 +536,11 @@ SUBROUTINE WINDWAVEINIT
   DO L = 2,LCM_GLobal
     LWVMASK_Global(L) = .TRUE.
   ENDDO
+
+  ! *** READ IN WAVE COMPUTATIONAL CELL LIST
+  IF( IUSEWVCELLS /= 0 )THEN
+    CALL READWAVECELLS
+  ENDIF
 
   KSW = MAX(1D-6,KSW)
 
@@ -508,6 +558,15 @@ SUBROUTINE WINDWAVEINIT
     IF( L > 0 )THEN
       DO NZ = 1,NZONE
         FWDIR(L,NZ) = FWDIR_Global(LG,NZ)
+        
+        ! *** Map the fetch cell list
+        DO NF = 1, LWDIR_Global(LG,NZ,0)
+          LGF = LWDIR_Global(LG,NZ,NF)
+          LLF = Map2Local(LGF).LL
+          IF( LLF == 0 ) EXIT
+          LWDIR(L,NZ,NF) = LLF
+        ENDDO
+        LWDIR(L,NZ,0) = NF - 1
       ENDDO
     ENDIF
   ENDDO
@@ -518,7 +577,7 @@ SUBROUTINE WINDWAVEINIT
   if(process_id == master_id )then
     OPEN(UWIN,FILE = OUTDIR//'LIJXY.OUT',ACTION = 'WRITE')
     DO L = 2,LA
-      WRITE(UWIN,'(3I10,2F15.5)') L,IL(L),JL(L),DLON(L),DLAT(L)
+      WRITE(UWIN,'(3I10,2F15.6)') L, IL(L), JL(L), DLON(L), DLAT(L)
     ENDDO
     CLOSE(UWIN)
   end if
@@ -850,6 +909,7 @@ SUBROUTINE READWAVECELLS
     LWVMASK(NWV) = .FALSE.
     LWVCELL(NWV) = 0
   ENDDO
+  LWVMASK_Global = .FALSE.
 
   ! *** Do reading only on master process
   if(process_id == master_id )then
@@ -881,20 +941,19 @@ SUBROUTINE READWAVECELLS
   Call Broadcast_Array(LWVCELL_Global, master_id) ! Not sure we need this
   Call Broadcast_Array(LWVMASK_Global, master_id)
 
+  ! *** Map wave cells to each process
   NWVCELLS_local = 0
-  ! *** Map to each process
-  do l = 2, LA_Global
+  do L = 2, LA_Global
     ! *** Get local L
-    l_local = map2local(l).ll
+    l_local = map2local(L).ll
     ! *** Valid if greater than zero
     if(l_local > 0 )then
       ! *** set local copy of this
       NWVCELLS_local = NWVCELLS_local + 1
 
       LWVCELL(NWVCELLS_local) = l_local
-      LWVMASK(l_local) = LWVMASK_Global(l)
+      LWVMASK(l_local) = LWVMASK_Global(L)
     end if
-
   end do
 
   RETURN

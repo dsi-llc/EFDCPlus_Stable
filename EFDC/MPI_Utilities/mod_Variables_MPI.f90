@@ -121,12 +121,14 @@
   Integer :: global_max_width_x ! <== GNX
   Integer :: global_max_width_y ! <== GNY
 
-  Real(RKD), Allocatable, Dimension(:,:) :: XCOR_Global
-  Real(RKD), Allocatable, Dimension(:,:) :: YCOR_Global
-  Real(RKD), Allocatable, Dimension(:)   :: Area_Global
-  Real(RKD), Allocatable, Dimension(:,:) :: FWDIR_Global
-  Real(RKD), Allocatable, Dimension(:)   :: UMASK_Global
-  Real(RKD), Allocatable, Dimension(:)   :: VMASK_Global
+  Real(RKD), Allocatable, Dimension(:,:) :: XCOR_Global          !< 
+  Real(RKD), Allocatable, Dimension(:,:) :: YCOR_Global          !< 
+  Real(RKD), Allocatable, Dimension(:)   :: Area_Global          !< 
+  
+  Integer, Allocatable, Dimension(:,:,:) :: LWDIR_Global         !< L index list for cells along each fetch for all cells in the global domain
+  Integer, Allocatable, Dimension(:)     :: UMASK_Global         !< Flag for U face mask on
+  Integer, Allocatable, Dimension(:)     :: VMASK_Global         !< Flag for V face mask on 
+  Real(RKD), Allocatable, Dimension(:,:) :: FWDIR_Global         !< Fetch length for wind sector midpoint for each wind direction
   
   ! *** Create type that helps in the global remapping
   Type mapping_lij

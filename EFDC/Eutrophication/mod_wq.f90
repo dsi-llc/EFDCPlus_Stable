@@ -571,7 +571,7 @@ MODULE WATERQUALITY
       ENDDO
       
       IF( ALGAES(NAL).ISDRAG > 0 )THEN
-        ISVEG = 1                                               ! *** Turn on the vegetation drag/turbulence model
+        ISVEG = 2                                               ! *** Turn on the vegetation drag/turbulence model
       ENDIF      
       IF( ALGAES(NAL).THRESHOLD /= 0 )THEN
         Call Macro_Veg(NAL)

@@ -27,7 +27,7 @@
   USE GLOBAL
   Use Budget
   USE DRIFTER  ,ONLY:DRIFTER_CALC
-  USE WINDWAVE ,ONLY:WINDWAVEINIT,WINDWAVECAL,WINDWAVETUR,READWAVECELLS
+  USE WINDWAVE ,ONLY:WINDWAVEINIT,WINDWAVECAL,WINDWAVETUR
   USE HIFREQOUT
   USE RESTART_MODULE
   USE EFDCOUT
@@ -167,10 +167,6 @@
       CALL WINDWAVETUR
     ENDIF
   ENDIF
-  ! *** READ IN WAVE COMPUTATIONAL CELL LIST
-  IF( ISWAVE >=3 .AND. IUSEWVCELLS /= 0 )THEN
-    CALL READWAVECELLS
-  ENDIF
 
 !> @todo make this work with MPI
 #ifdef NCOUT
@@ -189,9 +185,9 @@
   ENDIF
 #endif  
   
-!> @todo modify writing out for hi frequency output with MPI
-  if( process_id == master_id )THEN
-    IF( HFREOUT == 1 )THEN
+ if( HFREOUT == 1 )then
+    Call Gather_High_Frequency
+    if( process_id == master_id )then
       DO NS=1,NSUBSET
 #ifdef NCOUT          
         IF( NCDFOUT > 0 ) call nc_output_hf(1,ns)
@@ -203,7 +199,7 @@
           IF( ISRPEM > 0 ) CALL HFRERPEMOUT(1,NS)
         ENDIF
       ENDDO
-    ENDIF
+    endif
   endif
 
   ! *** *******************************************************************!
@@ -1175,23 +1171,26 @@
 
       ! *** *******************************************************************!
       ! *** WRITE TO TIME VARYING GRAPHICS FILES
-      IF( HFREOUT == 1 )THEN
-        DO NS=1,NSUBSET
-          DEL = ABS(84600*(TIMEDAY-HFREDAY(NS)))
-          IF( DEL <= DELT .AND. TIMEDAY <= HFREDAYEN(NS) )THEN
+      if( HFREOUT == 1 )then
+        Call Gather_High_Frequency
+        if( process_id == master_id )then
+          DO NS=1,NSUBSET
+            DEL = ABS(84600*(TIMEDAY-HFREDAY(NS)))
+            IF( DEL <= DELT .AND. TIMEDAY <= HFREDAYEN(NS) )THEN
 #ifdef NCOUT          
-            IF( NCDFOUT > 0 ) call nc_output_hf(0,ns)
+              IF( NCDFOUT > 0 ) call nc_output_hf(0,ns)
 #endif 
-            CALL HFREHYOUT(0,NS)
-            CALL HFREWCOUT(0,NS)
-            IF( ISTRAN(8) >= 1 ) THEN
-              CALL HFREWQOUT(0,NS)
-              IF( ISRPEM > 0 ) CALL HFRERPEMOUT(0,NS)
+              CALL HFREHYOUT(0,NS)
+              CALL HFREWCOUT(0,NS)
+              IF( ISTRAN(8) >= 1 ) THEN
+                CALL HFREWQOUT(0,NS)
+                IF( ISRPEM > 0 ) CALL HFRERPEMOUT(0,NS)
+              ENDIF
+              HFREDAY(NS) = HFREDAY(NS) + HFREMIN(NS)/1440
             ENDIF
-            HFREDAY(NS) = HFREDAY(NS) + HFREMIN(NS)/1440
-          ENDIF
-        ENDDO
-      ENDIF
+          ENDDO
+        endif
+      endif
 
 #ifdef NCOUT
       ! ** NETCDF OUTPUT
@@ -1250,7 +1249,7 @@
 
       ! *** *******************************************************************!
       ! *** WRITE RESTART FILE EVERY ISRESTO REFERENCE PERIODS
-      IF( ISRESTO >= 1 )THEN
+      IF( ABS(ISRESTO) >= 1 )THEN
         IF( TIMEDAY >= TIMELAST )THEN
           CALL Restart_Out(0)
           IF( ISTRAN(8) >= 1 )THEN

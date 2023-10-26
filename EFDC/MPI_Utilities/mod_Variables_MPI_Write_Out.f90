@@ -178,7 +178,7 @@ Module Variables_MPI_Write_Out
   ! *** Waves
   Type(Wave), Target, Allocatable, Dimension(:) :: WV_Global
   Real,Target, Allocatable, Dimension(:) :: WV_HEIGHT_Global
-  Real,Target, Allocatable, Dimension(:) :: WV_FREQ_Global
+  Real,Target, Allocatable, Dimension(:) :: WV_PERIOD_Global
   Real,Target, Allocatable, Dimension(:) :: WV_DIR_Global
   Real,Target, Allocatable, Dimension(:) :: WV_DISSIPA_Global
   

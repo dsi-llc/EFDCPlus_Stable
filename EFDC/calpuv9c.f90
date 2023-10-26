@@ -254,7 +254,7 @@ SUBROUTINE CALPUV9C
         FUHDYE(L) = FUHDYE(L)*RCX(L)
         FVHDXE(L) = FVHDXE(L)*RCY(L)
       ENDDO
-    ELSEIF( ISVEG > 0 )THEN
+    ELSEIF( ISVEG == 1)THEN
       ! *** IMPLICIT VEGETATION DRAG ONLY.  REDUCE BY THE TOTAL OF ENERGY
       DO L=LF,LL
         RCX(L) = 1./( 1.+DELT*FXVEGE(L) )
@@ -1350,24 +1350,21 @@ SUBROUTINE CALPUV9C
       IF( KSZ(L) == KC ) CYCLE
 
       ! *** U FACE BLOCKING
-      IF( SUBO(L) > 0. .AND. (BLDRAFTUO(LP)+BLSILLU(LP)) > 0.0 )THEN
+      IF( BLDRAFTUO(LP)+BLSILLU(LP) > 0.0 )THEN
         IF( BLANCHORU(LP) /= 0. )THEN
           BLDRAFTU(LP) = BLDRAFTUO(LP) - (BLANCHORU(LP) - (BELV0(L) + HP(L)))
           BLDRAFTU(LP) = MAX(BLDRAFTU(LP),0.0)
         ELSE
-          BLDRAFTU(LP) = BLDRAFTUO(LP)
+          BLDRAFTU(LP) = BLDRAFTUO(LP) 
         ENDIF
 
-        HU(L) = HU(L) - BLDRAFTU(LP) - BLSILLU(LP)
-        HU(L) = MAX(HU(L),HWET)
-        HUI(L) = 1./HU(L)
-
         ! *** RESET TO DEFAULT LAYER
-        KM=MAX(KSZ(LWC(L)), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR U FACE
+        KSZU(L) = MAX(KSZ(L), KSZ(LWC(L)))      ! *** MINUMUM ACTIVE LAYERS FOR U FACE
         DO K=1,KC
           SUB3D(L,K) = 0.0
-          IF( K >= KM )THEN
-            SUB3D(L,K) = 1.0
+          IF( K >= KSZU(L) )THEN
+            SUB3D(L,K)  = 1.0
+            SUB3DO(L,K) = 1.0
             IF( IGRIDV > 0 )THEN
               IF( KSZ(LWC(L)) > KSZ(L) )THEN
                 SGZU(L,K)  = DZC(LSC(L),K)
@@ -1379,88 +1376,110 @@ SUBROUTINE CALPUV9C
             ENDIF
           ENDIF
         ENDDO
-
-        ! *** BLOCK CELL FACES FROM TOP
-        IF( BLDRAFTU(LP) > 0.0 )THEN
-          TMPX = 0.
-          DO K=KC,KSZU(L)+1,-1
-            TMPX = TMPX + SGZU(L,K)*HP(L)
-            KTBU(LP) = K - 1
-            SUB3D(L,K) = 0.0
-            SGZU(L,K) = 0.0
-            IF( TMPX > BLDRAFTU(LP) ) EXIT
-          ENDDO
-          KTBU(LP) = MAX(KTBU(LP),KSZU(L))
+      
+        HU(L) = HU(L) - BLDRAFTU(LP) - BLSILLU(LP)
+        
+        IF( HU(L) < 0.0 )THEN
+          ! *** Flows fully blocked
+          SUB(L)  = 0.0
+          SUBO(L) = 0.0
+          SAAX(L) = 0.0
+          SUB3D(L,KSZ(L):KC)  = 0.0
+          SUB3DO(L,KSZ(L):KC) = 0.0
+          HU(L) = HDRY
         ELSE
-          KTBU(LP) = KC
-        ENDIF
+          ! *** Flows partially blocked
+          IF( TIMEDAY > 0.24 )THEN
+            TMPX = 0   ! DELME
+          ENDIF
+          SUB(L)  = 1.0
+          SUBO(L) = 1.0
+          SAAX(L) = 1.0
 
-        ! *** BLOCK CELL FACES FROM BOTTOM
-        IF( BLSILLU(LP) > 0.0 )THEN
-          TMPX = 0.
-          DO K=KSZU(L),KC-1
-            TMPX = TMPX + SGZU(L,K)*HP(L)
-            KBBU(LP) = K + 1
-            SUB3D(L,K) = 0.0
-            SGZU(L,K) = 0.0
-            IF( TMPX > BLSILLU(LP) ) EXIT
+          HU(L) = MAX(HU(L),HWET)
+          HUI(L) = 1./HU(L)
+      
+          ! *** BLOCK CELL FACES FROM TOP
+          IF( BLDRAFTU(LP) > 0.0 )THEN
+            TMPX = 0.
+            DO K=KC,KSZU(L)+1,-1
+              TMPX = TMPX + SGZU(L,K)*HP(L)
+              KTBU(LP) = K - 1
+              SUB3D(L,K) = 0.0
+              SGZU(L,K) = 0.0
+              IF( TMPX > BLDRAFTU(LP) ) EXIT
+            ENDDO
+            KTBU(LP) = MAX(KTBU(LP),KSZU(L))
+          ELSE
+            KTBU(LP) = KC
+          ENDIF
+        
+          ! *** BLOCK CELL FACES FROM BOTTOM
+          IF( BLSILLU(LP) > 0.0 )THEN
+            TMPX = 0.
+            DO K=KSZU(L),KC-1
+              TMPX = TMPX + SGZU(L,K)*HP(L)
+              KBBU(LP) = K + 1
+              SUB3D(L,K) = 0.0
+              SGZU(L,K) = 0.0
+              IF( TMPX > BLSILLU(LP) ) EXIT
+            ENDDO
+            KBBU(LP) = MIN(KBBU(LP),KTBU(LP))
+          ELSE
+            KBBU(LP) = KSZU(L)
+          ENDIF
+          KSZU(L) = KBBU(LP)
+        
+          TMPX = SUM(SGZU(L,1:KC))
+          DO K=1,KC
+            SGZU(L,K) = SGZU(L,K) / TMPX
+            DZGU(L,K) = 0.0
+            CDZFU(L,K) = 0.0          ! *** USED FOR GLOBAL DU SHEAR
+            CDZUU(L,K) = 0.0          ! *** USED FOR SURFACE SHEAR DUE TO WIND
+            CDZLU(L,K) = 0.0
+            CDZMU(L,K) = 0.0
+            CDZRU(L,K) = 0.0
+            CDZDU(L,K) = 0.0
           ENDDO
-          KBBU(LP) = MIN(KBBU(LP),KTBU(LP))
-        ELSE
-          KBBU(LP) = KSZU(L)
+      
+          DO K=KBBU(LP),KTBU(LP)-1
+            DZGU(L,K) = 0.5*(SGZU(L,K)+SGZU(L,K+1))
+            CDZFU(L,K) = SGZU(L,K)*SGZU(L,K+1)/(SGZU(L,K) + SGZU(L,K+1))
+            CDZUU(L,K) = -SGZU(L,K)  /(SGZU(L,K) + SGZU(L,K+1))
+            CDZLU(L,K) = -SGZU(L,K+1)/(SGZU(L,K) + SGZU(L,K+1))
+          ENDDO
+        
+          CDZRU(L,KBBU(LP)) = SGZU(L,KBBU(LP)) - 1.
+          CDZDU(L,KBBU(LP)) = SGZU(L,KBBU(LP))
+          DO K=KBBU(LP)+1,KTBU(LP)-1
+            CDZRU(L,K) = CDZRU(L,K-1) + SGZU(L,K)
+            CDZDU(L,K) = CDZDU(L,K-1) + SGZU(L,K)
+          ENDDO
+          
+          DO K=KBBU(LP),KTBU(LP)-1
+            CDZRU(L,K) = CDZRU(L,K)*DZGU(L,K)*CDZLU(L,KSZU(L))
+            CDZMU(L,K) = 0.5*SGZU(L,K)*SGZU(L,K+1)
+          ENDDO
         ENDIF
-
-        TMPX = SUM(SGZU(L,1:KC))
-        DO K=1,KC
-          SGZU(L,K) = SGZU(L,K) / TMPX
-          DZGU(L,K) = 0.0
-          CDZFU(L,K) = 0.0          ! *** USED FOR GLOBAL DU SHEAR
-          CDZUU(L,K) = 0.0          ! *** USED FOR SURFACE SHEAR DUE TO WIND
-          CDZLU(L,K) = 0.0
-          CDZMU(L,K) = 0.0
-          CDZRU(L,K) = 0.0
-          CDZDU(L,K) = 0.0
-        ENDDO
-
-        DO K=KBBU(LP),KTBU(LP)-1
-          DZGU(L,K) = 0.5*(SGZU(L,K)+SGZU(L,K+1))
-          CDZFU(L,K) = SGZU(L,K)*SGZU(L,K+1)/(SGZU(L,K) + SGZU(L,K+1))
-          CDZUU(L,K) = -SGZU(L,K)  /(SGZU(L,K) + SGZU(L,K+1))
-          CDZLU(L,K) = -SGZU(L,K+1)/(SGZU(L,K) + SGZU(L,K+1))
-        ENDDO
-
-        CDZRU(L,KBBU(LP)) = SGZU(L,KBBU(LP)) - 1.
-        CDZDU(L,KBBU(LP)) = SGZU(L,KBBU(LP))
-        DO K=KBBU(LP)+1,KTBU(LP)-1
-          CDZRU(L,K) = CDZRU(L,K-1) + SGZU(L,K)
-          CDZDU(L,K) = CDZDU(L,K-1) + SGZU(L,K)
-        ENDDO
-
-        DO K=KBBU(LP),KTBU(LP)-1
-          CDZRU(L,K) = CDZRU(L,K)*DZGU(L,K)*CDZLU(L,KSZU(L))
-          CDZMU(L,K) = 0.5*SGZU(L,K)*SGZU(L,K+1)
-        ENDDO
       ENDIF
-
+      
       ! *** V FACE BLOCKING
-      IF( SVBO(L) > 0. .AND. (BLDRAFTVO(LP)+BLSILLV(LP)) > 0.0 )THEN
+      IF( BLDRAFTVO(LP)+BLSILLV(LP) > 0.0 )THEN
         IF( BLANCHORV(LP) /= 0. )THEN
           BLDRAFTV(LP) = BLDRAFTVO(LP) - (BLANCHORV(LP) - (BELV0(L) + HP(L)))
           BLDRAFTV(LP) = MAX(BLDRAFTV(LP),0.0)
         ELSE
-          BLDRAFTV(LP) = BLDRAFTVO(LP)
+          BLDRAFTV(LP) = BLDRAFTVO(LP) 
         ENDIF
 
-        HV(L) = HV(L) - BLDRAFTV(LP) - BLSILLV(LP)
-        HV(L) = MAX(HV(L),HWET)
-        HVI(L) = 1./HV(L)
-
         ! *** RESET TO DEFAULT LAYER
-        KM=MAX(KSZ(LSC(L)), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR V FACE
+        KSZV(L) = MAX(KSZ(L), KSZ(LSC(L)))      ! *** MINUMUM ACTIVE LAYERS FOR V FACE
         DO K=1,KC
-          SVB3D(L,K) = 0.0
-          IF( K >= KM )THEN
-            SVB3D(L,K) = 1.0
+          SVB3D(L,K)  = 0.0
+          SVB3DO(L,K) = 0.0
+          IF( K >= KSZV(L) )THEN
+            SVB3D(L,K)  = 1.0
+            SVB3DO(L,K) = 1.0
             IF( IGRIDV > 0 )THEN
               IF( KSZ(LSC(L)) > KSZ(L) )THEN
                 SGZV(L,K)  = DZC(LSC(L),K)
@@ -1472,67 +1491,88 @@ SUBROUTINE CALPUV9C
             ENDIF
           ENDIF
         ENDDO
-
-        ! *** BLOCK CELL FACES
-        IF( BLDRAFTV(LP) > 0.0 )THEN
-          TMPY = 0.
-          DO K=KC,KSZV(L)+1,-1
-            TMPY = TMPY + SGZV(L,K)*HP(L)
-            KTBV(LP) = K - 1
-            SVB3D(L,K) = 0.0
-            SGZV(L,K) = 0.0
-            IF( TMPY > BLDRAFTV(LP) ) EXIT
-          ENDDO
-          KTBV(LP) = MAX(KTBV(LP),KSZV(L))
+      
+        HV(L) = HV(L) - BLDRAFTV(LP) - BLSILLV(LP)
+      
+        IF( HV(L) < 0.0 )THEN
+          ! *** Flows fully blocked
+          SVB(L)  = 0.0
+          SVBO(L) = 0.0
+          SAAY(L) = 0.0
+          SVB3D(L,KSZ(L):KC)  = 0.0
+          SVB3DO(L,KSZ(L):KC) = 0.0
+          HV(L) = HDRY
         ELSE
-          KTBV(LP) = KC
-        ENDIF
+          ! *** Flows partially blocked
+          SVB(L) = 1.0
+          SVBO(L) = 1.0
+          SAAY(L) = 1.0
+          
+          HV(L) = MAX(HV(L),HWET)
+          HVI(L) = 1./HV(L)
 
-        ! *** BLOCK CELL FACES FROM BOTTOM
-        IF( BLSILLV(LP) > 0.0 )THEN
-          TMPX = 0.
-          DO K=KSZV(L),KC-1
-            TMPX = TMPX + SGZV(L,K)*HP(L)
-            KBBV(LP) = K + 1
-            SVB3D(L,K) = 0.0
-            SGZV(L,K) = 0.0
-            IF( TMPX > BLSILLV(LP) ) EXIT
+          ! *** BLOCK CELL FACES FROM TOP
+          IF( BLDRAFTV(LP) > 0.0 )THEN
+            TMPY = 0.
+            DO K=KC,KSZV(L)+1,-1
+              TMPY = TMPY + SGZV(L,K)*HP(L)
+              KTBV(LP) = K - 1
+              SVB3D(L,K) = 0.0
+              SGZV(L,K) = 0.0
+              IF( TMPY > BLDRAFTV(LP) ) EXIT
+            ENDDO
+            KTBV(LP) = MAX(KTBV(LP),KSZV(L))
+          ELSE
+            KTBV(LP) = KC
+          ENDIF
+        
+          ! *** BLOCK CELL FACES FROM BOTTOM
+          IF( BLSILLV(LP) > 0.0 )THEN
+            TMPX = 0.
+            DO K=KSZV(L),KC-1
+              TMPX = TMPX + SGZV(L,K)*HP(L)
+              KBBV(LP) = K + 1
+              SVB3D(L,K) = 0.0
+              SGZV(L,K) = 0.0
+              IF( TMPX > BLSILLV(LP) ) EXIT
+            ENDDO
+            KBBV(LP) = MIN(KBBV(LP),KTBV(LP))
+          ELSE
+            KBBV(LP) = KSZV(L)
+          ENDIF
+          KSZV(L) = KBBV(LP)
+        
+          TMPY = SUM(SGZV(L,1:KC))
+          DO K=1,KC
+            SGZV(L,K) = SGZV(L,K) / TMPY
+            DZGV(L,K) = 0.0
+            CDZFV(L,K) = 0.0
+            CDZUV(L,K) = 0.0
+            CDZLV(L,K) = 0.0
+            CDZRV(L,K) = 0.0
+            CDZDV(L,K) = 0.0
+            CDZMV(L,K) = 0.0
           ENDDO
-          KBBV(LP) = MIN(KBBV(LP),KTBV(LP))
-        ELSE
-          KBBV(LP) = KSZV(L)
+      
+          DO K=KBBV(LP),KTBV(LP)-1
+            DZGV(L,K) = 0.5*(SGZV(L,K)+SGZV(L,K+1))
+            CDZFV(L,K) = SGZV(L,K)*SGZV(L,K+1)/(SGZV(L,K)+SGZV(L,K+1))
+            CDZUV(L,K) = -SGZV(L,K)  /(SGZV(L,K)+SGZV(L,K+1))
+            CDZLV(L,K) = -SGZV(L,K+1)/(SGZV(L,K)+SGZV(L,K+1))
+          ENDDO
+
+          CDZRV(L,KBBV(LP)) = SGZV(L,KBBV(LP))-1.
+          CDZDV(L,KBBV(LP)) = SGZV(L,KBBV(LP))
+          DO K=KBBV(LP)+1,KTBV(LP)-1
+            CDZRV(L,K) = CDZRV(L,K-1)+SGZV(L,K)
+            CDZDV(L,K) = CDZDV(L,K-1)+SGZV(L,K)
+          ENDDO
+
+          DO K=KBBV(LP),KTBV(LP)-1
+            CDZRV(L,K) = CDZRV(L,K)*DZGV(L,K)*CDZLV(L,KSZV(L))
+            CDZMV(L,K) = 0.5*SGZV(L,K)*SGZV(L,K+1)
+          ENDDO
         ENDIF
-
-        TMPY = SUM(SGZV(L,1:KC))
-        DO K=1,KC
-          SGZV(L,K) = SGZV(L,K) / TMPY
-          DZGV(L,K) = 0.0
-          CDZFV(L,K) = 0.0
-          CDZUV(L,K) = 0.0
-          CDZLV(L,K) = 0.0
-          CDZRV(L,K) = 0.0
-          CDZDV(L,K) = 0.0
-          CDZMV(L,K) = 0.0
-        ENDDO
-
-        DO K=KBBV(LP),KTBV(LP)-1
-          DZGV(L,K) = 0.5*(SGZV(L,K)+SGZV(L,K+1))
-          CDZFV(L,K) = SGZV(L,K)*SGZV(L,K+1)/(SGZV(L,K)+SGZV(L,K+1))
-          CDZUV(L,K) = -SGZV(L,K)  /(SGZV(L,K)+SGZV(L,K+1))
-          CDZLV(L,K) = -SGZV(L,K+1)/(SGZV(L,K)+SGZV(L,K+1))
-        ENDDO
-
-        CDZRV(L,KBBV(LP)) = SGZV(L,KBBV(LP))-1.
-        CDZDV(L,KBBV(LP)) = SGZV(L,KBBV(LP))
-        DO K=KBBV(LP)+1,KTBV(LP)-1
-          CDZRV(L,K) = CDZRV(L,K-1)+SGZV(L,K)
-          CDZDV(L,K) = CDZDV(L,K-1)+SGZV(L,K)
-        ENDDO
-
-        DO K=KBBV(LP),KTBV(LP)-1
-          CDZRV(L,K) = CDZRV(L,K)*DZGV(L,K)*CDZLV(L,KSZV(L))
-          CDZMV(L,K) = 0.5*SGZV(L,K)*SGZV(L,K+1)
-        ENDDO
       ENDIF
     ENDDO
   ENDIF

@@ -1268,83 +1268,84 @@
   ! **  CALL JPEFDC AND PLACE JET-PLUME VOLUMES SOURCES
   IF( NQJPIJ > 0 .AND. N == 1 ) CALL JPEFDC
   IF( NQJPIJ > 0 .AND. ISTL == 3 )THEN
-    IF( NUDJPC(1) == NUDJP(1) )THEN
+    IF( NUDJPC >= NUDJP )THEN
       CALL JPEFDC
-      NUDJPC(1)=1
+      NUDJPC = 1
     ELSE
-      NUDJPC(1)=NUDJPC(1)+1
+      NUDJPC = NUDJPC + 1
     ENDIF
   ENDIF
   IF( NQJPIJ > 0 .AND. IS2TIM >= 1 )THEN
-    IF( NUDJPC(1) == NUDJP(1) )THEN
+    IF( NUDJPC >= NUDJP )THEN
       CALL JPEFDC
-      NUDJPC(1)=1
+      NUDJPC = 1
     ELSE
-      NUDJPC(1)=NUDJPC(1)+1
+      NUDJPC = NUDJPC + 1   ! *** delme - need to convert to time (seconds) based, not N
     ENDIF
   ENDIF
 
-  ! *** PLACE JET-PLUME VOLUME SOURCES
+  ! *** Place JET-PLUME volume sources
   IF( NQJPIJ > 0 )THEN
     DO NJP=1,NQJPIJ
-      IF( ICALJP(NJP) == 1 )THEN
-        ! *** DISCHARGE ONLY USING QSER AND STANDARD CONCENTRATION SERIES
-        RPORTS = FLOAT(NPORTJP(NJP))
-        LJP = LIJ(IQJP(NJP),JQJP(NJP))
+      ! *** QVJPTMP = JET-PLUME discharge per port
+      ! *** QJPENT  = Ambient water entrainment volumetric rate by layer (negative for inflow, positive for outflow)
+      ! *** QJPENTT = Ambient water entrainment volumetric rate water column total.  Used for ensuring mass balance.
+      IF( JET_PLM(NJP).ICALJP == 1 )THEN
+        ! *** Discharge only using qser and standard concentration series
+        RPORTS = FLOAT(JET_PLM(NJP).NPORTJP)
+        LJP = LIJ(JET_PLM(NJP).IQJP,JET_PLM(NJP).JQJP)
         KTMP = KEFFJP(NJP)
-
-        ! QVJPTMP = JETPLUME DISCHARGE PER PORT
-        ! QQCJP   = CONSTANT FLOW PER CELL
-        ! QJPENT  = AMBIENT WATER ENTRAINMENT VOLUMETRIC RATE
-        ! QJPENTT = AMBIENT WATER ENTRAINMENT VOLUMETRIC RATE PLUS PLUME VOLUME
-        QVJPTMP  = QQCJP(NJP)
+        
+        QVJPTMP  = JET_PLM(NJP).QQCJP         ! *** QQCJP   = Constant flow per cell
         DO K=1,KC
-          QVJPTMP = QVJPTMP + QSERT(K,NQSERJP(NJP))
+          QVJPTMP = QVJPTMP + QSERT(K,JET_PLM(NJP).NQSERJP)
         ENDDO
 
-        ! *** SUBTRACT THE ENTRAINMENT FROM EACH LAYER
-        DO K=1,KC
+        ! *** Remove the entrainment from each layer
+        DO K=KSZ(LJP),KC
           QSUM(LJP,K) = QSUM(LJP,K) - RPORTS*QJPENT(K,NJP)
         ENDDO
-
-        ! *** PLACE DISCHARGE AND TOTAL ENTRAINMENT AT EFFECTIVE LAYER
-        QSUM(LJP,KTMP) = QSUM(LJP,KTMP) + RPORTS*(QVJPTMP+QJPENTT(NJP))
+        
+        ! *** Place discharge and total entrainment at effective layer
+        QSUM(LJP,KTMP) = QSUM(LJP,KTMP) + RPORTS*(QVJPTMP + QJPENTT(NJP))
       ENDIF
-      IF( ICALJP(NJP) == 2 )THEN
-        ! *** WITHDRAWAL/RETURN TYPE USING W/R SERIES
-        RPORTS = FLOAT(NPORTJP(NJP))
-        LJP = LIJ(IQJP(NJP),JQJP(NJP))
+      IF( JET_PLM(NJP).ICALJP == 2 )THEN
+        ! *** JET-PLUME type using withdrawal/return series
+      
+        ! *** Downstream/JET-PLUME discharge
+        RPORTS = FLOAT(JET_PLM(NJP).NPORTJP)
+        LJP = LIJ(JET_PLM(NJP).IQJP,JET_PLM(NJP).JQJP)
         KTMP = KEFFJP(NJP)
 
-        ! QVJPTMP = JETPLUME DISCHARGE PER PORT
-        QVJPTMP = QWRCJP(NJP) + QWRSERT(NQWRSERJP(NJP))
+        ! *** QVJPTMP = JET-PLUME discharge per port.  QWRCJP = Constant flow per cell
+        QVJPTMP = JET_PLM(NJP).QWRCJP + QWRSERT(JET_PLM(NJP).NQWRSERJP)
 
-        ! SUBTRACT ENTRAIMENT FROM EACH LAYER
-        DO K=1,KC
+        ! *** Remove entrainment from each layer
+        DO K=KSZ(LJP),KC
           QSUM(LJP,K) = QSUM(LJP,K) - RPORTS*QJPENT(K,NJP)
         ENDDO
 
-        ! PLACE DISCHARGE AND TOTAL ENTRAINMENT AT EFFECTIVE LOCATION
-        QSUM(LJP,KTMP) = QSUM(LJP,KTMP) + RPORTS*(QVJPTMP+QJPENTT(NJP))
+        ! *** Place discharge and total entrainment at effective layer
+        QSUM(LJP,KTMP) = QSUM(LJP,KTMP) + RPORTS*(QVJPTMP + QJPENTT(NJP))
 
-        ! REMOVE DISCHARGE FROM UPSTREAM INTAKE CELL
-        LU = LIJ(IUPCJP(NJP),JUPCJP(NJP))
-        KU = KUPCJP(NJP)
+        ! *** Remove discharge from upstream/intake cell
+        LU = LIJ(JET_PLM(NJP).IUPCJP,JET_PLM(NJP).JUPCJP)
+        KU = JET_PLM(NJP).KUPCJP
         QSUM(LU,KU) = QSUM(LU,KU) - RPORTS*QVJPTMP
       ENDIF
     ENDDO
   ENDIF
 
-  ! *** COMPUTE ICE MET/GROWTH VOLUMETRIC RATES (M3/S)
+  ! *** Compute ice met/growth volumetric rates (m3/s)
   IF( ISICE > 2 .AND. N > 0  .AND. ( LCHECKICE .OR. LFRAZIL ) )THEN
     DELTICE1 = DELTICE1 + DELT
     DELTICE2 = DELTICE2 + DELT
 
     CALL ICECOMP(DELTICE2, ICESTEP)
-    IF( DELTICE2 >= ICESTEP ) DELTICE2 = 0.0  ! *** RESET ICE COVER TIMER AND VOLUME ACCUMULATORy
+    IF( DELTICE2 >= ICESTEP ) DELTICE2 = 0.0  ! *** Reset ice cover timer and volume accumulator
   ENDIF
 
-  ! *** UPDATE TIME VARIABLE GROUNDWATER FIELD (MUST INCLUDE ALL CELLS)
+  ! *** Update time variable groundwater field (must include all cells)
   IF( GWSP.IFLAG > 0 )THEN
     CALL UPDATEFIELD(GWSP,TIMEDAY,1,QGW)
   ENDIF

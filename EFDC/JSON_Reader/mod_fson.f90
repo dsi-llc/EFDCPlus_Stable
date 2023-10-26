@@ -542,16 +542,16 @@ contains
                 ios = 0
             else
                 IF( unit .gt. 0 )then
-                    read (unit = unit, fmt = "(a)", advance = "no", iostat = ios) c
+                    read (unit = unit, fmt = "(a)", advance = "no", iostat = ios, EOR = 777, end = 999, err = 999) c
                 else
                     read (unit = str, fmt = "(a)", iostat = ios) c
                     str = str(2:)
                 endif
             end if
             IF( ios == end_of_record )then
-                cycle            
+777             cycle            
             else IF( ios == end_of_file )then
-                eof = .true.
+999             eof = .true.
                 exit
             else IF( iachar(c) <= 31 )then
                 ! non printing ascii characters

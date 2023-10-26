@@ -257,63 +257,54 @@ SUBROUTINE CALFQC(MVAR, MO, CON, CON1, IT)
   ! ***  JET-PLUME VOLUMETRICS SOURCE SINK LOCATIONS
   IF( NQJPIJ > 0 )THEN  
     DO NJP=1,NQJPIJ  
-      IF( ICALJP(NJP) == 1 )THEN  
+      IF( JET_PLM(NJP).ICALJP == 1 )THEN  
         ! *** DISCHARGE ONLY USING QSER AND STANDARD CONCENTRATION SERIES
-        RPORTS=FLOAT(NPORTJP(NJP))  
-        LJP=LIJ(IQJP(NJP),JQJP(NJP))  
+        RPORTS=FLOAT(JET_PLM(NJP).NPORTJP)  
+        LJP=LIJ(JET_PLM(NJP).IQJP,JET_PLM(NJP).JQJP)  
         KTMP=KEFFJP(NJP)  
         
         ! ***  QVJPTMP = Time series discharge from jet-plume  
         QVJPTMP = 0.  
         DO K=KSZ(LJP),KC  
-          QVJPTMP = QVJPTMP + QSERT(K,NQSERJP(NJP))
+          QVJPTMP = QVJPTMP + QSERT(K,JET_PLM(NJP).NQSERJP)
         ENDDO  
 
-        ! *** Remove mass due to plume
+        ! *** Remove entrainment mass and calculate total entraiment flux  
         QCJPTMP=0.  
-        QVJPENT=0.  
-        ! *** Remove entrainment flux and calculate total entraiment flux  
         DO K=KSZ(LJP),KC  
-          FQC(LJP,K,IT)  = FQC(LJP,K,IT) - QJPENT(K,NJP)*CONQ(LJP,K,IT)*RPORTS    ! *** Remove mass due to entrainment into the plume (includes actual discharge flow)
+          FQC(LJP,K,IT)  = FQC(LJP,K,IT) - QJPENT(K,NJP)*CONQ(LJP,K,IT)*RPORTS    ! *** Remove mass due to entrainment into the plume
           QCJPTMP        = QCJPTMP       + QJPENT(K,NJP)*CONQ(LJP,K,IT)           ! *** Sum the total mass removed for each port
-          QVJPENT        = QVJPENT       + QJPENT(K,NJP)                          ! *** Sum the total flows
-          !QSUMNAD(LJP,K,IT)=QSUMNAD(LJP,K,IT)-RPORTS*QJPENT(K,NJP)  
         ENDDO  
 
         ! *** Place jet flux and entrainment flux is effective layer  
-        FQC(LJP,KTMP,IT)     =     FQC(LJP,KTMP,IT) + RPORTS*QCJPTMP + RPORTS*QQCJP(NJP)*CQCJP(1,NJP,M) + RPORTS*QVJPTMP*CSERT(1,NCSERJP(NJP,MVAR),M)   ! *** Add entrained mass plus discharge mass into the effective layer 
-        FQCPAD(LJP,KTMP,IT)  =  FQCPAD(LJP,KTMP,IT) + RPORTS*QCJPTMP + RPORTS*QQCJP(NJP)*CQCJP(1,NJP,M) + RPORTS*QVJPTMP*CSERT(1,NCSERJP(NJP,MVAR),M)  
-        QSUMPAD(LJP,KTMP,IT) = QSUMPAD(LJP,KTMP,IT) + RPORTS*QVJPENT + RPORTS*QQCJP(NJP)+RPORTS*QVJPTMP  
+        ! ***                                   Entrainment                        Constant Flow                                    Time Varying Flow
+        FQC(LJP,KTMP,IT) = FQC(LJP,KTMP,IT) + RPORTS*QCJPTMP + RPORTS*JET_PLM(NJP).QQCJP*JET_PLM(NJP).CQCJP(1,M) + RPORTS*QVJPTMP*CSERT(1,JET_PLM(NJP).NCSERJP(MVAR),M)
       ENDIF  
       
-      IF( ICALJP(NJP) == 2 )THEN  
-        ! *** WITHDRAWAL/RETURN TYPE USING W/R SERIES
-        RPORTS=FLOAT(NPORTJP(NJP))  
-        LJP=LIJ(IQJP(NJP),JQJP(NJP))  
-        KTMP=KEFFJP(NJP)  
-        NS=NQWRSERJP(NJP)  
-        LU=LIJ(IUPCJP(NJP),JUPCJP(NJP))  
-        KU=KUPCJP(NJP)  
-        CONUP=CONQ(LU,KU,IT)  
-        QCJPTMP=0.  
-        QVJPENT=0.  
+      IF( JET_PLM(NJP).ICALJP == 2 )THEN  
+        ! *** JET-PLUME type using withdrawal/return series
+        RPORTS  = FLOAT(JET_PLM(NJP).NPORTJP)  
+        LJP     = LIJ(JET_PLM(NJP).IQJP,JET_PLM(NJP).JQJP)  
+        KTMP    = KEFFJP(NJP)  
+        NS      = JET_PLM(NJP).NQWRSERJP  
+        LU      = LIJ(JET_PLM(NJP).IUPCJP,JET_PLM(NJP).JUPCJP)  
+        KU      = JET_PLM(NJP).KUPCJP  
+        CONUP   = CONQ(LU,KU,IT)  
 
-        ! *** REMOVE ENTRAIMENT FLUX AND CALCULATE TOTAL ENTRAINMENT  
-        DO K=KSZ(LJP),KC  
-          FQC(LJP,K,IT)=FQC(LJP,K,IT)-RPORTS*QJPENT(K,NJP)*CONQ(LJP,K,IT)  
-          QCJPTMP=QCJPTMP+QJPENT(K,NJP)*CONQ(LJP,K,IT)  
-          QVJPENT=QVJPENT+QJPENT(K,NJP)  
-          !QSUMNAD(LJP,K,IT)=QSUMNAD(LJP,K,IT)-RPORTS*QJPENT(K,NJP)  
+        ! *** Remove entraiment mass and calculate total entrainment  
+        QCJPTMP = 0.  
+        DO K = KSZ(LJP),KC  
+          FQC(LJP,K,IT) = FQC(LJP,K,IT) - QJPENT(K,NJP)*CONQ(LJP,K,IT)*RPORTS    ! *** Remove mass due to entrainment into the plume  
+          QCJPTMP = QCJPTMP             + QJPENT(K,NJP)*CONQ(LJP,K,IT)           ! *** Sum the total mass removed for each port
         ENDDO  
 
-        ! *** PLACE ENTRAINMENT, CONSTANT AND TIME SERIES FLUXES IN EFFECTIVE CELL  
-        FQC(LJP,KTMP,IT)     =     FQC(LJP,KTMP,IT) + RPORTS*QCJPTMP+RPORTS*QWRCJP(NJP)*(CWRCJP(NJP,M)+CONUP)+RPORTS*QWRSERT(NS)*(CQWRSERT(NS,M)+CONUP)  
-        FQCPAD(LJP,KTMP,IT)  =  FQCPAD(LJP,KTMP,IT) + RPORTS*QCJPTMP+RPORTS*QWRCJP(NJP)*(CWRCJP(NJP,M)+CONUP)+RPORTS*QWRSERT(NS)*(CQWRSERT(NS,M)+CONUP)  
-        QSUMPAD(LJP,KTMP,IT) = QSUMPAD(LJP,KTMP,IT) + RPORTS*QVJPENT+RPORTS*QWRCJP(NJP)+RPORTS*QWRSERT(NS)  
+        ! *** Place entrainment, constant and time series fluxes in effective cell
+        ! ***                                   Entrainment                         Constant Flow                                        Time Varying Flow
+        FQC(LJP,KTMP,IT) = FQC(LJP,KTMP,IT) + RPORTS*QCJPTMP + RPORTS*JET_PLM(NJP).QWRCJP*(JET_PLM(NJP).CWRCJP(M) + CONUP) + RPORTS*QWRSERT(NS)*(CQWRSERT(NS,M) + CONUP)  
 
-        ! *** REMOVAL WITHDRAWAL FROM UPSTREAM CELL  
-        FQC(LU,KU,IT) = FQC(LU,KU,IT) - RPORTS*QWRCJP(NJP)*CONUP-RPORTS*QWRSERT(NS)*CONUP  
-        !QSUMNAD(LU,KU,IT)=QSUMNAD(LU,KU,IT)-RPORTS*QWRCJP(NJP)-RPORTS*QWRSERT(NS)  
+        ! *** Removal withdrawal from upstream cell  
+        ! ***                                     Constant Flow               Time Varying Flow
+        FQC(LU,KU,IT) = FQC(LU,KU,IT) - RPORTS*JET_PLM(NJP).QWRCJP*CONUP - RPORTS*QWRSERT(NS)*CONUP  
       ENDIF  
     ENDDO  
   ENDIF  
@@ -372,11 +363,8 @@ SUBROUTINE CALFQC(MVAR, MO, CON, CON1, IT)
     LD=LIJ(ID,JD)  
     NCSTMP=WITH_RET(NWR).NQWRSERQ  
 
-    FQC(LU,KU,IT)=   FQC(LU,KU,IT)   -(WITH_RET(NWR).QWR+QWRABS)*CONQ(LU,KU,IT)  
-    FQC(LD,KD,IT)=   FQC(LD,KD,IT)   +WITH_RET(NWR).QWR*(CONQ(LU,KU,IT)+CQWR(NWR,M))+QWRABS*(CONQ(LU,KU,IT)+CQWRSERT(NCSTMP,M))  
-    FQCPAD(LD,KD,IT)=FQCPAD(LD,KD,IT)+WITH_RET(NWR).QWR*(CONQ(LU,KU,IT)+CQWR(NWR,M))+QWRABS*(CONQ(LU,KU,IT)+CQWRSERT(NCSTMP,M))  
-    QSUMPAD(LD,KD,IT)=QSUMPAD(LD,KD,IT)+WITH_RET(NWR).QWR+QWRABS  
-    !QSUMNAD(LU,KU,IT)=QSUMNAD(LU,KU,IT)-(WITH_RET(NWR).QWR+QWRSERT(NQSTMP))  
+    FQC(LU,KU,IT)=   FQC(LU,KU,IT) - (WITH_RET(NWR).QWR+QWRABS)*CONQ(LU,KU,IT)  
+    FQC(LD,KD,IT)=   FQC(LD,KD,IT) + WITH_RET(NWR).QWR*(CONQ(LU,KU,IT)+CQWR(NWR,M))+QWRABS*(CONQ(LU,KU,IT)+CQWRSERT(NCSTMP,M))  
   ENDDO  
 
   ! *** SUBGRID SCALE CHANNEL EXCHANGE

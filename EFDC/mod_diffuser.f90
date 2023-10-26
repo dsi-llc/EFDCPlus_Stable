@@ -275,8 +275,8 @@ SUBROUTINE JPEFDC
 
     LOUTJET = .FALSE.
     DO NJP = 1,NQJPIJ
-      IF( IOUTJP(NJP) > 0 ) LOUTJET = .TRUE.
-      RPORTS(NJP) = FLOAT(NPORTJP(NJP))  
+      IF( JET_PLM(NJP).IOUTJP > 0 ) LOUTJET = .TRUE.
+      RPORTS(NJP) = FLOAT(JET_PLM(NJP).NPORTJP)  
     ENDDO
     
     IF( LOUTJET )THEN
@@ -284,14 +284,14 @@ SUBROUTINE JPEFDC
       CLOSE(88,STATUS = 'DELETE')
     
       DO NJP = 1,NQJPIJ
-        IF( IOUTJP(NJP) > 0 )THEN
+        IF( JET_PLM(NJP).IOUTJP > 0 )THEN
           WRITE(FNNUM,'(I3.3)') NJP
           WRITE(PROCNUM,'(I3.3)') process_id
           FNJPLOG = OUTDIR//'JPLOG' // FNNUM // '_' // PROCNUM // '.OUT'
           OPEN(10,FILE = FNJPLOG, STATUS = 'UNKNOWN')
           CLOSE(10,STATUS = 'DELETE')
           
-          IF( IOUTJP(NJP) > 1 )THEN
+          IF( JET_PLM(NJP).IOUTJP > 1 )THEN
             OPEN(10,FILE = FNJPLOG, STATUS = 'UNKNOWN')
             WRITE(10,630) 'NITER', 'TIMEDAY', 'NJE', 'NI', 'TOTTIME', 'LENGTH',                                                          &
                           'XJG(', 'YJG', 'ZJG', 'DIA', 'QVJET', 'SUM QJPENT', 'QJTOT', 'RHOA', 'RHOJ', 'TEMJ', 'VJ', 'VJH', 'WJG',       &
@@ -345,15 +345,15 @@ SUBROUTINE JPEFDC
     ENDDO
 
     IF( NITER == 1 )THEN
-      KEFFJP(NJP) = KQJP(NJP)               ! *** Initialize the plume discharge elevation to the nominal elevation
+      KEFFJP(NJP) = JET_PLM(NJP).KQJP               ! *** Initialize the plume discharge elevation to the nominal elevation
     ENDIF
     
-    IF( IOUTJP(NJP) > 0 )THEN
+    IF( JET_PLM(NJP).IOUTJP > 0 )THEN
       WRITE(FNNUM,'(I3.3)') NJP
       WRITE(PROCNUM,'(I3.3)') process_id
       FNJPLOG = OUTDIR//'JPLOG' // FNNUM // '_' // PROCNUM // '.OUT'
       OPEN(10,FILE = FNJPLOG,STATUS = 'UNKNOWN',POSITION = 'APPEND')
-      IF( IOUTJP(NJP) > 1 ) WRITE(10,134) NJP, TIMEDAY
+      IF( JET_PLM(NJP).IOUTJP > 1 ) WRITE(10,134) NJP, TIMEDAY
     ENDIF
     
     IF( LDEBUG )THEN
@@ -361,19 +361,19 @@ SUBROUTINE JPEFDC
       WRITE(88,134) NJP, TIMEDAY
     ENDIF
     
-    LJP   = LIJ(IQJP(NJP),JQJP(NJP))         ! *** L index of the receiving/returning water
+    LJP   = LIJ(JET_PLM(NJP).IQJP,JET_PLM(NJP).JQJP)         ! *** L index of the receiving/returning water
     KL    = KSZ(LJP)                         ! *** Current layer
     RKC   = FLOAT(KC - KL + 1)               ! *** Number of layers from surface
-    KJP   = KQJP(NJP)                        ! *** Default/initial discharge layer
+    KJP   = JET_PLM(NJP).KQJP                        ! *** Default/initial discharge layer
     KFLAG = 0
     
-    ZTMP = (ZJET(NJP) - BELV(LJP))/HP(LJP)   ! *** Fraction of the water column from the bottom to the port elevation
+    ZTMP = (JET_PLM(NJP).ZJET - BELV(LJP))/HP(LJP)   ! *** Fraction of the water column from the bottom to the port elevation
     KJP  = NINT(RKC*ZTMP)
     IF( KJP < KSZ(LJP) ) KJP = KSZ(LJP)
     IF( KJP > KC ) KJP = KC
     
     ! *** ICAL > 0 - JET/PLUME BC ACTIVATED, OTHERWISE IGNORED
-    IF( ICALJP(NJP) > 0 )THEN
+    IF( JET_PLM(NJP).ICALJP > 0 )THEN
       !    NJEL     MAXIMUM NUMBER OF ELEMENTS ALONG JET/PLUME LENGTH
       !    ISAMB  0 FOR SPATIALLY AND TEMPORALLY CONSTANT AMBIENT CONDITIONS
       !           1 FOR SPATIALLY VARYING AND TEMPORALLY CONSTANT CONDITIONS
@@ -390,20 +390,20 @@ SUBROUTINE JPEFDC
       !           2 NONDIM OUTPUT LENGTH SCALED BY SQRT(PI)*RJET
       ISAMB = 1         
       ISJPD = 0         
-      ISTOP = ISTJP(NJP)
+      ISTOP = JET_PLM(NJP).ISTJP
       ISOUT = 0         
       NPRTE = 0              ! *** NPRTE    Element output print frequency
-      ALPHA = CFRD(NJP)      ! *** CFRD     Adjustment factor for froude number
+      ALPHA = JET_PLM(NJP).CFRD      ! *** CFRD     Adjustment factor for froude number
       ALPH2 = ALPHA*ALPHA
       TUJP = 0               ! *** TUJP     Temporal frequency for updating jet/plume (sec) if ISJPD = 1
       
-      NIMAX = NJPMX(NJP)     ! *** NIMAX    Maximum numeber of iteration
+      NIMAX = JET_PLM(NJP).NJPMX     ! *** NIMAX    Maximum number of iterations
       XERRM = 1000.          ! *** XYERR    Horizontal trajectory error critera (m)
       YERRM = 1000.           
       ZERRM = 1000.          ! *** ZERR     Vertical trajectory error critera (m)
       RRERM = 1000.          ! *** RRER     Horizontal trajectory error critera (m)
       RLERM = 1000.          ! *** RLER     Vertical trajectory error critera (m)
-      DMRERM = DJPER(NJP)    ! *** DMRERR   Entrainment error criteria
+      DMRERM = JET_PLM(NJP).DJPER    ! *** DMRERR   Entrainment error criteria
       
       ! ***    TDCY   Contaminant decay rate (1./sec)
       ! ***    WSET,TPAR,TDCY not used in embedded version.  Appropriate efdc variables are used instead
@@ -420,23 +420,23 @@ SUBROUTINE JPEFDC
       
       XJET = 0.               ! *** WSET   Sediment settling velocity (m/s)
       YJET = 0.               ! *** TPAR   Partition coefficient (l/mg or m**3/gm)
-      RJET = 0.5*DJET(NJP)    ! *** RJET   Radius of discharge port (m),   
+      RJET = 0.5*JET_PLM(NJP).DJET    ! *** RJET   Radius of discharge port (m),   
                               ! *** DJET   Diameter of discharge port (m)
       AJET = PI*RJET*RJET     ! *** This is area of 1 port but the flows used below are total flow into the cell
 
       ! *** Total Flow over all layers (QSER Type, ICAL = 1 )
-      IF( ICALJP(NJP) == 1 )THEN
-        QVJET = QQCJP(NJP)      
+      IF( JET_PLM(NJP).ICALJP == 1 )THEN
+        QVJET = JET_PLM(NJP).QQCJP      
         QSERTAVG = 0.
         DO K = 1,KC
-          QVJET =    QVJET    + QSERT(K,NQSERJP(NJP))
-          QSERTAVG = QSERTAVG + QSERT(K,NQSERJP(NJP))
+          QVJET =    QVJET    + QSERT(K,JET_PLM(NJP).NQSERJP)
+          QSERTAVG = QSERTAVG + QSERT(K,JET_PLM(NJP).NQSERJP)
         ENDDO
       ENDIF
 
       ! *** Total Flow over all layers (Withdrawal/Return type, ICAL = 2 )
-      IF( ICALJP(NJP) == 2 )THEN
-        QVJET = QWRCJP(NJP) + QWRSERT(NQWRSERJP(NJP))
+      IF( JET_PLM(NJP).ICALJP == 2 )THEN
+        QVJET = JET_PLM(NJP).QWRCJP + QWRSERT(JET_PLM(NJP).NQWRSERJP)
       ENDIF
       IF( QVJET <= 1.E-16 ) GOTO 9000   ! *** NO FLOW, SKIP CALCS
       
@@ -452,81 +452,81 @@ SUBROUTINE JPEFDC
       !    WQVJET   WATER QUALITY CONCENTRATION (G/M3)
       
       ! *** STANDARD FLOW (QSER) TYPE (ICAL = 1)
-      IF( ICALJP(NJP) == 1 )THEN
-        WTC = QQCJP(NJP)              ! *** Constant flow component
+      IF( JET_PLM(NJP).ICALJP == 1 )THEN
+        WTC = JET_PLM(NJP).QQCJP      ! *** Constant flow component
         WTV = QSERTAVG                ! *** Variable flow component
         TMPVAL = WTC + WTV
         WTC = WTC/TMPVAL              ! *** Fraction of total flow for constant flows
         WTV = WTV/TMPVAL              ! *** Fraction of total flow for variable flows
 
-        ! ***      Constant                   Series
-        SALJET = WTC*CQCJP(1,NJP,1) + WTV*CSERT(1,NCSERJP(NJP,1),1)
-        TEMJET = WTC*CQCJP(1,NJP,2) + WTV*CSERT(1,NCSERJP(NJP,2),2)
+        ! ***            Constant                              Series
+        SALJET = WTC*JET_PLM(NJP).CQCJP(1,1) + WTV*CSERT(1,JET_PLM(NJP).NCSERJP(1),1)
+        TEMJET = WTC*JET_PLM(NJP).CQCJP(1,2) + WTV*CSERT(1,JET_PLM(NJP).NCSERJP(2),2)
 
         DO MD = 1,NDYE
           NV = MSVDYE(MD)
-          DYEJET(MD) = WTC*CQCJP(1,NJP,NV) + WTV*CSERT(1,NCSERJP(NJP,3),NV)
+          DYEJET(MD) = WTC*JET_PLM(NJP).CQCJP(1,NV) + WTV*CSERT(1,JET_PLM(NJP).NCSERJP(3),NV)
         ENDDO
         
         NV = 3 + NDYM
-        SFLJET = WTC*CQCJP(1,NJP,4) + WTV*CSERT(1,NCSERJP(NJP,4),NV)
+        SFLJET = WTC*JET_PLM(NJP).CQCJP(1,4) + WTV*CSERT(1,JET_PLM(NJP).NCSERJP(4),NV)
 
         DO NT = 1,NTOX
           NV = MSVTOX(NT)
-          TOXJET(NT) = WTC*CQCJP(1,NJP,NV) + WTV*CSERT(1,NCSERJP(NJP,5),NV)
+          TOXJET(NT) = WTC*JET_PLM(NJP).CQCJP(1,NV) + WTV*CSERT(1,JET_PLM(NJP).NCSERJP(5),NV)
         ENDDO
         DO NX = 1,NSED     
           NV = MSVSED(NX)
-          SEDJET(NX) = WTC*CQCJP(1,NJP,NV) + WTV*CSERT(1,NCSERJP(NJP,6),NV)
+          SEDJET(NX) = WTC*JET_PLM(NJP).CQCJP(1,NV) + WTV*CSERT(1,JET_PLM(NJP).NCSERJP(6),NV)
         ENDDO
         DO NX = 1,NSND
           NV = MSVSND(NX)
-          SNDJET(NX) = WTC*CQCJP(1,NJP,NV) + WTV*CSERT(1,NCSERJP(NJP,7),NV)
+          SNDJET(NX) = WTC*JET_PLM(NJP).CQCJP(1,NV) + WTV*CSERT(1,JET_PLM(NJP).NCSERJP(7),NV)
         ENDDO
         DO NX = 1,NWQV
           NV = MSVWQV(NX)
-          WQVJET(NX) = WTC*CQCJP(1,NJP,NV) + WTV*CSERT(1,NCSERJP(NJP,8),NV)
+          WQVJET(NX) = WTC*JET_PLM(NJP).CQCJP(1,NV) + WTV*CSERT(1,JET_PLM(NJP).NCSERJP(8),NV)
         ENDDO
       ENDIF
       
       ! *** WITHDRAWAL/RETURN TYPE (ICAL = 2)
-      IF( ICALJP(NJP) == 2 )THEN
-        WTC = QWRCJP(NJP)                  ! *** Current withdrawal/return flow
-        WTV = QWRSERT(NQWRSERJP(NJP))      ! *** Times series number
-        TMPVAL = WTC + WTV
-        WTC = WTC/TMPVAL                   ! *** Fraction of total flow for constant flows
-        WTV = WTV/TMPVAL                   ! *** Fraction of total flow for variable flows
-        NS = NQWRSERJP(NJP)
-        LU = LIJ(IUPCJP(NJP),JUPCJP(NJP))  ! *** L Index at the withdrawal cell
-        KU = KUPCJP(NJP)                   ! *** Layer at withdrawal cell
+      IF( JET_PLM(NJP).ICALJP == 2 )THEN
+        WTC = JET_PLM(NJP).QWRCJP                          ! *** Current withdrawal/return flow
+        WTV = QWRSERT(JET_PLM(NJP).NQWRSERJP)              ! *** Times series number
+        TMPVAL = WTC + WTV                                 
+        WTC = WTC/TMPVAL                                   ! *** Fraction of total flow for constant flows
+        WTV = WTV/TMPVAL                                   ! *** Fraction of total flow for variable flows
+        NS = JET_PLM(NJP).NQWRSERJP                        ! *** Withdrawal/Return series ID
+        LU = LIJ(JET_PLM(NJP).IUPCJP,JET_PLM(NJP).JUPCJP)  ! *** L Index at the withdrawal cell
+        KU = JET_PLM(NJP).KUPCJP                           ! *** Layer at withdrawal cell
         
-        ! ***      Constant                   Series
-        SALJET = WTC*CWRCJP(NJP,1) + WTV*CQWRSERT(NS,1) + SAL1(LU,KU)
-        TEMJET = WTC*CWRCJP(NJP,2) + WTV*CQWRSERT(NS,2) + TEM1(LU,KU)
+        ! ***            Constant                   Series
+        SALJET = WTC*JET_PLM(NJP).CWRCJP(1) + WTV*CQWRSERT(NS,1) + SAL1(LU,KU)
+        TEMJET = WTC*JET_PLM(NJP).CWRCJP(2) + WTV*CQWRSERT(NS,2) + TEM1(LU,KU)
         
         DO MD = 1,NDYE
           NV = MSVDYE(MD)
-          DYEJET(MD) = WTC*CWRCJP(NJP,NV) + WTV*CQWRSERT(NS,NV) + DYE1(LU,KU,MD)
+          DYEJET(MD) = WTC*JET_PLM(NJP).CWRCJP(NV) + WTV*CQWRSERT(NS,NV) + DYE1(LU,KU,MD)
         ENDDO
 
         NV = 3 + NDYM
-        SFLJET = WTC*CWRCJP(NJP,NV) + WTV*CQWRSERT(NS,NV) + SFL2(LU,KU)
+        SFLJET = WTC*JET_PLM(NJP).CWRCJP(NV) + WTV*CQWRSERT(NS,NV) + SFL2(LU,KU)
 
         DO NT = 1,NTOX
           NV = MSVTOX(NT)
-          TOXJET(NT) = WTC*CWRCJP(NJP,NV) + WTV*CQWRSERT(NS,NV) + TOX1(LU,KU,NT)
+          TOXJET(NT) = WTC*JET_PLM(NJP).CWRCJP(NV) + WTV*CQWRSERT(NS,NV) + TOX1(LU,KU,NT)
         ENDDO
         DO NX = 1,NSED
           NV = MSVSED(NX)
-          SEDJET(NX) = WTC*CWRCJP(NJP,NV) + WTV*CQWRSERT(NS,NV) + SED1(LU,KU,NX)
+          SEDJET(NX) = WTC*JET_PLM(NJP).CWRCJP(NV) + WTV*CQWRSERT(NS,NV) + SED1(LU,KU,NX)
         ENDDO
         DO NX = 1,NSND
           NV = MSVSND(NX)
-          SNDJET(NX) = WTC*CWRCJP(NJP,NV) + WTV*CQWRSERT(NS,NV) + SND1(LU,KU,NX)
+          SNDJET(NX) = WTC*JET_PLM(NJP).CWRCJP(NV) + WTV*CQWRSERT(NS,NV) + SND1(LU,KU,NX)
         ENDDO
         DO NW = 1,NWQV
           NV = MSVWQV(NW)
-          WQVJET(NW) = WTC*CWRCJP(NJP,NV) + WTV*CQWRSERT(NS,NV) + WQV(LU,KU,NW)
+          WQVJET(NW) = WTC*JET_PLM(NJP).CWRCJP(NV) + WTV*CQWRSERT(NS,NV) + WQV(LU,KU,NW)
         ENDDO
       ENDIF
       
@@ -536,8 +536,8 @@ SUBROUTINE JPEFDC
       NATD = 1                      ! *** NATD   NUMBER OF AMBIENT DATA IN TIME
 
       !    SPATIAL PRINT/SAVE INTERVAL IN VERTICAL
-      DZPRT = HP(LJP)/FLOAT(NZPRJP(NJP) - 2)
-      ZJPRT = ZJET(NJP) + DZPRT
+      DZPRT = HP(LJP)/FLOAT(JET_PLM(NJP).NZPRJP - 2)
+      ZJPRT = JET_PLM(NJP).ZJET + DZPRT
 
       ! *** ZA     Elevation of ambient data (m)
       ! *** TA     Time of ambient data (sec, hr, or day for output reference)
@@ -618,14 +618,14 @@ SUBROUTINE JPEFDC
       ! ***  JET/PLUME DISCHARGE, GLOBAL COORDINATES
       XJG(1) = XJET          ! *** X coordinate of starting location   - Element 1
       YJG(1) = YJET          ! *** Y coordinate of starting location   - Element 1
-      ZJG(1) = ZJET(NJP)     ! *** Elevation of starting location      - Element 1
+      ZJG(1) = JET_PLM(NJP).ZJET     ! *** Elevation of starting location      - Element 1
       XJG(2) = XJET          ! *** X coordinate of starting location   - Element 2
       YJG(2) = YJET          ! *** Y coordinate of starting location   - Element 2
-      ZJG(2) = ZJET(NJP)     ! *** Elevation of starting location      - Element 2
+      ZJG(2) = JET_PLM(NJP).ZJET     ! *** Elevation of starting location      - Element 2
       SIG(1) = 0.            ! *** Total plume centerline displacement - Element 1
       SIG(2) = 0.            ! *** Total plume centerline displacement - Element 2
 
-      ! ***  INITIALIZE JET DISCHARGE GEOMENTRY FOR THE COMPUTATIONAL ELEMENTS
+      ! ***  INITIALIZE JET DISCHARGE GEOMETRY FOR THE COMPUTATIONAL ELEMENTS
       RADJ(1) = RJET         ! *** Radius of the jet - Element 1
       RADJ(2) = RJET         ! *** Radius of the jet - Element 2
       RADJOLD(1) = RJET      ! *** Radius of the jet of previous iteration - Element 1
@@ -641,10 +641,10 @@ SUBROUTINE JPEFDC
 
       ! *** INITIALIZE ELEMENT 1 VELOCITIES
       VJ(1)  = QVJET/AJET                       ! *** Jet centerline velocity - Total
-      VJH(1) = VJ(1)*COS(0.0175*PHJET(NJP))     ! *** Jet centerline velocity - Horizontal only
-      UJG(1) = VJ(1)*COS(0.0175*PHJET(NJP))*COS(0.0175*THJET(NJP))
-      VJG(1) = VJ(1)*COS(0.0175*PHJET(NJP))*SIN(0.0175*THJET(NJP))
-      WJG(1) = VJ(1)*SIN(0.0175*PHJET(NJP))
+      VJH(1) = VJ(1)*COS(0.0175*JET_PLM(NJP).PHJET)     ! *** Jet centerline velocity - Horizontal only
+      UJG(1) = VJ(1)*COS(0.0175*JET_PLM(NJP).PHJET)*COS(0.0175*JET_PLM(NJP).THJET)
+      VJG(1) = VJ(1)*COS(0.0175*JET_PLM(NJP).PHJET)*SIN(0.0175*JET_PLM(NJP).THJET)
+      WJG(1) = VJ(1)*SIN(0.0175*JET_PLM(NJP).PHJET)
       UJ0   = UJG(1)
       VJ0   = VJG(1)
       WJ0   = WJG(1)
@@ -652,10 +652,10 @@ SUBROUTINE JPEFDC
             
       ! *** INITIALIZE ELEMENT 2 VELOCITIES
       VJ(2) = QVJET/AJET
-      VJH(2) = VJ(2)*COS(0.0175*PHJET(NJP))
-      UJG(2) = VJ(2)*COS(0.0175*PHJET(NJP))*COS(0.0175*THJET(NJP))
-      VJG(2) = VJ(2)*COS(0.0175*PHJET(NJP))*SIN(0.0175*THJET(NJP))
-      WJG(2) = VJ(2)*SIN(0.0175*PHJET(NJP))
+      VJH(2) = VJ(2)*COS(0.0175*JET_PLM(NJP).PHJET)
+      UJG(2) = VJ(2)*COS(0.0175*JET_PLM(NJP).PHJET)*COS(0.0175*JET_PLM(NJP).THJET)
+      VJG(2) = VJ(2)*COS(0.0175*JET_PLM(NJP).PHJET)*SIN(0.0175*JET_PLM(NJP).THJET)
+      WJG(2) = VJ(2)*SIN(0.0175*JET_PLM(NJP).PHJET)
       
       DTJP = RLEJ(1)/VJ(1)                    ! *** Initialize time step (s)
       TOTTIME = 0.                            ! *** Initialize total elapsed time of plume development
@@ -774,8 +774,8 @@ SUBROUTINE JPEFDC
 
       ! ***  INITIALIZE AMBIENT CONDITIONS
       IF( ISAMB == 0 )THEN
-        ! *** CONSTANT AMBIENT CONDITIONS (LAYER = KQJP(NJP))
-        K = KQJP(NJP)
+        ! *** CONSTANT AMBIENT CONDITIONS (LAYER = JET_PLM(NJP).KQJP)
+        K = JET_PLM(NJP).KQJP
         UAG = UAGD(K)
         VAG = VAGD(K)
         WAG = WAGD(K)
@@ -824,10 +824,10 @@ SUBROUTINE JPEFDC
       EXITRHO = 0.05*ABS(DELRHO)          ! *** Exit criteria based on initial density delta
 
       ! ***  Global Ambient and Jet orientations
-      PHJ(1) = PHJET(NJP)
-      THJG(1) = THJET(NJP)
-      PHJ(2) = PHJET(NJP)
-      THJG(2) = THJET(NJP)
+      PHJ(1) = JET_PLM(NJP).PHJET
+      THJG(1) = JET_PLM(NJP).THJET
+      PHJ(2) = JET_PLM(NJP).PHJET
+      THJG(2) = JET_PLM(NJP).THJET
       THAG = 57.2958*ATAN2(VAG,UAG)
 
       ! *** Local jet horizontal orientation
@@ -868,7 +868,7 @@ SUBROUTINE JPEFDC
 
       ! *** OUTPUT INITIAL CONDITIONS
       RLSCL = 1.
-      IF( ISOUT == 1 ) RLSCL = DJET(NJP)
+      IF( ISOUT == 1 ) RLSCL = JET_PLM(NJP).DJET
       IF( ISOUT == 2 ) RLSCL = RJET*SQRT(PI)
       SALJETI = 1.
       TEMJETI = 1.
@@ -947,7 +947,7 @@ SUBROUTINE JPEFDC
       ! **************************************************************************************************
       ! **************************************************************************************************
       ! *** Plume entrainment loop for NJEL elements until either max elements or plume hits end point
-      DO NJE = 2,NJEL(NJP)
+      DO NJE = 2,JET_PLM(NJP).NJEL
 
         N2 = 2   ! *** Time element at end of current element
         N1 = 1   ! *** Time element at start of current element
@@ -1006,7 +1006,7 @@ SUBROUTINE JPEFDC
         
         ISHEAR = 0
         IFORCE = 0
-        IF( ISENT(NJP) == 0 )THEN
+        IF( JET_PLM(NJP).ISENT == 0 )THEN
           ! ***  TAKE MAX OF SHEAR AND FORCED
           DRMAJ = MAX(DRMAJSA,DRMAJFA)
         ELSE
@@ -1120,7 +1120,7 @@ SUBROUTINE JPEFDC
         ! ***  Reset ambient conditions
         SEDAA = 0.0
         IF( ISAMB == 0 )THEN
-          K = KQJP(NJP)
+          K = JET_PLM(NJP).KQJP
           UAG = UAGD(K)
           VAG = VAGD(K)
           WAG = WAGD(K)
@@ -1187,7 +1187,7 @@ SUBROUTINE JPEFDC
         
         IF( LDEBUG )THEN
           IF( NJE == 2 ) WRITE(88,620)NJP, NJE, NI, ITMP, DRMAJSA, DRMAJSO, DRMAJFA, DRMAJFO
-          IF( ISDJP(NJP) == 1 )THEN
+          IF( JET_PLM(NJP).ISDJP == 1 )THEN
             ! *** ISDJP > 0 write diagnostics
             JTMPVAL = MOD(NJE,100)
             IF( JTMPVAL == 0 )THEN
@@ -1309,11 +1309,11 @@ SUBROUTINE JPEFDC
           IF( DRHOT > 0. )THEN
             NPRT(2) = NPRT(2) + 1
             IF( NPRT(2) < 10 )THEN
-              WRITE(6,604) "R", NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+              WRITE(6,604) "F", NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             ENDIF
             
             IF( LOUTJET )THEN
-              WRITE(10,614)  "R", TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
+              WRITE(10,614)  "F", TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             ENDIF
             
             EXIT
@@ -1368,7 +1368,7 @@ SUBROUTINE JPEFDC
           WQVJNE(NW) = WQVJETI(NW)*WQVJ(N2,NW)
         ENDDO
 
-        ! *** CALCULATE ENTRAINMENT
+        ! *** Compute the layer specific JET/PLUME entrainment
         QJTOTO = QJTOT
         QJTOT = QJTOT*RMAJP(N2)/RMAJP(N1)
         DO K = KSZ(L),KC
@@ -1385,12 +1385,6 @@ SUBROUTINE JPEFDC
           ENDIF
         ENDDO
 
-        ! *** CALCULATE TOTAL ENTRAINMENT
-        QJPENTT(NJP) = 0.0
-        DO K = KSZ(L),KC
-          QJPENTT(NJP) = QJPENTT(NJP) + QJPENT(K,NJP)
-        ENDDO
-        
         ! *** Added additional plume migration exit criteria
         !IF( ABS(RHOJ(N2)-RHOA(N2)) < EXITRHO )THEN
         ! 
@@ -1439,7 +1433,7 @@ SUBROUTINE JPEFDC
 
         ! *** Write to file when diameter changes by 0.1 m
         IDUMP = 0
-        IF( IOUTJP(NJP) > 1 )THEN
+        IF( JET_PLM(NJP).IOUTJP > 1 )THEN
           IF(  NJE == 1 .OR. RADJ(N2)-RADLAST > 0.05 )THEN
             WRITE(10,631) NITER, TIMEDAY, NJE, NI, TOTTIME, SIG(N2),                                                                          &
                           XJG(N2), YJG(N2), ZJG(N2), 2.*RADJ(N2), QVJET, SUM(QJPENT(:,NJP)), QJTOT, RHOA(N2), -999., RHOJ(N2), TEMJ(N2),      &
@@ -1497,20 +1491,7 @@ SUBROUTINE JPEFDC
       ENDIF
 631   FORMAT(I10,F15.4,I8,I5,2F9.3,2F12.4,F10.3,F8.2,3E12.4,8f10.3,10E12.4)  
     
-      ! *** COMPUTE THE LAYER SPECIFIC JET/PLUME ENTRAINMENT
-      QJTOTO = QJTOT
-      QJTOT = QJTOT*RMAJP(N2)/RMAJP(N1)
-      DO K = KSZ(L),KC
-        ZLOWER = Z(L,K - 1)*HP(LJP) + BELV(LJP)
-        ZUPPER = ZLOWER + DZC(L,K)*HP(LJP)
-        IF( ZJG(N2) >= ZLOWER .AND. ZJG(N2) < ZUPPER )THEN
-          ! *** Found Layer
-          QJPENT(K,NJP) = QJPENT(K,NJP) + (QJTOT - QJTOTO)
-          EXIT
-        ENDIF
-      ENDDO
-      
-      ! *** GET THE TOTAL ENTRAINMENT VOLUMES FOR CURRENT NJP
+      ! *** Get the total entrainment volumes for current NJP
       QJPENTT(NJP) = 0.0
       DO K = KSZ(L),KC
         QJPENTT(NJP) = QJPENTT(NJP) + QJPENT(K,NJP)
@@ -1554,7 +1535,7 @@ SUBROUTINE JPEFDC
       DRHO = (RHOA(N2) - RHOJ(N2))/RHOA(N2)
 
       ! *** DIAGNOSTIC OUPUT
-      IF( LOUTJET .AND. (IOUTJP(NJP) == 1 .OR. IOUTJP(NJP) == 3 ) )THEN
+      IF( LOUTJET .AND. (JET_PLM(NJP).IOUTJP == 1 .OR. JET_PLM(NJP).IOUTJP == 3 ) )THEN
 
       ENDIF
 
@@ -1571,7 +1552,7 @@ SUBROUTINE JPEFDC
 
       ! *** JET/PLUME COMPUTATIONS BYPASSED
       9000 CONTINUE
-      KEFFJP(NJP) = KQJP(NJP)
+      KEFFJP(NJP) = JET_PLM(NJP).KQJP
       
 9001  CONTINUE
       
@@ -1582,9 +1563,9 @@ SUBROUTINE JPEFDC
           OPEN(8,FILE = OUTDIR//'EFDCLOG.OUT',POSITION = 'APPEND')
         ENDIF
         WRITE(8 ,899)NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
-        WRITE(8 ,135)NJP,TIME,KFLAG,KEFFJP(NJP),KQJP(NJP),QVJET,QJTOT
+        WRITE(8 ,135)NJP,TIME,KFLAG,KEFFJP(NJP),JET_PLM(NJP).KQJP,QVJET,QJTOT
         WRITE(88,899)NJP,TIME,(QJPENT(K,NJP),K = 1,KC)
-        WRITE(88,135)NJP,TIME,KFLAG,KEFFJP(NJP),KQJP(NJP),QVJET,QJTOT
+        WRITE(88,135)NJP,TIME,KFLAG,KEFFJP(NJP),JET_PLM(NJP).KQJP,QVJET,QJTOT
       ENDIF
 
       ! *** CALCULATION MOMENT INTERFACE QUANTITIES

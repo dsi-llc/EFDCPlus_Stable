@@ -252,15 +252,15 @@ Subroutine Allocate_Domain_Decomp
   Call AllocateDSI( LSC_Global,      LCM_Global,    0)
   Call AllocateDSI( LNC_Global,      LCM_Global,    0)
   
-  Call AllocateDSI( UMASK_Global,    -LCM_Global, 0.0)
-  Call AllocateDSI( VMASK_Global,    -LCM_Global, 0.0)
+  Call AllocateDSI( UMASK_Global,    -LCM_Global, 0)
+  Call AllocateDSI( VMASK_Global,    -LCM_Global, 0)
   
   IF( ISWAVE > 0 )THEN
   
     Call AllocateDSI( FXWAVE_Global,    LCM_Global, KCM, 0.0)
     Call AllocateDSI( FYWAVE_Global,    LCM_Global, KCM, 0.0)
     Call AllocateDSI( WV_HEIGHT_Global, LCM_Global, 0.0)
-    Call AllocateDSI( WV_FREQ_Global,   LCM_Global, 0.0)
+    Call AllocateDSI( WV_PERIOD_Global, LCM_Global, 0.0)
     Call AllocateDSI( WV_DIR_Global,    LCM_Global, 0.0)
     Call AllocateDSI( WV_DISSIPA_Global,LCM_Global, 0.0)
                                        
@@ -386,24 +386,6 @@ Subroutine Allocate_Domain_Decomp
   Call AllocateDSI( CLOE_Global,     NBBEM, KCM, NSTVM2, 0.0)
   Call AllocateDSI( CLOW_Global,     NBBWM, KCM, NSTVM2, 0.0)
   Call AllocateDSI( CLON_Global,     NBBNM, KCM, NSTVM2, 0.0)
-
-  ! *** Jet/Plume global mapping values, from C27 in efdc.inp
-  IF( NQJPIJ > 0 )THEN
-    Call AllocateDSI( ICALJP_GL,     NQJPM,   0)
-    Call AllocateDSI( IQJP_GL,       NQJPM,   0)
-    Call AllocateDSI( JQJP_GL,       NQJPM,   0)
-    Call AllocateDSI( KQJP_GL,       NQJPM,   0)
-    Call AllocateDSI( NPORTJP_GL,    NQJPM,   0)
-      
-    Call AllocateDSI( XJETL_GL,      NQJPM, 0.0)
-    Call AllocateDSI( YJETL_GL,      NQJPM, 0.0)
-    Call AllocateDSI( ZJET_GL,       NQJPM, 0.0)
-    Call AllocateDSI( PHJET_GL,      NQJPM, 0.0)
-    Call AllocateDSI( THJET_GL,      NQJPM, 0.0)
-    Call AllocateDSI( DJET_GL,       NQJPM, 0.0)
-    Call AllocateDSI( CFRD_GL,       NQJPM, 0.0)
-    Call AllocateDSI( DJPER_GL,      NQJPM, 0.0)
-  ENDIF
 
   Call AllocateDSI( CUE_Global,      LCM_Global, 0.0) 
   Call AllocateDSI( CUN_Global,      LCM_Global, 0.0) 

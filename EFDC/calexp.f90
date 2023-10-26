@@ -797,15 +797,28 @@ SUBROUTINE CALEXP
       ENDDO
 
       ! *** ADD VEGETATIVE DRAG TO INTERNAL MODE SHEAR AND EXTERNAL MODE MOMENTUM
-      DO K=1,KC  
-        DO LP=1,LLVEG(K,ND)
-          L=LKVEG(LP,K,ND)
-          IF( (K-KSZ(L)+1) > INT(VEGK(L)+1.) )CYCLE
-          FX(L,K) = FX(L,K) + (FXVEG(L,K)-FXVEGE(L))*U(L,K)*DXYU(L) ![m^4/s^2] adding vegetative resistance to the body force (no net force added) FXVEGE goes into FUHDXE for momentum conservation
-          FY(L,K) = FY(L,K) + (FYVEG(L,K)-FYVEGE(L))*V(L,K)*DXYV(L) ![m^4/s^2] adding vegetative resistance to the body force (no net force added) FYVEGE goes into FVHDYE for momentum conservation
+      IF(ISVEG == 1) THEN
+        DO K=1,KC  
+          DO LP=1,LLVEG(K,ND)
+            L=LKVEG(LP,K,ND)
+            IF( (K-KSZ(L)+1) > INT(VEGK(L)+1.) )CYCLE
+            !***                 (        m/s       )   m/s    m2
+            FX(L,K) = FX(L,K) + (FXVEG(L,K)-FXVEGE(L))*U(L,K)*DXYU(L) ![m^4/s^2] adding vegetative resistance to the body force (no net force added) FXVEGE goes into FUHDXE for momentum conservation
+            FY(L,K) = FY(L,K) + (FYVEG(L,K)-FYVEGE(L))*V(L,K)*DXYV(L) ![m^4/s^2] adding vegetative resistance to the body force (no net force added) FYVEGE goes into FVHDYE for momentum conservation
+          ENDDO
         ENDDO
-      ENDDO
-    
+      ELSE
+        DO K=1,KC
+          DO LP=1,LLVEG(K,ND)
+            L = LKVEG(LP,K,ND)
+            IF( (K-KSZ(L)+1) > INT(VEGK(L)+1.) ) CYCLE
+            ! ***                m/s        m/s    m2
+            FX(L,K) = FX(L,K) + FXVEG(L,K)*U(L,K)*DXYU(L) ! *** (m^4/s^2)
+            FY(L,K) = FY(L,K) + FYVEG(L,K)*V(L,K)*DXYV(L) ! *** (m^4/s^2)
+          ENDDO  
+        ENDDO
+      ENDIF
+      
       ! *** CONVERT THE AVG FXVEGE/FYVEGE TO TOTAL FXVEGE/FYVEGE
       DO LP=1,LLVEG(KC,ND)
         L=LKVEG(LP,KC,ND) 
@@ -1235,6 +1248,77 @@ SUBROUTINE CALEXP
           FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( ( HP(L)*B(L,K+1)-HP(LS )*B(LS ,K+1) )*DZC(L,K+1)+( HP(L)*B(L,K  )-HP(LS )*B(LS ,K  ) )*DZC(L,K  ) )-RNEW*SBY(L)*GP*(BELV(L)-BELV(LS )) &
                      *( HP(L)*B(L,K+1)-HP(L)*B(L,K)+HP(LS)*B(LS ,K+1)-HP(LS)*B(LS ,K) ) - RNEW*SBY(L)*GP*(HP(L)-HP(LS ))*( HP(L)*ZZ(L,K+1)*B(L,K+1)-HP(L)*ZZ(L,K)*B(L,K)+HP(LS)*ZZ(L,K+1)*B(LS ,K+1)-HP(LS)*ZZ(L,K)*B(LS ,K) )
         ENDDO
+      ENDDO
+      !$OMP END SINGLE
+    ENDIF
+
+    ! *** BLOCKED LAYER FACE OPTION
+    IF( NBLOCKED > 0 .AND. N > 1 )THEN 
+      !$OMP SINGLE
+      DO LP=1,NBLOCKED
+        L = LBLOCKED(LP)
+        
+        IF( KSZ(L) == KC ) CYCLE
+        
+        ! *** LAYER U BLOCKING
+        IF( BLDRAFTU(LP)+BLSILLU(LP) > 0.0 )THEN
+          ! *** LAYER SPECIFIC DEPTH AVERAGED FLOWS (M3/S)
+          IF( SUB(L) == 0.0 ) CYCLE
+
+          FBBX(L,:) = 0.0
+          DO K=KBBU(LP),KTBU(LP)-1
+            LW = LWC(L)
+            
+            ! *** ADJUST ELEVATIONS AND DEPTHS
+            IF( BLSILLU(LP) > 0.0 )THEN
+              ! *** SILL HEIGHT DICTATES BOTTOM ELEVATIONS
+              BELVW(L)  = BELV(L) + BLSILLU(LP)
+              BELVE(LW) = BELVW(L)
+              HPW(L)  = HP(L)  - BLSILLU(LP)
+              HPE(LW) = HP(LW) - BLSILLU(LP)
+            ELSE
+              IF( IGRIDV == 0 )THEN
+                BELVW(L)  = BELV(L)
+                BELVE(LW) = BELV(LW)
+              ENDIF
+              HPW(L)  = HP(L)  - BLDRAFTU(LP)
+              HPE(LW) = HP(LW) - BLDRAFTU(LP)
+            ENDIF
+
+            FBBX(L,K) = SUB3D(L,K)*GP*HU(L)*( HU(L)*( (B(L,K+1)-B(LW,K+1))*SGZU(L,K+1) + (B(L,K)-B(LW,K))*SGZU(L,K) )                                &
+                                                    - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
+          ENDDO  
+        ENDIF
+      
+        ! *** LAYER V BLOCKING
+        IF( BLDRAFTV(LP)+BLSILLV(LP) > 0.0 )THEN
+          ! *** LAYER SPECIFIC DEPTH AVERAGED FLOWS (M3/S)
+          IF( SVB(L) == 0.0 ) CYCLE
+
+          FBBY(L,:) = 0.0
+          DO K=KBBV(LP),KTBV(LP)-1
+            LS = LSC(L)  
+
+            ! *** ADJUST ELEVATIONS AND DEPTHS
+            IF( BLSILLV(LP) > 0.0 )THEN
+              ! *** SILL HEIGHT DICTATES BOTTOM ELEVATIONS
+              BELVS(L)  = BELV(L) + BLSILLV(LP)
+              BELVN(LS) = BELVS(L)
+              HPS(L)  = HP(L)  - BLSILLV(LP)
+              HPN(LS) = HP(LS) - BLSILLV(LP)
+            ELSE
+              IF( IGRIDV == 0 )THEN
+                BELVS(L)  = BELV(L)
+                BELVN(LS) = BELV(LS)
+              ENDIF
+              HPS(L)  = HP(L)  - BLDRAFTV(LP)
+              HPN(LS) = HP(LS) - BLDRAFTV(LP)
+            ENDIF
+
+            FBBY(L,K) = SVB3D(L,K)*GP*HV(L)*( HV(L)*( (B(L,K+1)-B(LS,K+1))*SGZV(L,K+1) + (B(L,K)-B(LS,K))*SGZV(L,K) )                                &
+                                                    - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) )  
+          ENDDO  
+        ENDIF
       ENDDO
       !$OMP END SINGLE
     ENDIF

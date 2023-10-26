@@ -62,8 +62,7 @@ MODULE HIFREQOUT
 
     WRITE (UHFR) EETIME 
     DO NP=1,NPNT(NS)
-      L = LIJ(HFREGRP(NS)%ICEL(NP),HFREGRP(NS)%JCEL(NP))
-      LG = Map2Global(L).LG
+      LG = LIJ_Global(HFREGRP(NS)%ICEL(NP),HFREGRP(NS)%JCEL(NP))
       LN = LNC_Global(LG)
       LE = LEC_Global(LG)
       DO K = KSZ_Global(LG),KC
@@ -128,15 +127,13 @@ MODULE HIFREQOUT
     WRITE(UHFR) EETIME,NACTIVE
     IF( ISTRAN(6) == 1 .OR. ISTRAN(7) >= 1 )THEN
       DO NP=1,NPNT(NSS) 
-        L = LIJ(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
-        LG = Map2Global(L).LG
+        LG = LIJ_Global(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
         WRITE(UHFR)KBT_Global(LG)
       ENDDO
     ENDIF
     
     DO NP=1,NPNT(NSS) 
-      L = LIJ(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
-      LG = Map2Global(L).LG
+      LG = LIJ_Global(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
       IF( ISTRAN(1) == 1 ) WRITE(UHFR) (REAL(SAL_Global(LG,K),4),K=KSZ_Global(LG),KC)
       IF( ISTRAN(2) == 1 ) WRITE(UHFR) (REAL(TEM_Global(LG,K),4),K=KSZ_Global(LG),KC)
       IF( ISTRAN(3) == 1 ) WRITE(UHFR) ((REAL(DYE_Global(LG,K,MD),4),K=KSZ_Global(LG),KC),MD=1,NDYE)
@@ -197,7 +194,7 @@ MODULE HIFREQOUT
       WRITE(UHFR) KC,NWQVAR
       WRITE(UHFR) INT(NPNT(NSS),4)          ! Number of stations
       DO NP=1,NPNT(NSS) 
-        L = LIJ(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
+        LG = LIJ_Global(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
         WRITE(UHFR) INT(HFREGRP(NSS)%ICEL(NP),4),INT(HFREGRP(NSS)%JCEL(NP),4),HFREGRP(NSS)%XCEL(NP),HFREGRP(NSS)%YCEL(NP)
       ENDDO
       IWQ = 0
@@ -216,8 +213,7 @@ MODULE HIFREQOUT
     OPEN(UHFR,FILE=FNAME4,STATUS='UNKNOWN',POSITION='APPEND',FORM='BINARY')
     WRITE(UHFR) EETIME
     DO NP=1,NPNT(NSS)
-      L = LIJ(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
-      LG = Map2Global(L).LG
+      LG = LIJ_Global(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
       DO K = KSZ_Global(LG),KC
         DO NW = 1,NWQVAR
           IF( IWQ(NW) > 0 )THEN
@@ -267,8 +263,7 @@ MODULE HIFREQOUT
       WRITE(UHFR) NRPEM,INITRPEM
       WRITE(UHFR) INT(NPNT(NSS),4)      ! Number of stations
       DO NP=1,NPNT(NSS) 
-        L = LIJ(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
-        LG = Map2Global(L).LG
+        LG = LIJ_Global(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
         WRITE(UHFR) INT(HFREGRP(NSS)%ICEL(NP),4), INT(HFREGRP(NSS)%JCEL(NP),4), HFREGRP(NSS)%XCEL(NP), HFREGRP(NSS)%YCEL(NP), LMASKRPEM_Global(LG)
       ENDDO
       !------ Header End ------
@@ -281,8 +276,7 @@ MODULE HIFREQOUT
     OPEN(UHFR,FILE=FNAME6,STATUS='UNKNOWN',POSITION='APPEND',FORM='BINARY')
     WRITE(UHFR) EETIME
     DO NP=1,NPNT(NSS)
-      L = LIJ(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
-      LG = Map2Global(L).LG
+      LG = LIJ_Global(HFREGRP(NSS)%ICEL(NP),HFREGRP(NSS)%JCEL(NP))
       IF( LMASKRPEM_Global(LG) .OR. INITRPEM == 0 )THEN                                                                                               
         WRITE(UHFR) REAL(WQRPS_Global(LG),4), REAL(WQRPR_Global(LG),4), REAL(WQRPE_Global(LG),4), REAL(WQRPD_Global(LG),4)
       ENDIF
@@ -290,5 +284,95 @@ MODULE HIFREQOUT
     FLUSH(UHFR)
     CLOSE(UHFR)
   END SUBROUTINE
+  
+  
+  
+  SUBROUTINE Gather_High_Frequency
+  !---------------------------------------------------------------------------!
+  ! *** Gathers values for high frequency output
+  !---------------------------------------------------------------------------!
+  Use Mod_Assign_Loc_Glob_For_Write
+  Use Mod_Map_Write_EE_Binary
+
+  Implicit None
+
+  ! *** Local variables
+  Integer :: j
+   
+  ! *** Clear out the pointer array
+  j = 0
+
+  ! *** Water Elevation Section
+  j = j + 1
+  Call Assign_Loc_Glob_For_Write(j, size(HP,1), HP, size(HP_Global,1), HP_Global)
+
+  j = j + 1
+  Call Assign_Loc_Glob_For_Write(j, size(BELV,1), BELV, size(BELV_Global,1), BELV_Global)
+  
+  ! *** Velocity Section  
+  j = j + 1
+  Call Assign_Loc_Glob_For_Write(j, size(U,1), size(U,2), U, size(U_Global,1), size(U_Global,2), U_Global)
+
+  j = j + 1
+  Call Assign_Loc_Glob_For_Write(j, size(V,1), size(V,2), V, size(V_Global,1), size(V_Global,2), V_Global)
+
+  j = j + 1
+  Call Assign_Loc_Glob_For_Write(j, size(W,1), size(W,2), W, size(W_Global,1), size(W_Global,2), W_Global)
+  
+  ! *** Water Column Section
+  if( ISTRAN(1) >= 1 )then
+    j = j + 1
+    Call Assign_Loc_Glob_For_Write(j, size(SAL,1), size(SAL,2), SAL, &
+      size(SAL_Global,1), size(SAL_Global,2), SAL_Global)
+  endif
+
+  if( ISTRAN(2) >= 1 )then
+    j = j + 1
+    Call Assign_Loc_Glob_For_Write(j, size(TEM,1), size(TEM,2), TEM, &
+      size(TEM_Global,1), size(TEM_Global,2), TEM_Global)
+  endif
+
+  if( ISTRAN(3) >= 1 )then
+    j = j + 1
+    Call Assign_Loc_Glob_For_Write(j, size(DYE,1), size(DYE,2), size(DYE,3), DYE, &
+      size(DYE_Global,1), size(DYE_Global,2), size(DYE_Global,3), DYE_Global)
+  endif
+
+  if( ISTRAN(4) >= 1 )then
+    j = j + 1
+    Call Assign_Loc_Glob_For_Write(j, size(SFL,1), size(SFL,2), SFL, &
+      size(SFL_Global,1), size(SFL_Global,2), SFL_Global)
+  endif
+
+  if( ISTRAN(5) >= 1 )then
+    j = j + 1
+    Call Assign_Loc_Glob_For_Write(j, size(TOX,1), size(TOX,2), size(TOX,3), TOX,&
+      size(TOX_Global,1), size(TOX_Global,2), size(TOX_Global,3), TOX_Global)
+  endif
+
+  if( ISTRAN(6) >= 1 )then
+    j = j + 1
+    Call Assign_Loc_Glob_For_Write(j, size(SED,1), size(SED,2), size(SED,3), SED,&
+      size(SED_Global,1), size(SED_Global,2), size(SED_Global,3), SED_Global)
+  endif
+
+  if( ISTRAN(7) >= 1 )then
+    j = j + 1
+    Call Assign_Loc_Glob_For_Write(j, size(SND,1), size(SND,2), size(SND,3), SND,&
+      size(SND_Global,1), size(SND_Global,2), size(SND_Global,3), SND_Global)
+  endif
+    
+  if( ISTRAN(8) >= 1 )then
+    j = j + 1
+    Call Assign_Loc_Glob_For_Write(j, size(WQV,1),        size(WQV,2),        size(WQV,3),        WQV, &
+                                      size(WQV_Global,1), size(WQV_Global,2), size(WQV_Global,3), WQV_Global)
+  endif
+
+  num_arrays_to_write_out = j
+
+  ! *** Call routine that maps, gathers, and sorts to produce the final Global value
+  Call Handle_Calls_MapGatherSort(num_arrays_to_write_out)
+  
+  END SUBROUTINE Gather_High_Frequency
 
 END MODULE

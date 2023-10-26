@@ -496,16 +496,19 @@
       l = lij(illt(lt),jllt(lt))
       SSN(l) = '      '//char(0)
     END DO
-    OPEN(94,FILE = 'segname.inp',iostat = ios,STATUS = 'old')
-    IF( ios == 0 )THEN
-      STR = READSTR(94)  ! *** SKIP OVER TITLE AND AND HEADER LINES
-      do kk = 1,la
-        READ(94,*,err = 111)I,J,SN1
-        L = LIJ(I,J)
-        SSN(l) = sn1
-      END do
-    END IF
-111 CLOSE(94)
+    INQUIRE(FILE='segname.inp',EXIST=RES)
+    IF( RES )THEN
+      OPEN(94,FILE = 'segname.inp',iostat = ios,STATUS = 'old')
+      IF( ios == 0 )THEN
+        STR = READSTR(94)  ! *** SKIP OVER TITLE AND AND HEADER LINES
+        do kk = 1,la
+          READ(94,*,err = 111)I,J,SN1
+          L = LIJ(I,J)
+          SSN(l) = sn1
+        END do
+      END IF
+111   CLOSE(94)
+    ENDIF
     I = 0
     DO K = KC,1,-1
       DO LT = 2,LALT

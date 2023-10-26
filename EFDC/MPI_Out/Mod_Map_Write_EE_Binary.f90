@@ -218,7 +218,7 @@ Subroutine Map_Write_WCOUT
   INTEGER,TARGET,ALLOCATABLE,DIMENSION(:) :: LSC_temp_gl
   INTEGER,TARGET,ALLOCATABLE,DIMENSION(:) :: LNC_temp_gl
   REAL,TARGET,ALLOCATABLE,DIMENSION(:) :: WVHEIGHT_temp_gl
-  REAL,TARGET,ALLOCATABLE,DIMENSION(:) :: WVFREQ_temp_gl
+  REAL,TARGET,ALLOCATABLE,DIMENSION(:) :: PERIOD_temp_gl
   REAL,TARGET,ALLOCATABLE,DIMENSION(:) :: WVDIR_temp_gl
   REAL,TARGET,ALLOCATABLE,DIMENSION(:) :: WVDISSIPA_temp_gl
 
@@ -227,7 +227,7 @@ Subroutine Map_Write_WCOUT
   Allocate(LSC_temp_gl(LCM))
   Allocate(LNC_temp_gl(LCM))
   Allocate(WVHEIGHT_temp_gl(LCM))
-  Allocate(WVFREQ_temp_gl(LCM))
+  Allocate(PERIOD_temp_gl(LCM))
   Allocate(WVDIR_temp_gl(LCM))
   Allocate(WVDISSIPA_temp_gl(LCM))
 
@@ -235,7 +235,7 @@ Subroutine Map_Write_WCOUT
   LNC_temp_gl      = 0
   LSC_temp_gl      = 0
   WVHEIGHT_temp_gl = 0
-  WVFREQ_temp_gl   = 0
+  PERIOD_temp_gl   = 0
   WVDIR_temp_gl    = 0
 
   j = 0
@@ -314,9 +314,9 @@ Subroutine Map_Write_WCOUT
 
     j = j + 1
     do l = 1, LA
-      WVFREQ_temp_gl(l) = WV(l).FREQ
+      PERIOD_temp_gl(l) = WV(l).PERIOD
     end do
-    Call Assign_Loc_Glob_For_Write(j, size(WVFREQ_temp_gl,1), WVFREQ_temp_gl, size(WV_FREQ_Global,1), WV_FREQ_Global)
+    Call Assign_Loc_Glob_For_Write(j, size(PERIOD_temp_gl,1), PERIOD_temp_gl, size(WV_PERIOD_Global,1), WV_PERIOD_Global)
 
     j = j + 1
     do l = 1, LA
@@ -482,7 +482,7 @@ Subroutine Map_Write_WCOUT
   deallocate(LEC_temp_gl)
   deallocate(LNC_temp_gl)
   deallocate(WVHEIGHT_temp_gl)
-  deallocate(WVFREQ_temp_gl)
+  deallocate(PERIOD_temp_gl)
   deallocate(WVDIR_temp_gl)
 
 End Subroutine Map_Write_WCOUT

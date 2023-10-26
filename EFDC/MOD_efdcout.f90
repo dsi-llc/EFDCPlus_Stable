@@ -161,7 +161,7 @@
     ! *** WATER COLUMN AND TOP LAYER OF SEDIMENT
     FILENAME=OUTDIR//'EE_WC.OUT'
     NSXD = NSED+NSND
-    VER = 11300
+    VER = 11700
     HSIZE = (29 + NSXD + 1)*4      ! *** +1 is for NSED2
     BSIZE = BLOCKWC(CELL3D)
 
@@ -753,7 +753,7 @@ SUBROUTINE WCOUT
     ENDIF
     IF( ISWAVE >= 3 )THEN
       WRITE(EE_UNIT) (REAL(WV_HEIGHT_Global(L),4), L=2,LA_Global)
-      WRITE(EE_UNIT) (REAL(WV_FREQ_Global(L),4), L=2,LA_Global)
+      WRITE(EE_UNIT) (REAL(WV_PERIOD_Global(L),4), L=2,LA_Global)
       WRITE(EE_UNIT) (REAL(WV_DIR_Global(L),4), L=2,LA_Global)
       IF( ISWAVE == 4 )THEN
         WRITE(EE_UNIT) (REAL(WV_DISSIPA_Global(L),4), L=2,LA_Global)      ! *** DISSIPATION

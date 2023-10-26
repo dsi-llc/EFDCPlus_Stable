@@ -803,15 +803,27 @@ SUBROUTINE CALEXP2T
       ENDDO  
 
       ! *** ADD VEGETATIVE DRAG TO INTERNAL MODE SHEAR
-      DO K=1,KC
-        DO LP=1,LLVEG(K,ND)
-          L = LKVEG(LP,K,ND)
-          IF( (K-KSZ(L)+1) > INT(VEGK(L)+1.) ) CYCLE
-          ! ***               (         m/s        )   m/s    m2
-          FX(L,K) = FX(L,K) + (FXVEG(L,K)-FXVEGE(L))*U(L,K)*DXYU(L) ! *** (m^4/s^2)
-          FY(L,K) = FY(L,K) + (FYVEG(L,K)-FYVEGE(L))*V(L,K)*DXYV(L) ! *** (m^4/s^2)
-        ENDDO  
-      ENDDO  
+      IF(ISVEG == 1) THEN
+        DO K=1,KC
+          DO LP=1,LLVEG(K,ND)
+            L = LKVEG(LP,K,ND)
+            IF( (K-KSZ(L)+1) > INT(VEGK(L)+1.) ) CYCLE
+            ! ***               (        m/s       )   m/s    m2
+            FX(L,K) = FX(L,K) + (FXVEG(L,K)-FXVEGE(L))*U(L,K)*DXYU(L) ! *** (m^4/s^2)
+            FY(L,K) = FY(L,K) + (FYVEG(L,K)-FYVEGE(L))*V(L,K)*DXYV(L) ! *** (m^4/s^2)
+          ENDDO  
+        ENDDO
+      ELSE
+        DO K=1,KC
+          DO LP=1,LLVEG(K,ND)
+            L = LKVEG(LP,K,ND)
+            IF( (K-KSZ(L)+1) > INT(VEGK(L)+1.) ) CYCLE
+            ! ***                 m/s       m/s    m2
+            FX(L,K) = FX(L,K) + FXVEG(L,K)*U(L,K)*DXYU(L) ! *** (m^4/s^2)
+            FY(L,K) = FY(L,K) + FYVEG(L,K)*V(L,K)*DXYV(L) ! *** (m^4/s^2)
+          ENDDO  
+        ENDDO
+      ENDIF    
 
       ! *** CONVERT THE AVG FXVEGE/FYVEGE TO TOTAL FXVEGE/FYVEGE
       ! *** Calculate vegetative dissipation for FUHDYE for momentum conservation in CALPUV (need to have sum of forces, not average provided to CALPUV)
@@ -1444,8 +1456,11 @@ SUBROUTINE CALEXP2T
         IF( KSZ(L) == KC ) CYCLE
         
         ! *** LAYER U BLOCKING
-        IF( SUBO(L) > 0.0 .AND. (BLDRAFTU(LP)+BLSILLU(LP)) > 0. )THEN
+        IF( BLDRAFTU(LP)+BLSILLU(LP) > 0.0 )THEN
           ! *** LAYER SPECIFIC DEPTH AVERAGED FLOWS (M3/S)
+          IF( SUB(L) == 0.0 ) CYCLE
+
+          FBBX(L,:) = 0.0
           DO K=KBBU(LP),KTBU(LP)-1
             LW = LWC(L)
             
@@ -1471,8 +1486,11 @@ SUBROUTINE CALEXP2T
         ENDIF
       
         ! *** LAYER V BLOCKING
-        IF( SVBO(L) > 0.0 .AND. (BLDRAFTV(LP)+BLSILLV(LP)) > 0. )THEN
+        IF( BLDRAFTV(LP)+BLSILLV(LP) > 0.0 )THEN
           ! *** LAYER SPECIFIC DEPTH AVERAGED FLOWS (M3/S)
+          IF( SVB(L) == 0.0 ) CYCLE
+
+          FBBY(L,:) = 0.0
           DO K=KBBV(LP),KTBV(LP)-1
             LS = LSC(L)  
 

@@ -26,7 +26,7 @@ SUBROUTINE VARALLOC
 
   IMPLICIT NONE
 
-  INTEGER :: L, ierr
+  INTEGER :: L, ierr, NJP
   Integer :: NS, lower_bound, upper_bound
   Logical Test
   
@@ -72,11 +72,18 @@ SUBROUTINE VARALLOC
   ENDIF
   Allocate(WV(LCM))
 
-  Allocate(HYD_STR_GL(NQCTL))   ! *** Hydraulic structure controls
-  Allocate(HSCTL_GL(NQCTL))     ! *** Hydraulic structure controls
+  Allocate(HYD_STR_GL(NQCTL))       ! *** Hydraulic structure configuration
+  Allocate(HSCTL_GL(NQCTL))         ! *** Hydraulic structure control
+                                    
+  ALLOCATE(WITH_RET_GL(NQWR))       ! *** Withdrawal-Return configuration
+  ALLOCATE(WRCTL_GL(NQWR))          ! *** Withdrawal-Return control
   
-  ALLOCATE(WITH_RET_GL(NQWR))   ! *** Withdrawal-Return
-  ALLOCATE(WRCTL_GL(NQWR))      ! *** Withdrawal-Return
+  ALLOCATE(JET_PLM_GL(NJPSM))       ! *** Jet-Plume configuration
+  DO NJP = 1,NJPSM
+    Call AllocateDSI( JET_PLM_GL(NJP).NCSERJP, -NSTVM2,    0) 
+    Call AllocateDSI( JET_PLM_GL(NJP).CWRCJP,  -NSTVM2,  0.0)
+    Call AllocateDSI( JET_PLM_GL(NJP).CQCJP,    KCM, -NSTVM2, 0.0)
+  ENDDO
   
   ! *** Each process allocates their own variable
   Call AllocateDSI( AAU,        LCM,        0.0)     
@@ -143,7 +150,6 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( CDZKKP,     LCM,        KCM, 0.0)
   Call AllocateDSI( CDZKMK,     LCM,        KCM, 0.0)
   Call AllocateDSI( CE,         LCM,        0.0)
-  Call AllocateDSI( CFRD,       NQJPM,      0.0)
   Call AllocateDSI( CHANFRIC,   NCHANM,     0.0)
   Call AllocateDSI( CHANLEN,    NCHANM,     0.0)
   Call AllocateDSI( CLEVAP,     LCM,        0.0)                        ! *** WIND FUNCTION FOR EVAPORATION CALCULATIONS
@@ -160,9 +166,7 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( CPFAM0,     NPFORM,     MTM,       0.0)  
   Call AllocateDSI( CPFAM1,     NPFORM,     MTM,       0.0)  
   Call AllocateDSI( CPFAM2,     NPFORM,     MTM,       0.0)  
-  Call AllocateDSI( CQCJP,      KCM,        NQJPM,  -NSTVM2, 0.0)
   Call AllocateDSI( CQS,        KCM,        NQSIJM,  NSTVM2, 0.0)
-  Call AllocateDSI( CQSE,       NSTVM2,     0.0)     
   Call AllocateDSI( CQWR,       NQWRM,      NSTVM2,    0.0)
   Call AllocateDSI( CQWRSER,    NDQWRSR,    NQWRSRM, NSTVM2, 0.0)
   Call AllocateDSI( CQWRSERT,  -NQWRSRM,    NSTVM2,    0.0)
@@ -182,9 +186,6 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( CVN,        LCM,        0.0)
   Call AllocateDSI( CVV,        LCM,        0.0)
   Call AllocateDSI( CW,         LCM,        0.0)
-  Call AllocateDSI( CWRCJP,     NQJPM,    -NSTVM2,   0.0)
-  Call AllocateDSI( DJET,       NQJPM,      0.0)
-  Call AllocateDSI( DJPER,      NQJPM,      0.0)
   Call AllocateDSI( DLAT,       LCM,        0.0)
   Call AllocateDSI( DLON,       LCM,        0.0)
   Call AllocateDSI( DML,        LCM,       -KCM,      0.0)
@@ -320,7 +321,6 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( IAIJ,       IGM,        JGM,      0)
   Call AllocateDSI( IAKL,       KPCM,       LCM,      0)
   Call AllocateDSI( IAP,        KPCM,         0)      
-  Call AllocateDSI( ICALJP,     NQJPM,        0)      
   Call AllocateDSI( ICBE,       NBBEM,        0)      
   Call AllocateDSI( ICBN,       NBBNM,        0)      
   Call AllocateDSI( ICBS,       NBBSM,        0)      
@@ -337,7 +337,6 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( IMDCHU,     NCHANM,       0)
   Call AllocateDSI( IMDCHV,     NCHANM,       0)
   Call AllocateDSI( INTPSER,    NPSERM,       0)
-  Call AllocateDSI( IOUTJP,     NQJPM,        0)
   Call AllocateDSI( IPART,      LCM,          0)
   
   Call AllocateDSI( IPBE,       NPBEM,        0)
@@ -345,11 +344,8 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( IPBS,       NPBSM,        0)
   Call AllocateDSI( IPBW,       NPBWM,        0)
   
-  Call AllocateDSI( IQJP,       NQJPM,        0)
   Call AllocateDSI( IQS,        NQSIJM,       0)
   Call AllocateDSI( ISCDRY,     LCM,          0)
-  Call AllocateDSI( ISDJP,      NQJPM,        0)
-  Call AllocateDSI( ISENT,      NQJPM,        0)
   
   Call AllocateDSI( ISPBE,      NPBEM,        0)
   Call AllocateDSI( ISPBN,      NPBNM,        0)
@@ -362,9 +358,7 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( ISPRW,      NPBWM,        0)
   
   Call AllocateDSI( ISSBCP,     LCM,          0)
-  Call AllocateDSI( ISTJP,      NQJPM,        0)
   Call AllocateDSI( ISUDPC,     NCHANM,       0)
-  Call AllocateDSI( IUPCJP,     NQJPM,        0)
   Call AllocateDSI( IWGG,       NWGGM,        0)
   
   Call AllocateDSI( JCBE,       NBBEM,        0)
@@ -385,17 +379,13 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( JPBS,       NPBSM,        0)
   Call AllocateDSI( JPBW,       NPBWM,        0)
   
-  Call AllocateDSI( JQJP,       NQJPM,        0)
   Call AllocateDSI( JQS,        NQSIJM,       0)
-  Call AllocateDSI( JUPCJP,     NQJPM,        0)
   Call AllocateDSI( JWGG,       NWGGM,        0)
   Call AllocateDSI( KBT,        LCM,          0)
   Call AllocateDSI( KCEFDC,     LCM*KCM,      0)
-  Call AllocateDSI( KEFFJP,     NQJPM,        0)
+  Call AllocateDSI( KEFFJP,     NJPSM,        0)
   Call AllocateDSI( KFEFDC,     2*LCM*KCM,    0)
   Call AllocateDSI( KPS,        LCM,          0)
-  Call AllocateDSI( KQJP,       NQJPM,        0)
-  Call AllocateDSI( KUPCJP,     NQJPM,        0)
   Call AllocateDSI( KUPW,       LCM,        KCM,      0)
   Call AllocateDSI( LBERC,      NMAXBC,       0)
   Call AllocateDSI( LBNRC,      NMAXBC,       0)
@@ -488,21 +478,17 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( MVEGTLAST,  NVEGSERM,             0)
   Call AllocateDSI( NATDRY,     LCM,                  0)
   Call AllocateDSI( NCSERE,     NBBEM,     NSTVM2,   0)
-  Call AllocateDSI( NCSERJP,    NQJPM,    -NSTVM2,   0)
   Call AllocateDSI( NCSERN,     NBBNM,     NSTVM2,   0)
   Call AllocateDSI( NCSERQ,     NQSIJM,    NSTVM2,   0)
   Call AllocateDSI( NCSERS,     NBBSM,     NSTVM2,   0)
   Call AllocateDSI( NCSERW,     NBBWM,     NSTVM2,   0)
   Call AllocateDSI( NSERWQ,     LCM,                  0)
   Call AllocateDSI( NGWSL,      LCM,                  0)
-  Call AllocateDSI( NJEL,       NQJPM,                0)
-  Call AllocateDSI( NJPMX,      NQJPM,                0)
   Call AllocateDSI( NLOE,       NBBEM,     KCM,       NSTVM2, 0)
   Call AllocateDSI( NLON,       NBBNM,     KCM,       NSTVM2, 0)
   Call AllocateDSI( NLOS,       NBBSM,     KCM,       NSTVM2, 0)
   Call AllocateDSI( NLOW,       NBBWM,     KCM,       NSTVM2, 0)
   Call AllocateDSI( NLRPDRT,    NGLM,         0)
-  Call AllocateDSI( NPORTJP,    NQJPM,        0)
                                              
   Call AllocateDSI( NPSERE,     NPBEM,        0)
   Call AllocateDSI( NPSERN,     NPBNM,        0)
@@ -514,21 +500,16 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( NPSERS1,    NPBSM,        0)
   Call AllocateDSI( NPSERW1,    NPBWM,        0)
                                              
-  Call AllocateDSI( NQSERJP,    NQJPM,        0)
   Call AllocateDSI( NQSERQ,     NQSIJM,       0)
   Call AllocateDSI( NQSMF,      NQSIJM,       0)
   Call AllocateDSI( NQSMUL,     NQSIJM,       0)
-  Call AllocateDSI( NQWRSERJP ,  NQJPM,       0)
   Call AllocateDSI( NTSCRE,     NBBEM,        0)
   Call AllocateDSI( NTSCRN,     NBBNM,        0)
   Call AllocateDSI( NTSCRS,     NBBSM,        0)
   Call AllocateDSI( NTSCRW,     NBBWM,        0)
   Call AllocateDSI( NTSSSS,     MLTMSRM,      0)
   Call AllocateDSI( NTVSFP,     MTVSM,        0)
-  Call AllocateDSI( NUDJP,      NQJPM,        0)
-  Call AllocateDSI( NUDJPC,     NQJPM,        0)
   Call AllocateDSI( NXYSDAT,    LCM,          0)
-  Call AllocateDSI( NZPRJP,     NQJPM,        0)
   Call AllocateDSI( OLDMASK,    LCM,    .false.)
   Call AllocateDSI( P,          LCM,        0.0)
   Call AllocateDSI( P1,         LCM,        0.0)
@@ -550,7 +531,6 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( PHASEE,     MTM,       0.0)
   Call AllocateDSI( PHASEU,     MTM,       0.0)
   Call AllocateDSI( PHASEV,     MTM,       0.0)
-  Call AllocateDSI( PHJET,      NQJPM,     0.0)
   Call AllocateDSI( PLSHA,      MLM,       0.0)
   Call AllocateDSI( PMDCH,      NCHANM,    0.0)       
   Call AllocateDSI( PNHYDS,     LCM,       KCM,       0.0)
@@ -585,14 +565,13 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( QDWASTE,    LCM,       0.0)
   Call AllocateDSI( QFACTOR,    NQSIJM,    0.0)
   Call AllocateDSI( QGW,        LCM,       0.0)                              ! *** GROUNDWATER FLUX TERM (M^3/S), 2018-10-24 PMC CHANGED SIGN CONVENTION FOR SEEPAGE +(IN), -(OUT)
-  Call AllocateDSI( QJPENT,     KCM,       NQJPM,     0.0)
-  Call AllocateDSI( QJPENTT,    NQJPM,     0.0)       
+  Call AllocateDSI( QJPENT,     KCM,       NJPSM,     0.0)
+  Call AllocateDSI( QJPENTT,    NJPSM,     0.0)       
   Call AllocateDSI( QMORPH,     LCM,       0.0)       
   Call AllocateDSI( QQ,         LCM,      -KCM,       0.0)
   Call AllocateDSI( QQ1,        LCM,      -KCM,       0.0)
   Call AllocateDSI( QQ2,        LCM,      -KCM,       0.0)
   Call AllocateDSI( QQSQR,      LCM,      -KCM,       0.0)
-  Call AllocateDSI( QQCJP,      NQJPM,     0.0)       
   Call AllocateDSI( QQL,        LCM,      -KCM,       0.0)
   Call AllocateDSI( QQL1,       LCM,      -KCM,       0.0)
   Call AllocateDSI( QQL2,       LCM,      -KCM,       0.0)
@@ -615,13 +594,12 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( QWATPA,     LCM,       0.0)
   Call AllocateDSI( QWBDTOP,    LCM,       0.0)
   Call AllocateDSI( QWIDTH,     NQSIJM,    0.0)
-  Call AllocateDSI( QWRCJP,     NQJPM,     0.0)
   Call AllocateDSI( QWRSER,     NDQWRSR,   NQWRSRM,    0.0)
   Call AllocateDSI( QWRSERT,   -NQWRSRM,   0.0)
   Call AllocateDSI( QWRSERTLP, -NQWRSRM,   0.0)
   Call AllocateDSI( RADBOT,     LCM,       KCM,        0.0)              ! *** SOLAR RADIATION AT THE BOTTOM OF THE LAYER  (W/M2)
   Call AllocateDSI( RADNET,     LCM,       KCM,        0.0)              ! *** NET SOLAR RADIATION AT THE MIDPOINT OF THE LAYER (W/M2)
-  Call AllocateDSI( RADTOP,     LCM,      -KCM,        0.0)            ! *** SOLAR RADIATION AT THE TOP OF THE LAYER (W/M2)
+  Call AllocateDSI( RADTOP,     LCM,      -KCM,        0.0)              ! *** SOLAR RADIATION AT THE TOP OF THE LAYER (W/M2)
   Call AllocateDSI( RADKE,      LCM,       KCM,        0.0)              ! *** EXTINCTION COEFFICIENT AT THE MIDPOINT OF THE LAYER
   Call AllocateDSI( RAINT,      LCM,       0.0)                          ! *** CURRENT RAINFALL PER CELL (M/S)
   Call AllocateDSI( RBPSBL,     LCM,       0.0)        
@@ -721,7 +699,6 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( TEMB1,     LCM,        0.0)
   Call AllocateDSI( TEMINIT,   LCM,        KCM,       0.0)
   Call AllocateDSI( TGWSER,    NDGWSER,    NGWSERM,   0.0)
-  Call AllocateDSI( THJET,     NQJPM,      0.0)
   Call AllocateDSI( TMP3D,     KCM,        0.0)
                              
   Call AllocateDSI( TPCOORDE,  NPBEM,      0.0)
@@ -853,8 +830,6 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( WVTMP4,   LCM,         0.0)
 
   Call AllocateDSI( WWW,      LCM,        -KCM,       0.0)
-  Call AllocateDSI( XJETL,    NQJPM,       0.0)       
-  Call AllocateDSI( YJETL,    NQJPM,       0.0)       
                                                      
   Call AllocateDSI( Z,        LCM,         -KCM,      0.0)
   Call AllocateDSI( ZBR,      LCM,         0.0)
@@ -864,7 +839,6 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( ZEQDI,    LCM,         0.0)
   Call AllocateDSI( ZEQI,     LCM,         0.0)
   Call AllocateDSI( ZETATOP,  LCM,         0.0)
-  Call AllocateDSI( ZJET,     NQJPM,       0.0)
   Call AllocateDSI( ZP,       -KPCM,       0.0)
   Call AllocateDSI( ZZ,       LCM,        -KCM,       0.0)
   Call AllocateDSI( ZZC,      -KCM,        LCM,       0.0)
@@ -1421,8 +1395,9 @@ SUBROUTINE VARALLOC
   ENDIF
   
   ! Begin SEDZLJ variables
-  Call AllocateDSI( FWVTP,          LCM,      0.0)
-  Call AllocateDSI( FWDIR,          LCM,      16,      0.0)
+  Call AllocateDSI( FWVTP,          LCM,    0.0)
+  Call AllocateDSI( FWDIR,          LCM,    16,   0.0)
+  Call AllocateDSI( LWDIR,          LCM,    16,  -(ICM+JCM), 0)
   IF( LSEDZLJ )THEN
     Call AllocateDSI( ALPHA_PX,     LCM,    0.0)
     Call AllocateDSI( ALPHA_PY,     LCM,    0.0)
@@ -1680,8 +1655,8 @@ SUBROUTINE VARALLOC
   Call AllocateDSI( VHDXF2,   LCM,   KCM,   0.0)
 
   ! *** WET/DRY BYPASS VARIABLES
-  Call AllocateDSI( LWET,     LCM, 0)
-  Call AllocateDSI( LDRY,     LCM, 0)
+  Call AllocateDSI( LWET,    -LCM,   0)
+  Call AllocateDSI( LDRY,    -LCM,   0)
 
   ! *** ATMOS
   IF( NASER >= 1 )THEN

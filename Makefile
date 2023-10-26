@@ -4,7 +4,7 @@ FC=/opt/intel/oneapi/mpi/latest/bin/mpiifort
 
 # Compiler options
 #FFLAGS=-g -traceback -fpp -DENABLE_MPI -D_MPI -nofixed -qopenmp -DNCOUT
-FFLAGS=-g -traceback -qopenmp -pthread -O3 -fpp -DENABLE_MPI -D_MPI -DLINUX -m64 -real-size 32 -fpe0 -fp-speculation=safe -multiple-processes=12
+FFLAGS=-g -traceback -qopenmp -pthread -O3 -fpp -DENABLE_MPI -D_MPI -DLINUX -DNCOUT -m64 -real-size 32 -fpe0 -fp-speculation=safe -multiple-processes=12
 # Compilation options for debug mode
 #FFLAGS=-g -traceback -qopenmp -debug all -check all -fpp -DENABLE_MPI -D_MPI -DDEBUGGING -fpic -real-size 64 -fpe0 -fp-speculation=safe -multiple-processes=8
 
@@ -25,9 +25,9 @@ PROJHOME= ..
 # Suffix rules
 .SUFFIXES: .f90 .F90 .for .FOR .o
 
-INCLUD   =   -L/usr/local/include -LWASP 
-CDFDIR   =   -L/usr/local/lib
-CDFLIBS  =   #-Bstatic -lnetcdf -lnetcdff -lhdf5_hl -lhdf5
+INCLUD   =   -L/usr/local/include -L/usr/include -LWASP 
+CDFDIR   =   -I/usr/local/lib -I/usr/include
+CDFLIBS  =   -L/usr/local/lib -lnetcdff -L/usr/local/lib -lnetcdf -lnetcdf
 
 # Include dependency list created by makedepf90
 #include .depend 
@@ -59,9 +59,9 @@ OBJS= EFDC/Propwash/mod_Setup_Ships.o  EFDC/aaefdc.o EFDC/csedress.o EFDC/fsedmo
 	  EFDC/ssedtox.o EFDC/s_tecplot.o EFDC/setbcs.o EFDC/mhkpwr.o EFDC/caluvw.o \
 	  EFDC/calqvs.o EFDC/calpnhs.o EFDC/MPI_Domain_Decomp/Congrad_MPI.o \
 	  EFDC/tmsr.o EFDC/timelog.o EFDC/setfpocb.o EFDC/cellmask.o EFDC/cbalev.o \
-	  EFDC/calhta.o EFDC/calebi.o EFDC/MPI_Mapping/Map_Jet_Plume.o \
+	  EFDC/calhta.o EFDC/calebi.o \
 	  EFDC/MPI_Domain_Decomp/Allocate_Domain_Decomp.o EFDC/wasp7.o EFDC/rvelplth.o EFDC/runcontrol.o \
-	  EFDC/caltsxy.o EFDC/caltranice.o EFDC/calexp2t.o EFDC/bedload.o EFDC/MPI_Mapping/Map_River.o \
+	  EFDC/caltsxy.o EFDC/caltranice.o EFDC/calexp2t.o EFDC/bedload.o \
 	  EFDC/MPI_Mapping/Map_OpenBC_Pressure.o EFDC/MPI_Domain_Decomp/Parent_Grid.o \
 	  EFDC/wasp5.o EFDC/svdcmp.o EFDC/s_main.o EFDC/calstepd.o EFDC/calmmt.o EFDC/bedinit.o \
 	  EFDC/Propwash/Calc_Prop_Erosion.o EFDC/MPI_Out/Write_Mapping_3Dgraphics.o EFDC/wasp7hydro.o EFDC/varzerosnl.o EFDC/s_massbalance.o \
@@ -99,9 +99,9 @@ OBJSLINK= mod_Setup_Ships.o aaefdc.o csedress.o fsedmode.o fdstrse.o FormatOutpu
 	  ssedtox.o s_tecplot.o setbcs.o mhkpwr.o caluvw.o \
 	  calqvs.o calpnhs.o Congrad_MPI.o \
 	  tmsr.o timelog.o setfpocb.o cellmask.o cbalev.o \
-	  calhta.o calebi.o Map_Jet_Plume.o \
+	  calhta.o calebi.o \
 	  Allocate_Domain_Decomp.o wasp7.o rvelplth.o runcontrol.o \
-	  caltsxy.o caltranice.o calexp2t.o bedload.o Map_River.o \
+	  caltsxy.o caltranice.o calexp2t.o bedload.o \
 	  Map_OpenBC_Pressure.o Parent_Grid.o \
 	  wasp5.o svdcmp.o s_main.o calstepd.o calmmt.o bedinit.o \
 	  Calc_Prop_Erosion.o Write_Mapping_3Dgraphics.o wasp7hydro.o varzerosnl.o s_massbalance.o \
@@ -127,11 +127,11 @@ MODS    = EFDC/JSON_Reader/mod_fson_string.o EFDC/mod_var_global.o EFDC/MPI_Util
 		  EFDC/Propwash/Mod_Position.o EFDC/MPI_Mapping/Mod_Map_Gather_Sort.o EFDC/mod_cyclone.o EFDC/Propwash/Mod_Mesh.o EFDC/Eutrophication/mod_zoopl.o \
 		  EFDC/MPI_Mapping/Mod_Map_Global_to_Local.o  EFDC/Eutrophication/mod_diagen.o EFDC/Propwash/Mod_Position_Cell.o EFDC/Propwash/Mod_Position_Elev.o \
                   EFDC/Propwash/Mod_All_Tracks.o EFDC/Eutrophication/mod_rpem.o EFDC/Propwash/Mod_All_Ship_Tracks.o EFDC/Propwash/Mod_Active_Ship.o \
-                  EFDC/mod_scaninp.o EFDC/mod_hifreqout.o EFDC/MPI_Out/Mod_Map_Write_EE_Binary.o EFDC/Propwash/mod_Variables_Ship.o \
+                  EFDC/mod_scaninp.o EFDC/MPI_Out/Mod_Map_Write_EE_Binary.o EFDC/mod_hifreqout.o EFDC/Propwash/mod_Variables_Ship.o \
 		  EFDC/mod_restart.o EFDC/MPI_Communication/mod_Communicate_Drifters.o EFDC/Drifter/mod_drifter.o EFDC/mod_windwave.o EFDC/Eutrophication/mod_wq.o \
                   EFDC/Propwash/Mod_Read_Propwash.o EFDC/mod_heat.o \
 		  EFDC/MOD_efdcout.o EFDC/mod_getswan.o EFDC/MPI_Out/Mod_Map_Write_NetCDF.o EFDC/mod_netcdf.o \
-		  EFDC/MPI_Utilities/mod_Variables_MPI_Concentration.o \
+		  EFDC/MPI_Utilities/mod_Variables_MPI_Concentration.o EFDC/MPI_Mapping/Map_Discharge_BCs.o\
 
 MODSLINK  = mod_fson_string.o mod_var_global.o mod_Variables_MPI_Mapping.o mod_convertwgs84.o mod_Variables_MPI_MapGatherSort.o Mod_Erosive_Flux.o \
 	      mod_julian.o mod_Variables_Propwash.o mod_Variables_MPI_Drifter.o mod_info.o mod_Variables_MPI_Write_Out.o \
@@ -141,10 +141,10 @@ MODSLINK  = mod_fson_string.o mod_var_global.o mod_Variables_MPI_Mapping.o mod_c
 		  Mod_Gather_Drifter.o mod_Communicate_Drifters.o Mod_MPI_Helper_Functions.o Mod_Sort_Global_Soln.o Mod_Gather_Soln.o mod_allreduce.o \
 		  mod_fson.o mod_shellfish.o mod_fields.o Mod_Position.o Mod_Map_Gather_Sort.o mod_cyclone.o \
                   Mod_Mesh.o mod_zoopl.o Mod_Map_Global_to_Local.o mod_diagen.o Mod_Position_Cell.o Mod_Position_Elev.o \
-                  Mod_All_Tracks.o mod_rpem.o Mod_All_Ship_Tracks.o Mod_Active_Ship.o mod_scaninp.o mod_hifreqout.o \
-                  Mod_Map_Write_EE_Binary.o mod_Variables_Ship.o \
+                  Mod_All_Tracks.o mod_rpem.o Mod_All_Ship_Tracks.o Mod_Active_Ship.o mod_scaninp.o \
+                  Mod_Map_Write_EE_Binary.o mod_hifreqout.o mod_Variables_Ship.o \
 		  mod_drifter.o MOD_efdcout.o Mod_Map_Write_NetCDF.o mod_restart.o mod_windwave.o mod_netcdf.o mod_wq.o Mod_Read_Propwash.o mod_heat.o \
-		  mod_getswan.o mod_Variables_MPI_Concentration.o \
+		  mod_getswan.o mod_Variables_MPI_Concentration.o Map_Discharge_BCs.o \
 
 MAIN    = 
 
