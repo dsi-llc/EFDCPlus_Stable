@@ -9,7 +9,7 @@
   MODULE EFDCOUT
 
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
   use GLOBAL
   use DRIFTER, only:DRIFTER_OUT
@@ -386,17 +386,11 @@
     write(EE_UNIT) INT(VER,4)
 
     ! *** NUMBER OF TIME VARYING ARRAYS
-    NS = 12   !6
-    !IF( KC > 1 )      NS = NS + 3
-    !IF( ISCURVATURE ) NS = NS + 2
-    !IF( ISHDMF >= 1 ) NS = NS + 4
-    !IF( (ISTRAN(1) + ISTRAN(2)) > 0 ) NS = NS + 2
-    !IF( ISTRAN(2) > 0 )then
-    !  if( IASWRAD == 3 )   NS = NS + 1
-    !  if( ISTOPT(2) == 2 ) NS = NS + 3
-    !  NS = NS + 3
-    !ENDIF
-    !IF( ISTRAN(8) > 0) NS = NS + 1 ! *** Reaeration rate (1/day)
+    NS = 0
+    if (IS_ARRAY_OUT(2) == 1 ) NS = NS + 9
+    if (IS_ARRAY_OUT(3) == 1 ) NS = NS + 4
+    if (IS_ARRAY_OUT(4) == 1 ) NS = NS + 5
+    if (IS_ARRAY_OUT(5) == 1 ) NS = NS + 1 + 3*NALGAE
     write(EE_UNIT) INT(NS,4)
 
     ! FLAGS: ARRAY TYPE, TIME VARIABLE
@@ -411,32 +405,34 @@
     ! *****************************************************************
     ! *** THE FOLLOWING ARRAYS ARE TIME INVARIANT SO ONLY WRITTEN ONCE
     ! *****************************************************************
-    ITIMEVAR = 0
-    ITYPE = 0
-
-    write(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
-    ARRAYNAME = 'SBX'
-    write(EE_UNIT) ARRAYNAME
-    do L = 2,LA_Global
-      write(EE_UNIT) REAL(SBXO(L),4)
-    enddo
-
-    write(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
-    ARRAYNAME = 'SBY'
-    write(EE_UNIT) ARRAYNAME
-    do L = 2,LA_Global
-      write(EE_UNIT) REAL(SBYO(L),4)
-    enddo
-
-    ITYPE = 1
-    write(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
-    ARRAYNAME = 'DZC'
-    write(EE_UNIT) ARRAYNAME
-    do K = 1,KC
+    if( IS_ARRAY_OUT(1) == 1 )then
+      ITIMEVAR = 0
+      ITYPE = 0
+      write(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
+      ARRAYNAME = 'SBX'
+      write(EE_UNIT) ARRAYNAME
       do L = 2,LA_Global
-        write(EE_UNIT) REAL(DZC(L,K),4)
+        write(EE_UNIT) REAL(SBXO(L),4)
       enddo
-    enddo
+      
+      ITYPE = 0
+      write(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
+      ARRAYNAME = 'SBY'
+      write(EE_UNIT) ARRAYNAME
+      do L = 2,LA_Global
+        write(EE_UNIT) REAL(SBYO(L),4)
+      enddo
+      
+      ITYPE = 1
+      write(EE_UNIT) INT(ITYPE,4),INT(ITIMEVAR,4)
+      ARRAYNAME = 'DZC'
+      write(EE_UNIT) ARRAYNAME
+      do K = 1,KC
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(DZC(L,K),4)
+        enddo
+      enddo
+    endif
 
     close(EE_UNIT,STATUS = 'KEEP')
 
@@ -474,21 +470,21 @@
     NS = 0
     do while(OFFSET < FSIZE)
 #ifdef GNU
-      call FSEEK(EE_UNIT,OFFSET,0, ISTAT)
+      CALL FSEEK(EE_UNIT,OFFSET,0, ISTAT)
 
       if(IS_IOSTAT_END(ISTAT)) then
         write(EE_UNIT) INT(N+NRESTART,4), EETIME,REAL(DELT,4), INT(LMINSTEP,4)
-        EXIT
+        exit
       endif
 #else
       ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
       if( EOF(EE_UNIT) )then
         write(EE_UNIT) INT(N+NRESTART,4), EETIME,REAL(DELT,4), INT(LMINSTEP,4)
-        EXIT
+        exit
       endif
-#endif        
-      if( ISTAT /= 0 ) EXIT
+#endif       
+      if( ISTAT /= 0 ) exit
 
       read(EE_UNIT) PTIME
 
@@ -498,10 +494,11 @@
           write(*,'(F10.3)')PTIME
           NS = 0
         else
-          write(*,'(F10.3)',advance='NO')PTIME
+          !write(*,'(F10.3,\)')PTIME
+	  WRITE(*,'(F10.3)',ADVANCE='NO') PTIME
         endif
       endif
-      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
       OFFSET = OFFSET + BSIZE
     enddo
@@ -510,11 +507,10 @@
     write(*,'(A)')'FINSIHED READING WS'
 
 #ifdef GNU
-    call FSEEK(EE_UNIT,8,1,ISTAT)
+    call FSEEK(EE_UNIT,8,1, ISTAT)
 #else
     ISTAT = FSEEK(EE_UNIT,8,1)
-#endif        
-
+#endif    
   else !***Normal write out
     ! *** Writing out some header information for the current time step
     NERR = 0
@@ -632,17 +628,17 @@ SUBROUTINE VELOUT
 
       if(IS_IOSTAT_END(ISTAT)) then
         write(EE_UNIT) INT(N+NRESTART,4),EETIME,REAL(DELT,4)
-        EXIT
+        exit
       endif
 #else
       ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
       if( EOF(EE_UNIT) )then
         write(EE_UNIT) INT(N+NRESTART,4),EETIME,REAL(DELT,4)
-        EXIT
+        exit
       endif
-#endif          
-      if( ISTAT /= 0 ) EXIT
+#endif 
+      if( ISTAT /= 0 ) exit
 
       read(EE_UNIT) PTIME
 
@@ -652,11 +648,10 @@ SUBROUTINE VELOUT
           write(*,'(F10.3)')PTIME
           NS = 0
         else
-          !write(*,'(F10.3,\)')PTIME
-          write(*,'(F10.3)',advance='NO')PTIME
+          WRITE(*,'(F10.3)',ADVANCE='NO') PTIME
         endif
       endif
-      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
       OFFSET = OFFSET + BSIZE
     enddo
@@ -664,11 +659,10 @@ SUBROUTINE VELOUT
     write(*,'(A)')'FINISHED READING VEL'
 
 #ifdef GNU
-    call FSEEK(EE_UNIT,4,1,ISTAT)
+    CALL FSEEK(EE_UNIT,4,1, ISTAT)
 #else
     ISTAT = FSEEK(EE_UNIT,4,1)
-#endif          
-
+#endif 
   else
     NERR = 0
     IORIGIN = 2
@@ -736,17 +730,17 @@ SUBROUTINE WCOUT
 
       if(IS_IOSTAT_END(ISTAT)) then
         write(EE_UNIT) EETIME
-        EXIT
+        exit
       endif
 #else
       ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
       if( EOF(EE_UNIT) )then
         write(EE_UNIT) EETIME
-        EXIT
+        exit
       endif
-#endif                  
-      if( ISTAT /= 0 ) EXIT
+#endif   
+      if( ISTAT /= 0 ) exit
 
       read(EE_UNIT) PTIME
 
@@ -756,10 +750,10 @@ SUBROUTINE WCOUT
           write(*,'(F10.3)')PTIME
           NS = 0
         else
-          write(*,'(F10.3)',advance='NO')PTIME
+          WRITE(*,'(F10.3)',ADVANCE='NO') PTIME
         endif
       endif
-      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
       OFFSET = OFFSET + BSIZE
     enddo
@@ -800,7 +794,7 @@ SUBROUTINE WCOUT
     if( LSEDZLJ )then
       do L = 2,LA_Global
         SHEAR = SHEAR_Global(L) - QQWV3_Global(L)
-        !SHEAR = MAX(SHEAR,0.0)
+        !SHEAR = max(SHEAR,0.0)
         write(EE_UNIT) SHEAR             ! *** Bed Shear due to Current Only
       enddo
     else
@@ -993,7 +987,7 @@ INTEGER FUNCTION BLOCKWC(CELL3D)
       FSIZE = FILESIZE(FILENAME)
       open(EE_UNIT,FILE = FILENAME,ACTION = 'READWRITE',STATUS = 'OLD',FORM = FMT_BINARY,SHARED)
       read(EE_UNIT) VER,HSIZE,BSIZE
-      if( VER /= 8401 )then
+      if( VER /= 12000 )then
         write(*,*)'FILE IS CORRUPTED OR VERSION IS INVALID!'      ! *** Run continuation can only work with the latest version
         call STOPP('.')
       endif
@@ -1006,17 +1000,17 @@ INTEGER FUNCTION BLOCKWC(CELL3D)
 
         if(IS_IOSTAT_END(ISTAT)) then
           write(EE_UNIT) EETIME
-          EXIT
+          exit
         endif
 #else
         ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
         if( EOF(EE_UNIT) )then
           write(EE_UNIT) EETIME
-          EXIT
+          exit
         endif
-#endif          
-        if( ISTAT /= 0 ) EXIT
+#endif 
+        if( ISTAT /= 0 ) exit
 
         read(EE_UNIT) PTIME
 
@@ -1026,10 +1020,10 @@ INTEGER FUNCTION BLOCKWC(CELL3D)
             write(*,'(F10.3)')PTIME
             NS = 0
           else
-            write(*,'(F10.3)',advance='NO')PTIME
+            WRITE(*,'(F10.3)',ADVANCE='NO') PTIME
           endif
         endif
-        if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+        if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
         OFFSET = OFFSET + BSIZE
       enddo
@@ -1176,17 +1170,17 @@ INTEGER FUNCTION BLOCKSEDZLJ(CELL3D)
 
         if(IS_IOSTAT_END(ISTAT)) then
           write(EE_UNIT) EETIME
-          EXIT
+          exit
         endif
 #else
         ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
         if( EOF(EE_UNIT) )then
           write(EE_UNIT) EETIME
-          EXIT
+          exit
         endif
-#endif                    
-        if( ISTAT /= 0 ) EXIT
+#endif 
+        if( ISTAT /= 0 ) exit
 
         read(EE_UNIT) PTIME
 
@@ -1196,10 +1190,10 @@ INTEGER FUNCTION BLOCKSEDZLJ(CELL3D)
             write(*,'(F10.3)')PTIME
             NS = 0
           else
-            write(*,'(F10.3)',advance='NO')PTIME
+            WRITE(*,'(F10.3)',ADVANCE='NO') PTIME
           endif
         endif
-        if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+        if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
         OFFSET = OFFSET + BSIZE
       enddo
@@ -1310,17 +1304,17 @@ INTEGER FUNCTION BLOCKBED(CELL3D)
 
         if(IS_IOSTAT_END(ISTAT)) then
           write(EE_UNIT) EETIME
-          EXIT
+          exit
         endif
 #else
         ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
         if( EOF(EE_UNIT) )then
           write(EE_UNIT) EETIME
-          EXIT
+          exit
         endif
-#endif          
-        if( ISTAT /= 0 ) EXIT
+#endif 
+        if( ISTAT /= 0 ) exit
 
         read(EE_UNIT) PTIME
 
@@ -1330,10 +1324,10 @@ INTEGER FUNCTION BLOCKBED(CELL3D)
             write(*,'(F10.3)')PTIME
             NS = 0
           else
-            write(*,'(F10.3)',advance='NO')PTIME
+            WRITE(*,'(F10.3)',ADVANCE='NO') PTIME
           endif
         endif
-        if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+        if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
         OFFSET = OFFSET + BSIZE
       enddo
@@ -1434,17 +1428,17 @@ INTEGER FUNCTION BLOCKBED(CELL3D)
 
           if(IS_IOSTAT_END(ISTAT)) then
             write(EE_UNIT) EETIME
-            EXIT
+            exit
           endif
 #else
           ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
           if( EOF(EE_UNIT) )then
             write(EE_UNIT) EETIME
-            EXIT
+            exit
           endif
-#endif   
-          if( ISTAT /= 0 ) EXIT
+#endif 
+          if( ISTAT /= 0 ) exit
 
           read(EE_UNIT) PTIME
 
@@ -1454,10 +1448,10 @@ INTEGER FUNCTION BLOCKBED(CELL3D)
               write(*,'(F10.3)')PTIME
               NS = 0
             else
-              write(*,'(F10.3)',advance='NO')PTIME
+              WRITE(*,'(F10.3)',ADVANCE='NO') PTIME
             endif
           endif
-          if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+          if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
           OFFSET = OFFSET + BSIZE
         enddo
@@ -1598,17 +1592,17 @@ SUBROUTINE WQOUT
 
       if(IS_IOSTAT_END(ISTAT)) then
         write(EE_UNIT) EETIME
-        EXIT
+        exit
       endif
 #else
       ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
       if( EOF(EE_UNIT) )then
         write(EE_UNIT) EETIME
-        EXIT
+        exit
       endif
-#endif           
-      if( ISTAT /= 0 ) EXIT
+#endif 
+      if( ISTAT /= 0 ) exit
 
       read(EE_UNIT) PTIME
 
@@ -1618,10 +1612,10 @@ SUBROUTINE WQOUT
           write(*,'(F10.3)')PTIME
           NS = 0
         else
-          write(*,'(F10.3)',advance='NO')PTIME
+          WRITE(*,'(F10.3)',ADVANCE='NO') PTIME
         endif
       endif
-      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
       OFFSET = OFFSET + BSIZE
     enddo
@@ -1754,17 +1748,17 @@ SUBROUTINE BCOUT
 
       if(IS_IOSTAT_END(ISTAT)) then
         write(EE_UNIT) EETIME
-        EXIT
+        exit
       endif
 #else
       ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
       if( EOF(EE_UNIT) )then
         write(EE_UNIT) EETIME
-        EXIT
+        exit
       endif
-#endif        
-      if( ISTAT /= 0 ) EXIT
+#endif 
+      if( ISTAT /= 0 ) exit
 
       read(EE_UNIT) PTIME
 
@@ -1774,10 +1768,10 @@ SUBROUTINE BCOUT
           write(*,'(F10.3)')PTIME
           NS = 0
         else
-          write(*,'(F10.3)',advance='NO')PTIME
+          WRITE(*,'(F10.3)',ADVANCE='NO') PTIME
         endif
       endif
-      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
       OFFSET = OFFSET + BSIZE
     enddo
@@ -2151,17 +2145,17 @@ SUBROUTINE SHELLFISHOUT()
 
       if(IS_IOSTAT_END(ISTAT)) then
         write(EE_UNIT) EETIME
-        EXIT
+        exit
       endif
 #else
       ISTAT = FSEEK(EE_UNIT,OFFSET,0)
 
       if( EOF(EE_UNIT) )then
         write(EE_UNIT) EETIME
-        EXIT
+        exit
       endif
-#endif   
-      if( ISTAT /= 0 ) EXIT
+#endif  
+      if( ISTAT /= 0 ) exit
         
       read(EE_UNIT) PTIME
       
@@ -2171,10 +2165,10 @@ SUBROUTINE SHELLFISHOUT()
           write(*,'(F10.3)')PTIME
           NS = 0
         else
-          write(*,'(F10.3)',advance='NO')PTIME
+          write(*,'(F10.3)',ADVANCE='NO') PTIME
         endif
       endif
-      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) EXIT
+      if( ABS(PTIME-TIMEDAY) <= 1E-4 .or. PTIME > TIMEDAY ) exit
 
       OFFSET = OFFSET + BSIZE
     enddo
@@ -2367,10 +2361,11 @@ SUBROUTINE ARRAYSOUT
   ! TIME VARIABLE: 0 = NOT CHANGING
   !                1 = TIME VARYING
 
-  integer(IK4) :: K,L,ITYPE,ITIMEVAR
+  integer(IK4) :: K,L,ITYPE,ITIMEVAR,NAL
   real(RK4)    :: ZERO
   real(RK4)    :: TMPVAL
-  character*8 ARRAYNAME
+  character*8  ARRAYNAME
+  character*2  SNUM
 
   if( ISINWV == 2 )then
     ZERO = 0.0
@@ -2382,116 +2377,229 @@ SUBROUTINE ARRAYSOUT
     IORIGIN = 10
     100 open(EE_UNIT,FILE = FILENAME,POSITION = 'APPEND',STATUS = 'UNKNOWN',FORM = FMT_BINARY,SHARED,ERR = 999,IOSTAT = IERRio)
 
-    ! *** TIME VARIABLE FLAG
+    ! *** Time varibale flag
     ITIMEVAR = 1
     
-    ITYPE = 0
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'UHDYE' 
-    write(EE_UNIT) ARRAYNAME
-    do L = 2,LA_Global
-      write(EE_UNIT) REAL(UHDYE(L),4)
-    enddo
+    ! *** Hydrodynamic varibales
+    if( IS_ARRAY_OUT(2) == 1 )then
+      ! *** Water pressure
+      ITYPE = 0
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'P'
+      write(EE_UNIT) ARRAYNAME
+      do L = 2,LA_Global
+        write(EE_UNIT) REAL(P(L),4)
+      enddo
+      
+      ! *** Average over depth flow
+      ITYPE = 0
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'UHDYE' 
+      write(EE_UNIT) ARRAYNAME
+      do L = 2,LA_Global
+        write(EE_UNIT) REAL(UHDYE(L),4)
+      enddo
+          
+      ITYPE = 0
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'VHDXE' 
+      write(EE_UNIT) ARRAYNAME
+      do L = 2,LA_Global
+        write(EE_UNIT) REAL(VHDXE(L),4)
+      enddo
+      
+      ! *** Internal shear
+      ITYPE = 1
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'DU'
+      write(EE_UNIT) ARRAYNAME
+      do K = 1,KC
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(DU(L,K),4)
+        enddo
+      enddo
+    
+      ITYPE = 1
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'DV'
+      write(EE_UNIT) ARRAYNAME
+      do K = 1,KC
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(DV(L,K),4)
+        enddo
+      enddo
+      
+      ! *** Bed shear
+      ITYPE = 0
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'TBX' 
+      write(EE_UNIT) ARRAYNAME
+      do L = 2,LA_Global
+        write(EE_UNIT) REAL(TBX(L),4)
+      enddo
+      
+      ITYPE = 0
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'TBY' 
+      write(EE_UNIT) ARRAYNAME
+      do L = 2,LA_Global
+        write(EE_UNIT) REAL(TBY(L),4)
+      enddo
+      
+      ! *** Surface shear
+      ITYPE = 0
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'TSX' 
+      write(EE_UNIT) ARRAYNAME
+      do L = 2,LA_Global
+        write(EE_UNIT) REAL(TSX(L),4)
+      enddo
+      
+      ITYPE = 0
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'TSY' 
+      write(EE_UNIT) ARRAYNAME
+      do L = 2,LA_Global
+        write(EE_UNIT) REAL(TSY(L),4)
+      enddo
+    endif
+    
+    ! *** Turbulence quantities
+    if( IS_ARRAY_OUT(3) == 1 )then
+      ! *** Turbulence intensity or kinetic energy (m2/s2)
+      ITYPE = 2
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'QQ'
+      write(EE_UNIT) ARRAYNAME
+      do K = 0,KC
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(QQ(L,K),4)
+        enddo
+      enddo
+      ! *** Turbulence length-scale (m)
+      ITYPE = 2
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'DML'
+      write(EE_UNIT) ARRAYNAME
+      do K = 0,KC
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(DML(L,K),4)
+        enddo
+      enddo    
+      ! *** Vertical eddy visocity (m/s)
+      ITYPE = 1
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'AV'
+      write(EE_UNIT) ARRAYNAME
+      do K = 1,KC
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(AV(L,K),4)
+        enddo
+      enddo
+      ! *** Vertical eddy diffusivity (m/s)
+      ITYPE = 1
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'AB'
+      write(EE_UNIT) ARRAYNAME
+      do K = 1,KC
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(AB(L,K),4)
+        enddo
+      enddo
+    endif
+        
+    ! *** Thermal quantities
+    if( IS_ARRAY_OUT(4) == 1 )then
+      ! *** Solar radiation at top layers    
+      ITYPE = 1
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'RADTOP'
+      write(EE_UNIT) ARRAYNAME
+      do K = 1,KC
+        do L = 2,LA_Global
+          TMPVAL = RADTOP(L,K)
+          write(EE_UNIT) TMPVAL
+        enddo
+      enddo
 
-    ITYPE = 0
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'VHDXE' 
-    write(EE_UNIT) ARRAYNAME
-    do L = 2,LA_Global
-      write(EE_UNIT) REAL(VHDXE(L),4)
-    enddo
-    
-    ITYPE = 1
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'U'
-    write(EE_UNIT) ARRAYNAME
-    do K = 1,KC
-      do L = 2,LA_Global
-        write(EE_UNIT) REAL(U(L,K),4)
+      ! *** Solar radiation at bottom layers 
+      ITYPE = 1
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'RADBOT'
+      write(EE_UNIT) ARRAYNAME
+      do K = 1,KC
+        do L = 2,LA_Global
+          TMPVAL = RADBOT(L,K)
+          write(EE_UNIT) TMPVAL
+        enddo
       enddo
-    enddo
-    
-    ITYPE = 1
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'V'
-    write(EE_UNIT) ARRAYNAME
-    do K = 1,KC
-      do L = 2,LA_Global
-        write(EE_UNIT) REAL(V(L,K),4)
-      enddo
-    enddo
-    
-    ITYPE = 1
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'DU1'
-    write(EE_UNIT) ARRAYNAME
-    do K = 1,KC
-      do L = 2,LA_Global
-        write(EE_UNIT) REAL(DZCU(L,K),4)
-      enddo
-    enddo
-    
-    ITYPE = 1
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'DV1'
-    write(EE_UNIT) ARRAYNAME
-    do K = 1,KC
-      do L = 2,LA_Global
-        write(EE_UNIT) REAL(DZCV(L,K),4)
-      enddo
-    enddo
-    
-    ITYPE = 1
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'DU'
-    write(EE_UNIT) ARRAYNAME
-    do K = 1,KC
-      do L = 2,LA_Global
-        write(EE_UNIT) REAL(DU(L,K),4)
-      enddo
-    enddo
-    
-    ITYPE = 1
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'DV'
-    write(EE_UNIT) ARRAYNAME
-    do K = 1,KC
-      do L = 2,LA_Global
-        write(EE_UNIT) REAL(DV(L,K),4)
-      enddo
-    enddo
-    
-    ITYPE = 0
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'TBX' 
-    write(EE_UNIT) ARRAYNAME
-    do L = 2,LA_Global
-      write(EE_UNIT) REAL(TBX(L),4)
-    enddo
+      if( ISTOPT(2) == 1 .or. ISTOPT(2) == 2) then
+        ! *** Long wave solar radiation heat flux        
+        ITYPE = 0
+        write(EE_UNIT) ITYPE, ITIMEVAR
+        ARRAYNAME = 'HBLW' 
+        write(EE_UNIT) ARRAYNAME
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(HW_OUT(L),4)
+        enddo
+        ! *** Latent heat flux        
+        ITYPE = 0
+        write(EE_UNIT) ITYPE, ITIMEVAR
+        ARRAYNAME = 'HBCV' 
+        write(EE_UNIT) ARRAYNAME
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(HL_OUT(L),4)
+        enddo
+        ! *** Sensible heat flux        
+        ITYPE = 0
+        write(EE_UNIT) ITYPE, ITIMEVAR
+        ARRAYNAME = 'HBEV' 
+        write(EE_UNIT) ARRAYNAME
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(HS_OUT(L),4)
+        enddo
+      endif
+    endif
 
-    ITYPE = 0
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'TBY' 
-    write(EE_UNIT) ARRAYNAME
-    do L = 2,LA_Global
-      write(EE_UNIT) REAL(TBY(L),4)
-    enddo
-
-    ITYPE = 0
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'TSX' 
-    write(EE_UNIT) ARRAYNAME
-    do L = 2,LA_Global
-      write(EE_UNIT) REAL(TSX(L),4)
-    enddo
-
-    ITYPE = 0
-    write(EE_UNIT) ITYPE, ITIMEVAR
-    ARRAYNAME = 'TSY' 
-    write(EE_UNIT) ARRAYNAME
-    do L = 2,LA_Global
-      write(EE_UNIT) REAL(TSY(L),4)
-    enddo
+    ! *** Water Quality quantities
+    if( IS_ARRAY_OUT(5) == 1 )then
+      ! *** Reareation rate (1/day)
+      ITYPE = 0
+      write(EE_UNIT) ITYPE, ITIMEVAR
+      ARRAYNAME = 'WQREA'
+      write(EE_UNIT) ARRAYNAME
+      do L = 2,LA_Global
+        write(EE_UNIT) REAL(WQRREA(L),4)
+      enddo
+      
+      !*** Algae Kinetic rate
+      ITYPE = 0
+      do NAL = 1, NALGAE
+        write(SNUM,'(I2.2)') NAL
+        ! *** Growth rate
+        write(EE_UNIT) ITYPE, ITIMEVAR
+        ARRAYNAME = 'WQPA_'//SNUM
+        write(EE_UNIT) ARRAYNAME
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(WQPA(L,NAL),4)
+        enddo
+        ! *** Metabolism rate
+        write(EE_UNIT) ITYPE, ITIMEVAR
+        ARRAYNAME = 'WQBM_'//SNUM
+        write(EE_UNIT) ARRAYNAME
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(WQBM(L,NAL),4)
+        enddo
+        ! *** Death/predation rate
+        write(EE_UNIT) ITYPE, ITIMEVAR
+        ARRAYNAME = 'WQPR_'//SNUM
+        write(EE_UNIT) ARRAYNAME
+        do L = 2,LA_Global
+          write(EE_UNIT) REAL(WQPR(L,NAL),4)
+        enddo
+      enddo
+    endif
+    
 
     !IF( .FALSE. )then
     !  ITYPE = 0
@@ -2536,47 +2644,6 @@ SUBROUTINE ARRAYSOUT
     !    write(EE_UNIT) TMPVAL
     !  enddo
     !
-    !  ITYPE = 2
-    !  write(EE_UNIT) ITYPE, ITIMEVAR
-    !  ARRAYNAME = 'QQ'
-    !  write(EE_UNIT) ARRAYNAME
-    !  do K = 0,KC
-    !    do L = 2,LA_Global
-    !      write(EE_UNIT) REAL(QQ(L,K),4)
-    !    enddo
-    !  enddo
-    !ENDIF
-    !
-    !IF( KC > 1 )then
-    !  ITYPE = 2
-    !  write(EE_UNIT) ITYPE, ITIMEVAR
-    !  ARRAYNAME = 'DML'
-    !  write(EE_UNIT) ARRAYNAME
-    !  do K = 0,KC
-    !    do L = 2,LA_Global
-    !      write(EE_UNIT) REAL(DML(L,K),4)
-    !    enddo
-    !  enddo    
-    !
-    !  ITYPE = 1
-    !  write(EE_UNIT) ITYPE, ITIMEVAR
-    !  ARRAYNAME = 'AV'
-    !  write(EE_UNIT) ARRAYNAME
-    !  do K = 1,KC
-    !    do L = 2,LA_Global
-    !      write(EE_UNIT) REAL(AV(L,K),4)
-    !    enddo
-    !  enddo
-    !
-    !  ITYPE = 1
-    !  write(EE_UNIT) ITYPE, ITIMEVAR
-    !  ARRAYNAME = 'AB'
-    !  write(EE_UNIT) ARRAYNAME
-    !  do K = 1,KC
-    !    do L = 2,LA_Global
-    !      write(EE_UNIT) REAL(AB(L,K),4)
-    !    enddo
-    !  enddo
     !ENDIF
     !
     !IF( (ISTRAN(1) + ISTRAN(2)) > 0 )then
@@ -2822,11 +2889,6 @@ SUBROUTINE ARRAYSOUT
     !    write(EE_UNIT) REAL(HLCOARE(L),4)
     !  enddo
     !ENDIF
-    
-    
-    
-    
-    
     
     !ITYPE = 1
     !WRITE(EE_UNIT) ITYPE, ITIMEVAR
@@ -3203,7 +3265,7 @@ END SUBROUTINE
 
 INTEGER(IK8) FUNCTION FILESIZE(FNAME)
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
   character*(*), intent(IN) :: FNAME
   integer(IK4) :: ISTAT

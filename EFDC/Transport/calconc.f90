@@ -21,8 +21,6 @@ SUBROUTINE CALCONC
   !    2014-09       PAUL M. CRAIG     ADDED THE LWET BYPASS APPROACH
   !    2014-08       D H CHUNG         SET EXPLICIT PRECISIONS OF INTEGER & REAL
   !    2011-03       PAUL M. CRAIG     MERGED LATEST CODES AND RESTRUCTURED, ADDED OMP
-  !    2002-05       John Hamrick      Modified calls to calbal and budget subroutines
-  !                                     added calls to bal2t2, bal2t3
   !------------------------------------------------------------------------------------------------!
 
   use GLOBAL
@@ -225,7 +223,7 @@ SUBROUTINE CALCONC
   ! ****************************************************************************
   ! *** MPI communication for FUHUD, FVHUD & FWUU
   !$OMP SINGLE
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TTDS = DSTIME(0)
 
   call Communicate_CON2
@@ -309,7 +307,7 @@ SUBROUTINE CALCONC
   endif
 
   TTDS2 = DSTIME(0)
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TWAIT = TWAIT + (DSTIME(0)- TTDS2)
 
   TSADV = TSADV + (DSTIME(0)-TTDS1) - TMPITMP - TWAIT
@@ -332,7 +330,7 @@ SUBROUTINE CALCONC
     !$OMP PARALLEL DO PRIVATE(ND,LF,LL,LP,L,K,RCDZKK,CCUBTMP,CCMBTMP,RCDZKMK,IW) SCHEDULE(STATIC,1)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
     
       ! -------------------------------------------------------------------------------
       ! *** COMPUTE THE DIFFUSIVE FLUXES
@@ -414,7 +412,7 @@ SUBROUTINE CALCONC
       !$OMP DO PRIVATE(ND,L,K,LF,LL,LP,NS) SCHEDULE(STATIC,1)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
 
         ! *** WATER COLUMN
         do K = 1,KC
@@ -441,7 +439,7 @@ SUBROUTINE CALCONC
       !$OMP DO PRIVATE(ND,L,K,LF,LL,LP,NS) SCHEDULE(STATIC,1)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
 
         ! *** WATER COLUMN
         do K = 1,KC
@@ -483,7 +481,9 @@ SUBROUTINE CALCONC
   if( ISPROPWASH == 2 )then
     ! *** If using propeller momentum, compute propeller velocities at every timestep, but skip if computing below
     if( .not. ((SEDTIME+DELT) >= SEDSTEP .and. (ISTRAN(6) >= 1 .or. ISTRAN(7) >= 1 ) .and. TIMEDAY >= SEDSTART) )then
-      call Propwash_Calc_Sequence(1)
+      if( IS2TIM > 0 .or. NCTBC /= 1 )then
+        call Propwash_Calc_Sequence(1)
+      endif
     endif
   endif
 

@@ -136,10 +136,10 @@ SUBROUTINE WAVEBL
   !$OMP DO PRIVATE(ND,L,LF,LL,WDEP1,WPRD,RRLS)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
         
     do L = LF,LL
-      WV(L).HEIGHT = MIN(0.75*HP(L),WV(L).HEISIG)                     ! *** INCLUDING BREAKING WAVE
+      WV(L).HEIGHT = min(0.75*HP(L),WV(L).HEISIG)                     ! *** INCLUDING BREAKING WAVE
       if( WV(L).HEIGHT >= WHMI .and. HP(L) > HDRYWAV )then
         WDEP1 = HP(L)
         WPRD  = 2.*PI/WV(L).FREQ
@@ -147,8 +147,8 @@ SUBROUTINE WAVEBL
           call BISEC(DISRELATION,WLMIN,WLMAX,EPS,WPRD,WDEP1,0._8,0._8,RRLS)
           WV(L).LENGTH = RRLS
         endif
-        WV(L).K   = MAX( 2.*PI/WV(L).LENGTH, 0.01 )                   ! *** ANGULAR WAVE NUMBER (RAD/M)
-        WV(L).KHP = MIN(WV(L).K*HP(L),SHLIM)
+        WV(L).K   = max( 2.*PI/WV(L).LENGTH, 0.01 )                   ! *** ANGULAR WAVE NUMBER (RAD/M)
+        WV(L).KHP = min(WV(L).K*HP(L),SHLIM)
       endif
     enddo
   enddo
@@ -172,12 +172,12 @@ SUBROUTINE WAVEBL
   !$OMP DO PRIVATE(ND,L,LF,LL,AEXTMP,UWORBIT,VISMUDD,REYWAVE,RA,FCW,CDTMP)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do L= LF,LL  !2,LA
       ! *** SET ZBRE AS N IKURADSE ROUGHNESS
       if( ISTRAN(7) > 0 )then
         ! *** BASE ON NIKURADSE ROUGHNESS (APPROXIMATE 2.5*D50)
-        ZBRE(L) = MAX(SEDDIA50(L,KBT(L)),1E-6)*2.5
+        ZBRE(L) = max(SEDDIA50(L,KBT(L)),1E-6)*2.5
       else
         ZBRE(L) = KSW    !Z0 = KSW/30
       endif
@@ -208,10 +208,10 @@ SUBROUTINE WAVEBL
         elseif( REYWAVE>5D5 .and. RA <= 1.57 )then
           !** TURBULENT ROUGH WAVE BOUNDARY LAYER
           FCW = EXP(5.2*RA**(-0.19)-6)    ! *** Baird's paper
-          FCW = MIN(FCW,0.3)
+          FCW = min(FCW,0.3)
         endif
         CDTMP = 0.5*FCW
-        QQWV1(L) = MIN(CDTMP*UWORBIT*UWORBIT,QQMAX)
+        QQWV1(L) = min(CDTMP*UWORBIT*UWORBIT,QQMAX)
 
       else
         QQWV1(L) = 0.

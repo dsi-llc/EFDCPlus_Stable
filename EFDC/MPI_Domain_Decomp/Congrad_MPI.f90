@@ -144,10 +144,10 @@ SUBROUTINE CONGRAD_MPI()  !NOPTIMAL(0),LDMOPT(0))
 
     ! *** IF the tolerance on the residual has been met then exit the iteration loop
     if( RSQ <= RSQM )then
-      EXIT
+      exit
     endif
 
-    call MPI_barrier(MPI_Comm_World, IERR)
+    call MPI_barrier(DSIcomm, IERR)
     TTDS2 = DSTIME(0)
     call Communicate_Ghost_Cells(PCG, 'PCG')
     TMPCOMM = TMPCOMM + (DSTIME(0)-TTDS2)

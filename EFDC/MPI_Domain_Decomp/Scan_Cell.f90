@@ -125,8 +125,8 @@ Subroutine Scan_Cell
   endif
 
   ! *** Broadcast the IJCT values
-  call MPI_BCAST(IJCT_Read_In, size(IJCT_Read_In), MPI_Integer, master_id, comm_2d, ierr)
-  call MPI_BARRIER(comm_2d, ierr)
+  call MPI_BCAST(IJCT_Read_In, size(IJCT_Read_In), MPI_Integer, master_id, DSIcomm, ierr)
+  call MPI_BARRIER(DSIcomm, ierr)
 
   IB(1) = 1
   IE(1) = ic_decomp(1) 

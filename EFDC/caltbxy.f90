@@ -201,13 +201,13 @@ SUBROUTINE CALTBXY
     do L = 2,LA
       if( ZBR(L) <= 1.E-6 )then
         ICALTB = 1   ! *** SET BOTTOM DRAG APPROACH TO EFDCPLUS APPROACH
-        EXIT
+        exit
       endif
     enddo
     
     ! ****************************************************************************
     ! *** MPI communication
-    call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(DSIcomm, ierr)
     call communicate_ghost_cells(ZBRATU, 'ZBRATU')
     call communicate_ghost_cells(ZBRATV, 'ZBRATV')
     call communicate_ghost_cells(SGZUU)
@@ -216,9 +216,9 @@ SUBROUTINE CALTBXY
 
   endif   ! *** End of first call initializations
 
-  if( ISWAVE > 0 )then
+  if( ISWAVE == 2 .or. ISWAVE == 4 )then
     ! *** COMPUTE RAMPUP FACTOR
-    NTMP = MAX(N,1)  
+    NTMP = max(N,1)  
     if( NTMP < NTSWV )then  
       TMPVALW = FLOAT(NTMP)/FLOAT(NTSWV)  
       WVFACT = 0.5-0.5*COS(PI*TMPVALW)  
@@ -280,7 +280,7 @@ SUBROUTINE CALTBXY
     !$OMP    PRIVATE(TAUBTMP,TAUE,RIPAMP,RIPSTP,RIPFAC,QQWVTMP)
     do ND = 1,NDM  
       LF = 1 + (ND-1)*LDMW  
-      LL = MIN(LF + LDMW-1,NWVCELLS)
+      LL = min(LF + LDMW-1,NWVCELLS)
 
       ! *** Update water column turbulent intensity by wave action
       do LWAVE = LF,LL  
@@ -309,7 +309,7 @@ SUBROUTINE CALTBXY
           CDRGTMP = (30.*ZBRE(L)/AEXTMP)**0.2  
           CDRGTMP = 5.57*CDRGTMP-6.13  
           CDRGTMP = EXP(CDRGTMP)  
-          CDRGTMP = MIN(CDRGTMP,0.22)  
+          CDRGTMP = min(CDRGTMP,0.22)  
           TAUTMP = 0.5*CDRGTMP*UWVSQ(L)   
 
           ! *** Recalculate Turbulent Intensity due to waves
@@ -335,7 +335,7 @@ SUBROUTINE CALTBXY
             RIPAMP = RIPAMP*WV(L).HEIGHT/SINH(WV(L).KHP)
             TMPVAL = 0.
             if( RIPAMP>0.) TMPVAL = LOG(RIPAMP/ZBRE(L))-1.
-            TMPVAL = MAX(TMPVAL,0.)
+            TMPVAL = max(TMPVAL,0.)
             RIPFAC = 1. + 3.125*TMPVAL*TMPVAL*RIPSTP
             QQWV3(L) = RIPFAC*QQWVTMP
           else
@@ -360,7 +360,7 @@ SUBROUTINE CALTBXY
     !$OMP    PRIVATE(ZDHZRU,ZDHZRV,HZRUDZ,HZRVDZ,DWUD2Z,DWVD2Z,DWUDZ,DWVDZ,DWUDHR,DWVDHR,CDTMPUX,CDTMPVY)
     do ND = 1,NDM  
       LF = 1 + (ND-1)*LDMW  
-      LL = MIN(LF + LDMW-1,NWVCELLS)
+      LL = min(LF + LDMW-1,NWVCELLS)
 
       ! *** Update bed drag coefficients STBX and STBY based on wave and current angles
       do LWAVE = LF,LL  
@@ -483,8 +483,8 @@ SUBROUTINE CALTBXY
             
           STBX(L) = STBXO(L)*CDTMPU
           STBY(L) = STBYO(L)*CDTMPV  
-          STBX(L) = MIN(CDMAXU,STBX(L))
-          STBY(L) = MIN(CDMAXV,STBY(L))
+          STBX(L) = min(CDMAXU,STBX(L))
+          STBY(L) = min(CDMAXV,STBY(L))
  
         endif
       enddo  ! *** END OF LWAVE LOOP
@@ -506,7 +506,7 @@ SUBROUTINE CALTBXY
   !$OMP    PRIVATE(itr,rr,ztemp,z0b_gotm,GTAUB)
   do ND = 1,NDM  
     LF = (ND-1)*LDMWET + 1  
-    LL = MIN(LF + LDMWET-1,LAWET)
+    LL = min(LF + LDMWET-1,LAWET)
     
     if( ISGOTM > 0 .and. IFRICTION == 1 )then  
       do LP = LF,LL
@@ -535,15 +535,15 @@ SUBROUTINE CALTBXY
           ! *** HU & HV - FLOW DEPTHS AT CELL INTERFACE
           HUDZBR = HU(L)/ZBRATU(L)
           HVDZBR = HV(L)/ZBRATV(L)  
-          HUDZBR = MAX(HUDZBR,7.5)
-          HVDZBR = MAX(HVDZBR,7.5)
+          HUDZBR = max(HUDZBR,7.5)
+          HVDZBR = max(HVDZBR,7.5)
             
           ! *** NEZU & NAKAGAWA (1993) WHERE THE WAKE parameter IS 0.2  FOR TURBULENT CONDITIONS.  -0.8 = WAKE - 1.
           STBX(L) = (VKC/(LOG( HUDZBR ) - 0.8))**2 
           STBY(L) = (VKC/(LOG( HVDZBR ) - 0.8))**2  
               
-          STBX(L) = MIN(CDMAXU, STBX(L) )
-          STBY(L) = MIN(CDMAXV, STBY(L) )
+          STBX(L) = min(CDMAXU, STBX(L) )
+          STBY(L) = min(CDMAXV, STBY(L) )
         endif
       enddo
       
@@ -573,8 +573,8 @@ SUBROUTINE CALTBXY
             if( VMAGTMP > 0.0) VISDHV = (VISMUDV*HVI(L)/VMAGTMP)*VISEXP
             STBX(L) = VISFAC*STBXO(L)*VISDHU
             STBY(L) = VISFAC*STBYO(L)*VISDHV
-            STBX(L) = MIN(CDMAXU,STBX(L))  
-            STBY(L) = MIN(CDMAXV,STBY(L))  
+            STBX(L) = min(CDMAXU,STBX(L))  
+            STBY(L) = min(CDMAXV,STBY(L))  
         
           elseif( ISAVCOMP > 0 )then  
             ! ***  BEGIN ROUGH DRAG FORMULATION  
@@ -586,27 +586,27 @@ SUBROUTINE CALTBXY
               CDMAXV = CDLIMIT*STBYO(L)*HV(L)/( DELT*VMAGTMP )  
     
               ! *** HURTMP & HVRTMP - FLOW DEPTHS AT FACE
-              HURTMP = MAX(ZBRATU(L), H1U(L))
-              HVRTMP = MAX(ZBRATV(L), H1V(L))
+              HURTMP = max(ZBRATU(L), H1U(L))
+              HVRTMP = max(ZBRATV(L), H1V(L))
     
               ! *** HANDLE LAYER ISSUES              
               if( KSZ(L) == KC )then    ! *** Alberta
                 HUDZBR = 0.5*HURTMP/ZBRATU(L)  
-                HUDZBR = MAX(HUDZBR,7.5)
+                HUDZBR = max(HUDZBR,7.5)
                 HVDZBR = 0.5*HVRTMP/ZBRATV(L)  
-                HVDZBR = MAX(HVDZBR,7.5)
+                HVDZBR = max(HVDZBR,7.5)
                 STBX(L) = STBXO(L)*0.16/( (LOG( HUDZBR ) -1.)**2)  
                 STBY(L) = STBYO(L)*0.16/( (LOG( HVDZBR ) -1.)**2)  
               else                
                 DZHUDZBR = 1. + SGZUU(L,KSZU(L))*HURTMP/ZBRATU(L)
                 DZHVDZBR = 1. + SGZVV(L,KSZV(L))*HVRTMP/ZBRATV(L)
-                DZHUDZBR = MAX(DZHUDZBR,7.5)  ! *** APPLY THE SAME LIMIT AS KC = 1
-                DZHVDZBR = MAX(DZHVDZBR,7.5)  ! *** APPLY THE SAME LIMIT AS KC = 1
+                DZHUDZBR = max(DZHUDZBR,7.5)  ! *** APPLY THE SAME LIMIT AS KC = 1
+                DZHVDZBR = max(DZHVDZBR,7.5)  ! *** APPLY THE SAME LIMIT AS KC = 1
                 STBX(L) = STBXO(L)*0.16/((LOG(DZHUDZBR))**2)  
                 STBY(L) = STBYO(L)*0.16/((LOG(DZHVDZBR))**2) 
               endif
-              STBX(L) = MIN(CDMAXU, STBX(L) )
-              STBY(L) = MIN(CDMAXV, STBY(L) )
+              STBX(L) = min(CDMAXU, STBX(L) )
+              STBY(L) = min(CDMAXV, STBY(L) )
     
             elseif( ICALTB == 2 )then
               ! *** LEGACY VERSION
@@ -616,16 +616,16 @@ SUBROUTINE CALTBXY
               CDMAXV = CDLIMIT*STBYO(L)*H1V(L)/( DELT*VMAGTMP )  
     
               ! *** HURTMP & HVRTMP - FLOW DEPTHS AT FACE
-              HURTMP = MAX(ZBRATU(L), H1U(L))
-              HVRTMP = MAX(ZBRATV(L), H1V(L))
+              HURTMP = max(ZBRATU(L), H1U(L))
+              HVRTMP = max(ZBRATV(L), H1V(L))
     
               DZHUDZBR = 1. + SGZUU(L,KSZU(L))*HURTMP/ZBRATU(L)
               DZHVDZBR = 1. + SGZVV(L,KSZV(L))*HVRTMP/ZBRATV(L)
             
               STBX(L) = STBXO(L)*.16/((LOG(DZHUDZBR))**2)  
               STBY(L) = STBYO(L)*.16/((LOG(DZHVDZBR))**2) 
-              STBX(L) = MIN(CDMAXU, STBX(L) )
-              STBY(L) = MIN(CDMAXV, STBY(L) )
+              STBX(L) = min(CDMAXU, STBX(L) )
+              STBY(L) = min(CDMAXV, STBY(L) )
             endif
           endif  
         endif  
@@ -667,8 +667,8 @@ SUBROUTINE CALTBXY
           UMAGTMP = SQRT( U(L,K)*U(L,K)   + VTMPATU*VTMPATU + 1.E-12 )   ! *** Magnitude of velocity at U face
           VMAGTMP = SQRT( UTMPATV*UTMPATV + V(L,K)*V(L,K)   + 1.E-12 )   ! *** Magnitude of velocity at V face
                   
-          UMAGTMP = MAX(UMAGTMP,UVEGSCL)  
-          VMAGTMP = MAX(VMAGTMP,UVEGSCL)  
+          UMAGTMP = max(UMAGTMP,UVEGSCL)  
+          VMAGTMP = max(VMAGTMP,UVEGSCL)  
           CDMAXU  = CDLIMIT*STBXO(L)*H1U(L)/( DELT*UMAGTMP )
           CDMAXV  = CDLIMIT*STBYO(L)*H1V(L)/( DELT*VMAGTMP ) 
           
@@ -696,9 +696,9 @@ SUBROUTINE CALTBXY
                             
                 ! *** HANDLE LAYER ISSUES
                 if( KSZ(L) == KC )then
-                  HVGTC = MIN(HEIGHT_MAC(L ,NAL),HP(L ))  
-                  HVGTW = MIN(HEIGHT_MAC(LW,NAL),HP(LW))  
-                  HVGTS = MIN(HEIGHT_MAC(LS,NAL),HP(LS))  
+                  HVGTC = min(HEIGHT_MAC(L ,NAL),HP(L ))  
+                  HVGTW = min(HEIGHT_MAC(LW,NAL),HP(LW))  
+                  HVGTS = min(HEIGHT_MAC(LS,NAL),HP(LS))  
                 else   !IF( MVEGL(L)<91 )then
                   FRACLAY = Z(L,K)
                   FHLAYC = FRACLAY*HP(L)  
@@ -710,17 +710,17 @@ SUBROUTINE CALTBXY
                   if( HEIGHT_MAC(L,NAL) < FHLAYC )then         
                     ! *** GRADUALLY DECREASE MACROPHYTE EFFECTS  (PMC)
                     HVGTC = HEIGHT_MAC(L,1)-HP(L)*Z(L,K-1)
-                    HVGTC = MAX(HVGTC,0.)
+                    HVGTC = max(HVGTC,0.)
                   endif
                   if( HEIGHT_MAC(LW,NAL) < FHLAYW )then 
                     ! *** GRADUALLY DECREASE MACROPHYTE EFFECTS  (PMC)
                     HVGTW = HEIGHT_MAC(LW,NAL)-HP(LW)*Z(L,K-1)
-                    HVGTW = MAX(HVGTW,0.)
+                    HVGTW = max(HVGTW,0.)
                   endif
                   if( HEIGHT_MAC(LS,NAL) < FHLAYS )then
                     ! *** GRADUALLY DECREASE MACROPHYTE EFFECTS  (PMC)
                     HVGTS = HEIGHT_MAC(LS,NAL)-HP(LS)*Z(L,K-1)
-                    HVGTS = MAX(HVGTS,0.)
+                    HVGTS = max(HVGTS,0.)
                   endif
                 endif
                 
@@ -732,8 +732,8 @@ SUBROUTINE CALTBXY
               endif
             enddo
             
-            FXVEG(L,K) = MIN(FXVEG(L,K),CDMAXU)  
-            FYVEG(L,K) = MIN(FYVEG(L,K),CDMAXV)
+            FXVEG(L,K) = min(FXVEG(L,K),CDMAXU)  
+            FYVEG(L,K) = min(FYVEG(L,K),CDMAXV)
             
             VEGK(L) = VEGK(L) + HVGTC*HPKI(L,K)
                     
@@ -767,9 +767,9 @@ SUBROUTINE CALTBXY
               
             ! *** HANDLE LAYER ISSUES
             if( KSZ(L) == KC )then    ! *** Alberta
-              HVGTC = MIN(HPVEG(M),HP(L))  
-              HVGTW = MIN(HPVEG(MW),HP(LW))  
-              HVGTS = MIN(HPVEG(MS),HP(LS))  
+              HVGTC = min(HPVEG(M),HP(L))  
+              HVGTW = min(HPVEG(MW),HP(LW))  
+              HVGTS = min(HPVEG(MS),HP(LS))  
             else   !IF( MVEGL(L)<91 )then
               FRACLAY = Z(L,K) 
               FHLAYC = FRACLAY*HP(L)  
@@ -781,17 +781,17 @@ SUBROUTINE CALTBXY
               if( HPVEG(M) < FHLAYC )then         
                 ! *** GRADUALLY DECREASE VEGETATION EFFECTS  (PMC)
                 HVGTC = HPVEG(M)-HP(L)*Z(L,K-1)
-                HVGTC = MAX(HVGTC,0.)
+                HVGTC = max(HVGTC,0.)
               endif
               if( HPVEG(MW) < FHLAYW )then 
                 ! *** GRADUALLY DECREASE VEGETATION EFFECTS  (PMC)
                 HVGTW = HPVEG(MW)-HP(LW)*Z(L,K-1)
-                HVGTW = MAX(HVGTW,0.)
+                HVGTW = max(HVGTW,0.)
               endif
               if( HPVEG(MS) < FHLAYS )then
                 ! *** GRADUALLY DECREASE VEGETATION EFFECTS  (PMC)
                 HVGTS = HPVEG(MS)-HP(LS)*Z(L,K-1)
-                HVGTS = MAX(HVGTS,0.)
+                HVGTS = max(HVGTS,0.)
               endif
             endif
             
@@ -800,8 +800,8 @@ SUBROUTINE CALTBXY
                                       DXP(LW)*(BDLPSQ(MW)*HVGTW/PVEGZ(MW)))*DXIU(L)  
             FYVEG(L,K) = 0.25*CPVEGV*(DYP(L) *(BDLPSQ(M) *HVGTC/PVEGZ(M)) +   &          ! *** dimensionless
                                       DYP(LS)*(BDLPSQ(MS)*HVGTS/PVEGZ(MS)))*DYIV(L)  
-            FXVEG(L,K) = MIN(FXVEG(L,K),CDMAXU)  
-            FYVEG(L,K) = MIN(FYVEG(L,K),CDMAXV)
+            FXVEG(L,K) = min(FXVEG(L,K),CDMAXU)  
+            FYVEG(L,K) = min(FYVEG(L,K),CDMAXV)
 
             ! *** ACCUMULATE ACTIVE VEGETATION LAYERS
             VEGK(L) = VEGK(L) + HVGTC*HPKI(L,K)
@@ -834,13 +834,13 @@ SUBROUTINE CALTBXY
         HCHAN = HCHAN/RLCHN  
         ZBRATUC = 0.5*DYP(LCHNU)*ZBR(LCHNU) + CHANLEN(NMD)*ZBR(LHOST)  
         ZBRATUC = ZBRATUC/RLCHN  
-        HURTMP = MAX(ZBRATUC,HCHAN)  
+        HURTMP = max(ZBRATUC,HCHAN)  
         HUDZBR = HURTMP/ZBRATUC  
         if( HUDZBR < 7.5) HUDZBR = 7.5  
         STBXCH = 0.16/( (LOG( HUDZBR ) -1.)**2)  
         CDMAXU = HCHAN*HCHAN*WCHAN/( DELT*(QCHANU(NMD) + 1.E-12) )  
-        STBXCH = MAX(STBXCH,CDMAXU)  
-        STBXCH = MAX(STBXCH,0.1)  
+        STBXCH = max(STBXCH,CDMAXU)  
+        STBXCH = max(STBXCH,0.1)  
         FXVEGCH = 0.0  
         if( MU > 0 ) FXVEGCH = 0.5*( 0.5*DYP(LCHNU)*(BDLPSQ(MU)*H1P(LCHNU)/PVEGZ(MU))  &
                                    + CHANLEN(NMD)*(BDLPSQ(MH)*H1P(LHOST)/PVEGZ(MH)) )/RLCHN  
@@ -857,13 +857,13 @@ SUBROUTINE CALTBXY
         HCHAN = HCHAN/RLCHN  
         ZBRATVC = 0.5*DXP(LCHNV)*ZBR(LCHNV) + CHANLEN(NMD)*ZBR(LHOST)  
         ZBRATVC = ZBRATVC/RLCHN  
-        HVRTMP = MAX(ZBRATVC,HCHAN)  
+        HVRTMP = max(ZBRATVC,HCHAN)  
         HVDZBR = HVRTMP/ZBRATVC  
         if( HVDZBR < 7.5) HVDZBR = 7.5  
         STBYCH = 0.16/( (LOG( HVDZBR ) -1.)**2)  
         CDMAXV = HCHAN*HCHAN*WCHAN/( DELT*(QCHANV(NMD) + 1.E-12) )  
-        STBYCH = MAX(STBYCH,CDMAXV)  
-        STBYCH = MAX(STBYCH,0.1)  
+        STBYCH = max(STBYCH,CDMAXV)  
+        STBYCH = max(STBYCH,0.1)  
         FYVEGCH = 0.0  
         if( MV > 0 ) FYVEGCH = 0.5*(0.5*DXP(LCHNV)*(BDLPSQ(MV)*H1P(LCHNV)/PVEGZ(MV))  &
                                   + CHANLEN(NMD)*(BDLPSQ(MH)*H1P(LHOST)/PVEGZ(MH)) )/RLCHN  

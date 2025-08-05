@@ -86,7 +86,7 @@
   logical, dimension(2)  :: is_periodic   !< Tells you if one of the directions is periodic
   logical :: reorder                      !< Boolean indicating if MPI should reorder and find a good way to assign
                                           !<       the process to the elements of the decomposition
-  integer :: comm_2d                      !< New communicator for the MPI topology routines
+  integer :: DSIcomm                      !< New communicator for the MPI topology routines
 
   ! *** For new drifter routines
   integer :: NPD_TOT

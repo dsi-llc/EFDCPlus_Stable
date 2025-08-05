@@ -99,7 +99,7 @@ SUBROUTINE MHKPWRDIS
       if( ZBOTTOM > ZMAXMHK(M,L) ) CYCLE !layer is above device
       if( ZTOP >= ZMAXMHK(M,L) .and. ZBOTTOM <= ZMINMHK(M,L) )then  ! device is wholly contained in this layer (special case)
         LAYFRACM(K) = (ZMAXMHK(M,L)-ZMINMHK(M,L))/(HP(L)*DZC(L,K))    ! calculate fraction of layer that is occupied
-        EXIT
+        exit
       endif
       if( ZMAXMHK(M,L) >= ZTOP .and. ZMINMHK(M,L) <= ZBOTTOM )then  ! this layer is fully occupied by the device
         LAYFRACM(K) = 1.0
@@ -125,7 +125,7 @@ SUBROUTINE MHKPWRDIS
       if( ZBOTTOM>ZMAXSUP(M,L)) CYCLE                               ! layer is above support
       if( ZTOP >= ZMAXSUP(M,L) .and. ZBOTTOM <= ZMINSUP(M,L) )then ! support is wholly contained in this layer (special case)
         LAYFRACS(K) = (ZMAXSUP(M,L)-ZMINSUP(M,L))/(HP(L)*DZC(L,K))   ! calculate fraction of layer that is occupied
-        EXIT
+        exit
       endif
       if( ZMAXSUP(M,L) >= ZTOP .and. ZMINSUP(M,L) <= ZBOTTOM )then ! this layer is fully occupied by the support
         LAYFRACS(K) = 1.0
@@ -170,7 +170,7 @@ SUBROUTINE MHKPWRDIS
       if( FS_SF <  0.01 )SPDS = 0.0                          ! flow is OUT of south face
       if( FS_WF <  0.01 )SPDW = 0.0                          ! flow is OUT of west face
       if( FS_EF > -0.01 )SPDE = 0.0                          ! flow is OUT of east face
-      MAXSPD = MAX(SPDN,SPDS,SPDE,SPDW)                      ! identify maximum speed
+      MAXSPD = max(SPDN,SPDS,SPDE,SPDW)                      ! identify maximum speed
 
       if( UPSTREAM == 1 )then         ! use the upstream flowspeed to assess power extraction (not typical)
         ! what face is it on?

@@ -235,9 +235,9 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
   call Broadcast_Scalar(ISPNHYDS,   master_id)
   call Broadcast_Scalar(ISPROPWASH, master_id)
 
-  MTM = MAX(1,MTIDE)+1
-  NWSERM = MAX(1,NWSER)
-  NASERM = MAX(1,NASER)
+  MTM = max(1,MTIDE)+1
+  NWSERM = max(1,NWSER)
+  NASERM = max(1,NASER)
   NGWSERM = 1
   NDASER = 1
   NDGWSER = 1
@@ -256,12 +256,12 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
   call Broadcast_Scalar(NPSER,  master_id)
   call Broadcast_Scalar(PDGINIT,master_id)
 
-  NPBSM = MAX(1,NPBS)
-  NPBWM = MAX(1,NPBW)
-  NPBEM = MAX(1,NPBE)
-  NPBNM = MAX(1,NPBN)
-  NPSERM = MAX(1,NPSER)
-  NPFORM = MAX(1,NPFOR,NPSER)
+  NPBSM = max(1,NPBS)
+  NPBWM = max(1,NPBW)
+  NPBEM = max(1,NPBE)
+  NPBNM = max(1,NPBN)
+  NPSERM = max(1,NPSER)
+  NPFORM = max(1,NPFOR,NPSER)
   NDPSER = 1
 
   ! *** Allocate structures
@@ -271,14 +271,14 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
     call SEEK('C22',1)
     read(1,*,err = 10,end = 30) NDYE, NTOX, NSED, NSND, NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7, ldum
 
-    NDYE = MAX(1,NDYE)
-    NDYM = MAX(1,NDYE)
-    NTXM = MAX(1,NTOX)
-    NSCM = MAX(1,NSED)
-    NSNM = MAX(1,NSND)
-    NSEDS = MAX(1,NSED + NSND)
+    NDYE = max(1,NDYE)
+    NDYM = max(1,NDYE)
+    NTXM = max(1,NTOX)
+    NSCM = max(1,NSED)
+    NSNM = max(1,NSND)
+    NSEDS = max(1,NSED + NSND)
     
-    NCSERM = MAX(1,NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
+    NCSERM = max(1,NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
 
   endif   ! *** End on master process
 
@@ -344,13 +344,13 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
   call Broadcast_Scalar(NQCTLSER, master_id)
   call Broadcast_Scalar(NQCTRULES, master_id)
 
-  NQSIJM = MAX(1,NQSIJ)
-  NJPSM = MAX(1,NQJPIJ)
-  NQSERM = MAX(1,NQSER)
-  NQCTLM = MAX(1,NQCTL)
-  NQCTTM = MAX(1,NQCTLT)
-  NQWRM = MAX(1,NQWR)
-  NQWRSRM = MAX(1,NQWRSR)
+  NQSIJM = max(1,NQSIJ)
+  NJPSM = max(1,NQJPIJ)
+  NQSERM = max(1,NQSER)
+  NQCTLM = max(1,NQCTL)
+  NQCTTM = max(1,NQCTLT)
+  NQWRM = max(1,NQWR)
+  NQWRSRM = max(1,NQWRSR)
   NDQSER = 1   ! *** Flow              : Maximum number of  points in a series
   NDQWRSR = 1  ! *** Withdrawal/Return : Maximum number of  points in a series
 
@@ -418,7 +418,7 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
     
     !IF( .not. LSEDZLJ )then
     !  ! *** SET NSCM TO THE MAXIMUM NUMBER OF SEDIMENT CLASSES
-    !  NSCM = MAX(NSCM, NSED+NSND)   delme
+    !  NSCM = max(NSCM, NSED+NSND)   delme
     !ENDIF
     
   else
@@ -497,10 +497,10 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
   call Broadcast_Scalar(NCBN,     master_id)
   call Broadcast_Scalar(IVOLTEMP, master_id)
 
-  NBBSM = MAX(1,NCBS)
-  NBBWM = MAX(1,NCBW)
-  NBBEM = MAX(1,NCBE)
-  NBBNM = MAX(1,NCBN)
+  NBBSM = max(1,NCBS)
+  NBBWM = max(1,NCBW)
+  NBBEM = max(1,NCBE)
+  NBBNM = max(1,NCBN)
 
   if( process_id == master_id )then
     call SEEK('C46A',1)
@@ -541,7 +541,7 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
 
   call Broadcast_Scalar(ISPD,   master_id)
 
-  NPDM = MAX(1,NPD)
+  NPDM = max(1,NPD)
 
   if( process_id == master_id )then
     call SEEK('C84',1)
@@ -554,15 +554,15 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
   call Broadcast_Scalar(NTSSTSP,master_id)
   call Broadcast_Scalar(TCTMSR, master_id)
 
-  MLTMSRM = MAX(1,MLTMSR)
-  NTSSTSPM = MAX(1,NTSSTSP)
+  MLTMSRM = max(1,MLTMSR)
+  NTSSTSPM = max(1,NTSSTSP)
   MTSSTSPM = 1
   if( process_id == master_id )then
     if( NTSSTSP > 0 )then
       call SEEK('C85',1)
       do ITSSS = 1,NTSSTSP
         read(1,*,err = 10,end = 30)I,M
-        MTSSTSPM = MAX(MTSSTSPM,M)
+        MTSSTSPM = max(MTSSTSPM,M)
       enddo
     endif
 
@@ -605,8 +605,8 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
     call Broadcast_Scalar(NVEGSER,master_id)
     call Broadcast_Scalar(UVEGSCL,master_id)
 
-    NVEGTPM = MAX(NVEGTPM,MVEGTYP)
-    NVEGSERM = MAX(NVEGSERM,NVEGSER)
+    NVEGTPM = max(NVEGTPM,MVEGTYP)
+    NVEGSERM = max(NVEGSERM,NVEGSER)
 
     if( process_id == master_id )then
       close(1)
@@ -625,7 +625,7 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
 
         call Broadcast_Scalar(M1, master_id)
 
-        NDVEGSER = MAX(NDVEGSER,M1)
+        NDVEGSER = max(NDVEGSER,M1)
 
         if( process_id == master_id )then
           do M = 1,M1
@@ -712,7 +712,7 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
 
         call Broadcast_Scalar(M, master_id)
 
-        NDBESER = MAX(NDBESER,M)
+        NDBESER = max(NDBESER,M)
         do I = 1,M
           if( process_id == master_id )then
             read(1,*,err = 10,end = 30)R,R,R
@@ -875,7 +875,7 @@ SUBROUTINE SCANMODC
   call OPENFILE('MODCHAN.INP')
 
 10 READ(1,*,err = 10,end = 40)M,I,I
-  NCHANM = MAX(1,M)
+  NCHANM = max(1,M)
   read(1,*,err = 20,end = 40)I,I,R
   close(1)
   return
@@ -897,10 +897,10 @@ SUBROUTINE SCANGWSR
     call OPENFILE('GWSER.INP')
 
   10 READ(1,*,err = 10,end = 40) NGWSER
-    NGWSERM = MAX(1,NGWSER)
+    NGWSERM = max(1,NGWSER)
     do NS = 1,NGWSER
       read(1,*,err = 20,end = 40)M,R,R,R,R,I
-      NDGWSER = MAX(NDGWSER,M)
+      NDGWSER = max(NDGWSER,M)
       do I = 1,M
         read(1,*,err = 20,end = 40)T,F,(R,J = 1,3+NDYE+NSED+NSND+NTOX)   ! DELME - WQ
       enddo
@@ -954,7 +954,7 @@ SUBROUTINE SCANASER
 
     call Broadcast_Scalar(M, master_id)
 
-    NDASER = MAX(NDASER,M)
+    NDASER = max(NDASER,M)
     allocate(TSATM(NA).TIM(M))
     allocate(TSATM(NA).VAL(M,7))
     
@@ -989,7 +989,7 @@ SUBROUTINE SCANASER
         !END DO
         read(1,*,err = 30,end = 40)M,R,R,R,R
         close(1)
-        NDASER = MAX(NDASER,M)
+        NDASER = max(NDASER,M)
       endif
     endif
   endif   ! *** End on master process
@@ -1026,7 +1026,7 @@ SUBROUTINE SCANSSER
 
     call Broadcast_Scalar(M, master_id)
 
-    NDCSER = MAX(NDCSER,M)
+    NDCSER = max(NDCSER,M)
 
     allocate(TSSAL(NS).VAL(M,KCM),TSSAL(NS).TIM(M))
     TSSAL(NS).NREC = M
@@ -1086,7 +1086,7 @@ SUBROUTINE SCANTSER
 
     call Broadcast_Scalar(M, master_id)
 
-    NDCSER = MAX(NDCSER,M)
+    NDCSER = max(NDCSER,M)
 
     allocate(TSTEM(NS).VAL(M,KCM),TSTEM(NS).TIM(M))
     TSTEM(NS).NREC = M
@@ -1197,12 +1197,12 @@ SUBROUTINE SCANDSER
   do NS = 1,NSER(3)
     ! *** ****************************
     if( process_id == master_id )then
-      read(1,*,err = 20,end = 40)ISTYP,M
+      read(1,*,err = 20,end = 40) ISTYP, M
     endif
     
     call Broadcast_Scalar(M, master_id)
 
-    NDCSER = MAX(NDCSER,M)
+    NDCSER = max(NDCSER,M)
 
     ! *** Allocate structure
     do MD = 1,NDYE
@@ -1212,16 +1212,18 @@ SUBROUTINE SCANDSER
       TSDYE(NS,MD).TIM(:) = 0.
     enddo
 
-    if( ISTYP == 1 )then
-      read(1,*,err = 20,end = 40)(R,K = 1,KC)
-    endif
+    if( process_id == master_id )then
+      if( ISTYP == 1 )then
+        read(1,*,err = 20,end = 40) (R, K = 1,KC)
+      endif
 
-    ! *** SKIP TO THE NEXT SERIES
-    do I = 1,M
-      do MD = 1,NDYE
-        read(1,'(A)') SKIP
+      ! *** SKIP TO THE NEXT SERIES
+      do I = 1,M
+        do MD = 1,NDYE
+          read(1,'(A)') SKIP
+        enddo
       enddo
-    enddo
+    endif
   enddo
   close(1)
   return
@@ -1251,7 +1253,7 @@ SUBROUTINE SCANSFSR
     endif
     call Broadcast_Scalar(M, master_id)
 
-    NDCSER = MAX(NDCSER,M)
+    NDCSER = max(NDCSER,M)
 
     allocate(TSSFL(NS).VAL(M,KCM),TSSFL(NS).TIM(M))
     TSSFL(NS).NREC = M
@@ -1374,7 +1376,7 @@ SUBROUTINE SCANWRSER
     
     do NS = 1,NQWRSR
 10    read(1,*,err = 10,end = 40) I ,M, R, R, R, R
-      NDQWRSR = MAX(NDQWRSR,M,1)
+      NDQWRSR = max(NDQWRSR,M,1)
     
       if( I == 0 )then
         ! *** Flow Only
@@ -1427,7 +1429,7 @@ SUBROUTINE SCANPSER
   do NS = 1,NPSER
     if( process_id == master_id )then
   10  read(1,*,err = 10,end = 40) I1, M, R, R, R, R
-      NDPSER = MAX(NDPSER,M)
+      NDPSER = max(NDPSER,M)
     endif
 
     call Broadcast_Scalar(M, master_id)
@@ -1538,7 +1540,7 @@ SUBROUTINE SCANQCTL
     STR = READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
     do NS = 1,NQCTLT
       read(1,*,IOSTAT = ISO) ISTYP, MP, HUA, HUM, HDA, HDM, R, A, A1
-      NDQCLT = MAX(NDQCLT,MP)
+      NDQCLT = max(NDQCLT,MP)
       if( ISO > 0 )GOTO 20
 
       if( ISTYP == 0 )then
@@ -1766,7 +1768,7 @@ SUBROUTINE SCANWQ
         call fson_get(item, "K", K)
         call fson_get(item, "NSR", ITMP)
         call fson_get(item, "PSQ", XPSQ)
-        NCSERM = MAX(1,NCSERM,ITMP)
+        NCSERM = max(1,NCSERM,ITMP)
       enddo
     endif
   endif   ! *** End on master process
@@ -1821,24 +1823,24 @@ SUBROUTINE SCANWQ
   call Broadcast_Array(ISKINETICS, master_id)
   call Broadcast_Array(NWQCSR,     master_id)
 
-  NWQZM   = MAX(1,NWQZ)
-  NWQPSM  = MAX(1,NWQPS)
-  NWQTDM  = MAX(1,NWQTD) 
-  NWQTSM  = MAX(1,NWQTS)
-  NSMGM   = MAX(1,NSMG)
-  NSMZM   = MAX(1,NSMZ)
-  NSMTSM  = MAX(1,NSMTS)
-  NALGAEM = MAX(1,NALGAE)
-  ! NTSWQVM = MAX(1,NTSWQV)
+  NWQZM   = max(1,NWQZ)
+  NWQPSM  = max(1,NWQPS)
+  NWQTDM  = max(1,NWQTD) 
+  NWQTSM  = max(1,NWQTS)
+  NSMGM   = max(1,NSMG)
+  NSMZM   = max(1,NSMZ)
+  NSMTSM  = max(1,NSMTS)
+  NALGAEM = max(1,NALGAE)
+  ! NTSWQVM = max(1,NTSWQV)
   NWQVM = NWQV
     
   !If (ISFFARM > 0) NWQV = NWQV + NSF
     
-  NWQPSRM = MAX(1,NPSTMSR)
+  NWQPSRM = max(1,NPSTMSR)
   do NW = 1,NWQV
-    NWQCSRM = MAX(NWQCSRM,NWQCSR(NW))
+    NWQCSRM = max(NWQCSRM,NWQCSR(NW))
   enddo
-  NCSERM = MAX(NCSERM,NWQCSRM)
+  NCSERM = max(NCSERM,NWQCSRM)
 
   ISMOB = 0
   MACDRAG = 0
@@ -1903,7 +1905,7 @@ SUBROUTINE SCANWQ
       ERRSTR = 'READING WPQSL.INP'
       do NS = 1,NPSTMSR
         read(1,*,err = 999,end = 20) M, TM, TA, RMULADJ, ADDADJ
-        NDWQPSR = MAX(NDWQPSR,M)
+        NDWQPSR = max(NDWQPSR,M)
         do J = 1,M
           do K = 1,3
             read(1,'(A120)')LINE
@@ -1965,7 +1967,7 @@ SUBROUTINE SCANWQ
           enddo
         enddo
         40 close(1)
-        NSER(8) = MAX(NSER(8),NS-1)
+        NSER(8) = max(NSER(8),NS-1)
       endif
     enddo
   endif   ! *** End on master process
@@ -2005,7 +2007,7 @@ SUBROUTINE SCANWQ
     do NS = 1,NSER(8)
       call Broadcast_Scalar(TSWQ(NS,NW).NREC, master_id)
       M = TSWQ(NS,NW).NREC
-      NDWQCSR = MAX(NDWQCSR,M)
+      NDWQCSR = max(NDWQCSR,M)
 
       allocate(TSWQ(NS,NW).VAL(M,KCM), TSWQ(NS,NW).TIM(M))
       TSWQ(NS,NW).VAL = 0.
@@ -2013,7 +2015,7 @@ SUBROUTINE SCANWQ
     enddo
   enddo
   
-  NDCSER = MAX(NDCSER,NDWQCSR)
+  NDCSER = max(NDCSER,NDWQCSR)
   
   ! *** ****************************
   ! *** Sediment Diagenesis
@@ -2038,7 +2040,7 @@ SUBROUTINE SCANWQ
     call Broadcast_Scalar(ISMZB,   master_id)
     call Broadcast_Scalar(ISMTS,   master_id)
 
-    NSMTSM = MAX(ISMTS,NSMTS)
+    NSMTSM = max(ISMTS,NSMTS)
 
   endif
 
@@ -2177,7 +2179,7 @@ SUBROUTINE SCNTXSED
             enddo
           endif
 
-          NDCSER = MAX(NDCSER,NDATAPTS)
+          NDCSER = max(NDCSER,NDATAPTS)
           if( ISTYP == 1 )then
             ! *** SKIP THE SPLITS
             read(1,'(A)') SKIP

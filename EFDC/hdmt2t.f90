@@ -14,8 +14,6 @@
 !!         2011-03       Paul M. Craig     Rewritten to F90 and added OMP
 !!         2010-01       Chung Dang        Added the DSI version of Lagrangian Particle Tracking
 !!         09-22-2004    Paul M. Craig     Merged DS and TT versions with the 06-04-2004 TT code
-!!         05/01/2002    John Hamrick      Modified calls to calbal and budget subroutines
-!!                                            added calls to bal2t1, bal2t4, bal2t5
 !!         05/02/2002    John Hamrick      Modified calculation of cell center bed stress (stored as QQ(l,0))
 !!                                         for cells have source/sinks
 
@@ -34,7 +32,7 @@ SUBROUTINE HDMT2T
   use CALCSERMOD,only: CALCSER
   use FIELDS
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
   use WATERQUALITY,only:WQ3D
   use Variables_WQ
@@ -346,7 +344,7 @@ SUBROUTINE HDMT2T
       !$OMP DO PRIVATE(ND,LF,LL,LP,L)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         do LP = LF,LL
           L = LWET(LP)
           TVAR3S(L) = TSY(LNC(L))
@@ -361,7 +359,7 @@ SUBROUTINE HDMT2T
       !$OMP DO PRIVATE(ND,LF,LL,LP,L)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         do LP = LF,LL
           L = LWET(LP)
           QQ(L,0)  = 0.5*CTURB2*SQRT( (RSSBCE(L)*TVAR3E(L)+RSSBCW(L)*TBX(L))**2 + (RSSBCN(L)*TVAR3N(L)+RSSBCS(L)*TBY(L))**2 )
@@ -430,7 +428,7 @@ SUBROUTINE HDMT2T
       VTMP = 0.5*STCUV(L)*(V(LN ,KSZV(LN )) + V(L,KSZV(L)))
       CURANG = ATAN2(VTMP,UTMP)
       TAUB2 = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
-      TAUB2 = MAX(TAUB2,0.)          ! *** CURRENT & WAVE
+      TAUB2 = max(TAUB2,0.)          ! *** CURRENT & WAVE
       QQ(L,0 ) = CTURB2*SQRT(TAUB2)  ! *** CELL CENTERED TURBULENT INTENSITY DUE TO CURRENTS & WAVES
       QQ(L,KC) = 0.5*CTURB2*SQRT((TVAR3W(L)+TSX(L))**2 + (TVAR3S(L)+TSY(L))**2)
     enddo
@@ -479,7 +477,7 @@ SUBROUTINE HDMT2T
   if( ISDYNSTP == 0 )then
     N = N + 1
   else
-    NLOOP = NLOOP+1
+    NLOOP = NLOOP + 1
     if( NLOOP > NRAMPUP )then
       call CALSTEPD
     else
@@ -495,18 +493,25 @@ SUBROUTINE HDMT2T
   TIMESEC = DBLE(DT)*DBLE(N)+DBLE(TCON)*DBLE(TBEGIN)
   TIMEDAY = TIMESEC/86400._8
   
+  !print '(A,5I5,2F15.5)', ' HDMT 00 ', niter, n, process_id, NINCRMT, NSNAPSHOTS, SNAPSHOTS(NSNAPSHOTS), TIMEDAY   ! delme
+  !print *, 'HDMT 12', niter, process_id   ! delme
+  !if( NINCRMT > 15 )then
+  !  pause 'pause: '  ! delme
+  !endif
+  
+  
   if( ISDYNSTP == 0 )then
-    ILOGC = ILOGC+1
+    ILOGC = ILOGC + 1
   else
-    ILOGC = ILOGC+NINCRMT
+    ILOGC = ILOGC + NINCRMT
   endif
 
   ! *** DSI BEGIN BLOCK
   if( N <= NLTS )then
     SNLT = 0.
   elseif( N > NLTS .and. N <= NTTS )then
-    NTMP1 = N-NLTS
-    NTMP2 = NTTS-NLTS+1
+    NTMP1 = N - NLTS
+    NTMP2 = NTTS - NLTS + 1
     SNLT = FLOAT(NTMP1)/FLOAT(NTMP2)
   else
     SNLT = 1.
@@ -545,8 +550,8 @@ SUBROUTINE HDMT2T
               L = LKWET(LP,K,ND)  
               AVTMP = AVMX*HPI(L)  
               ABTMP = ABMX*HPI(L)  
-              AV(L,K) = MIN(AV(L,K),AVTMP)  
-              AB(L,K) = MIN(AB(L,K),ABTMP)  
+              AV(L,K) = min(AV(L,K),AVTMP)  
+              AB(L,K) = min(AB(L,K),ABTMP)  
             enddo  
           enddo  
         enddo
@@ -634,7 +639,7 @@ SUBROUTINE HDMT2T
   !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,K, L)
   do ND = 1,NDM
     LF = 2 + (ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do K = 1,KC
       do L = LF,LL
         UHDYF1(L,K) = UHDYF(L,K)
@@ -662,7 +667,7 @@ SUBROUTINE HDMT2T
     !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,LA,LDM,UHDYE,UHDYF,UHDY,HUI,DYIU,U,VHDXE,VHDXF,VHDX,HVI,DXIV,V,W) PRIVATE(ND,LF,LL,L)
     do ND = 1,NDM
       LF = 2+(ND-1)*LDM
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
 
       do L = LF,LL
         UHDYF(L,1) = UHDYE(L)
@@ -706,10 +711,10 @@ SUBROUTINE HDMT2T
       call Propwash_Calc_Sequence(0)
     endif
   endif
-  
+
   ! *** Communicate variables with MPI calls before writing to files and looping computations
   ! ****************************************************************************
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TTDS = DSTIME(0)
   TMPITMP = 0.
   call Communicate_CON1
@@ -761,7 +766,7 @@ SUBROUTINE HDMT2T
 
     ! *** Communicate variables with MPI calls before writing to files and looping computations
     if( ISTRAN(8) >= 1 )then
-      call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(DSIcomm, ierr)
       TTDS = DSTIME(0)
       call communicate_ghost_cells(WQV, NWQV)
       TMPITMP = DSTIME(0) - TTDS
@@ -783,7 +788,7 @@ SUBROUTINE HDMT2T
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,LE,LS,LSE,LN,LW,LNW)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       ! *** ADVANCE THE VARIABLES
       do LP = LF,LL
@@ -812,7 +817,7 @@ SUBROUTINE HDMT2T
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,LE,LS,LSE,LN,LW,LNW)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       do LP = LF,LL
         L = LWET(LP)
@@ -855,7 +860,7 @@ SUBROUTINE HDMT2T
   !$OMP             SHARED(HUI,HVI,TBX,STBX,VU,U,TBY,STBY,UV,V)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     if( ICALTB > 0 .and. ISAVCOMP == 0 )then
       do LP = LF,LL
@@ -916,7 +921,7 @@ SUBROUTINE HDMT2T
       !$OMP             SHARED(CTURB2,RSSBCE,RSSBCW,RSSBCN,RSSBCS,QQ)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
 
         do LP = LF,LL
           L = LWET(LP)
@@ -990,7 +995,7 @@ SUBROUTINE HDMT2T
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,TMP,TAUBC2,TAUBC,UTMP,VTMP,CURANG,TAUB2)
     do ND = 1,NDM
       LF = 2+(ND-1)*LDM
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
 
       do L = LF,LL
         TVAR3S(L) = TSY(LNC(L))
@@ -1008,7 +1013,7 @@ SUBROUTINE HDMT2T
           VTMP   = 0.5*STCUV(L)*( V(LNC(L),KSZV(LNC(L))) + V(L,KSZV(L)) )
           CURANG = ATAN2(VTMP,UTMP)
           TAUB2  = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
-          TAUB2  = MAX(TAUB2,0.)              ! *** CURRENT & WAVE
+          TAUB2  = max(TAUB2,0.)              ! *** CURRENT & WAVE
           QQ(L,0 )   = CTURB2*SQRT(TAUB2)  ! *** CELL CENTERED TURBULENT INTENSITY DUE TO CURRENTS & WAVES
           QQ(L,KC)   = 0.5*CTURB2*SQRT((TVAR3W(L)+TSX(L))**2 + (TVAR3S(L)+TSY(L))**2)
         else
@@ -1046,7 +1051,7 @@ SUBROUTINE HDMT2T
       
   ! ****************************************************************************
   ! *** MPI communication
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TTDS = DSTIME(0)
   if( KC > 1 )then
     call Communicate_QQ
@@ -1064,7 +1069,7 @@ SUBROUTINE HDMT2T
     do K = 0,KS
       if( K == 0 )then
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         do LP = LF,LL
           L = LWET(LP)
           QQSQR(L,0) = SQRT(QQ(L,0))  
@@ -1078,15 +1083,14 @@ SUBROUTINE HDMT2T
     enddo
   enddo 
   !$OMP END PARALLEL DO
-  
+
   ! *** *******************************************************************!
   ! *** *******************************************************************!
   ! *** HYDRODYNAMIC CALCULATIONS FOR THIS TIME STEP ARE COMPLETED
   ! *** *******************************************************************!
   ! *** *******************************************************************!
 
-
-  ! *** WRITE TO TIME SERIES FILES
+  ! *** Write to time series files
   CTIM = TIMESEC/TCON
   if( ISTMSR >= 1 )then
     if( N >= NBTMSR .and. N <= NSTMSR )then
@@ -1207,7 +1211,6 @@ SUBROUTINE HDMT2T
       DAYNEXT = DAYNEXT + 1.
     endif
   endif
-
   
   ! *** *******************************************************************!
   if( process_id == master_id )then

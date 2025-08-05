@@ -127,7 +127,7 @@ SUBROUTINE CAL_RPEM
   if( (ISDRY > 0 .and. LADRY > 0) .or. JSRPEM == 1 )then
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       LN = 0
       do LP = LF,LL
         L = LWET(LP)
@@ -189,7 +189,7 @@ SUBROUTINE CAL_RPEM
       RATIOP = RKHPRPS/RKHPRPR
       TOP = WQPO4D(L,K)+RATIOP*SM2PO4(L)                                                                                   
       TMPPO4 = TOP/(TOP+RKHPRPS)
-      XLIMNRPS(L) = MIN(TMPNIT,TMPPO4)                                ! F1(N), EQ. (6), Minimum of N or P limit
+      XLIMNRPS(L) = min(TMPNIT,TMPPO4)                                ! F1(N), EQ. (6), Minimum of N or P limit
     enddo                                                                                                                  
    
     ! **********************************************************************C                                                
@@ -201,7 +201,7 @@ SUBROUTINE CAL_RPEM
         TOP = WQV(L,K,INHX) + WQV(L,K,INOX)                                                                                        
         TMPNIT = TOP/(TOP+RKHNRPE+1.E-18)                                                                                           
         TMPPO4 = WQPO4D(L,K)/(WQPO4D(L,K)+RKHPRPE+1.E-18)
-        XLIMNRPE(L) = MIN(TMPNIT,TMPPO4)                                ! *** Minimum of N or P limits.  EQ. (20)
+        XLIMNRPE(L) = min(TMPNIT,TMPPO4)                                ! *** Minimum of N or P limits.  EQ. (20)
       enddo                                                                                                                  
     endif
      
@@ -250,7 +250,7 @@ SUBROUTINE CAL_RPEM
         ALPHABOT = -(WQAVGIO/RISSO(L)) *EXP(-RKESSBOT(L)*HWQ(L))         ! EQ. (8)
         TMPEXP = EXP(ALPHABOT)-EXP(ALPHATOP)
         XLIMLRPS(L) = 2.718/(RKESSAVG*Z(L,KSZ(L))*HWQ(L))*TMPEXP         ! F2(I), EQ. (7)
-        XLIMLRPS(L) = MIN(XLIMLRPS(L),1.0)
+        XLIMLRPS(L) = min(XLIMLRPS(L),1.0)
       enddo                                                                                                                  
     else
       do LP = 1,NLRPEM(ND)
@@ -262,7 +262,7 @@ SUBROUTINE CAL_RPEM
         ALPHABOT = -(WQAVGIO/RISSO(L)) *EXP(-RKESSBOT(L)*HWQ(L))         ! EQ. (8)
         TMPEXP = EXP(ALPHABOT)-EXP(ALPHATOP)
         XLIMLRPS(L) = 2.718/(RKESSAVG*Z(L,KSZ(L))*HWQ(L))*TMPEXP         ! F2(I), EQ. (7), BUT PRACTICALLY, IT DOES NOT
-        XLIMLRPS(L) = MIN(XLIMLRPS(L),1.0)
+        XLIMLRPS(L) = min(XLIMLRPS(L),1.0)
       enddo                                                                                                                  
     endif
     
@@ -277,7 +277,7 @@ SUBROUTINE CAL_RPEM
         ALPHABOT = -(WQAVGIO/RISSOE(L))*EXP(-RKESSBOT(L)*HWQ(L))        ! EQ. (22)
         TMPEXP = EXP(ALPHABOT)-EXP(ALPHATOP)
         XLIMLRPE(L) = 2.718/(RKESSAVG*Z(L,KSZ(L))*HWQ(L))*TMPEXP        ! EQ. (21)
-        XLIMLRPE(L) = MIN(XLIMLRPE(L),1.0)
+        XLIMLRPE(L) = min(XLIMLRPE(L),1.0)
       enddo                                                                                                                  
     endif
   
@@ -305,7 +305,7 @@ SUBROUTINE CAL_RPEM
     if( ISDRY > 0 )then
       do LP = 1,NLRPEM(ND)
         L = LLRPEM(LP,ND)
-        RATIOHP = MIN( (MAX(HP(L)-HDRY,0.))/HDRY2, 1.0 )
+        RATIOHP = min( (MAX(HP(L)-HDRY,0.))/HDRY2, 1.0 )
         PRPS(L) = PRPS(L)*RATIOHP
         RRPS(L) = RRPS(L)*RATIOHP
       enddo    
@@ -360,7 +360,7 @@ SUBROUTINE CAL_RPEM
       SOURSINK = (1.-FPRPR)*PRPS(L) - RRPS(L) - RLRPS                     ! EQ. (1)
       FACIMP = 1./(1.-DTWQ*SOURSINK)                                                                                       
       WQRPS(L) = FACIMP*(WQRPS(L) + DTWQ*RJRPRS(L))
-      WQRPS(L) = MAX(WQRPS(L),0.2)   ! KEEP THE "SEED", SINCE IF RPS! = 0, IT WILL NEVER GROW AGAIN, ACCORDING TO EQ.
+      WQRPS(L) = max(WQRPS(L),0.2)   ! KEEP THE "SEED", SINCE IF RPS! = 0, IT WILL NEVER GROW AGAIN, ACCORDING TO EQ.
     enddo                                                                                                                  
    
     ! *** UPDATE ROOTS BIOMASS                                                                                                      
@@ -516,7 +516,7 @@ SUBROUTINE CAL_RPEM
         K = KSZ(L)
         DTDHWQ = DTWQ/(DZC(L,K)*HWQ(L))                                                                                           
         WQV(L,K,IP4D) = WQV(L,K,IP4D) - DTDHWQ*( RPEPC*PRPE(L)*WQRPE(L) + RPSPC*FRPSPW(L)*PRPS(L)*WQRPS(L) )  ! PO4T, EQ. COMPLETED
-        WQV(L,K,IP4D) = MAX(WQV(L,K,IP4D),0.)
+        WQV(L,K,IP4D) = max(WQV(L,K,IP4D),0.)
       enddo                                                                                                                  
      
       ! *** CALCULATE THE FRACTION OF AMMONIA AND NO3 UPTAKE FROM WATER                                                        
@@ -538,9 +538,9 @@ SUBROUTINE CAL_RPEM
         BOT1 = RKHNPRPS + (WQV(L,K,INHX) + SM2NH4(L))                                                                              
         BOT2 = RKHNPRPS + (WQV(L,K,INOX) + SM2NO3(L))                                                                              
         BOT3 = WQV(L,K,INHX) + SM2NH4(L) + (WQV(L,K,INOX) + SM2NO3(L))     
-        BOT1 = MAX(BOT1,1E-12)                                                            
-        BOT2 = MAX(BOT2,1E-12)                                                            
-        BOT3 = MAX(BOT3,1E-12)                                                            
+        BOT1 = max(BOT1,1E-12)                                                            
+        BOT2 = max(BOT2,1E-12)                                                            
+        BOT3 = max(BOT3,1E-12)                                                            
         PNRPS(L) = TOP1/(BOT1*BOT2) + TOP2/(BOT2*BOT3)                           ! EQ. (44A)
       enddo                                                                                                                  
    
@@ -555,9 +555,9 @@ SUBROUTINE CAL_RPEM
           BOT1 = RKHNPRPE+WQV(L,K,INHX)                                                                                          
           BOT2 = RKHNPRPE+WQV(L,K,INOX)                                                                                          
           BOT3 = WQV(L,K,INHX)+WQV(L,K,INOX)     
-          BOT1 = MAX(BOT1,1E-12)                                                               
-          BOT2 = MAX(BOT2,1E-12)                                                               
-          BOT3 = MAX(BOT3,1E-12)                                                               
+          BOT1 = max(BOT1,1E-12)                                                               
+          BOT2 = max(BOT2,1E-12)                                                               
+          BOT3 = max(BOT3,1E-12)                                                               
           PNRPE(L) = TOP1/(BOT1*BOT2)+TOP2/(BOT2*BOT3)                    ! EQ. (44B)                                                                    
         enddo                                                                                                                  
       endif
@@ -573,8 +573,8 @@ SUBROUTINE CAL_RPEM
         TMPNO3E = 1.-PNRPE(L)                                                                                                
         WQV(L,K,INHX) = WQV(L,K,INHX) - DTDHWQ*(RPENC*TMPNH4E*PRPE(L)*WQRPE(L) + RPSNC*TMPNH4S*FRPSNW(L)*PRPS(L)*WQRPS(L))  ! NH4, EQ. COMPLETED
         WQV(L,K,INOX) = WQV(L,K,INOX) - DTDHWQ*(RPENC*TMPNO3E*PRPE(L)*WQRPE(L) + RPSNC*TMPNO3S*FRPSNW(L)*PRPS(L)*WQRPS(L))  ! NO3, EQ. COMPLETED
-        WQV(L,K,INHX) = MAX(WQV(L,K,INHX),0.)
-        WQV(L,K,INOX) = MAX(WQV(L,K,INOX),0.)
+        WQV(L,K,INHX) = max(WQV(L,K,INHX),0.)
+        WQV(L,K,INOX) = max(WQV(L,K,INOX),0.)
       enddo                                                                                                                  
      
       ! **********************************************************************C                                                
@@ -592,7 +592,7 @@ SUBROUTINE CAL_RPEM
         ! *** WQRPS - Shoot mass (gC/m2)
         ! *** WQV(L,K,19) - Dissolved  Oxygen (g/m3)
         WQV(L,K,IDOX) = WQV(L,K,IDOX) + DTDHWQ*( RPSOC*WQRPS(L)*(PRPS(L)-RRPS(L)) + RPEOC*WQRPE(L)*(PRPE(L)-RRPE(L)) )  ! *** D.O.
-        WQV(L,K,IDOX) = MAX(WQV(L,K,IDOX),0.0)
+        WQV(L,K,IDOX) = max(WQV(L,K,IDOX),0.0)
       enddo                                                                                                                  
     endif    ! *** END OF BLOCK FOR SKIPPING WATER COLUMN LINKAGE
    
@@ -683,7 +683,7 @@ SUBROUTINE CAL_RPEM
         K = KSZ(L)
         DTDHWQ = DTWQ/(DZC(L,K)*HWQ(L))
         SM2PO4(L) = SM2PO4(L)-DTDHWQ*RPRPC*(1.-FRPSPW(L))*PRPS(L)*WQRPS(L)    ! EQ. (37B), COMPLETED
-        SM2PO4(L) = MAX(SM2PO4(L), 1.E-12)
+        SM2PO4(L) = max(SM2PO4(L), 1.E-12)
       enddo                                                                                                                  
      
       ! *** UPDATE SEDIMENT BED AMMONIA AND NO3 NITROGEN                                                                       
@@ -696,8 +696,8 @@ SUBROUTINE CAL_RPEM
         TMPBED    = 1. - FRPSNW(L)                                                                                                
         SM2NH4(L) = SM2NH4(L) - DTDHWQ*RPSNC*TMPNH4S*TMPBED*PRPS(L)*WQRPS(L)   ! EQ. (42B), COMPLETED
         SM2NO3(L) = SM2NO3(L) - DTDHWQ*RPSNC*TMPNO3S*TMPBED*PRPS(L)*WQRPS(L)   ! EQ. (43B)
-        SM2NH4(L) = MAX(SM2NH4(L), 1.E-12)
-        SM2NO3(L) = MAX(SM2NO3(L), 1.E-12)
+        SM2NH4(L) = max(SM2NH4(L), 1.E-12)
+        SM2NO3(L) = max(SM2NO3(L), 1.E-12)
       enddo                                                                                                                  
     endif   ! *** END OF SEDIMENT BED LINKAGE BYPASS
   

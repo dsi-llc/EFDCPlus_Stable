@@ -183,7 +183,7 @@ MODULE WATERQUALITY
         !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,K,HP2I,WQ2) 
         do ND = 1,NDM  
           LF = (ND-1)*LDMWET+1  
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
         
           do LP = LF,LL  
             L = LWET(LP)
@@ -256,7 +256,7 @@ MODULE WATERQUALITY
             M = M+1
             if( M > TSATM(1).NREC )then
               M = TSATM(1).NREC
-              EXIT
+              exit
             endif
           enddo
           if( M1 > 0 )then
@@ -503,8 +503,11 @@ MODULE WATERQUALITY
   ! *** READ INITIAL CONDITIONS
   if( IWQICI > 0 )then
     if( process_id == master_id )then
-      if( IWQICI == 1 ) CALL WQICI 
-      if( IWQICI == 2 ) CALL WQ_WCRST_IN 
+      if( IWQICI == 1 )then
+        call WQICI
+      else
+        call WQ_WCRST_IN
+      endif
     endif
     
     if( IWQICI == 2 )then
@@ -537,8 +540,8 @@ MODULE WATERQUALITY
         endif
       enddo
       if( IWQSRP == 1 )then
-        O2WQ_ = MAX(WQV(L,K,IDOX), 0.0)
-        WQTAMD = MIN( WQTAMDMX*EXP(-WQKDOTAM*O2WQ_), WQV(L,K,ITAM) )
+        O2WQ_ = max(WQV(L,K,IDOX), 0.0)
+        WQTAMD = min( WQTAMDMX*EXP(-WQKDOTAM*O2WQ_), WQV(L,K,ITAM) )
         WQTAMP(L,K) = WQV(L,K,ITAM) - WQTAMD
         WQPO4D(L,K) = WQV(L,K,IP4D) / (1.0 + WQKPO4P*WQTAMP(L,K))
         WQSAD(L,K)  = WQV(L,K,ISAA) / (1.0 + WQKSAP*WQTAMP(L,K))
@@ -561,7 +564,7 @@ MODULE WATERQUALITY
         do K = KSZ(L),KC
           if( HP(L)*Z(L,K-1) >= (HP(L)-ALGAES(NAL).BASEDEPTH) )then
             LAYERBOT(NAL,L) = K                ! *** Bottom active layer
-            EXIT                               ! *** Jump out of the layer loop
+            exit                               ! *** Jump out of the layer loop
           endif
         enddo
       enddo
@@ -579,7 +582,7 @@ MODULE WATERQUALITY
             do K = KSZ(L),KC
               if( HP(L)*Z(L,K-1) >= (HP(L) - ALGAES(NAL).BASEDEPTH + HEIGHT_MAC(L,NAL)) )then
                 LAYERTOP(NAL,L) = K                ! *** Top active layer
-                EXIT                               ! *** Jump out of the layer loop
+                exit                               ! *** Jump out of the layer loop
               endif
             enddo
           else
@@ -874,7 +877,7 @@ MODULE WATERQUALITY
 
     call fson_get(json_data, "po4_sorption_option",                                 IWQSRP)
     call fson_get(json_data, "log_negative_concentrations",                         IWQNC)
-    call fson_get(json_data, "write_restart",                                       IWQRST)
+    ! call fson_get(json_data, "write_restart",                                       IWQRST)
     
     call fson_get(json_data, "formulation_for_DO_saturation",                       IDOSFRM)
     call fson_get(json_data, "elevation_adjustment_for_DO_saturation",              IDOSELE)
@@ -1028,7 +1031,7 @@ MODULE WATERQUALITY
     
     NT = 0
     do NW = 1,NWQV
-      NT = MAX(NT,NWQCSR(NW))
+      NT = max(NT,NWQCSR(NW))
     enddo
     NCSER(8) = NT
     
@@ -1181,9 +1184,11 @@ MODULE WATERQUALITY
     
       ! *** HANDLE CONCENTRATION BASED POINT SOURCE
       if( IWQPSL == 2 )then
-        if( LIJ_Global(I,J) /= BCFL_GL(N1).L )then
+        if( LIJ_Global(I,J) /= BCPS_GL(N1).L )then
           call STOPP('MISMATCH NQSIJ BETWEEN EFDC.INP & WQ_3DWC.INP')
         endif
+        ICPSL(N1) = I
+        JCPSL(N1) = J
 
         ! *** ASSIGN GLOBAL CONCENTRATION TIME SERIES INDEX
         NSERWQ(N1) = ITMP  ! *** ALL WQ VARIABLES use SAME TIME SERIES (NSERWQ IS TEMPORARY STORAGE FOR LATER MAPPING TO LOCAL NCSERQ(N1,8))
@@ -1328,7 +1333,7 @@ MODULE WATERQUALITY
                                      
   call Broadcast_Scalar(IWQSRP,      master_id)
   call Broadcast_Scalar(IWQNC,       master_id)
-  call Broadcast_Scalar(IWQRST,      master_id)
+  ! call Broadcast_Scalar(IWQRST,      master_id)
     
   call Broadcast_Scalar(IDOSFRM,     master_id)
   call Broadcast_Scalar(IDOSELE,     master_id)
@@ -1524,7 +1529,7 @@ MODULE WATERQUALITY
   call Map_WQ_PointSource
   
   ! **************************************************************************
-  ! *** Set up look-up table for temperature dependency over -10 °C to 60 °C
+  ! *** Set up look-up table for temperature dependency over -10 ï¿½C to 60 ï¿½C
   WQTDMIN = -10
   WQTDMAX =  60
   WTEMP = WQTDMIN
@@ -1632,6 +1637,7 @@ MODULE WATERQUALITY
         enddo
       enddo
       ! *** Updated fixed biota
+      
       ! *** Fixed biota can be converted to biomass density by dividing by bottom layer thickness
       TVARWQ = WQV(1,1,19+NAL)  
       do L = 1,LCM
@@ -1644,8 +1650,8 @@ MODULE WATERQUALITY
   ! *** Setup PO4 sorption options
   if( IWQSRP == 1 )then
     ! *** TAM sorption
-    O2WQ_ = MAX(WQV(1,1,IDOX), 0.0)
-    WQTAMD = MIN( WQTAMDMX*EXP(-WQKDOTAM*O2WQ_), WQV(1,1,ITAM) )
+    O2WQ_ = max(WQV(1,1,IDOX), 0.0)
+    WQTAMD = min( WQTAMDMX*EXP(-WQKDOTAM*O2WQ_), WQV(1,1,ITAM) )
     WQTAMP(1,1) = WQV(1,1,ITAM) - WQTAMD
     WQPO4D(1,1) = WQV(1,1,IP4D) / (1.0 + WQKPO4P*WQTAMP(1,1))
     WQSAD(1,1)  = WQV(1,1,ISAA) / (1.0 + WQKSAP*WQTAMP(1,1))
@@ -1868,7 +1874,7 @@ MODULE WATERQUALITY
   !---------------------------------------------------------------------------!
   ! Subroutine: Subroutine WQICI
   !
-  !> @details  READ IN SPATIALLY AND/OR TEMPORALLY VARYING ICS (UNIT INWQICI)
+  !> @details  Read in spatially varying - depth averaged ICs
   !---------------------------------------------------------------------------!
   !
   !---------------------------------------------------------------------------! 
@@ -1876,47 +1882,36 @@ MODULE WATERQUALITY
   
   implicit none
 
-  integer :: M,I,J,NW,L,K
-  real, save,allocatable,dimension(:) :: XWQV
-  character HEADER(3)*300
+  integer  :: I, J, L, LG, K, KG, NW, NCOL
+  real :: WQVDA(100)
+  character*80 STR*200
   
-  if( .not. allocated(XWQV) )then
-    allocate(XWQV(NWQVM))
-    XWQV = 0.0
-  endif
-
   write(*,'(A)')' WQ: WQICI.INP'
-  write(2,'(/,A)')'Reading WQICI.INP - Reading spatially variable, vertical averaged initial conditions'
+  write(2,'(/,A)')'Reading WQICI.INP - Reading Spatially Variable - Depth Averaged Initial Conditions'
   open(1,FILE = "WQICI.INP",STATUS = 'UNKNOWN')
 
-  read(1,50) (HEADER(M),M = 1,3)
-  read(1,999)
-  read(1,50) HEADER(1)
-  write(2,50) HEADER(1)
-  do M = 2,LA_Global
-    read(1,*) I, J, (XWQV(NW),NW = 1,NWQV)
-    if( IJCT_Global(I,J) < 1 .or. IJCT_Global(I,J) > 8 )then
-      PRINT *, 'I, J, LINE # = ', I,J,M-1
-      call STOPP('ERROR!! INVALID (I,J) IN WQICI.INP')
-    endif
-    
-    L = LIJ_Global(I,J)
-    do K = 1,KC
-      do NW = 1,NWQV
-        WQV_Global(L,K,NW) = XWQV(NW)                   ! *** WQV
+  NCOL  = 0
+
+  ! *** Skip the first 5 lines
+  do k = 1,5
+    read(1,*)
+  enddo
+
+  ! *** Loop over cells and assign layers
+  do LG = 2,LA_Global
+    read(1,*) I, J, (WQVDA(NW),NW = 1,NWQV)
+    L = LIJ(I,J)
+    do NW = 1,NWQV
+      do KG = KSZ(L),KC
+        WQV_Global(L,KG,NW) = WQVDA(NW)
       enddo
     enddo
-    write(2,84) I, J, (WQV_Global(L,1,NW),NW = 1,NWQV)    ! *** WQV
   enddo
- 
+    
   close(1)
-
-    999 FORMAT(1X)
-     50 FORMAT(A300)
-     52 FORMAT(I7, 1X, A3)
-     60 FORMAT(/, A24, I5, A24)
-     84 FORMAT(2I5, 25E12.4)
-  return  
+  
+  return
+  
   END SUBROUTINE WQICI
   
   !---------------------------------------------------------------------------!
@@ -2292,7 +2287,7 @@ MODULE WATERQUALITY
       M2 = M2+1
       if( M2 > NMLSER(NS) )then
         M2 = NMLSER(NS)
-        EXIT
+        exit
       endif
     enddo
     MWQPTLT(NS) = M2  
@@ -2344,20 +2339,7 @@ MODULE WATERQUALITY
   ! *** ZERO THE ACTIVE BOUNDARY CELLS
   do NS = 1,NWQPS
     L = LIJ(ICPSL(NS), JCPSL(NS))
-    K = KCPSL(NS)
-    ! *** DSI BEGIN BLOCK
-    if( K >= 1 )then
-      do NW = 1,NWQV
-        WQWPSL(L,K,NW) = 0.0
-      enddo
-    else
-      do K = 1,KC
-        do NW = 1,NWQV
-          WQWPSL(L,K,NW) = 0.0
-        enddo
-      enddo
-    endif 
-    ! *** DSI END BLOCK
+    WQWPSL(L,:,:) = 0.0
   enddo
 
   ! *** LOOP OVER THE WQ BOUNDARY CELLS
@@ -2435,7 +2417,7 @@ MODULE WATERQUALITY
   integer :: M,MM,IBENZ,I,L,IZM,IZS
   real    :: XBSFAD,BDAY,XM
   
-  character TITLE(3)*79, CCMRM*1
+  character TITLE_(3)*79, CCMRM*1
   integer,save,allocatable,dimension(:) :: IZONE
   real,save,allocatable,dimension(:) :: XBFCOD
   real,save,allocatable,dimension(:) :: XBFNH4
@@ -2466,9 +2448,9 @@ MODULE WATERQUALITY
     open(1,FILE = 'WQBENFLX.INP',STATUS = 'UNKNOWN')
 
     ! SKIP OVER THREE HEADER RECORDS:
-    read(1,50) (TITLE(M),M = 1,3)
+    read(1,50) (TITLE_(M),M = 1,3)
     write(2,999)
-    write(2,50) (TITLE(M),M = 1,3)
+    write(2,50) (TITLE_(M),M = 1,3)
 
     ! SKIP OVER ALL COMMENT CARDS AT BEGINNING OF FILE:
     REWIND(1)
@@ -2666,8 +2648,8 @@ MODULE WATERQUALITY
   do K = KC,1,-1
   !
     do L = 2,LA
-      TWQ(L) = MAX(TEM(L,K), 0.0)
-      SWQ(L) = MAX(SAL(L,K), 0.0)
+      TWQ(L) = max(TEM(L,K), 0.0)
+      SWQ(L) = max(SAL(L,K), 0.0)
       !DZWQ(L) = 1.0 / (HPK(L,K))   deprecated 10.4
       VOLWQ(L) = HPKI(L,K) / DXYP(L)
       IMWQZT(L) = IWQZMAP(L,K)
@@ -2687,8 +2669,8 @@ MODULE WATERQUALITY
           write(3,911) TIMTMP, L, IL(L), JL(L), K, TWQ(L)
           close(3)
           write(6,600)IL(L),JL(L),K,TWQ(L)
-          IWQT(L) = MAX(IWQT(L),1)
-          IWQT(L) = MIN(IWQT(L),NWQTD)
+          IWQT(L) = max(IWQT(L),1)
+          IWQT(L) = min(IWQT(L),NWQTD)
   !             call STOPP('ERROR!! INVALID WATER TEMPERATURE')
         endif
       endif
@@ -2731,7 +2713,7 @@ MODULE WATERQUALITY
       !    TO ACHIEVE BETTER CONTROL IN SYSTEMS WITH A COMBINATION OF FRESHWAT
       !    STREAMS AND TIDAL RIVERS WITH DIFFERENT CHARACTERISTICS.
       WQKD0C = (WQKDC(1) + WQKDCALG*WQOBT0T + XMRM)*WQTDMNL(IWQT(L))
-      O2WQ_ = MAX(WQVO(L,K,16), 0.0)
+      O2WQ_ = max(WQVO(L,K,16), 0.0)
       WQTT1 = WQKD0C / (WQKHORDO + O2WQ_+ 1.E-18)
       WQKHR(L) = WQTT1 * O2WQ_
       WQDENIT(L) = 0.0
@@ -2791,8 +2773,8 @@ MODULE WATERQUALITY
   !    WQKRO = 5.32 TYPICALLY
   !
         if( IWQKA(IZ)  ==  3 )then
-          UMRM = MAX(U(L,K), U(LEC(L),K))
-          VMRM = MAX(V(L,K), V(LNC(L),K))
+          UMRM = max(U(L,K), U(LEC(L),K))
+          VMRM = max(V(L,K), V(LNC(L),K))
           XMRM = SQRT(UMRM*UMRM + VMRM*VMRM)
           WQVREA = WQKRO(IZ) * XMRM**0.67 / HP(L)**1.85
         endif
@@ -2804,15 +2786,15 @@ MODULE WATERQUALITY
   ! WQKRO = 5.32 TYPICALLY
   !
         if( IWQKA(IZ)  ==  4 )then
-          UMRM = MAX(U(L,K), U(LEC(L),K))
-          VMRM = MAX(V(L,K), V(LNC(L),K))
+          UMRM = max(U(L,K), U(LEC(L),K))
+          VMRM = max(V(L,K), V(LNC(L),K))
           XMRM = SQRT(UMRM*UMRM + VMRM*VMRM)
           YMRM = HP(L)*3.0*(1.0 - HP(L)/(HP(L) + 0.1524))
           WQVREA = WQKRO(IZ) * XMRM**0.67 / YMRM**1.85
         endif
         if( IWQKA(IZ)  ==  5 )then
-          UMRM = MAX(U(L,K), U(LEC(L),K))
-          VMRM = MAX(V(L,K), V(LNC(L),K))
+          UMRM = max(U(L,K), U(LEC(L),K))
+          VMRM = max(V(L,K), V(LNC(L),K))
           XMRM = SQRT(UMRM*UMRM + VMRM*VMRM)
           WQVREA = 3.7*XMRM
         endif
@@ -3094,7 +3076,7 @@ MODULE WATERQUALITY
               WQAC = -ALGAES(NAL).WQPRRA(IWQZMAP(L,K))*DTWQO2
               WQVA1C = 1.0 / (1.0 - WQAC)
               WQV(L,K,19+NAL) = (WQV(L,K,19+NAL) + WQAC*WQV(L,K,19+NAL))*WQVA1C
-              WQV(L,K,19+NAL) = MAX(WQV(L,K,19+NAL), ALGAES(NAL).WQBMIN(IWQZMAP(L,K)))
+              WQV(L,K,19+NAL) = max(WQV(L,K,19+NAL), ALGAES(NAL).WQBMIN(IWQZMAP(L,K)))
               WQO(L,K,19+NAL) = WQVO(L,K,19+NAL) + WQV(L,K,19+NAL)
             endif
           enddo
@@ -3149,7 +3131,7 @@ MODULE WATERQUALITY
   !$OMP             PRIVATE(WQSROPT)
   do ND = 1,NDM
     LF = (ND - 1)*LDMWET + 1  
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
   
     ! COMPUTE WQCHL,WQTAMP,WQPO4D,WQSAD AT A NEW TIME STEP: WQCHLX = 1/WQCHLX  
 
@@ -3196,8 +3178,8 @@ MODULE WATERQUALITY
         L = LKWET(LP,K,ND)  
         ! *** HPK(L,K)                    ! *** Layer thickness of a cell in meters
         ! *** HPKI(L,K)                   ! *** Inverse layer thickness
-        TWQ(L)    = MAX(TEM(L,K), 0.0)    ! *** Layer temperature for WQ calcs (ice formation allows for small negative temperatures)
-        SWQ(L)    = MAX(SAL(L,K), 0.0)    ! *** Layer salinity for WQ calcs              (KG/M3)
+        TWQ(L)    = max(TEM(L,K), 0.0)    ! *** Layer temperature for WQ calcs (ice formation allows for small negative temperatures)
+        SWQ(L)    = max(SAL(L,K), 0.0)    ! *** Layer salinity for WQ calcs              (KG/M3)
         VOLWQ(L)  = HPKI(L,K)*DXYIP(L)    ! *** Inverse volume of each cell in a layer   (1/M^3)
         IMWQZT(L) = IWQZMAP(L,K)          ! *** WQ Zone Map for current layer
       enddo  
@@ -3207,12 +3189,12 @@ MODULE WATERQUALITY
         do NQ = 1,NQSIJ  
           if( (QSERCELL(K,NQ) + QSS(K,NQ)) < 0.0 )then
             ! *** ZERO THE FLUX
-            L = BCFL(NQ).L
+            L = BCPS(NQ).L
             do NW = 1,NWQV
               WQWPSL(L,K,NW) = 0.0
             enddo
             if( HDRYMOVE > 0.0 )then
-              L = LQSSAVE(NQ)  
+              L = LQSSAVED(NQ)  
               do NW = 1,NWQV
                 WQWPSL(L,K,NW) = 0.0
               enddo
@@ -3318,8 +3300,8 @@ MODULE WATERQUALITY
             close(1,STATUS = 'KEEP')
           endif
 
-          IWQT(L) = MAX(IWQT(L),1)
-          IWQT(L) = MIN(IWQT(L),NWQTD)
+          IWQT(L) = max(IWQT(L),1)
+          IWQT(L) = min(IWQT(L),NWQTD)
 
         endif  
       enddo  
@@ -3343,11 +3325,11 @@ MODULE WATERQUALITY
             ! *** Phytoplankton
             WQGN(NAL) = RNH4NO3(L) / (ALGAES(NAL).WQKHNA + RNH4NO3(L)+ 1.E-18)
             WQGP(NAL) = PO4DWQ(L)  / (ALGAES(NAL).WQKHPA + PO4DWQ(L) + 1.E-18)
-            WQF1N(NAL) = MIN(WQGN(NAL), WQGP(NAL))                                  ! *** Minimum of the N/P 
+            WQF1N(NAL) = min(WQGN(NAL), WQGP(NAL))                                  ! *** Minimum of the N/P 
             if( ISKINETICS(ICO2) > 0  )then
               CO2WQ(L)  = MAX (WQV(L,K,ICO2), 0.0)                                  ! *** CO2 
               WQGCO2(NAL) = CO2WQ(L) / (ALGAES(NAL).WQKHCO2 + CO2WQ(L) + 1.E-18) 
-              WQF1N(NAL) = MIN(WQGN(NAL), WQGP(NAL), WQGCO2(NAL))                   ! *** Minimum of the N/P/CO2     
+              WQF1N(NAL) = min(WQGN(NAL), WQGP(NAL), WQGCO2(NAL))                   ! *** Minimum of the N/P/CO2     
             endif
           endif
             
@@ -3355,10 +3337,10 @@ MODULE WATERQUALITY
             ! *** Calculate nutrient limitations for Macrophytes and periphyton
             WQGN(NAL) = RNH4NO3(L) / (ALGAES(NAL).WQKHNA + RNH4NO3(L) + 1.E-18)
             WQGP(NAL) = PO4DWQ(L)  / (ALGAES(NAL).WQKHPA + PO4DWQ(L)  + 1.E-18)
-            WQF1N(NAL) = MIN(WQGN(NAL), WQGP(NAL))                                  ! ***  Minimum of the N/P
+            WQF1N(NAL) = min(WQGN(NAL), WQGP(NAL))                                  ! ***  Minimum of the N/P
             if( ISKINETICS(ICO2) > 0  )then
               WQGCO2(NAL) = CO2WQ(L) / (ALGAES(NAL).WQKHCO2 + CO2WQ(L) + 1.E-18)
-              WQF1N(NAL) = MIN(WQGN(NAL), WQGP(NAL), WQGCO2(NAL))                   ! ***  Minimum of the N/P/CO2
+              WQF1N(NAL) = min(WQGN(NAL), WQGP(NAL), WQGCO2(NAL))                   ! ***  Minimum of the N/P/CO2
             endif
           endif
             
@@ -3367,7 +3349,7 @@ MODULE WATERQUALITY
             SADWQ = MAX (WQSAD(L,K), 0.0)
             WQGSD = SADWQ / (ALGAES(NAL).WQKHS + SADWQ + 1.E-18)
             if( ALGAES(NAL).ISILICA /= 0 )then
-              WQF1N(NAL) = MIN(WQF1N(NAL),WQGSD)                                    ! *** Limit: Diatoms - Minimum of the N/P/S
+              WQF1N(NAL) = min(WQF1N(NAL),WQGSD)                                    ! *** Limit: Diatoms - Minimum of the N/P/S
             endif
           endif                
         enddo   ! *** End of biota loop
@@ -3383,7 +3365,7 @@ MODULE WATERQUALITY
             do NAL = 1,NALGAE
               if( ALGAES(NAL).ISMOBILE )then
                 ! *** Phytoplankton
-                WQIS(L,NAL) = MAX( WQAVGIO*EXP(-WQKESS*ALGAES(NAL).WQDOP(IZ)), WQISMIN )  
+                WQIS(L,NAL) = max( WQAVGIO*EXP(-WQKESS*ALGAES(NAL).WQDOP(IZ)), WQISMIN )  
                 
                 ! *** HARDWIRE TO SET OPTIMAL GROWTH TO A FIXED VALUE USED BY CHAPRA (Algal Growth Example (Chapra 33.2 with Fixed IS250).
                 !WQIS(L,NAL) = 250./WQFD         ! *** Is
@@ -3412,7 +3394,7 @@ MODULE WATERQUALITY
               WQF2I(NAL) = 0.0
               if( WQITOP(L,K) > 1.0E-18 )then  
                 WQFDI0 = - WQIBOT(L)/(WQFD + 1.E-18)
-                WQISM  = MAX(WQAVGIO*EXP(-WQKESS*ALGAES(NAL).WQDOP(IZ)), WQISMIN)  ! *** Optimal Light
+                WQISM  = max(WQAVGIO*EXP(-WQKESS*ALGAES(NAL).WQDOP(IZ)), WQISMIN)  ! *** Optimal Light
                 WQFDM  = WQFDI0/(WQISM + 1.E-18)                                   ! *** Ratio of Actual to Optimal Light
                 WQHTT  = WQHT(K) * HP(L)  
                 WQTTB  = EXP(-WQKESS * (WQHTT + 1.0/HPKI(L,K)))  
@@ -3470,7 +3452,7 @@ MODULE WATERQUALITY
             endif
               
             ! *** Use THE MORE SEVERELY LIMITING OF VELOCITY OR NUTRIENT FACTORS:  
-            WQF1N(NAL) = MIN(WQLVF, WQF1N(NAL)) 
+            WQF1N(NAL) = min(WQLVF, WQF1N(NAL)) 
 
             ! *** Crowding limitation factor based on WQKBP optimal plant density
             XMRM = WQV(L,K,19+NAL)*HPK(L,K)          ! *** Convert WQV (gC/M3) to a density: XMRM (gC/M2)  
@@ -3537,7 +3519,7 @@ MODULE WATERQUALITY
         ! ***   Min Mineral     Factor   MobC   Factor*MacC   T Correct
         WQKDOC = (WQKDC(IZ) + WQKDCALG*WQOBTOT(L) + XMRM)*WQTDMNL(IWQT(L))     ! *** Heterotrophic respiration rate of DOC at infinite DO (1/day)
         
-        O2WQ(L) = MAX(WQV(L,K,IDOX), 0.0)  
+        O2WQ(L) = max(WQV(L,K,IDOX), 0.0)  
         WQTT1 = WQKDOC / (WQKHORDO + O2WQ(L) + 1.E-18)  
         WQKHR(L)   = WQTT1*O2WQ(L)  
         WQDENIT(L) = WQTT1*WQAANOX*RNO3WQ(L)/(WQKHDNN + RNO3WQ(L) + 1.E-18)    ! *** Denitrification Rate  
@@ -3670,7 +3652,7 @@ MODULE WATERQUALITY
         ! *** Compute Reaeration
         if( K == KC )then       
           ! DO NOT ALLOW WIND SPEEDS ABOVE 11 M/SEC IN THE FOLLOWING EQUATION
-          WINDREA = MIN(WINDST(L),11.)  
+          WINDREA = min(WINDST(L),11.)  
           WQWREA = 0.728*SQRT(WINDREA) + (0.0372*WINDREA - 0.317)*WINDREA  
           WQWREA = WQWREA * HPKI(L,K)
           
@@ -3691,8 +3673,8 @@ MODULE WATERQUALITY
             WQVREA = WQVREA * HPKI(L,K)                         ! *** Multi-layer implementation
           elseif( IWQKA(IZ) == 3 )then
             ! *** OWENS & GIBBS (1964) REAERATION FORMULA
-            UMRM = MAX(U(L,K), U(LEC(L),K))  
-            VMRM = MAX(V(L,K), V(LNC(L),K))  
+            UMRM = max(U(L,K), U(LEC(L),K))  
+            VMRM = max(V(L,K), V(LNC(L),K))  
             XMRM = SQRT(UMRM*UMRM + VMRM*VMRM)  
             ! *** WQKRO = 5.32 TYPICALLY  
             WQVREA = WQKRO(IZ) * XMRM**0.67 / HP(L)**1.85  
@@ -3701,15 +3683,15 @@ MODULE WATERQUALITY
             ! *** NOTE: NORMALIZED TO A DEPTH OF 1.0 FT, I.E., THIS EQUATION GIVES THE  
             ! ***       SAME REAERATION AS OWENS & GIBBS AT 1.0 FT DEPTH; AT HIGHER  
             ! ***       DEPTHS IT GIVES LARGER REAERATION THAN OWENS & GIBBS.  
-            UMRM = MAX(U(L,K), U(LEC(L),K))  
-            VMRM = MAX(V(L,K), V(LNC(L),K))  
+            UMRM = max(U(L,K), U(LEC(L),K))  
+            VMRM = max(V(L,K), V(LNC(L),K))  
             XMRM = SQRT(UMRM*UMRM + VMRM*VMRM)  
             YMRM = HP(L)*3.0*(1.0 - HP(L)/(HP(L) + 0.1524))  
             ! *** WQKRO = 5.32 TYPICALLY  
             WQVREA = WQKRO(IZ) * XMRM**0.67 / YMRM**1.85  
           elseif( IWQKA(IZ) == 5 )then  
-            UMRM = MAX(U(L,K), U(LEC(L),K))  
-            VMRM = MAX(V(L,K), V(LNC(L),K))  
+            UMRM = max(U(L,K), U(LEC(L),K))  
+            VMRM = max(V(L,K), V(LNC(L),K))  
             XMRM = SQRT(UMRM*UMRM + VMRM*VMRM)  
             WQVREA = 3.7*XMRM * HPKI(L,K)  
           endif  
@@ -3762,7 +3744,7 @@ MODULE WATERQUALITY
 
               WQVA1C = 1.0 / (1.0 - WQAC)
               WQV(L,K,19+NAL) = (WQV(L,K,19+NAL) + WQAC*WQV(L,K,19+NAL))*WQVA1C*SMAC(L)  
-              WQV(L,K,19+NAL) = MAX(WQV(L,K,19+NAL), ALGAES(NAL).WQBMIN(IMWQZ))*SMAC(L)  
+              WQV(L,K,19+NAL) = max(WQV(L,K,19+NAL), ALGAES(NAL).WQBMIN(IMWQZ))*SMAC(L)  
               WQO(L,K,19+NAL) = WQVO(L,K,19+NAL) + WQV(L,K,19+NAL)
             
               ! *** Hydrodynamic feedback parameters
@@ -3822,7 +3804,7 @@ MODULE WATERQUALITY
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
             WQV(L,K,19+NAL) = WQRR(L)*WQKK(L)
-            WQV(L,K,19+NAL) = MAX(WQV(L,K,19+NAL), ALGAES(NAL).WQBMIN(1))      ! *** Apply a user specified minimum concentration
+            WQV(L,K,19+NAL) = max(WQV(L,K,19+NAL), ALGAES(NAL).WQBMIN(1))      ! *** Apply a user specified minimum concentration
             WQO(L,K,19+NAL) = WQVO(L,K,19+NAL) + WQV(L,K,19+NAL)               ! *** Depth totaled biomass conc = old biomass conc in cell + biomass conc from this iteration
           enddo
         endif
@@ -3877,7 +3859,7 @@ MODULE WATERQUALITY
         
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQV(L,K,IROC) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,IROC) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,IROC) = WQVO(L,K,IROC) + WQV(L,K,IROC)
         enddo  
       endif  
@@ -3928,7 +3910,7 @@ MODULE WATERQUALITY
         
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQV(L,K,ILOC) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,ILOC) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,ILOC) = WQVO(L,K,ILOC) + WQV(L,K,ILOC)
         enddo  
       endif  
@@ -3978,7 +3960,7 @@ MODULE WATERQUALITY
         
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQV(L,K,IDOC) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,IDOC) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,IDOC) = WQVO(L,K,IDOC) + WQV(L,K,IDOC)
         enddo  
       endif  
@@ -4030,7 +4012,7 @@ MODULE WATERQUALITY
         
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQV(L,K,IROP) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,IROP) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,IROP) = WQVO(L,K,IROP) + WQV(L,K,IROP)
         enddo  
       endif  
@@ -4083,7 +4065,7 @@ MODULE WATERQUALITY
         
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQV(L,K,ILOP) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,ILOP) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,ILOP) = WQVO(L,K,ILOP) + WQV(L,K,ILOP)
         enddo  
       endif  
@@ -4129,7 +4111,7 @@ MODULE WATERQUALITY
 
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQV(L,K,IDOP) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,IDOP) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,IDOP) = WQVO(L,K,IDOP) + WQV(L,K,IDOP)
         enddo  
       endif  
@@ -4193,7 +4175,7 @@ MODULE WATERQUALITY
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
           WQKKL = 1.0 / (1.0 - WQH10(L)) 
-          WQV(L,K,IP4D) = MAX(WQRR(L)*WQKKL,0.0)
+          WQV(L,K,IP4D) = max(WQRR(L)*WQKKL,0.0)
           WQO(L,K,IP4D) = WQVO(L,K,IP4D) + WQV(L,K,IP4D)
         enddo  
       endif  
@@ -4246,7 +4228,7 @@ MODULE WATERQUALITY
         
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQV(L,K,IRON) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,IRON) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,IRON) = WQVO(L,K,IRON) + WQV(L,K,IRON)
         enddo  
       endif  
@@ -4299,7 +4281,7 @@ MODULE WATERQUALITY
         
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQV(L,K,ILON) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,ILON) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,ILON) = WQVO(L,K,ILON) + WQV(L,K,ILON)
         enddo  
       endif  
@@ -4345,7 +4327,7 @@ MODULE WATERQUALITY
 
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          WQV(L,K,IDON) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,IDON) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,IDON) = WQVO(L,K,IDON) + WQV(L,K,IDON)
         enddo  
       endif  
@@ -4407,7 +4389,7 @@ MODULE WATERQUALITY
           ! *** Coupling to zooplankton - DKT
           if( IWQZPL > 0 ) WQRR(L) = WQRR(L) + DTWQ*SNH4Z(L,K)
           
-          WQV(L,K,INHX) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,INHX) = max(WQRR(L)*WQKK(L),0.0)
           WQO(L,K,INHX) = WQVO(L,K,INHX) + WQV(L,K,INHX)
         enddo  
       endif  
@@ -4463,7 +4445,7 @@ MODULE WATERQUALITY
   
           WQB15 = WQV(L,K,INOX) + DTWQ*WQRR(L) + DTWQO2*( WQA15 - WQANDC*WQDENIT(L)*WQO(L,K,IDOC) + WQNIT(L)*WQO(L,K,INHX))
 
-          WQV(L,K,INOX) = MAX(WQB15,0.0)
+          WQV(L,K,INOX) = max(WQB15,0.0)
           WQO(L,K,INOX) = WQVO(L,K,INOX) + WQV(L,K,INOX)
         enddo  
       endif  
@@ -4519,7 +4501,7 @@ MODULE WATERQUALITY
 
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
-            WQV(L,K,ISUU) = MAX(WQRR(L)*WQKK(L),0.0)
+            WQV(L,K,ISUU) = max(WQRR(L)*WQKK(L),0.0)
             WQO(L,K,ISUU) = WQVO(L,K,ISUU) + WQV(L,K,ISUU)
           enddo  
         endif  
@@ -4592,7 +4574,7 @@ MODULE WATERQUALITY
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
             WQR17 = 1.0 / (1.0 - WQN17(L))
-            WQV(L,K,ISAA) = MAX(WQRR(L)*WQR17,0.0)
+            WQV(L,K,ISAA) = max(WQRR(L)*WQR17,0.0)
             WQO(L,K,ISAA) = WQVO(L,K,ISAA) + WQV(L,K,ISAA)
           enddo  
         endif  
@@ -4633,7 +4615,7 @@ MODULE WATERQUALITY
           L = LKWET(LP,K,ND)  
           WQR18 = 1.0 / (1.0 - WQO18(L))  
           WQRR(L) = WQV(L,K,ICOD) + DTWQ*WQRR(L) + WQO18(L)*WQV(L,K,ICOD)  
-          WQV(L,K,ICOD) = MAX(WQRR(L)*WQR18,0.0)
+          WQV(L,K,ICOD) = max(WQRR(L)*WQR18,0.0)
           WQO(L,K,ICOD) = WQVO(L,K,ICOD) + WQV(L,K,ICOD)  
         enddo  
       endif
@@ -4755,7 +4737,7 @@ MODULE WATERQUALITY
           
           if( IWQZPL > 0 ) WQRR(L) = WQRR(L) + DTWQ*SDOZ(L,K)    ! *** Coupling to zooplankton
 
-          WQV(L,K,IDOX) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,IDOX) = max(WQRR(L)*WQKK(L),0.0)
 
         enddo
         
@@ -4803,7 +4785,7 @@ MODULE WATERQUALITY
           
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
-            WQV(L,K,ITAM) = MAX(WQRR(L)*WQKK(L),0.0)
+            WQV(L,K,ITAM) = max(WQRR(L)*WQKK(L),0.0)
             WQO(L,K,ITAM) = WQVO(L,K,ITAM) + WQV(L,K,ITAM)
           enddo  
         endif  
@@ -4824,7 +4806,7 @@ MODULE WATERQUALITY
           endif
       
           WQRR(L) = WQV(L,K,IFCB)*WQTD1FCB(IWQT(L)) + DTWQ*WQR21
-          WQV(L,K,IFCB) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,IFCB) = max(WQRR(L)*WQKK(L),0.0)
         enddo  
       endif
 
@@ -4919,7 +4901,7 @@ MODULE WATERQUALITY
           WQCDDOC = (WQKHR(L) + WQDENIT(L))*WQO(L,K,IDOC)*3.67    ! *** DOC FROM HYDROLYSIS AND DENITRIFICATION 3.67 CONVERTS G CARBON TO G CO2    
 
           WQRR(L) = WQV(L,K,ICO2) + WQCDSUM + DTWQO2*(-WQA22 + WQCDDOC + WQCDRea)
-          WQV(L,K,ICO2) = MAX(WQRR(L)*WQKK(L),0.0)
+          WQV(L,K,ICO2) = max(WQRR(L)*WQKK(L),0.0)
         enddo  
       endif  
     enddo  ! *** END OF THE KC LOOP
@@ -4938,8 +4920,8 @@ MODULE WATERQUALITY
       do K = 1,KC  
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          O2WQ(L) = MAX(WQV(L,K,IDOX), 0.0)  
-          WQTAMD = MIN( WQTAMDMX*EXP(-WQKDOTAM*O2WQ(L)), WQV(L,K,ITAM) )  
+          O2WQ(L) = max(WQV(L,K,IDOX), 0.0)  
+          WQTAMD = min( WQTAMDMX*EXP(-WQKDOTAM*O2WQ(L)), WQV(L,K,ITAM) )  
           WQTAMP(L,K) = WQV(L,K,ITAM) - WQTAMD  
           WQPO4D(L,K) = WQV(L,K,IP4D) / (1.0 + WQKPO4P*WQTAMP(L,K))  
           WQSAD(L,K)  = WQV(L,K,ISAA) / (1.0 + WQKSAP*WQTAMP(L,K))  
@@ -5038,7 +5020,7 @@ MODULE WATERQUALITY
     !$OMP PARALLEL DO PRIVATE(ND,LF,LL,LP,L,NW,K) REDUCTION(+:IFLAG)
     do ND = 1,NDM 
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       do LP = LF,LL
         L = LWET(LP)
         if( HP(L) < 2.*HDRY )then
@@ -5080,8 +5062,8 @@ MODULE WATERQUALITY
     do K = 1,KC  
       do L = 2,LA
         DDOAVG(L,K) = DDOAVG(L,K) + WQV(L,K,IDOX)*DTWQ
-        DDOMAX(L,K) = MAX(DDOMAX(L,K),WQV(L,K,IDOX))  
-        DDOMIN(L,K) = MIN(DDOMIN(L,K),WQV(L,K,IDOX))  
+        DDOMAX(L,K) = max(DDOMAX(L,K),WQV(L,K,IDOX))  
+        DDOMIN(L,K) = min(DDOMIN(L,K),WQV(L,K,IDOX))  
       enddo  
     enddo  
 
@@ -5561,7 +5543,7 @@ MODULE WATERQUALITY
   !
   !  !IF(IWQICI == 0 )then    PMC - ALLOW INITIALIZATION, EVEN IF NOT USING CONSTANT IC.  THESE WILL BE OVERWRITTEN LATER, IF NEEDED
   !  write(2,999)
-  !  !WRITE(2,90) TITLE(1)
+  !  !WRITE(2,90) TITLE_(1)
   !  !WRITE(2,21)' : (BC, BD, BG)         = ', (WQV(1,1,NW),NW = 1,3)
   !  !WRITE(2,21)' : (RPOC, LPOC, DOC)    = ', (WQV(1,1,NW),NW = 4,6)
   !  !WRITE(2,21)' : (RPOP,LPOP,DOP,PO4T) = ', (WQV(1,1,NW),NW = 7,10)
@@ -5618,7 +5600,7 @@ MODULE WATERQUALITY
   !  ! *** C47 SPATIALLY/TEMPORALLY CONSTANT BENTHIC FLUXES
   !  if( IWQBEN == 0 )then
   !    write(2,999)
-  !    write(2,90) TITLE(1)
+  !    write(2,90) TITLE_(1)
   !    !WRITE(2,21)' : (PO4D, NH4, NO3)     = ',WQBFPO4D(1),WQBFNH4(1),WQBFNO3(1)
   !    !WRITE(2,21)' : (SAD, COD, DO)       = ',WQBFSAD(1),WQBFCOD(1),WQBFO2(1)
   !  endif
@@ -5629,7 +5611,7 @@ MODULE WATERQUALITY
   !
   !  if( IWQNPL /= 1 )then
   !    write(2,999)
-  !    write(2,90) TITLE(1)
+  !    write(2,90) TITLE_(1)
   !    !WRITE(2,21)' : (DSQ, CHC, CHD, CHG)  = ',XDSQ,(XDSL(NW),NW = 1,3)
   !    !WRITE(2,21)' : (ROC, LOC, DOC)       = ',(XDSL(NW),NW = 4,6)
   !    !WRITE(2,21)' : (ROP, LOP, DOP, P4D)  = ',(XDSL(NW),NW = 7,10)

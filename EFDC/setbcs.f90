@@ -442,20 +442,51 @@ SUBROUTINE SETBCS
         SUB(LD)  = 1.0
       endif
     endif
-  enddo
+  enddo 
+    
+  ! *** Set cell-face flag of external density gradient in external/internal mode solution 
+  ! *** for two cell wide channels
+  IU = 0
+  JU = 0
+  do L = 2,LA
+    I = IL(L)
+    J = JL(L)
+    LE = LEC(L)
+    LW = LWC(L)
+    LN = LNC(L)
+    LS = LSC(L)
+    
+    ! *** Two cell flow channel - West face
+    if( SUB(L) > 0.5 .and. SUB(LW) < 0.5 )then
+      if( SUB(LE) < 0.5 )then
+        SUBD(L) = 0.0
+        IU = IU + 1
+      endif
+    endif
+    
+    ! *** Two cell flow channel - South face
+    if( SVB(L) > 0.5 .and. SVB(LS) < 0.5 )then
+      if( SVB(LN) < 0.5 )then
+        SVBD(L) = 0.0
+        JU = JU + 1
+      endif
+    endif
 
+  enddo
+  PRINT "(' EDG Test: Number of West Faces: ',I6,', Number of South Faces:',I6 )", IU, JU
+  
   ! *** SET VOLUMETRIC & CONCENTRATION SOURCE LOCATIONS AND BED STRESS
   ! *** AND CELL CENTER BED STRESS AND VELOCITY MODIFERS
   do LL = 1,NQSIJ
-    I = BCFL(LL).I
-    J = BCFL(LL).J
+    I = BCPS(LL).I
+    J = BCPS(LL).J
     LTMP = LIJ(I,J)
-    BCFL(LL).L = LTMP
-    BCFL(LL).RQSMUL = 1.0                                             ! *** DEFAULT - Flows are already in m3/s
-    if( BCFL(LL).NQSMUL == 1 ) BCFL(LL).RQSMUL = DYP(LTMP)            ! *** Unit discharge along DY
-    if( BCFL(LL).NQSMUL == 2 ) BCFL(LL).RQSMUL = DXP(LTMP)            ! *** Unit discharge along DX
-    if( BCFL(LL).NQSMUL == 3 ) BCFL(LL).RQSMUL = DXP(LTMP)+DYP(LTMP)  ! *** Unit discharge along DX & DY
-    if( BCFL(LL).NQSMUL == 4 ) BCFL(LL).RQSMUL = DXP(LTMP)*DYP(LTMP)  ! *** Seepage velocity over the cell area
+    BCPS(LL).L = LTMP
+    BCPS(LL).RQSMUL = 1.0                                             ! *** DEFAULT - Flows are already in m3/s
+    if( BCPS(LL).NQSMUL == 1 ) BCPS(LL).RQSMUL = DYP(LTMP)            ! *** Unit discharge along DY
+    if( BCPS(LL).NQSMUL == 2 ) BCPS(LL).RQSMUL = DXP(LTMP)            ! *** Unit discharge along DX
+    if( BCPS(LL).NQSMUL == 3 ) BCPS(LL).RQSMUL = DXP(LTMP)+DYP(LTMP)  ! *** Unit discharge along DX & DY
+    if( BCPS(LL).NQSMUL == 4 ) BCPS(LL).RQSMUL = DXP(LTMP)*DYP(LTMP)  ! *** Seepage velocity over the cell area
   enddo
 
   do NCTL = 1,NQCTL
@@ -515,7 +546,7 @@ SUBROUTINE SETBCS
 
   ! *** FLOW BOUNDARY CONDITIONS
   do LL = 1,NQSIJ
-    L = BCFL(LL).L
+    L = BCPS(LL).L
     LE = LEC(L)
     LN = LNC(L)
     ! *** ACCOUNT FOR DEAD END CHANNELS
@@ -701,17 +732,22 @@ SUBROUTINE SETBCS
 
   ! *** FLOW BC'S
   do LL = 1,NQSIJ
-    I = BCFL(LL).I
-    J = BCFL(LL).J
+    I = BCPS(LL).I
+    J = BCPS(LL).J
     L = LIJ(I,J)
+    
+    ! *** Reset SUBD and SVBD at flow BC's
+    SUBD(L) = 1.
+    SVBD(L) = 1.
+    
     NBCS = NBCS + 1
     LBCS(NBCS) = L
     
     ! *** Set up momentum at the closed face of a cell for boundary flows
-    if( ABS(BCFL(LL).NQSMF) > 0  .and. BCFL(LL).NQSMF /= 5 )then
-      if( BCFL(LL).QWIDTH <=  0.0 )then
-        if( ABS(BCFL(LL).NQSMF) == 1 .or. ABS(BCFL(LL).NQSMF) == 3 ) BCFL(LL).QWIDTH = DYP(L)
-        if( ABS(BCFL(LL).NQSMF) == 2 .or. ABS(BCFL(LL).NQSMF) == 4 ) BCFL(LL).QWIDTH = DXP(L)
+    if( ABS(BCPS(LL).NQSMF) > 0  .and. BCPS(LL).NQSMF /= 5 )then
+      if( BCPS(LL).QWIDTH <=  0.0 )then
+        if( ABS(BCPS(LL).NQSMF) == 1 .or. ABS(BCPS(LL).NQSMF) == 3 ) BCPS(LL).QWIDTH = DYP(L)
+        if( ABS(BCPS(LL).NQSMF) == 2 .or. ABS(BCPS(LL).NQSMF) == 4 ) BCPS(LL).QWIDTH = DXP(L)
       endif
     endif
     
@@ -723,7 +759,7 @@ SUBROUTINE SETBCS
       SAAY(L) = 0.             ! *** NORTH/SOUTH MOMENTUM
     endif
 
-    if( BCFL(LL).NQSMF == 5 )then
+    if( BCPS(LL).NQSMF == 5 )then
       SAAX(L) = 0.             ! *** EAST/WEST MOMENTUM
       SAAY(L) = 0.             ! *** NORTH/SOUTH MOMENTUM
       SAAX(LEC(L)) = 0.        ! *** EAST/WEST MOMENTUM

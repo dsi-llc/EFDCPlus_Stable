@@ -118,7 +118,7 @@
   ! *** First, need to make sure each process knows the size of all messages being sent
   send_size = start
 
-  call MPI_Allgather(send_size, 1, MPI_Integer4, recv_size_all, 1, MPI_Integer4, comm_2d, ierr)
+  call MPI_Allgather(send_size, 1, MPI_Integer4, recv_size_all, 1, MPI_Integer4, DSIcomm, ierr)
 
   ! *** Need to determine displacements for the global array about to be gathered
   disps_all(1) = 0
@@ -126,65 +126,65 @@
     disps_all(ii) = disps_all(ii-1) + recv_size_all(ii-1)
   enddo
     
-#ifdef GNU  
+#ifdef GNU
   ! *** Gather all onto single global data structure.  Doing it piecemeal to avoid setting up MPI data structure
   call MPI_AllGatherV(loc_to_glob.process, send_size, MPI_Integer4, &
     all_loc_to_glob.process, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, ierr)
+    MPI_Integer4, DSIcomm, ierr)
   ! *** Gather local I index
   call MPI_AllGatherV(loc_to_glob.local_i, send_size, MPI_Integer4, &
     all_loc_to_glob.local_i, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, ierr)
+    MPI_Integer4, DSIcomm, ierr)
   ! *** Gather local J index
   call MPI_AllGatherV(loc_to_glob.local_j, send_size, MPI_Integer4, &
     all_loc_to_glob.local_j, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, ierr)
+    MPI_Integer4, DSIcomm, ierr)
   ! *** Gather global I index
   call MPI_AllGatherV(loc_to_glob.global_i, send_size, MPI_Integer4, &
     all_loc_to_glob.global_i, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, ierr)
+    MPI_Integer4, DSIcomm, ierr)
   ! *** Gather global J index
   call MPI_AllGatherV(loc_to_glob.global_j, send_size, MPI_Integer4, &
     all_loc_to_glob.global_j, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, ierr)
+    MPI_Integer4, DSIcomm, ierr)
   ! *** Gather local L index
   call MPI_AllGatherV(loc_to_glob.local_l, send_size, MPI_Integer4, &
     all_loc_to_glob.local_l, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, ierr)
+    MPI_Integer4, DSIcomm, ierr)
   ! *** Gather global L index
   call MPI_AllGatherV(loc_to_glob.global_l, send_size, MPI_Integer4, &
     all_loc_to_glob.global_l, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, ierr)
+    MPI_Integer4, DSIcomm, ierr)
 #else
   ! *** Gather all onto single global data structure.  Doing it piecemeal to avoid setting up MPI data structure
   call MPI_AllGatherV(loc_to_glob.process, send_size, MPI_Integer4, &
     all_loc_to_glob.process, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, master_id, ierr)
+    MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather local I index
   call MPI_AllGatherV(loc_to_glob.local_i, send_size, MPI_Integer4, &
     all_loc_to_glob.local_i, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, master_id, ierr)
+    MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather local J index
   call MPI_AllGatherV(loc_to_glob.local_j, send_size, MPI_Integer4, &
     all_loc_to_glob.local_j, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, master_id, ierr)
+    MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather global I index
   call MPI_AllGatherV(loc_to_glob.global_i, send_size, MPI_Integer4, &
     all_loc_to_glob.global_i, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, master_id, ierr)
+    MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather global J index
   call MPI_AllGatherV(loc_to_glob.global_j, send_size, MPI_Integer4, &
     all_loc_to_glob.global_j, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, master_id, ierr)
+    MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather local L index
   call MPI_AllGatherV(loc_to_glob.local_l, send_size, MPI_Integer4, &
     all_loc_to_glob.local_l, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, master_id, ierr)
+    MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather global L index
   call MPI_AllGatherV(loc_to_glob.global_l, send_size, MPI_Integer4, &
     all_loc_to_glob.global_l, recv_size_all, disps_all, &
-    MPI_Integer4, comm_2d, master_id, ierr)
-#endif   
+    MPI_Integer4, DSIcomm, master_id, ierr)
+#endif  
   !---------------------------------------------------------------------------!
 
   ! *** Sort the all_loc_to_glob data so the L indices are contiguous with respect to their global values

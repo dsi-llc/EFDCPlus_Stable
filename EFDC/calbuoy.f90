@@ -54,7 +54,7 @@
   endif
 
   ! *************************************************************************************
-  ! *** DENSITY RHOO AT P = 0, S = 0, AND T = TEMO.  ONLY COMPUTE ONCE, SINCE TEMO IS A CONSTANT
+  ! *** Density RHOO AT P = 0, S = 0, and T = TEMO.  Only compute once, since TEMO is a constant
   if( N <= 5 )then
     ONED = 1._8
     TEM0 = ABS(TEMO)
@@ -64,7 +64,7 @@
   !$OMP PARALLEL DEFAULT(SHARED)
 
   ! *************************************************************************************
-  ! *** save THE CURRENT BUOYANCY BEFORE UPDATING
+  ! *** SAVE THE CURRENT BUOYANCY BEFORE UPDATING
   if( UPDATE )then
     !$OMP DO PRIVATE(ND,K,LP,L)
     do ND = 1,NDM
@@ -79,7 +79,7 @@
   endif
 
   ! *************************************************************************************
-  ! *** DENSITY CALCULATIONS
+  ! *** Density calculations
 
   !$OMP DO PRIVATE(ND, K, L, LP, NN, NS, SSTMP, TTMP, RHTMP, TEM0, RHO1, PSW, tm, ps, sa)
   do ND = 1,NDM
@@ -93,7 +93,7 @@
             L = LKWET(LP,K,ND)
             PSW = (1. - ZZ(L,K))*HP(L)        ! *** Pressue at the mid point of the layer [m]
             tm  = TEM(L,K)                    ! *** In-situ temperature [deg C]
-            sa  = MAX(SAL(L,K),0.)*1.e-9      ! *** Absolute Salinity [g/kg] (Prevent negative value)
+            sa  = max(SAL(L,K),0.)         ! *** Absolute Salinity [g/kg] (Prevent negative value)
             PTEM(L,K) = gsw_pt_from_t (sa, tm, PSW, p_ref)
           enddo
         enddo
@@ -107,7 +107,7 @@
       endif
     endif
 
-    ! *** CASE: NO SALINITY AND NO TEMPERATURE
+    ! *** CASE: No salinity and no temperature
     if( ISTRAN(1) == 0 .and. ISTRAN(2) == 0 )then
       do K = 1,KC
         do LP = 1,LLWET(K,ND)
@@ -117,13 +117,13 @@
         enddo
       enddo
 
-      ! *** CASE: SALINITY AND NO TEMPERATURE
+      ! *** CASE: Salinity and no temperature
     elseif( ISTRAN(1) >= 1 .and. ISTRAN(2) == 0 )then
       TEM0 = ABS(TEMO)
       do K = 1,KC
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)
-          SSTMP = MAX(SAL(L,K),0.)
+          SSTMP = max(SAL(L,K),0.)
 
           RHO1 = RHOO + SSTMP*(0.824493 - 4.0899D-3*TEM0       &
             + 7.6438D-5*TEM0*TEM0                              &
@@ -138,7 +138,7 @@
         enddo
       enddo
 
-      ! *** CASE: NO SALINITY BUT WITH TEMPERATURE
+      ! *** CASE: No salinity but with temperature
     elseif( ISTRAN(1) == 0 .and. ISTRAN(2) >= 1 )then
       do K = 1,KC
         do LP = 1,LLWET(K,ND)
@@ -155,12 +155,12 @@
         enddo
       enddo
 
-      ! *** CASE: BOTH SALINITY AND TEMPERATURE
+      ! *** CASE: Both salinity and temperature
     elseif( ISTRAN(1) >= 1 .and. ISTRAN(2) >= 1 )then
       do K = 1,KC
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)
-          SSTMP = MAX(SAL(L,K),0.)
+          SSTMP = max(SAL(L,K),0.)
           TTMP = PTEM(L,K)
 
           RHTMP = 999.842594 + 6.793952D-2*TTMP - 9.095290D-3*TTMP*TTMP  &
@@ -182,7 +182,7 @@
     endif
 
     !------------------------------------------------------------------------------------
-    ! *** APPLY LOW SEDIMENT CONCENTRATION CORRECTION TO BUOYANCY
+    ! *** Apply low sediment concentration correction to buoyancy
     if( ISTRAN(6) >= 1 .or. ISTRAN(7) >= 1 )then
 
       do K = 1,KC
@@ -219,7 +219,7 @@
       endif
 
       if( ISTRAN(1) == 0 .and. ISTRAN(2) == 0 )then
-        ! *** RESET DENSITY
+        ! *** Reset density
         do K = 1,KC
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)
@@ -233,13 +233,13 @@
           L = LKWET(LP,K,ND)
           B(L,K) = B(L,K)*(1. - TVAR1S(L,K)) + TVAR1W(L,K)
 
-          ! ***  CORRECTION FOR SEDIMENT
+          ! ***  Correction for sediment
           RHOW(L,K) = RHOW(L,K)*( 1. - TVAR1S(L,K) + TVAR1W(L,K) )
         enddo
       enddo
 
     endif
-  enddo    ! *** END OF DOMAIN LOOP
+  enddo    ! *** End of domain loop
   !$OMP END DO
   !$OMP END PARALLEL
 

@@ -17,7 +17,7 @@ FUNCTION READSTR(UNIT) RESULT(STR)
   integer(IK4),intent(IN) :: UNIT
   character(200) :: STR
   integer(IK4) :: ISTR,I
-  do while (.true.)
+  do while (.TRUE.)
     read(UNIT,'(A)',err = 1000,end = 1010) STR
     STR = ADJUSTL(STR)
     ISTR = ICHAR(STR(1:1))
@@ -47,7 +47,7 @@ SUBROUTINE SKIPCOM(IUNIT,CC,IUOUT)
   integer(IK4)   :: I,ISTR
   DATA COMM /'C','c','*','#'/
  
-  do while (.true.)
+  do while(.TRUE.)
     read(IUNIT, '(A)', end = 999) LINE      
     if( PRESENT(IUOUT)) WRITE(IUOUT,'(A)') LINE
     LINE = ADJUSTL(LINE)
@@ -61,16 +61,16 @@ SUBROUTINE SKIPCOM(IUNIT,CC,IUOUT)
       CYCLE
     else
       BACKSPACE(IUNIT)
-      EXIT
+      exit
     endif
   enddo
   999 RETURN
 END SUBROUTINE
  
 FUNCTION FINDSTR(STR,SS,NCOL) RESULT(COLM)
-  integer(IK4)  :: M,COLM,NCOL,NL
   character(*)  :: STR,SS
   character(10) :: SSN(NCOL)
+  integer(IK4)  :: M,COLM,NCOL,NL
   COLM = 0
   read(STR,*,end = 100) (SSN(M),M = 1,NCOL)
   100 continue

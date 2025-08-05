@@ -47,6 +47,7 @@ SUBROUTINE SEDZLJ(L)
   real(RKD) :: SN01
   real(RKD) :: SN10
   real(RKD) :: SN11
+  real(rkd) :: SUMPER
   real(RKD) :: TEMP, TEMP1, TEMP2
   real(RKD) :: TACT, TSUM
   real(RKD) :: TAUCRIT, TCRSUS_FAST
@@ -58,7 +59,7 @@ SUBROUTINE SEDZLJ(L)
   real(RKD) ,dimension(NSEDS2) :: DEPBL
   real(RKD) ,dimension(NSEDS2) :: DEPTSS
   real(RKD) ,dimension(NSEDS2) :: DEPTSSB
-  real(RKD) ,dimension(NSEDS)  :: ELAY
+  real(RKD) ,dimension(NSEDS2) :: ELAY
   real(RKD) ,dimension(NSEDS2) :: ETOT
   real(RKD) ,dimension(NSEDS2) :: PROB
   real(RKD) ,dimension(NSEDS)  :: PROBVR
@@ -106,7 +107,7 @@ SUBROUTINE SEDZLJ(L)
     ! *** Estimate bottom concentration assuming exponential sediment concentration profile in single layer
     USTAR(L) = SQRT(TAU(L)/10000.0)                                     ! *** USTAR (m/s) = SQRT(Tau/RhoH2O) and RhoH2O is 1000 kg/cm^3. 
     do NS = 1,NSEDS2
-      VZDIF = MAX(20.0,0.067*HPCM(L)*USTAR(L)*100._8)                   ! *** Convert units of USTAR to cm/s
+      VZDIF = max(20.0,0.067*HPCM(L)*USTAR(L)*100._8)                   ! *** Convert units of USTAR to cm/s
       TEMP2 = HPCM(L)*DWS(NS)/VZDIF
       CTB(NS) = SED(L,KSZ(L),NS)*TEMP2*(ONE/(ONE-EXP(-TEMP2)))*1.0D-06  ! *** Convert bottom layer concentration from mg/L (g/m^3) to g/cm^3
     enddo
@@ -150,7 +151,7 @@ SUBROUTINE SEDZLJ(L)
     ! *** Calculate SMASS of sediment present in water and allow only that much to be deposited.
     SMASS(NS)  = SED(L,KSZ(L),NS)*1.0D-06*DZC(L,KSZ(L))*HPCM(L)*MAXDEPLIMIT         ! *** SMASS(NS) is the total sediment mass in the first layer.  It is calculated as a precaution so that no more than the total amount of mass in the first layer can deposit onto the sediment bed PERSED time step.
     DEPTSS(NS) = CTB(NS)*PROB(NS)*(DWS(NS)*DTSEDJ)                                  ! *** Deposition of a size class is equal to the probability of deposition times the settling rate times the time step times the sediment concentration
-    DEPTSS(NS) = MIN(MAX(DEPTSS(NS),0.0),SMASS(NS))                                 ! *** Do not allow more sediment to deposit than is available in the water-column layer above the bed
+    DEPTSS(NS) = min(MAX(DEPTSS(NS),0.0),SMASS(NS))                                 ! *** Do not allow more sediment to deposit than is available in the water-column layer above the bed
     DEPTSSB(NS) = DEPTSS(NS)                                                        ! *** Non "fast" classes go straight to the bed
     DEP_SED_FLX(L,NS) = DEP_SED_FLX(L,NS) + DEPTSSB(NS)                             ! *** Accumulate total deposition for each origin class (g/cm^2)
   enddo
@@ -165,7 +166,7 @@ SUBROUTINE SEDZLJ(L)
           ! *** Calculate SMASS of sediment present in water and allow only that much to be deposited.
           SMASS(NS)  = SED(L,KSZ(L),NS)*1.0D-06*DZC(L,KSZ(L))*HPCM(L)*MAXDEPLIMIT     ! *** SMASS(NS) is the total sediment mass in the first layer.  It is calculated as a precaution so that no more than the total amount of mass in the first layer can deposit onto the sediment bed PERSED time step.
           DEPTSS(NS) = CTB(NS)*PROB(NS)*(DWS(NS)*DTSEDJ)                              ! *** Deposition of a size class is equal to the probability of deposition times the settling rate times the time step times the sediment concentration
-          DEPTSS(NS) = MIN(MAX(DEPTSS(NS),0.0),SMASS(NS))                             ! *** Do not allow more sediment to deposit than is available in the water-column layer above the bed
+          DEPTSS(NS) = min(MAX(DEPTSS(NS),0.0),SMASS(NS))                             ! *** Do not allow more sediment to deposit than is available in the water-column layer above the bed
           DEPTSSB(IWC2BED(NS))  = DEPTSSB(IWC2BED(NS)) + DEPTSS(NS)                   ! *** Collapsed "fast" classes to origin class
           DEP_SED_FLX(L,NS) = DEP_SED_FLX(L,NS) + DEPTSS(NS)                          ! *** Accumulate total deposition for each fast class (g/cm^2)   
         endif
@@ -186,13 +187,13 @@ SUBROUTINE SEDZLJ(L)
       if( CSEDVR(NS) <= 0.0 )then                             ! *** If there is no equilibrium bedload available
         PROBVR(NS) = 1.0                                      ! *** then deposition probability is unity
       else
-        PROBVR(NS) = MIN(CSEDSS/CSEDVR(NS),1.0)               ! *** van Rijn probability of deposition from bedload
+        PROBVR(NS) = min(CSEDSS/CSEDVR(NS),1.0)               ! *** van Rijn probability of deposition from bedload
       endif
       if( CSEDSS <= 0.0 ) PROBVR(NS) = PROB(NS)               ! *** In case CBL = 0  The deposition from bedload reverts to Gessler's for that particle size.
       
       DEPBL(NS) = PROBVR(NS)*CBL(L,NS)*(DWS(NS)*DTSEDJ)       ! *** Calculate Bedload Deposition (DEPBL)  (g/cm^2)
                                                               ! *** Deposition from bedload is the van Rijn probability times bedload concentration time settling velocity times the time step
-      DEPBL(NS) = MIN(MAX(DEPBL(NS),0.0),SMASS(NS))           ! *** Do not allow more bedload deposition than bedload mass available
+      DEPBL(NS) = min(MAX(DEPBL(NS),0.0),SMASS(NS))           ! *** Do not allow more bedload deposition than bedload mass available
     enddo
     DEP = SUM(DEPBL(1:NSEDS)) + SUM(DEPTSSB(1:NSEDS))         ! *** Total deposition, sum of bedload and suspended load deposition for all size classes
     DEP_SED_FLX(L,1:NSCM) = DEP_SED_FLX(L,1:NSCM) + DEPBL(1:NSCM) ! *** Total deposition flux with bedload and suspended load (g/cm^2)
@@ -379,6 +380,9 @@ SUBROUTINE SEDZLJ(L)
         D50AVG(L) = SUM(PERSED(1:NSEDS,K,L)*D50(1:NSEDS))
       endif
     elseif( (D50AVG(L)-1E-6) > SCND(NSICM) )then
+      temp = sum(PERSED(1:NSEDS,K,L))   ! delme
+      print '(a,f15.5,2i5,f12.8,15e14.6)', 'D50 too big', timeday, l, k, temp, (PERSED(ns,K,L), ns = 1, nseds), prop_ero(l,0)   ! delme
+      pause
       if( TSED(k,L) > 1E-8 )then
         PRINT '("Limits!  L: ",I6,", K: ", I3,", BED MASS: ",E14.6,", COMPUTED D50: ",f10.4,", MAX GRAINSIZE: ",F10.4)', Map2Global(L).LG, K, TSED(K,L), D50AVG(L), SCND(NSICM)
         if( TSED(K,L) > 1E-4 )then
@@ -502,7 +506,7 @@ SUBROUTINE SEDZLJ(L)
 
           SN11 = (TSED0(K,L)-TSED(K,L))/TSED0(K,L)                                   ! *** Mass weighting factor
           ERATEMOD = ((SN10-SN00)*SN11 + SN00)*BULKDENS(K,L)*SQRT(ONE/SH_SCALE(L))   ! *** linear interpolation for remaining mass in current layer    (g/cm2/s)
-          ERATEMOD = MIN(ERATEMOD,MAXRATE(ICORE,K))                                  ! *** Limit erosion rate
+          ERATEMOD = min(ERATEMOD,MAXRATE(ICORE,K))                                  ! *** Limit erosion rate
         else
           ERATEMOD = 0.0
         endif
@@ -527,7 +531,7 @@ SUBROUTINE SEDZLJ(L)
         SN10 = ACTDEPA(NSC1)*(0.1*TAU(L))**ACTDEPN(NSC1)                             ! *** Erosion rate 2 (cm/s)
         SN11 = D50TMPP/NSCTOT                                                        ! *** Weighting factor 
         ERATEMOD = ((SN10-SN00)*SN11 + SN00)*BULKDENS(K,L)*SQRT(1./SH_SCALE(L))      ! *** linear interpolation around size class (g/cm2/s)
-        ERATEMOD = MIN(ERATEMOD,ACTDEPMAX(NSC0))                                     ! *** Limit erosion rate
+        ERATEMOD = min(ERATEMOD,ACTDEPMAX(NSC0))                                     ! *** Limit erosion rate
       endif
     endif
 
@@ -546,26 +550,12 @@ SUBROUTINE SEDZLJ(L)
     if( PROP_ERO(L,0) > 0.0 )then                                                    ! *** Propwash is active and there are active ships
       ! *** Active ship traffic with erosion
       PSUS(L,1:NSEDS) = 1.0                                                          ! *** Set probability of erosion mass into suspension
-      !IF( ISPROPWASH == 1 )then
-        ! *** Include erosion due to ambient currents for all propwash options (2021-11-10)
-        WHERE( TAU(L) >= TCRE(1:NSEDS) )
-          ELAY(1:NSEDS) = PERSED(1:NSEDS,K,L)*EBD                                    ! *** Compute erosion due to ambient currents
-        ENDWHERE
-        ELAY(1:NSEDS)  = ELAY(1:NSEDS) + PROP_ERO(L,1:NSEDS)                         ! *** Add propwash induced erosion
-      !ELSE
-      !  ! *** Minimize erosion due to ambient currents.  Prioritize propwash
-      !  ELAY(1:NSEDS) = 0.0
-      !  do NS = 1,NSEDS
-      !    if( PROP_ERO(L,NS) > 0.0 )then
-      !      ELAY(NS)  = PROP_ERO(L,NS)                                              ! ***  Add propwash induced erosion
-      !    else
-      !      if( TAU(L) >= TCRE(NS) )then
-      !        ELAY(1:NSEDS) = PERSED(1:NSEDS,K,L)*EBD                               ! *** No propwash erosion, add erosion due to ambient currents
-      !      endif
-      !    endif
-      !  enddo
-      !ENDIF
-      ETOT(1:NSEDS)  = ETOT(1:NSEDS) + ELAY(1:NSEDS)
+
+      ! *** Include erosion due to ambient currents for all propwash options
+      WHERE( TAU(L) >= TCRE(1:NSEDS) )
+        ELAY(1:NSEDS) = PERSED(1:NSEDS,K,L)*EBD                                      ! *** Compute erosion due to ambient currents (g/cm^2)
+      ENDWHERE
+      ELAY(1:NSEDS)  = ELAY(1:NSEDS) + PROP_ERO(L,1:NSEDS)                           ! *** Add propwash induced erosion
       TTEMP(1:NSEDS) = PERSED(1:NSEDS,K,L)*TSED(K,L) - ELAY(1:NSEDS)                 ! *** Remaining mass in layer for each size class
       EBD = SUM(ELAY)                                                                ! *** Updated total mass erosion
     else
@@ -580,13 +570,14 @@ SUBROUTINE SEDZLJ(L)
         TTEMP(1:NSEDS) = PERSED(1:NSEDS,K,L)*TSED(K,L)
       ENDWHERE
     endif
+    ! *** At this point, ELAY only includes the total potenial mass to be eroded frm the bed. Propwash Fast classes not addressed yet
     
     ! *** Ensure sufficient mass in current layer, otherwise empty the current layer
     ! *** and reduce erosion for next layer
     do NS = 1,NSEDS
       if( TTEMP(NS) < 0.0 )then
         ! *** The mass by class is negative, so zero the mass for that class
-        TTEMP(NS) = 0.0                                                              ! *** Set unit mass to zero
+        TTEMP(NS) = 0.0                                                              ! *** Set remaining mass to zero, i.e. class fully eroded from this layer
         ELAY(NS)  = PERSED(NS,K,L)*TSED(K,L)                                         ! *** Only allow available mass to erode
         if( PROP_ERO(L,0) > 0. )then
           ETOT(NS) = ELAY(NS)                                                        ! *** Reset total erosion to mass available
@@ -612,7 +603,7 @@ SUBROUTINE SEDZLJ(L)
           ETOT(NS) = ELAY(NS)                                                        ! *** Reset total erosion to mass available  
           PROP_ERO(L,NS) = PROP_ERO(L,NS) - ELAY(NS)                                 ! *** Reduce propwash erosion by the amount removed from current layer
         endif
-        PROP_ERO(L,NS) = MAX(PROP_ERO(L,NS),0.0)
+        PROP_ERO(L,NS) = max(PROP_ERO(L,NS),0.0)
       endif
     enddo
     ERO = SUM(ELAY(1:NSEDS))                                                         ! *** Actual final total erosion from the layer   (g/cm^2)
@@ -620,13 +611,27 @@ SUBROUTINE SEDZLJ(L)
     ! *** Subtract total erosion from layer unit mass then Calculate new percentages
     TEMP = TSED(K,L) - ERO                                                           ! *** Eroded layer unit mass.  TSED already has deposition added.
                                                                                      
-    if( TEMP < 1e-6 .or. SUM(TTEMP(:)) == 0. )then                                   ! *** If the remaining mass in the layer is negative, set its mass to zero
+    if( TEMP < 1e-12 .or. SUM(TTEMP(:)) <= 0.0 )then                                 ! *** If the remaining mass in the layer is negative, set its mass to zero
       TSED(K,L) = 0.0                                                                ! *** This layer has no mass
       LAYERACTIVE(K,L) = 0                                                           ! *** This layer is absent
       PERSED(1:NSEDS,K,L) = 0.0                                                      ! *** Zero mass fractions
     else                                                                             
       TSED(K,L) = TEMP                                                               ! *** New layer unit mass (g/cm^2)
       PERSED(1:NSEDS,K,L) = TTEMP(1:NSEDS)/TSED(K,L)                                 ! *** New mass fractions
+      SUMPER = sum(PERSED(1:NSEDS,K,L))
+      if( abs(SUMPER - ONE) > 1e-8 )then
+        print '(a,f15.5,i10,2i5,4e18.10,f10.1,f10.7)', 'Bad PERSED: ',  TIMEDAY, NITER, L, K, TSED(K,L), sum(TTEMP(:)), TEMP, sum(prop_ero(l,1:nseds)) , PROP_ERO(L,0)/DXYP(L)/10000.  ! delme
+        
+        ! *** If the sediment layer contains very little mass, just use the TTEMP mass to recompute PERSED
+        if( TSED(K,L) < 1e-4 )then
+          TSED(K,L) = sum(TTEMP(:))
+          PERSED(1:NSEDS,K,L) = TTEMP(1:NSEDS)/TSED(K,L)                             ! *** New mass fractions
+        else
+          print '(a,e16.8,a,e16.8)', 'Stopping.  Computed Total Sediment = ', TSED(K,L), ',  Sum of Class by Class = ', sum(TTEMP(:))
+          call STOPP('.')
+        endif
+        !pause
+      endif
     endif                                                                            
 
   enddo   ! ALL_LAYERS                                                               
@@ -744,7 +749,7 @@ SUBROUTINE SEDZLJ(L)
       ! *** TSED(K,L)   - G/CM2
       ! *** QBFLUX      - G/CM2
       ! *** HBED(L,1:KB) = 0.01*TSED(1:KB,L)/BULKDENS(1:KB,L)
-      K1 = MIN(MAX(KBT(L)+1,2),KB)
+      K1 = min(MAX(KBT(L)+1,2),KB)
       TEMP = TSED(K1,L) - INITMASS(K1)
       
       if( ICALC_BL > 0 )then
@@ -787,7 +792,7 @@ SUBROUTINE SEDZLJ(L)
     endif
     
     ! *** Zero any layers above KBT
-    K1 = MAX(KBT(L)-1,1)
+    K1 = max(KBT(L)-1,1)
     do K = K1,1,-1
       HBED(L,K)         = 0.
       SEDB(L,K,1:NSEDS)  = 0.

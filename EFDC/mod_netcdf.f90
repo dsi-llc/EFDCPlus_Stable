@@ -73,7 +73,7 @@ module mod_netcdf
         nc_var(  5, 'V',                    'm/s',          0, 4, nc.KC_DIM, 0,           'Northward water velocity', 'sea_water_y_velocity'), &
         nc_var(  6, 'W',                    'm/s',          0, 4, nc.KC_DIM, 0,           'Upward water velocity', 'upward_sea_water_velocity'), &
         nc_var(  7, 'DELT',                 's',            0, 1, 0,         0,           'Time step', ''), &
-        nc_var(  8, 'total_shear',          'm2/s2',        0, 3, 0,         0,           'Total bed shear stress', ''), &
+        nc_var(  8, 'total_shear',          'N/m2',         0, 3, 0,         0,           'Total bed shear stress', ''), &
         nc_var(  9, 'cohesive_shear',       'N/m2',         0, 3, 0,         0,           'Cohesive grain size shear stress', ''), &
         nc_var( 10, 'noncohesive_shear',    'N/m2',         0, 3, 0,         0,           'Non-cohesive grain size shear stress', ''), &
         nc_var( 11, 'current_shear',        'N/m2',         0, 3, 0,         0,           'Current-induced bed shear stress', ''), &
@@ -95,11 +95,11 @@ module mod_netcdf
         nc_var( 27, 'dye',                  'mg/L',         0, 6, nc.KC_DIM, nc.DYE_DIM,  'Dye', ''), &
         nc_var( 28, 'shellfish_larvae',     'mg/L',         0, 4, nc.KC_DIM, 0,           'Shellfish larvae', ''), &
         nc_var( 29, 'toxics',               'ug/L',         0, 6, nc.KC_DIM, nc.TOX_DIM,  'Toxics', ''), &
-        nc_var( 30, 'bed_toxics',           'mg/kg',        0, 6, nc.KB_DIM, nc.TOX_DIM,  'Bed toxics', ''), &
+        nc_var( 30, 'bed_toxics',           'mg/m2',        0, 6, nc.KB_DIM, nc.TOX_DIM,  'Bed toxics', ''), &
         nc_var( 31, 'bed_top',              'layer',        1, 3, 0,         0,           'Sediment bed top layer index', ''), &
-        nc_var( 32, 'bed_thickness',        'm',            0, 3, 0,         0,           'Bed sediment thickness', ''), &
-        nc_var( 33, 'bed_wet_density',      'kg/m3',        0, 3, 0,         0,           'Sediment bed wet density', ''), &
-        nc_var( 34, 'bed_porosity',         '1',            0, 3, 0,         0,           'Bed sediment porosity', ''), &
+        nc_var( 32, 'bed_thickness',        'm',            0, 3, nc.KB_DIM, 0,           'Bed sediment thickness', ''), &
+        nc_var( 33, 'bed_wet_density',      'kg/m3',        0, 3, nc.KB_DIM, 0,           'Sediment bed wet density', ''), &
+        nc_var( 34, 'bed_porosity',         '1',            0, 3, nc.KB_DIM, 0,           'Bed sediment porosity', ''), &
         nc_var( 35, 'bed_cohesive',         'g/m2',         0, 6, nc.KB_DIM, nc.SED_DIM,  'Bed cohesive sediment', ''), &
         nc_var( 36, 'bed_noncohesive',      'g/m2',         0, 6, nc.KB_DIM, nc.SND_DIM,  'Bed non-cohesive sediment', ''), &
         nc_var( 37, 'cohesive_sediment',    'mg/L',         0, 6, nc.KC_DIM, nc.SED_DIM,  'Cohesive sediment', ''), &
@@ -1081,7 +1081,7 @@ module mod_netcdf
     allocate(xcr(4,jc_global,ic_global),ycr(4,jc_global,ic_global))
     xcr = missing_value
     ycr = missing_value
-    do while (.true.)
+    do while(.TRUE.)
         read(ucor,*,end = 100,err = 998) i,j,(xcr(m,j,i),ycr(m,j,i),m = 1,4)
     enddo
 100 close(ucor)
@@ -1287,28 +1287,32 @@ module mod_netcdf
     integer,intent(in) :: is, ix
     real,intent(in) :: array2d(:,:), factor
     character(*),intent(in) :: msg
-    real(4), allocatable, dimension(:) :: values
-    integer :: i,j,L,k,k1,m,ip, count,status,str2d(2),cnt2d(2)
+    real(4), allocatable, dimension(:,:) :: values
+    integer :: i,j,L,k,k1,m,ip, count,status,str2d(2),cnt2d(3)
 
     str2d = (/ 1, nc.time_idx/)
     if( is > 0 )then
-        cnt2d = (/ NPNT(is), 1/)
-        allocate(values(NPNT(is)))
+        cnt2d = (/ NPNT(is), KB, 1/)
+        allocate(values(NPNT(is), KB))
+        values = MISSING_VALUE
         do ip = 1, NPNT(is)
             i = HFREGRP(is).ICEL(ip)
             j = HFREGRP(is).JCEL(ip)
             L = LIJ_Global(i,j)
-            k = KBT_Global(L)
-            values(ip) = factor * array2d(L,k)
+            do k = 1,KBT_Global(L)
+              values(ip,k) = factor * array2d(L,k)
+            enddo
         enddo
     else
         count = LA_Global-1
-        cnt2d = (/count, 1/)
-        allocate(values(count))
+        cnt2d = (/count, KB, 1/)
+        allocate(values(count, KB))
+        values = MISSING_VALUE
         do i = 1, count
             L = i + 1
-            k = KBT_Global(L)
-            values(i) = factor * array2d(L,k)
+            do k = 1,KBT_Global(L)
+              values(i,k) = factor * array2d(L,k)
+            enddo
         enddo
     endif
 
@@ -1331,11 +1335,12 @@ module mod_netcdf
     if( is > 0 )then
         cnt3d = (/ NPNT(is), KB, ncmp, 1/)
         allocate(values(NPNT(is), KB, ncmp))
+        values = MISSING_VALUE
         do ip = 1, NPNT(is)
             i = HFREGRP(is).ICEL(ip)
             j = HFREGRP(is).JCEL(ip)
             L = LIJ_Global(i,j)
-            do k = 1,KB
+            do k = 1,KBT_Global(L)
                 do m = 1,ncmp
                     values(ip, k, m) = factor * array3d(L, k, m)
                 enddo
@@ -1345,9 +1350,10 @@ module mod_netcdf
         count = LA_Global-1
         cnt3d = (/ count, KB, ncmp, 1/)
         allocate(values(count, KB, ncmp))
+        values = MISSING_VALUE
         do i = 1, count
             L = i + 1
-            do k = 1,KB
+            do k = 1,KBT_Global(L)
                 do m = 1,ncmp
                     values(i, k, m) = factor * array3d(L, k, m)
                 enddo
@@ -1477,19 +1483,22 @@ module mod_netcdf
     if( ISSPH(8) >= 1 )then
         if( IS_NC_OUT(21) > 0 .or. IS_NC_OUT(22) > 0 )then
             ! *** WRITE THE TOP LAYER INDEX
-            !status = nc_write_cell_1d(nc, is, 31), , 1., 'KBT')
-            allocate(int1d(LA_Global-1))
-            int1d = 0
-            do L = 2,LA_Global
-                int1d(L-1) = KBT_Global(L)
-            enddo
-            status = nf90_put_var(nc.id, nc.idx(31), int1d, (/ 1, nc.time_idx/), (/ nc.cellcnt, 1/))
-            deallocate(int1d)
+            status = nc_write_cell_1d(nc, is, 31,float(KBT_Global) , 1., 'KBT')
+            !allocate(int1d(LA_Global-1))
+            !int1d = 0
+            !do L = 2,LA_Global
+            !    int1d(L-1) = KBT_Global(L)
+            !enddo
+            !status = nf90_put_var(nc.id, nc.idx(31), int1d, (/ 1, nc.time_idx/), (/ nc.cellcnt, 1/))
+            !deallocate(int1d)
         endif
 
         if( IS_NC_OUT(2) > 0 )then
             ! *** TOTAL BED SHEAR STRESS
-            status = nc_write_cell_1d(nc, is, 8, SHEAR_Global, 1., 'SHEAR')
+            do L = 2,LA_Global
+                array1d(L) = SHEAR_Global(L)*RHOW(L,KSZ_Global(L)) ! Convert from m2/s2 to Pa
+            enddo
+            status = nc_write_cell_1d(nc, is, 8, array1d, 1., 'SHEAR')
 
             if( ISBEDSTR == 1 .and. .not. LSEDZLJ )then
                 ! *** Stress from non-cohesive components
@@ -1498,14 +1507,17 @@ module mod_netcdf
 
             if( ISWAVE >= 1 )then
                 ! *** Bed Shear due to Waves Only
-                status = nc_write_cell_1d(nc, is, 12, QQWV3_Global, 1., 'SHEAR2')
+                do L = 2,LA_Global
+                  array1d(L) = QQWV3_Global(L)*RHOW(L,KSZ_Global(L)) ! Convert from m2/s2 to Pa
+                enddo
+                status = nc_write_cell_1d(nc, is, 12, array1d, 1., 'SHEAR2')
                 ! *** Shear due to Current Only
                 ! @todo - calculate using global values.  Need to get a global LEC_Global,LNC   delme
                 do L = 2,LA_Global
                     SHEAR = ( RSSBCE_Global(L)*TBX_Global(LEC_Global(L)) + RSSBCW_Global(L)*TBX_Global(L) )**2  + &
                         ( RSSBCN_Global(L)*TBY_Global(LNC_Global(L)) + RSSBCS_Global(L)*TBY_Global(L) )**2
                     SHEAR = 0.5*SQRT(SHEAR)
-                    array1d(L) = SHEAR             ! *** Bed Shear due to Current Only
+                    array1d(L) = SHEAR*RHOW(L,KSZ_Global(L))            ! *** Bed Shear due to Current Only in Pa
                 enddo
                 status = nc_write_cell_1d(nc, is, 11, array1d, 1., 'SHEAR1')
                 if( ISWAVE >= 3 )then
@@ -1554,10 +1566,13 @@ module mod_netcdf
         if( IS_NC_OUT(18) > 0 ) status = nc_write_wc_3d(nc, is, 37, SED_Global, KC, NSED, 1.0, 'SED') ! *** Cohesive sediment concentration
         if( IS_NC_OUT(19) > 0 ) status = nc_write_wc_3d(nc, is, 38, SND_GLobal, KC, NSND, 1.0, 'SND') ! *** Noncohesive sediment concentration
         if( IS_NC_OUT(21) > 0 ) status = nc_write_bed_3d(nc, is, 35, SEDB_Global, NSED, 1., 'SEDB')   ! *** Bed cohesive sediment
-        if( IS_NC_OUT(22) > 0 ) status = nc_write_bed_3d(nc, is, 36, SNDB_Global, NSND, 1., 'SNDB')     ! *** Bed noncohesive sediment
-        if( IS_NC_OUT(23) > 0 )then
-            status = nf90_put_var(nc.id, nc.idx(48), real(QSBDLDX_Global(2:LA_Global,:),4), (/1, 1, nc.time_idx/), (/NSND, nc.cellcnt, 1/)) ! *** Bedload_x
-            status = nf90_put_var(nc.id, nc.idx(49), real(QSBDLDY_Global(2:LA_Global,:),4), (/1, 1, nc.time_idx/), (/NSND, nc.cellcnt, 1/)) ! *** Bedload_y
+        if( IS_NC_OUT(22) > 0 ) status = nc_write_bed_3d(nc, is, 36, SNDB_Global, NSND, 1., 'SNDB')   ! *** Bed noncohesive sediment
+        
+        if( ICALC_BL > 0 .and. NSND > 0 )then
+          if( IS_NC_OUT(23) > 0 )then
+            status = nc_write_cell_2d(nc, is, 48, real(QSBDLDX_Global), NSND, 1., 'QSBDLDX') ! *** Bedload_x
+            status = nc_write_cell_2d(nc, is, 49, real(QSBDLDY_Global), NSND, 1., 'QSBDLDY') ! *** Bedload_y
+          endif
         endif
     
         if( IS_NC_OUT(8) > 0 )then
@@ -1668,15 +1683,15 @@ module mod_netcdf
     else
         if( ISBEXP >= 1 .and. KB > 1 .and. ISSPH(8) < 1 )then
             if( IS_NC_OUT(21) > 0 .or. IS_NC_OUT(22) > 0 )then
-                allocate(int1d(LA_Global-1))
-                int1d = 0
-                do L = 2,LA_Global
-                    int1d(L-1) = KBT_Global(L)
-                enddo
-                status = nf90_put_var(nc.id, nc.idx(31), int1d, (/ 1, nc.time_idx/), (/ nc.cellcnt, 1/))
-                deallocate(int1d)                
+                !allocate(int1d(LA_Global-1))
+                !int1d = 0
+                !do L = 2,LA_Global
+                !    int1d(L-1) = KBT_Global(L)
+                !enddo
+                !status = nf90_put_var(nc.id, nc.idx(31), int1d, (/ 1, nc.time_idx/), (/ nc.cellcnt, 1/))
+                !deallocate(int1d)                
                 !status = nf90_put_var(nc.id, nc.idx(31), integer(KBT_Global(2:LA_Global),2), (/1, nc.time_idx/), (/nc.cellcnt, 1/))
-                !status = nc_write_cell_1d(nc, is, 31, KBT_Global, 1., 'KBT')
+                status = nc_write_cell_1d(nc, is, 31, float(KBT_Global), 1., 'KBT')
                 status = nc_write_cell_2d(nc, is, 32, HBED_Global, KB, 1., 'HBED')
                 status = nc_write_cell_2d(nc, is, 33, BDENBED_Global, KB, 1., 'BDENBED')
                 status = nc_write_cell_2d(nc, is, 34, PORBED_Global, KB, 1., 'PORBED')

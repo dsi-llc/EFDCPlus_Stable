@@ -22,9 +22,9 @@ SUBROUTINE CALEBI
   
   implicit none
 
-  integer :: K,L,LP,ND,LF,LL,LW,LS
+  integer :: K, L, LP, ND, LF, LL, LW, LS
 
-  real :: DZCBK,DBK,BEC,BI1C,BI2C,SUMT
+  real :: DZCBK, DBK, BEC, BI1C, BI2C, SUMT
   
   real,save,allocatable,dimension(:,:) :: DZCB
   real,save,allocatable,dimension(:,:) :: BK
@@ -66,7 +66,7 @@ SUBROUTINE CALEBI
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       
       do LP = LF,LL
         L = LWET(LP)
@@ -87,7 +87,7 @@ SUBROUTINE CALEBI
   !$OMP                           SHARED(BI1N,BI2N,BEN,KSZN,ZZN,SGZKN)
   do ND = 1,NDM  
     LF = (ND-1)*LDMWET+1  
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
       
     do LP = LF,LL
       L = LWET(LP)
@@ -518,7 +518,7 @@ SUBROUTINE INTERPB(L)
       do N = 1,NMAX-1
         if( XVAL >= XDAT(N) .and. XVAL <= XDAT(N+1) )then 
           YVAL  =  (YDAT(N+1)-YDAT(N))*(XVAL-XDAT(N)) /(XDAT(N+1)-XDAT(N))+YDAT(N)
-          EXIT
+          exit
         endif 
       enddo
     endif

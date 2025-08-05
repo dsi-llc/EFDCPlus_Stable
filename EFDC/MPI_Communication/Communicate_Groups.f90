@@ -45,7 +45,7 @@
   !             nbr_south
   !                 3
   
-  II = MAX(max_width_y,max_width_x)*2
+  II = max(max_width_y,max_width_x)*2
   
   ! *** Comm_Cells(d1,d2,d3) - Active cell list
   ! ***                   d1 - Number of active cells

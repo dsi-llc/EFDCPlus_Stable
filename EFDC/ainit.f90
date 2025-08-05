@@ -208,7 +208,7 @@ SUBROUTINE AINIT
     enddo
   endif
   
-  NTMPC = MAX(NSED,1)
+  NTMPC = max(NSED,1)
   do NS = 1,NTMPC
     do K = 1,KC
       do L = 1,LC
@@ -219,7 +219,7 @@ SUBROUTINE AINIT
     enddo
   enddo
 
-  NTMPN = MAX(NSND,1)
+  NTMPN = max(NSND,1)
   do NX = 1,NTMPN
     NS = NX+NTMPC
     do K = 1,KC

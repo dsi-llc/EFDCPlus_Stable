@@ -30,7 +30,7 @@ SUBROUTINE CALPSER
       M2 = M2+1
       if( M2 > TSPS(NS).NREC )then
         M2 = TSPS(NS).NREC
-        EXIT
+        exit
       endif
     enddo
     MTSPLAST(NS) = M2  

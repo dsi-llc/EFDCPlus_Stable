@@ -37,7 +37,7 @@
   ! ***
   use GLOBAL
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
   use INFOMOD,only:SKIPCOM,READSTR
 
@@ -185,9 +185,9 @@
     RES = SYSTEM( 'mkdir -p ./' // trim(OUTDIR)//'wasp')
 #else       
     RES = MAKEDIRQQ(OUTDIR//'wasp')
-#endif     
+#endif 
 
-    open(1,FILE = OUTDIR//'wasp\ABmax.txt',STATUS = 'UNKNOWN')
+    open(1,FILE = OUTDIR//'wasp/ABmax.txt',STATUS = 'UNKNOWN')
     write(1,*)'    I    J     ABmax'
     do LT = 2,LALT
       l = lij(illt(lt),jllt(lt))
@@ -570,7 +570,7 @@
     ! *** Remove flow BC's
     NQ = NQSIJ
     do L = 1,NQSIJ
-      if( LIJLT(BCFL(L).I,BCFL(L).J) == 0 ) NQ = NQ-1
+      if( LIJLT(BCPS(L).I,BCPS(L).J) == 0 ) NQ = NQ-1
     enddo
     NCHN = NCHN + KC*NQ
 
@@ -678,10 +678,10 @@
 
     do K = KC,1,-1
       do LT = 1,NQSIJ
-        I = BCFL(LT).I
-        J = BCFL(LT).J
+        I = BCPS(LT).I
+        J = BCPS(LT).J
         if( LIJLT(I,J) == 0 ) GOTO 100
-        NS = BCFL(Lt).NQSERQ
+        NS = BCPS(Lt).NQSERQ
         !IF(flagwaspbC(ns,k) == 1 ) GOTO 100
         LWASP = LWASP + 1
         LDTM = LAUX(I,J,K)
@@ -1074,14 +1074,14 @@
         ! ***  Advection and dispersion in input flows
         do K = KC,1,-1
           do LT = 1,NQSIJ
-            I = BCFL(LT).I
-            J = BCFL(LT).J
+            I = BCPS(LT).I
+            J = BCPS(LT).J
             if( LIJLT(I,J) == 0 ) GOTO 310
-            NS = BCFL(LT).NQSERQ
-            L = BCFL(LT).L
+            NS = BCPS(LT).NQSERQ
+            L = BCPS(LT).L
             !IF(FLAGWASPBC(NS,K) == 1 ) GOTO 310
             LWASP = LWASP + 1
-            FLOW(LWASP) = BCFL(LT).RQSMUL*(QSS(K,LT) + BCFL(LT).QFACTOR*QSERT(K,NS))
+            FLOW(LWASP) = BCPS(LT).RQSMUL*(QSS(K,LT) + BCPS(LT).QFACTOR*QSERT(K,NS))
             CRNU(LWASP) = FLOW(LWASP)/DXP(L)/DYP(L)/(HPK(L,K))
             ! ***          BRINTT(LWASP) = DYP(L)*AH(L,K)*HPK(L,K)/DXP(L)
             BRINTT(LWASP) = 0.0
@@ -1343,14 +1343,14 @@
   ! ***  Advection and dispersion in input flows
   do K = KC,1,-1
     do LT = 1,NQSIJ
-      I = BCFL(LT).I
-      J = BCFL(LT).J
+      I = BCPS(LT).I
+      J = BCPS(LT).J
       if( LIJLT(I,J) == 0 ) GOTO 300
-      NS = BCFL(LT).NQSERQ
-      L = BCFL(LT).L
+      NS = BCPS(LT).NQSERQ
+      L = BCPS(LT).L
       !IF(FLAGWASPBC(NS,K) == 1 ) GOTO 300
       if(K >= KSZ(L) )then
-        FLOWX = BCFL(LT).RQSMUL*(QSS(K,LT) + BCFL(LT).QFACTOR*QSERT(K,NS))
+        FLOWX = BCPS(LT).RQSMUL*(QSS(K,LT) + BCPS(LT).QFACTOR*QSERT(K,NS))
         UDDXTMP = FLOWX/DXP(L)/DYP(L)/(HPK(L,K))
       else
         FLOWX = 0.

@@ -70,7 +70,7 @@
   do K = 1,KC
     do LP = 1,LLWET(K,0)
       L = LKWET(LP,K,0)  
-      POS(L,K,IT) = MAX(CON(L,K),0.) 
+      POS(L,K,IT) = max(CON(L,K),0.) 
     enddo  
   enddo  
    
@@ -112,7 +112,7 @@
         UTERM = UTERM - 0.5*DDELTA*UHDY2(L,K)*( VVVV(LN,K,IT) +VVVV(L,K,IT)  + WWWW(L,K,IT) +WWWW(L,K-1,IT)  + UUUU(L,K,IT)+UUUU(LE,K,IT) )  
       endif  
       UHU = UTERM/( POS(L,K,IT) + POS(LW,K,IT) + BSMALL )  
-      FUHUD(L,K,IW) = MAX(UHU,0.)*POS(LW,K,IT) + MIN(UHU,0.)*POS(L,K,IT)
+      FUHUD(L,K,IW) = max(UHU,0.)*POS(LW,K,IT) + min(UHU,0.)*POS(L,K,IT)
 
       ! *** V COMPONENTS
       AVHV = ABS(VHDX2(L,K))  
@@ -125,7 +125,7 @@
         VTERM = VTERM - 0.5*DDELTA*VHDX2(L,K)*( UUUU(L,K,IT) +UUUU(LE,K,IT)  + WWWW(L,K,IT) +WWWW(L ,K-1,IT) + VVVV(LN,K,IT)+VVVV(L,K,IT) )  
       endif  
       VHV = VTERM/( POS(L,K,IT) + POS(LS,K ,IT) + BSMALL )  
-      FVHUD(L,K,IW) = MAX(VHV,0.)*POS(LS,K ,IT) + MIN(VHV,0.)*POS(L,K,IT)  
+      FVHUD(L,K,IW) = max(VHV,0.)*POS(LS,K ,IT) + min(VHV,0.)*POS(L,K,IT)  
     enddo  
   enddo  
 
@@ -143,7 +143,7 @@
           WTERM = WTERM-0.5*DDELTA*W2(L,K)*(UUUU(L,K+1,IT) + UUUU(LE,K+1,IT) + VVVV(L,K+1,IT) + VVVV(LN,K+1,IT) + WWWW(L,K,IT)+WWWW(L,K+1,IT))
         endif  
         WW = WTERM/( POS(L,K+1,IT) + POS(L,K,IT) + BSMALL )  
-        FWUU(L,K,IW) = MAX(WW,0.)*POS(L,K,IT) + MIN(WW,0.)*POS(L,K+1,IT)  
+        FWUU(L,K,IW) = max(WW,0.)*POS(L,K,IT) + min(WW,0.)*POS(L,K+1,IT)  
       enddo  
     enddo  
   endif
@@ -197,27 +197,27 @@
     do K = 1,KC
       do LP = 1,LLWET(K,0)
         L = LKWET(LP,K,0) 
-        CONTMX(L,K,IT) = MAX(POS(L,K,IT), CON2(L,K,IW))
-        CONTMN(L,K,IT) = MIN(POS(L,K,IT), CON2(L,K,IW))
+        CONTMX(L,K,IT) = max(POS(L,K,IT), CON2(L,K,IW))
+        CONTMN(L,K,IT) = min(POS(L,K,IT), CON2(L,K,IW))
       enddo  
     enddo
 
     ! *** Vertical gradients
     do LP = 1,LAWET
       L = LWET(LP) 
-      CMAX(L,KSZ(L),IT) = MAX(CONTMX(L,KSZ(L),IT), CONTMX(L,KSZ(L)+1,IT))  
-      CMAX(L,KC    ,IT) = MAX(CONTMX(L,KS    ,IT), CONTMX(L,KC      ,IT))  
-      CMIN(L,KSZ(L),IT) = MIN(CONTMN(L,KSZ(L),IT), CONTMN(L,KSZ(L)+1,IT))  
-      CMIN(L,KC    ,IT) = MIN(CONTMN(L,KS    ,IT), CONTMN(L,KC      ,IT))  
+      CMAX(L,KSZ(L),IT) = max(CONTMX(L,KSZ(L),IT), CONTMX(L,KSZ(L)+1,IT))  
+      CMAX(L,KC    ,IT) = max(CONTMX(L,KS    ,IT), CONTMX(L,KC      ,IT))  
+      CMIN(L,KSZ(L),IT) = min(CONTMN(L,KSZ(L),IT), CONTMN(L,KSZ(L)+1,IT))  
+      CMIN(L,KC    ,IT) = min(CONTMN(L,KS    ,IT), CONTMN(L,KC      ,IT))  
     enddo  
     
     do K = 2,KS  
       do LP = 1,LLWET(K-1,0)
         L = LKWET(LP,K-1,0)  
-        CMAXT        = MAX(CONTMX(L,K-1,IT),CONTMX(L,K+1,IT))
-        CMAX(L,K,IT) = MAX(CONTMX(L,K,IT),CMAXT)  
-        CMINT        = MIN(CONTMN(L,K-1,IT),CONTMN(L,K+1,IT))  
-        CMIN(L,K,IT) = MIN(CONTMN(L,K,IT),CMINT)  
+        CMAXT        = max(CONTMX(L,K-1,IT),CONTMX(L,K+1,IT))
+        CMAX(L,K,IT) = max(CONTMX(L,K,IT),CMAXT)  
+        CMINT        = min(CONTMN(L,K-1,IT),CONTMN(L,K+1,IT))  
+        CMIN(L,K,IT) = min(CONTMN(L,K,IT),CMINT)  
       enddo  
     enddo  
   
@@ -233,19 +233,19 @@
         CEMAX = SUB3D(LE,K)*CONTMX(LE,K,IT)  
         CSMAX = SVB3D(L,K) *CONTMX(LS,K,IT)  
         CNMAX = SVB3D(LN,K)*CONTMX(LN,K,IT)  
-        CMAXT = MAX(CNMAX,CEMAX)  
-        CMAXT = MAX(CMAXT,CSMAX)  
-        CMAXT = MAX(CMAXT,CWMAX)  
-        CMAX(L,K,IT) = MAX(CMAX(L,K,IT),CMAXT)  
+        CMAXT = max(CNMAX,CEMAX)  
+        CMAXT = max(CMAXT,CSMAX)  
+        CMAXT = max(CMAXT,CWMAX)  
+        CMAX(L,K,IT) = max(CMAX(L,K,IT),CMAXT)  
         
         CWMIN = SUB3D(L,K) *CONTMN(LW,K,IT) + 1.E+18*(1.-SUB3D(L,K))
         CEMIN = SUB3D(LE,K)*CONTMN(LE,K,IT) + 1.E+18*(1.-SUB3D(LE,K))  
         CSMIN = SVB3D(L,K) *CONTMN(LS,K,IT) + 1.E+18*(1.-SVB3D(L,K))
         CNMIN = SVB3D(LN,K)*CONTMN(LN,K,IT) + 1.E+18*(1.-SVB3D(LN,K))  
-        CMINT = MIN(CNMIN,CEMIN)  
-        CMINT = MIN(CMINT,CSMIN)  
-        CMINT = MIN(CMINT,CWMIN)  
-        CMIN(L,K,IT) = MIN(CMIN(L,K,IT),CMINT)  
+        CMINT = min(CNMIN,CEMIN)  
+        CMINT = min(CMINT,CSMIN)  
+        CMINT = min(CMINT,CWMIN)  
+        CMIN(L,K,IT) = min(CMIN(L,K,IT),CMINT)  
       enddo  
     enddo  
   
@@ -254,10 +254,10 @@
     do K = 1,KC
       do LP = 1,LLWET(K,0)
         L = LKWET(LP,K,0)  
-        FUHVD(L,K,IT) = MIN(FUHUD(L,K,IW),0.)
-        FUHUD(L,K,IW) = MAX(FUHUD(L,K,IW),0.)
-        FVHVD(L,K,IT) = MIN(FVHUD(L,K,IW),0.)
-        FVHUD(L,K,IW) = MAX(FVHUD(L,K,IW),0.)  
+        FUHVD(L,K,IT) = min(FUHUD(L,K,IW),0.)
+        FUHUD(L,K,IW) = max(FUHUD(L,K,IW),0.)
+        FVHVD(L,K,IT) = min(FVHUD(L,K,IW),0.)
+        FVHUD(L,K,IW) = max(FVHUD(L,K,IW),0.)  
       enddo  
     enddo
 
@@ -265,8 +265,8 @@
       do K = 1,KS
         do LP = 1,LLWET(K,0)
           L = LKWET(LP,K,0)  
-          FWVV(L,K,IT) = MIN(FWUU(L,K,IW),0.)  
-          FWUU(L,K,IW) = MAX(FWUU(L,K,IW),0.)  
+          FWVV(L,K,IT) = min(FWUU(L,K,IW),0.)  
+          FWUU(L,K,IW) = max(FWUU(L,K,IW),0.)  
         enddo  
       enddo  
     endif
@@ -298,9 +298,9 @@
       do LP = 1,LLWET(K,0)
         L = LKWET(LP,K,0)  
         if( DUU(L,K,IT) > 0. ) DUU(L,K,IT) = (CMAX(L,K,IT) - POS(L,K,IT))/(DUU(L,K,IT) + BSMALL)  
-        DUU(L,K,IT) = MIN(DUU(L,K,IT),1.)  
+        DUU(L,K,IT) = min(DUU(L,K,IT),1.)  
         if( DVV(L,K,IT) > 0. ) DVV(L,K,IT) = (POS(L,K,IT) - CMIN(L,K,IT))/(DVV(L,K,IT) + BSMALL)  
-        DVV(L,K,IT) = MIN(DVV(L,K,IT),1.)  
+        DVV(L,K,IT) = min(DVV(L,K,IT),1.)  
       enddo  
     enddo  
   
@@ -310,15 +310,15 @@
         L = LKWET(LP,K,0)  
         LS = LSC(L)
         LW = LWC(L)
-        FUHUD(L,K,IW) = MIN(DVV(LW,K,IT),DUU(L,K,IT))*FUHUD(L,K,IW) + MIN(DUU(LW,K,IT),DVV(L,K,IT))*FUHVD(L,K,IT)  
-        FVHUD(L,K,IW) = MIN(DVV(LS,K,IT),DUU(L,K,IT))*FVHUD(L,K,IW) + MIN(DUU(LS,K,IT),DVV(L,K,IT))*FVHVD(L,K,IT)  
+        FUHUD(L,K,IW) = min(DVV(LW,K,IT),DUU(L,K,IT))*FUHUD(L,K,IW) + min(DUU(LW,K,IT),DVV(L,K,IT))*FUHVD(L,K,IT)  
+        FVHUD(L,K,IW) = min(DVV(LS,K,IT),DUU(L,K,IT))*FVHUD(L,K,IW) + min(DUU(LS,K,IT),DVV(L,K,IT))*FVHVD(L,K,IT)  
       enddo  
     enddo  
 
     do K = 1,KS
       do LP = 1,LLWET(K,0)
         L = LKWET(LP,K,0)  
-        FWUU(L,K,IW) = MIN(DVV(L,K,IT),DUU(L,K+1,IT))*FWUU(L,K,IW) + MIN(DUU(L,K,IT),DVV(L,K+1,IT))*FWVV(L,K,IT)  
+        FWUU(L,K,IW) = min(DVV(L,K,IT),DUU(L,K+1,IT))*FWUU(L,K,IW) + min(DUU(L,K,IT),DVV(L,K+1,IT))*FWVV(L,K,IT)  
       enddo  
     enddo  
     

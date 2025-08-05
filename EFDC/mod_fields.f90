@@ -140,12 +140,12 @@ contains
       
         ! *** SKIP OVER HEADER COMMENTS
 #ifdef GNU    
-        do while(.true.)
-          read(DAT.IUNIT,'(A)',end=100) LINE
-          if(LINE(1:1)/='*' .AND. LINE(1:1)/='$' .AND. LINE(1:1)/='!' .AND. LINE(1:1)/='C') EXIT
-        enddo
-100     continue
-#else        
+        DO WHILE(.TRUE.)
+          READ(DAT.IUNIT,'(A)',END=100) LINE
+          IF(LINE(1:1)/='*' .AND. LINE(1:1)/='$' .AND. LINE(1:1)/='!' .AND. LINE(1:1)/='C') EXIT
+        ENDDO
+100     CONTINUE
+#else
         do while(.not. EOF(DAT.IUNIT))
           read(DAT.IUNIT,'(A)') LINE
           if(LINE(1:1)/='*' .and. LINE(1:1)/='$' .and. LINE(1:1)/='!' .and. LINE(1:1)/='C') EXIT

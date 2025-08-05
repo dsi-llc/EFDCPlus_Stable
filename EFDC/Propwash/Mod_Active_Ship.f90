@@ -156,7 +156,7 @@ subroutine interp_track(self, track_id, prev_pos_id, next_pos_id, debug_)
   type(all_tracks),target :: trk
   type(ship_type), pointer :: ship 
   type(position_cell), pointer :: pt,prev_pos, next_pos
-
+  
   ship => self.ship
   pt => self.pos
   trk = self.tracks(track_id)
@@ -190,15 +190,20 @@ subroutine interp_track(self, track_id, prev_pos_id, next_pos_id, debug_)
   ! *** Cell Index.  For now, all propellers are assumed to be in the same cell
   pt.cell = get_cell(pt.cell, pt.x_pos, pt.y_pos)
 
-  self.draft   = interp_value(prev_pos.draft, next_pos.draft, ratio)
+  self.draft   = interp_value(prev_pos.draft, &
+                              next_pos.draft, ratio)
 
-  self.power   = interp_value(prev_pos.power, next_pos.power, ratio)
+  self.power   = interp_value(prev_pos.power, &
+                              next_pos.power, ratio)
 
-  self.speed   = interp_value(prev_pos.speed, next_pos.speed, ratio)
+  self.speed   = interp_value(prev_pos.speed, &
+                              next_pos.speed, ratio)
 
-  self.heading = interp_angle(prev_pos.heading, next_pos.heading, ratio)
+  self.heading = interp_angle(prev_pos.heading, &
+                              next_pos.heading, ratio)
 
-  self.course  =  interp_angle(prev_pos.course, next_pos.course, ratio)
+  self.course  =  interp_angle(prev_pos.course, &
+                               next_pos.course, ratio)
 
   ! *** Deceleration
   if( self.power < 0.0 )then
@@ -248,9 +253,9 @@ real(kind = rkd) function interp_value(value1, value2, factor)
   real(kind = rkd), intent(in)  :: value1,value2, factor
 
   interp_value =  value1 + factor*(value2 - value1)
-  end function interp_value
+end function interp_value
 
-  real(kind = rkd) function interp_angle(angle1, angle2, factor)
+real(kind = rkd) function interp_angle(angle1, angle2, factor)
 
   implicit none
   real(kind = rkd), intent(in)  :: angle1, angle2, factor
@@ -279,7 +284,7 @@ subroutine det_if_in_track(self, track_id, in_track)
   real(kind = RKD) :: start_time, end_time
   real(kind = RKD) :: prev_time, next_time
   type(position_cell), pointer :: pt
-  
+
   pt => self.pos
   
   ! *** Determine if the current time liesthe time region for a given track
@@ -318,21 +323,19 @@ subroutine det_pos_in_track(self, track_id, prev_pos_id, next_pos_id)
   ! *** Local variables
   integer :: j
   real(kind = RKD) :: prev_time, next_time
-  type(all_tracks),target :: trk
   type(position_cell), pointer :: pt
-  
-  trk = self.tracks(track_id)
+
   pt => self.pos
-  
+
   self.ipos = 0
   self.itrack = 0
 
   ! *** loop over the number of positions in the track
-  do j = prev_pos_id, trk.num_positions - 1
+  do j = prev_pos_id, self.tracks(track_id).num_positions - 1
 
     ! *** Check if we are between ship tracks
-    prev_time = trk.track_pos(j).time
-    next_time = trk.track_pos(j + 1).time
+    prev_time = self.tracks(track_id).track_pos(j).time
+    next_time = self.tracks(track_id).track_pos(j + 1).time
 
     if( prev_time < pt.time .and. next_time >= pt.time  )then
       ! *** set the track and position indices
@@ -382,7 +385,7 @@ subroutine setup_mesh(self, debug_)
   
   ship => self.ship
   pt => self.pos
-  
+
   ! *** Ignore track points outside domain
   if( pt.cell < 2 ) return
 
@@ -618,7 +621,7 @@ subroutine interp_depth_elev(self, cell_, x_pos, y_pos, bed_elev, w_depth)
     ! *** Only do if the cell is valid
     if( L >= 2 .and. L <= LA )then
       ! *** INVERSE DISTANCE SQUARED interpolation, interpolate with center of surrounding cells
-      center_dist = MAX( (x_pos - XCOR(L,5))**2 + (y_pos - YCOR(L,5))**2, 1D-8)
+      center_dist = max( (x_pos - XCOR(L,5))**2 + (y_pos - YCOR(L,5))**2, 1D-8)
 
       bed_elev_1 = bed_elev_1 + BELV(L)/center_dist
       weight = weight + 1.0_rkd/center_dist
@@ -720,46 +723,46 @@ subroutine interp_bot_vel(self, cell_, x_pos, y_pos, u_vel, v_vel)
         ! *** NORTHWEST
         XOUT = XCOR(cell_,5) + ( DYP(cell_)*CVE(cell_) - DXP(cell_)*CUE(cell_) )
         YOUT = YCOR(cell_,5) + ( DYP(cell_)*CVN(cell_) - DXP(cell_)*CUN(cell_) )
-        dist_center = MAX((x_pos - XOUT)**2+(y_pos-YOUT)**2,1D-8)
+        dist_center = max((x_pos - XOUT)**2+(y_pos-YOUT)**2,1D-8)
       elseif( LL == 2 )then
         ! *** NORTH FACE (MOVE WITH DRIFTER)
         XOUT = x_pos + 0.5*( DYP(cell_)*CVE(cell_) )
         YOUT = y_pos + 0.5*( DYP(cell_)*CVN(cell_) )
-        dist_center = MAX( (x_pos-XOUT)**2 + (y_pos-YOUT)**2, 1D-8)
+        dist_center = max( (x_pos-XOUT)**2 + (y_pos-YOUT)**2, 1D-8)
         v_tmp = -VFACTOR*MAX(V2(cell_,k_bot_cur),0.0)
       elseif( LL == 3 )then
         ! *** NORTHEAST
         XOUT = XCOR(cell_,5) + ( DYP(cell_)*CVE(cell_) + DXP(cell_)*CUE(cell_) )
         YOUT = YCOR(cell_,5) + ( DYP(cell_)*CVN(cell_) + DXP(cell_)*CUN(cell_) )
-        dist_center = MAX((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
+        dist_center = max((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
       elseif( LL == 4 )then
         ! *** WEST FACE (MOVE WITH DRIFTER)
         XOUT = x_pos - 0.5*( DXP(cell_)*CUE(cell_) )
         YOUT = y_pos - 0.5*( DXP(cell_)*CUN(cell_) )
-        dist_center = MAX( (x_pos-XOUT)**2 + (y_pos-YOUT)**2, 1D-8)
+        dist_center = max( (x_pos-XOUT)**2 + (y_pos-YOUT)**2, 1D-8)
         u_tmp = -VFACTOR*MIN(U2(LEC(cell_),k_bot_cur),0.0)
       elseif( LL == 6 )then
         ! *** EAST FACE (MOVE WITH DRIFTER)
         XOUT = x_pos + 0.5*( DXP(cell_)*CUE(cell_) )
         YOUT = y_pos + 0.5*( DXP(cell_)*CUN(cell_) )
-        dist_center = MAX( (x_pos-XOUT)**2 + (y_pos-YOUT)**2, 1D-8)
+        dist_center = max( (x_pos-XOUT)**2 + (y_pos-YOUT)**2, 1D-8)
         u_tmp = -VFACTOR*MAX(U2(cell_,k_bot_cur),0.0)
       elseif( LL == 7 )then
         ! *** SOUTHWEST
         XOUT = XCOR(cell_,5) - ( DYP(cell_)*CVE(cell_) + DXP(cell_)*CUE(cell_) )
         YOUT = YCOR(cell_,5) - ( DYP(cell_)*CVN(cell_) + DXP(cell_)*CUN(cell_) )
-        dist_center = MAX((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
+        dist_center = max((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
       elseif( LL == 8 )then
         ! *** SOUTH
         XOUT = x_pos - 0.5*( DYP(cell_)*CVE(cell_) )
         YOUT = y_pos - 0.5*( DYP(cell_)*CVN(cell_) )
-        dist_center = MAX((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
+        dist_center = max((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
         v_tmp  = -VFACTOR*MIN(V2(LNC(cell_),k_bot_cur),0.0)
       elseif( LL == 9 )then
         ! *** SOUTHEAST
         XOUT = XCOR(cell_,5) - ( DYP(cell_)*CVE(cell_) - DXP(cell_)*CUE(cell_) )
         YOUT = YCOR(cell_,5) - ( DYP(cell_)*CVN(cell_) - DXP(cell_)*CUN(cell_) )
-        dist_center = MAX((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
+        dist_center = max((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
       endif
 
       l = cell_
@@ -800,7 +803,7 @@ subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
   implicit none
 
   ! *** dummy variables
-  class(active_ship), intent(inout),target :: self
+  class(active_ship), intent(inout),target  :: self
   real(kind = rkd), intent(in)      :: ax               !< axial distance away from the starting point
   real(kind = rkd), intent(in)      :: radius           !< radius from the center point
   real(kind = rkd), intent(inout)   :: bot_velocity     !< radial velocity we want to calculate
@@ -958,14 +961,15 @@ subroutine calc_erosive_flux(self, debug_)
   character(31)    :: filename
   logical          :: bflag
   type(ship_type), pointer :: ship 
-  type(position), pointer :: stern,antenna 
+  type(position), pointer :: stern,antenna         
   type(position_cell), pointer :: pt
+  type(mesh), pointer :: node
   
   ship => self.ship
   stern => self.stern
   antenna => self.antenna
   pt => self.pos
-  
+
   ! *** Ignore track points outside domain
   if( pt.cell < 2 ) return
 
@@ -1142,7 +1146,7 @@ subroutine calc_erosive_flux(self, debug_)
           endif
         
           close(801)
-          open(unit = 801,file = OUTDIR//filename,status = 'OLD',position = 'APPEND',FORM = FMT_BINARY,shared)
+          open(unit = 801,file = OUTDIR//filename,status = 'OLD',position = 'APPEND',form = FMT_BINARY,shared)
 
           write(801) timeday
           write(801) real(pt.x_pos - center_x, 4)
@@ -1250,7 +1254,7 @@ subroutine create_linkage(self)
   write(filename, '(A8,I9.9,A4)')    'pw_mesh_',self.mmsi, '.out'
   open(unit = 801,file = OUTDIR//filename,status = 'UNKNOWN')
   close(801,status = 'DELETE')
-  open(unit = 801,file = OUTDIR//filename,status = 'UNKNOWN',access = 'SEQUENTIAL',FORM = FMT_BINARY)
+  open(unit = 801,file = OUTDIR//filename,status = 'UNKNOWN',access = 'SEQUENTIAL',form = FMT_BINARY)
   filename = self.name
   write(801) int(verNum,4),int(headerSize,4),int(blockSize,4),int(varCount,4)     ! 4*4
   write(801) int(self.mmsi,4),filename                                            ! 4 + 32

@@ -119,7 +119,7 @@ Module Mod_Map_Soln
     
     ! *** Collect the LA values from each process into an array so we can figure out the displacements
     !   for future collective operations
-    call MPI_Allgather(num_active_l_local, 1, MPI_Int, all_local_LA_array, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(num_active_l_local, 1, MPI_Int, all_local_LA_array, 1, MPI_Int, DSIcomm, ierr)
 
     displacements_L_index(1) = 0 ! Want to start at L = 2
     ! *** Build up the displacements array on each process
@@ -201,7 +201,7 @@ Module Mod_Map_Soln
 
     ! *** Collect the LA values from each process into an array so we can figure out the displacements
     !   for future collective operations
-    call MPI_Allgather(num_active_l_local, 1, MPI_Int, all_local_LA_array, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(num_active_l_local, 1, MPI_Int, all_local_LA_array, 1, MPI_Int, DSIcomm, ierr)
 
     displacements_L_index(1) = 0 ! Want to start at L = 2
     ! *** Build up the displacements array on each process
@@ -281,7 +281,7 @@ Module Mod_Map_Soln
     
     ! *** Collect the LA values from each process into an array so we can figure out the displacements
     !   for future collective operations
-    call MPI_Allgather(num_active_l_local, 1, MPI_Int, all_local_LA_array, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(num_active_l_local, 1, MPI_Int, all_local_LA_array, 1, MPI_Int, DSIcomm, ierr)
     
     displacements_L_index(1) = 0 ! Want to start at L = 2
     
@@ -373,7 +373,7 @@ Subroutine Map_2D_Real(first_dim_size_local, second_dim_size_local, Soln_Local, 
     !   for future collective operations
     call MPI_Allgather(num_active_l_local, 1, MPI_Int, &
                        all_local_LA_array, 1, MPI_Int, &
-                       comm_2d, ierr)
+                       DSIcomm, ierr)
 
     displacements_L_index(1) = 0 ! Want to start at L = 2
     
@@ -464,7 +464,7 @@ Subroutine Map_2D_Real_RK8(first_dim_size_local, second_dim_size_local, Soln_Loc
     !   for future collective operations
     call MPI_Allgather(num_active_l_local, 1, MPI_Int, &
                        all_local_LA_array, 1, MPI_Int, &
-                       comm_2d, ierr)
+                       DSIcomm, ierr)
 
     displacements_L_index(1) = 0 ! Want to start at L = 2
     
@@ -553,7 +553,7 @@ Subroutine Map_2D_Int(first_dim_size_local, second_dim_size_local, Soln_Local, &
     !   for future collective operations
     call MPI_Allgather(num_active_l_local, 1, MPI_Int, &
                        all_local_LA_array, 1, MPI_Int, &
-                       comm_2d, ierr)
+                       DSIcomm, ierr)
 
     displacements_L_index(1) = 0 ! Want to start at L = 2
     
@@ -650,7 +650,7 @@ Subroutine Map_3D_Real(first_dim_size, second_dim_size, third_dim_size, Soln_Loc
     !   for future collective operations
     call MPI_Allgather(num_active_l_local, 1, MPI_Int, &
                        all_local_LA_array, 1, MPI_Int, &
-                       comm_2d, ierr)
+                       DSIcomm, ierr)
     
     displacements_L_index(1) = 0 ! Want to start at L = 2
     ! *** Build up the displacements array on each process
@@ -745,7 +745,7 @@ Subroutine Map_3D_Real_RK8(first_dim_size, second_dim_size, third_dim_size, Soln
     !   for future collective operations
     call MPI_Allgather(num_active_l_local, 1, MPI_Int, &
                        all_local_LA_array, 1, MPI_Int, &
-                       comm_2d, ierr)
+                       DSIcomm, ierr)
     
     displacements_L_index(1) = 0 ! Want to start at L = 2
     ! *** Build up the displacements array on each process
@@ -839,7 +839,7 @@ Subroutine Map_3D_Int(first_dim_size, second_dim_size, third_dim_size, Soln_Loca
     !   for future collective operations
     call MPI_Allgather(num_active_l_local, 1, MPI_Int, &
                        all_local_LA_array, 1, MPI_Int, &
-                       comm_2d, ierr)
+                       DSIcomm, ierr)
     
     displacements_L_index(1) = 0 ! Want to start at L = 2
     ! *** Build up the displacements array on each process

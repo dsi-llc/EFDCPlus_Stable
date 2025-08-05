@@ -232,7 +232,7 @@ SUBROUTINE CALTSXY(INITFLAG)
         M2 = M2 + 1
         if( M2 > TSWND(NW).NREC )then
           M2 = TSWND(NW).NREC   !** THIS ALLOWS USING EXTRAPOLATION !!!
-          EXIT
+          exit
         endif
       enddo
       MTSWLAST(NW) = M2
@@ -268,7 +268,7 @@ SUBROUTINE CALTSXY(INITFLAG)
         do ITMP = 1,NWNDMAP
           if( TIMEDAY >= TWNDMAPBEG(ITMP) .and. TIMEDAY < TWNDMAPEND(ITMP) )then
             IWMP = ITMP
-            EXIT
+            exit
           endif
         enddo
       endif
@@ -287,7 +287,7 @@ SUBROUTINE CALTSXY(INITFLAG)
     !$OMP DO PRIVATE(ND,LF,LL,L,WNDFAC,C2,TSEAST,TSNORT,WSPD,WINDXX,WINDYY,U10,CD10)
     do ND = 1,NDM  
       LF = 2+(ND-1)*LDM  
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
 
       if( WIND.IFLAG == 0 )then !2018-10-12, NTL: UPDATE TIME VARIABLE WIND FIELD
         ! *** Convert 2m wind vectors to 10m wind vectors for each cell
@@ -312,7 +312,7 @@ SUBROUTINE CALTSXY(INITFLAG)
       !$OMP DO PRIVATE(ND,LF,LL,L)
       do ND = 1,NDM  
         LF = 2+(ND-1)*LDM  
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
       
         do L = LF,LL
           call WINDSTRESS(L)
@@ -336,7 +336,7 @@ SUBROUTINE CALTSXY(INITFLAG)
         M2 = M2+1
         if( M2 > TSATM(NA).NREC )then
           M2 = TSATM(NA).NREC
-          EXIT
+          exit
         endif
       enddo
       MTSALAST(NA) = M2 
@@ -363,14 +363,14 @@ SUBROUTINE CALTSXY(INITFLAG)
         TMPVAL = 0.00066*(1.0 + 0.00115*TWETTT(NA))
         SVPWET = 10.**((0.7859 + 0.03477*TWETTT(NA))/(1. + 0.00412*TWETTT(NA)))  
         TMPVL1 = SVPWET - TMPVAL*PATMTT(NA)*(TATMTT(NA) - TWETTT(NA))
-        RHATT(NA) = MAX(TMPVL1/SVPATT(NA),0.01)
+        RHATT(NA) = max(TMPVL1/SVPATT(NA),0.01)
       else
         ! *** DIRECT ENTRY OF RELATIVE HUMIDITY
         RHATT(NA) = TWETTT(NA)  
       endif 
 
       ! *** PREVENT LOG OF ZERO
-      RHATT(NA) = MAX(RHATT(NA),0.0001) 
+      RHATT(NA) = max(RHATT(NA),0.0001) 
       
       ! *** Compute Dew Point Temp in C.  From Jensen et al. (1990) ASCE Manual No. 70
       ! *** Ambient vapor pressure in kPa 
@@ -388,7 +388,7 @@ SUBROUTINE CALTSXY(INITFLAG)
     ! *** Update average air temperature
     if( TIMEDAY >= DAYNEXT .and. NUMSTEPS > 0 )then
       TATMT(1) = SUMT/FLOAT(NUMSTEPS)
-      TATMT(1) = MAX(TATMT(1), 0.0)     ! *** TATMT(1) is only used for QC bed temperatures
+      TATMT(1) = max(TATMT(1), 0.0)     ! *** TATMT(1) is only used for QC bed temperatures
       NUMSTEPS = 0
       SUMT = 0.0
       DAYNEXT = DAYNEXT + 1.
@@ -401,7 +401,7 @@ SUBROUTINE CALTSXY(INITFLAG)
         do ITMP = 1,NATMMAP
           if( TIMEDAY >= TATMMAPBEG(ITMP) .and. TIMEDAY < TATMMAPEND(ITMP) )then
             IMAP = ITMP
-            EXIT
+            exit
           endif
         enddo
       endif
@@ -413,7 +413,7 @@ SUBROUTINE CALTSXY(INITFLAG)
     !$OMP DO PRIVATE(ND,LF,LL,L)
     do ND = 1,NDM  
       LF = 2+(ND-1)*LDM  
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
       RAINSUM(ND) = 0.0
       
       ! *************************************************************************
@@ -490,7 +490,7 @@ SUBROUTINE CALTSXY(INITFLAG)
           !$OMP DO PRIVATE(ND,LF,LL,L)    !,WNDFAC,C2,TSEAST,TSNORT,WSPD,WINDXX,WINDYY,U10,CD10)
           do ND = 1,NDM  
             LF = 2+(ND-1)*LDM  
-            LL = MIN(LF+LDM-1,LA)
+            LL = min(LF+LDM-1,LA)
         
             do L = LF,LL
                 call WINDSTRESS(L)
@@ -503,7 +503,7 @@ SUBROUTINE CALTSXY(INITFLAG)
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,NA,CLEVAPTMP,CCNHTTTMP)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
         
       ! *** EVAPORATION WIND FUNCTION (FW)
       if( IEVAP == 2 .or. ISTOPT(2) == 1 )then
@@ -512,7 +512,7 @@ SUBROUTINE CALTSXY(INITFLAG)
             L = LWET(LP)  
             if( LSVHTWINDE(L) )then
               CLEVAPTMP = 1.E-3*(0.8 + 0.065*WINDST(L))  
-              CLEVAP(L) = MAX(SVREVC(L),CLEVAPTMP)  
+              CLEVAP(L) = max(SVREVC(L),CLEVAPTMP)  
             endif
           enddo
         else
@@ -521,7 +521,7 @@ SUBROUTINE CALTSXY(INITFLAG)
             do LP = LF,LL
               L = LWET(LP)  
               CLEVAP(L) = 1.E-3*(0.8 + 0.065*WINDST(L))  
-              CLEVAP(L) = MAX(CLEVAP(L),CLEVAPTMP)  
+              CLEVAP(L) = max(CLEVAP(L),CLEVAPTMP)  
             enddo  
           endif
         endif
@@ -535,7 +535,7 @@ SUBROUTINE CALTSXY(INITFLAG)
             L = LWET(LP)  
             if( LSVHTWINDC(L) )then
               CCNHTTTMP = 1.E-3*(0.8+0.065*WINDST(L))  
-              CCNHTT(L) = MAX(SVRCHC(L),CCNHTTTMP)  
+              CCNHTT(L) = max(SVRCHC(L),CCNHTTTMP)  
             endif
           enddo
         else
@@ -544,7 +544,7 @@ SUBROUTINE CALTSXY(INITFLAG)
             do LP = LF,LL
               L = LWET(LP)  
               CCNHTT(L) = 1.E-3*(0.8+0.065*WINDST(L))  
-              CCNHTT(L) = MAX(CCNHTT(L),CCNHTTTMP)  
+              CCNHTT(L) = max(CCNHTT(L),CCNHTTTMP)  
             enddo  
           endif
         endif
@@ -619,7 +619,7 @@ SUBROUTINE CALTSXY(INITFLAG)
           M2 = M2 + 1
           if( M2 > TSICE(NI).NREC )then 
             M2 = TSICE(NI).NREC
-            EXIT
+            exit
           endif
         enddo
         MITLAST(NI) = M2           
@@ -647,7 +647,7 @@ SUBROUTINE CALTSXY(INITFLAG)
           do ITMP = 1,NICEMAP
             if( TIMEDAY >= TICEMAPBEG(ITMP) .and. TIMEDAY < TICEMAPEND(ITMP) )then
               IICE = ITMP
-              EXIT
+              exit
             endif
           enddo
         endif      
@@ -656,7 +656,7 @@ SUBROUTINE CALTSXY(INITFLAG)
         !$OMP DO PRIVATE(ND,LF,LL,LP,L,CLEVAPTMP,CCNHTTTMP)
         do ND = 1,NDM  
           LF = (ND-1)*LDMWET+1  
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
         
           do LP = LF,LL
             L = LWET(LP)  
@@ -670,7 +670,7 @@ SUBROUTINE CALTSXY(INITFLAG)
         !$OMP DO PRIVATE(ND,LF,LL,LP,L)
         do ND = 1,NDM  
           LF = (ND-1)*LDMWET+1  
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
         
           do LP = LF,LL
             L = LWET(LP)  
@@ -685,12 +685,12 @@ SUBROUTINE CALTSXY(INITFLAG)
       !$OMP DO PRIVATE(ND,LF,LL,LP,L,ICECOVL)
       do ND = 1,NDM  
         LF = (ND-1)*LDMWET+1  
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         
         do LP = LF,LL
           L = LWET(LP)  
           ICECOVL = NINT(ICECOVER(L))
-          ICECOVER(L) = MIN(FLOAT(ICECOVL),1.0)
+          ICECOVER(L) = min(FLOAT(ICECOVL),1.0)
           if( ICECOVL == 0 )then
             ICETHICK(L) = 0.0
             ICECELL(L) = .FALSE.
@@ -708,7 +708,7 @@ SUBROUTINE CALTSXY(INITFLAG)
       !$OMP DO PRIVATE(ND,LF,LL,L,TAUICE)
       do ND = 1,NDM  
         LF = 2+(ND-1)*LDM  
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
 
         do L = LF,LL
           if( ICECELL(L) )then
@@ -741,7 +741,7 @@ SUBROUTINE CALTSXY(INITFLAG)
 
   ! ****************************************************************************
   if( NWSER > 1 .or. iGOTM_Test )then
-    call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(DSIcomm, ierr)
     TTDS = DSTIME(0)
     call Communicate_1D2(TSX, TSY)
     TMPITMP = DSTIME(0) - TTDS
@@ -769,7 +769,7 @@ SUBROUTINE WINDSTRESS(L)
     WNDVELE(L) = WNDFAC*WNDVELE(L)
     WNDVELN(L) = WNDFAC*WNDVELN(L)
     WSPD = SQRT( WNDVELE(L)*WNDVELE(L) + WNDVELN(L)*WNDVELN(L) )    ! *** Compute magnitude of 10m wind components
-    U10 = MAX(WSPD,0.25)
+    U10 = max(WSPD,0.25)
     
     if( IWDRAG < 2 )then
       ! *** ORIGINAL EFDC WIND DRAG

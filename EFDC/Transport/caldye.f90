@@ -53,7 +53,7 @@ SUBROUTINE CALDYE
         do LP = 1,LLWET(KC,ND)
           L = LKWET(LP,KC,ND)  
           CLEFT = 1.0 + DYES(MD).SETTLE*TTHICK(L,K)
-          CRIGHT = MAX(DYE(L,KC,MD),0.0)
+          CRIGHT = max(DYE(L,KC,MD),0.0)
           DYE(L,KC,MD) = CRIGHT/CLEFT
           DYEF(L,KC-1) = -DYES(MD).SETTLE*DYE(L,KC,MD)
         enddo
@@ -62,7 +62,7 @@ SUBROUTINE CALDYE
           do LP = 1,LLWET(K-1,ND)
             L = LKWET(LP,K-1,ND) 
             CLEFT = 1.0 + DYES(MD).SETTLE*TTHICK(L,K)
-            CRIGHT = MAX(DYE(L,K,MD),0.0) - DYEF(L,K)*TTHICK(L,K)
+            CRIGHT = max(DYE(L,K,MD),0.0) - DYEF(L,K)*TTHICK(L,K)
             DYE(L,K,MD) = CRIGHT/CLEFT
             DYEF(L,K-1) = -DYES(MD).SETTLE*DYE(L,K,MD)
           enddo
@@ -118,7 +118,7 @@ SUBROUTINE CALDYE
                     DYES(MD).VOL.AIRCON, DYES(MD).VOL.TCOEFF, DYES(MD).VOL.MULT, DYE(L,KC,MD), DYES(MD).VOL.KL_OPT, 0.0)   
           
               DYE(L,KC,MD) = DYE(L,KC,MD) - VOLTERM*DYESTEP
-              DYE(L,KC,MD) = MAX(DYE(L,KC,MD), 0.0)
+              DYE(L,KC,MD) = max(DYE(L,KC,MD), 0.0)
             enddo
           enddo 
           !$OMP END PARALLEL DO

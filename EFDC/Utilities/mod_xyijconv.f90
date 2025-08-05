@@ -54,10 +54,10 @@ SUBROUTINE CONTAINERIJ(NCEL, XCLL, YCLL, ICLL, JCLL, ISVALID)
   JLN = JL(LMILOC(1)+1)    !J OF THE NEAREST CELL FOR DRIFTER     
 
   ! *** DETERMINE THE CELL CONTAINING THE DRIFTER WITHIN 9 CELLS: LLA(NCEL)
-  I1 = MAX(1,ILN-1)
-  I2 = MIN(ILN+1,ICM)
-  J1 = MAX(1,JLN-1)
-  J2 = MIN(JLN+1,JCM)
+  I1 = max(1,ILN-1)
+  I2 = min(ILN+1,ICM)
+  J1 = max(1,JLN-1)
+  J2 = min(JLN+1,JCM)
   do J = J1,J2
     do I = I1,I2
       L = LIJ(I,J)
@@ -98,10 +98,10 @@ SUBROUTINE CONTAINERIJ_GL(NCEL, XCLL, YCLL, ICLL, JCLL, ISVALID)
   JLN = JL_GL(LMILOC(1)+1)    !J OF THE NEAREST CELL FOR DRIFTER     
 
   ! *** DETERMINE THE CELL CONTAINING THE DRIFTER WITHIN 9 CELLS: LLA(NCEL)
-  I1 = MAX(1,ILN-1)
-  I2 = MIN(ILN+1,ICM_Global)
-  J1 = MAX(1,JLN-1)
-  J2 = MIN(JLN+1,JCM_Global)
+  I1 = max(1,ILN-1)
+  I2 = min(ILN+1,ICM_Global)
+  J1 = max(1,JLN-1)
+  J2 = min(JLN+1,JCM_Global)
   do J = J1,J2
     do I = I1,I2
       L = LIJ_Global(I,J)
@@ -397,11 +397,11 @@ SUBROUTINE DIST2LINE(L,IP,X0,Y0,IPOINT,OFFSET,D,X3,Y3)
 
     ! *** CHECK RANGES BUT ADD A SMALL BUFFER FOR ROUNDOFF (EPSILON)
     EPSILON = 1E-12*X3
-    if( (X3 + EPSILON) < MIN(XCOR(L,I1),XCOR(L,I2)) .or. (X3 - EPSILON) > MAX(XCOR(L,I1),XCOR(L,I2)) )then
+    if( (X3 + EPSILON) < min(XCOR(L,I1),XCOR(L,I2)) .or. (X3 - EPSILON) > max(XCOR(L,I1),XCOR(L,I2)) )then
       ! *** ON THE LINE BUT NOT IN THE SEGMENT
       D = 1E32
       return
-    elseif( (Y3 + EPSILON) < MIN(YCOR(L,I1),YCOR(L,I2)) .or. (Y3 - EPSILON) > MAX(YCOR(L,I1),YCOR(L,I2)) )then
+    elseif( (Y3 + EPSILON) < min(YCOR(L,I1),YCOR(L,I2)) .or. (Y3 - EPSILON) > max(YCOR(L,I1),YCOR(L,I2)) )then
       ! *** ON THE LINE BUT NOT IN THE SEGMENT
       D = 1E32
       return
@@ -466,18 +466,19 @@ end function
 
 FUNCTION ISINTERSECT(X1,Y1,X2,Y2,X3,Y3,X4,Y4) RESULT(XSECT) 
     implicit none
-    logical :: XSECT
     real(kind = RKD),intent(IN)  :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
-    logical :: L1,L2,L3,L4
-    L1 = ISCCW(X1,Y1,X3,Y3,X4,Y4)
-    L2 = ISCCW(X2,Y2,X3,Y3,X4,Y4)
-    L3 = ISCCW(X1,Y1,X2,Y2,X3,Y3)
-    L4 = ISCCW(X1,Y1,X2,Y2,X4,Y4)
+    logical :: XSECT
+    logical :: L134,L234,L123,L124
+
+    L134 = ISCCW(X1,Y1,X3,Y3,X4,Y4)
+    L234 = ISCCW(X2,Y2,X3,Y3,X4,Y4)
+    L123 = ISCCW(X1,Y1,X2,Y2,X3,Y3)
+    L124 = ISCCW(X1,Y1,X2,Y2,X4,Y4)
 #ifdef GNU    
-    XSECT = (L1 .neqv. L2) .and. (L3 .neqv. L4)
-#else    
-    XSECT = (L1 /= L2) .and. (L3 /= L4)
-#endif    
+    XSECT = (L134 .NEQV. L234) .AND. (L123 .NEQV. L124)
+#else
+    XSECT = (L134 /= L234) .AND. (L123 /= L124)
+#endif
 END FUNCTION
 
 FUNCTION ISCCW(X1,Y1,X2,Y2,X3,Y3) RESULT(CCW) 

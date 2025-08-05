@@ -45,9 +45,9 @@ MODULE WQ_ZOOPLANKTON
     
     type(fson_value), pointer :: json_data, zoogroups, pointsource, item
     
-    integer :: M,NAL,L,K,NS
-    integer :: I,J,ITMP,KK, NT
-    real :: TEMPOZ,WQTT 
+    integer :: M, NAL, L, K, NS
+    integer :: I, J, ITMP, KK,  NT
+    real :: TEMPOZ, WQTT, ALGMIN 
     
     if( process_id == master_id )then
       ! *** Parse the json file
@@ -254,7 +254,24 @@ MODULE WQ_ZOOPLANKTON
       
       enddo ! *** End loop for zooplankton
       WTEMPZ = WTEMPZ + WQTDZINC
-    enddo    
+    enddo  
+    
+    ! *** Do a final QC check for prey threshold and minimum biomass for mobile algae
+    ALGMIN = 0.0
+    do NZO = 1, NZOOPL
+      do NAL = 1, NALGAE
+        if( ALGAES(NAL).ISMOBILE )then
+          do M = 1,NWQZ
+            ALGMIN = max( ALGMIN, ALGAES(NAL).WQBMIN(M) )
+          enddo
+        endif
+      enddo
+      
+      ! *** Now check
+      if( ALGMIN > ZOOPL(NZO).CTZ )then
+        ZOOPL(NZO).CTZ = ALGMIN
+      endif
+    enddo
     
   END SUBROUTINE ZOOPL_CONTROL
     
@@ -300,15 +317,15 @@ MODULE WQ_ZOOPLANKTON
     !$OMP             PRIVATE(DOCZ,  DOPZ,  PO4Z,  DONZ, NH4Z, SUZ, SAZ, DOZ)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       do K = KC,1,-1         
         do LP = 1, LLWET(K,ND)
           L = LKWET(LP,K,ND)           
           ! *** Find an index for look-up table for temperature dependency
           IWQZT(L) = NINT((TWQ(L) - WQTDZMIN)/WQTDZINC) + 1  
           if( IWQZT(L) < 1 .or. IWQZT(L) > NWQTD  )then
-            IWQZT(L) = MAX(IWQZT(L),1)  
-            IWQZT(L) = MIN(IWQZT(L),NWQTD) 
+            IWQZT(L) = max(IWQZT(L),1)  
+            IWQZT(L) = min(IWQZT(L),NWQTD) 
           endif
         enddo
         
@@ -322,7 +339,7 @@ MODULE WQ_ZOOPLANKTON
             ZPLPREY = 0.
             do NZO = 1, NZOOPL
               if( ZOOPL(NZO).ISPREY == 1 )then
-                ZPLPREY = ZPLPREY + MAX(0., WQV(L,K,NWQVZ+NZO) - ZOOPL(NZO).CTZ)
+                ZPLPREY = ZPLPREY + max(0., WQV(L,K,NWQVZ+NZO) - ZOOPL(NZO).CTZ)
               endif
             enddo
             
@@ -331,14 +348,14 @@ MODULE WQ_ZOOPLANKTON
               UBZT = 0.
               do NAL = 1, NALGAE  ! *** Loop for all algal groups except macroalgal
                 if( ALGAES(NAL).ISMOBILE )then
-                  BAZ(L,NZO,NAL) = MAX(0., WQV(L,K,19+NAL) - ZOOPL(NZO).CTZ)
+                  BAZ(L,NZO,NAL) = max(0., WQV(L,K,19+NAL) - ZOOPL(NZO).CTZ)
                   UBZT = UBZT + ZOOPL(NZO).UBZ(NAL)*BAZ(L,NZO,NAL)
                 endif
               enddo
             
-              DOCAZ (L,NZO) = MAX(0., WQV(L,K,IDOC) - ZOOPL(NZO).CTZ)
-              RPOCAZ(L,NZO) = MAX(0., WQV(L,K,IROC) - ZOOPL(NZO).CTZ)
-              LPOCAZ(L,NZO) = MAX(0., WQV(L,K,ILOC) - ZOOPL(NZO).CTZ)
+              DOCAZ (L,NZO) = max(0., WQV(L,K,IDOC) - ZOOPL(NZO).CTZ)
+              RPOCAZ(L,NZO) = max(0., WQV(L,K,IROC) - ZOOPL(NZO).CTZ)
+              LPOCAZ(L,NZO) = max(0., WQV(L,K,ILOC) - ZOOPL(NZO).CTZ)
               ! *** Prey available
               PRAZ(L,NZO) = UBZT + ZOOPL(NZO).URZ*RPOCAZ(L,NZO) &
                           + ZOOPL(NZO).ULZ*LPOCAZ(L,NZO) + ZOOPL(NZO).UDZ*DOCAZ(L,NZO)
@@ -357,7 +374,7 @@ MODULE WQ_ZOOPLANKTON
               ZOOPL(NZO).WQPZ(L) = ZOOPL(NZO).PRRZ(IMWQZT(L))*WQTDPZ(IWQZT(L),NZO)
               
               ! *** Computation of zooplankton death (1/day)
-              DOREF = MIN(ZOOPL(NZO).DOCRIT, WQV(L,K,IDOX))
+              DOREF = min(ZOOPL(NZO).DOCRIT, WQV(L,K,IDOX))
               ZOOPL(NZO).WQDZ(L) = ZOOPL(NZO).DZEROZ*(1.0 - DOREF/ZOOPL(NZO).DOCRIT)
               
             enddo ! *** End of loop for zooplankton groups

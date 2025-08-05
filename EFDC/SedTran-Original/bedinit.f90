@@ -186,8 +186,8 @@
       KBT(L) = 1
       do K = 1,KB
         if( HBED(L,K) <= 0.0 )then
-          KBT(L) = MAX(1,K - 1)
-          EXIT
+          KBT(L) = max(1,K - 1)
+          exit
         endif
       enddo
     enddo
@@ -230,8 +230,8 @@
       KBT(L) = 1
       do K = 1,KB
         if( HBED(L,K) <= 0.0 )then
-          KBT(L) = MAX(1,K - 1)
-          EXIT
+          KBT(L) = max(1,K - 1)
+          exit
         endif
       enddo
     enddo
@@ -239,7 +239,7 @@
     ! *** HANDLE ACTIVE ARMORING LAYER IF NOT PRESENT IN INITIAL OR RESTART
     if( ISNDAL == 2 .and. IALSTUP > 0 .and. KB > 1 )then
       do L = 2,LA
-        KBT(L)  = MAX(1,KBT(L) - 1)
+        KBT(L)  = max(1,KBT(L) - 1)
         SEDB(L,KBT(L)+1,:) = 0.0
         SNDB(L,KBT(L)+1,:) = 0.0
         HBED(L,KBT(L)+1) = 0.0
@@ -388,8 +388,8 @@
         KBT(L) = KBB
         do K = KBB,1,-1
           if( HBED(L,K) <= 0.0 )then
-            KBT(L) = MIN(KB,K + 1)
-            EXIT
+            KBT(L) = min(KB,K + 1)
+            exit
           endif
         enddo
       enddo
@@ -398,8 +398,8 @@
         KBT(L) = 1
         do K = 1,KB
           if( HBED(L,K) <= 0.0 )then
-            KBT(L) = MAX(1,K - 1)
-            EXIT
+            KBT(L) = max(1,K - 1)
+            exit
           endif
         enddo
       enddo
@@ -673,8 +673,8 @@
         KBT(L) = KBB
         do K = KBB,1,-1
           if( HBED(L,K) <= 0.0 )then
-            KBT(L) = MIN(KB,K + 1)
-            EXIT
+            KBT(L) = min(KB,K + 1)
+            exit
           endif
         enddo
       enddo
@@ -683,8 +683,8 @@
         KBT(L) = 1
         do K = 1,KB
           if( HBED(L,K) <= 0.0 )then
-            KBT(L) = MAX(1,K - 1)
-            EXIT
+            KBT(L) = max(1,K - 1)
+            exit
           endif
         enddo
       enddo
@@ -952,7 +952,7 @@
               KT1 = KBT(L)     ! *** PARENT LAYER
               KT2 = KBT(L) - 1   ! *** LAYER BELOW PARENT
               if( KT2 > 0 )then
-                HBEDP = MIN(HBEDAL*2.,HBED(L,KT2))
+                HBEDP = min(HBEDAL*2.,HBED(L,KT2))
 
                 FRACT1  = HBEDP/HBED(L,KT1)
                 FRACT2  = (HBED(L,KT2) - (HBEDP - HBED(L,KT1)))/HBED(L,KT2)
@@ -1195,7 +1195,7 @@
       do K = 1,KB
         if( TSED0(K,L) > 0. )then
           KBT(L) = K
-          EXIT
+          exit
         endif
       enddo
       if( KBT(L) == -1 ) KBT(L) = KB

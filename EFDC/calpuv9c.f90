@@ -178,7 +178,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L)
     do ND = 1,NOPTIMAL(1)
       LF = 2+(ND-1)*LDMOPT(1)
-      LL = MIN(LF+LDMOPT(1)-1,LA)
+      LL = min(LF+LDMOPT(1)-1,LA)
 
       ! *** SET SWITCHES FOR DRYING AND WETTING
       do L = LF,LL
@@ -207,25 +207,25 @@
   !$OMP DO PRIVATE(ND,LF,LL,L,LW,LS,LN)
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
 
     if( BSC > 1.E-6 )then
       ! *** CALCULATE EXPLICIT EXTERNAL DENSITY GRADIENTS
       if( IGRIDV == 0 )then
         do L = LF,LL
           LW = LWC(L)
-          FPGXE(L) = ROLD*FPGXE(L) + RNEW*(-SBX(L)*HU(L)*GP*( (BI2W(L)+BI2W(LW))*(HP(L)-HP(LW)) + 2.0*HU(L)*(BI1W(L)-BI1W(LW)) + (BEW(L)+BEW(LW))*(BELV(L)-BELV(LW)) ) )
+          FPGXE(L) = ROLD*FPGXE(L) + RNEW*(-SBX(L)*SUBD(L)*HU(L)*GP*( (BI2W(L)+BI2W(LW))*(HP(L)-HP(LW)) + 2.0*HU(L)*(BI1W(L)-BI1W(LW)) + (BEW(L)+BEW(LW))*(BELV(L)-BELV(LW)) ) )
 
           LS = LSC(L)
-          FPGYE(L) = ROLD*FPGYE(L) + RNEW*(-SBY(L)*HV(L)*GP*( (BI2S(L)+BI2S(LS))*(HP(L)-HP(LS)) + 2.0*HV(L)*(BI1S(L)-BI1S(LS)) + (BES(L)+BES(LS))*(BELV(L)-BELV(LS)) ) )
+          FPGYE(L) = ROLD*FPGYE(L) + RNEW*(-SBY(L)*SVBD(L)*HV(L)*GP*( (BI2S(L)+BI2S(LS))*(HP(L)-HP(LS)) + 2.0*HV(L)*(BI1S(L)-BI1S(LS)) + (BES(L)+BES(LS))*(BELV(L)-BELV(LS)) ) )
         enddo
       else
         do L = LF,LL
           LW = LWC(L)
-          FPGXE(L) = ROLD*FPGXE(L) + RNEW*(-SBX(L)*HU(L)*GP*( (BI2W(L)+BI2E(LW))*(HPW(L)-HPE(LW)) + 2.0*HU(L)*(BI1W(L)-BI1E(LW)) + (BEW(L)+BEE(LW))*(BELVW(L)-BELVE(LW)) ) )
+          FPGXE(L) = ROLD*FPGXE(L) + RNEW*(-SBX(L)*SUBD(L)*HU(L)*GP*( (BI2W(L)+BI2E(LW))*(HPW(L)-HPE(LW)) + 2.0*HU(L)*(BI1W(L)-BI1E(LW)) + (BEW(L)+BEE(LW))*(BELVW(L)-BELVE(LW)) ) )
 
           LS = LSC(L)
-          FPGYE(L) = ROLD*FPGYE(L) + RNEW*(-SBY(L)*HV(L)*GP*( (BI2S(L)+BI2N(LS))*(HPS(L)-HPN(LS)) + 2.0*HV(L)*(BI1S(L)-BI1N(LS)) + (BES(L)+BEN(LS))*(BELVS(L)-BELVN(LS)) ) )
+          FPGYE(L) = ROLD*FPGYE(L) + RNEW*(-SBY(L)*SVBD(L)*HV(L)*GP*( (BI2S(L)+BI2N(LS))*(HPS(L)-HPN(LS)) + 2.0*HV(L)*(BI1S(L)-BI1N(LS)) + (BES(L)+BEN(LS))*(BELVS(L)-BELVN(LS)) ) )
         enddo
       endif
     endif
@@ -248,7 +248,7 @@
   !$OMP DO PRIVATE(ND,LF,LL,L,LW,LS,TMPX,TMPY,k,LN,LE,IFLAG)
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
     ! *** CALCULATE EXPLICIT EXTERNAL UHDYE AND VHDXE EQUATION TERMS
     do L = LF,LL
       LW = LWC(L)
@@ -294,7 +294,7 @@
   !$OMP DO PRIVATE(ND,LF,LL,L,LE,LS,LN,LW,RDRY,EL,EW,ES,K)
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
 
     ! *** RESET BOUNDARY CONDITIONS SWITCHES
     if( ISDRY > 0 )then
@@ -487,7 +487,7 @@
   !$OMP DO PRIVATE(ND,LF,LL,L,LE,LN,C1)
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
 
     C1 = 0.5*G
     do L = LF,LL
@@ -503,7 +503,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L,K)
     do ND = 1,NOPTIMAL(1)
       LF = 2+(ND-1)*LDMOPT(1)
-      LL = MIN(LF+LDMOPT(1)-1,LA)
+      LL = min(LF+LDMOPT(1)-1,LA)
 
       ! *** ADVANCE EXTERNAL VARIABLES
       do L = LF,LL
@@ -560,7 +560,7 @@
       ! *** LAYER U BLOCKING
       if( SUB(L) > 0.0 .and. (BLDRAFTU(LP)+BLSILLU(LP)) > 0.0 )then
         LW = LWC(L)
-        FPGXE(L) = -SBX(L)*HU(L)*GP*( (BI2W(L)+BI2E(LW))*(HPW(L)-HPE(LW)) + 2.0*HU(L)*(BI1W(L)-BI1E(LW)) + (BEW(L)+BEE(LW))*(BELVW(L)-BELVE(LW)) )                  ! *** m3/s
+        FPGXE(L) = -SBX(L)*SUBD(L)*HU(L)*GP*( (BI2W(L)+BI2E(LW))*(HPW(L)-HPE(LW)) + 2.0*HU(L)*(BI1W(L)-BI1E(LW)) + (BEW(L)+BEE(LW))*(BELVW(L)-BELVE(LW)) )          ! *** m3/s
 
         FUHDYE(L) = UHDYE(L) - DELTD2*SUB(L)*HRUO(L)*HU(L)*(P(L)-P(LW)) + SUB(L)*DELT*DXIU(L)*(DXYU(L)*(TSX(L)-RITB1*TBX(L)) + FCAXE(L) + FPGXE(L) - SNLT*FXE(L))   ! *** m3/s
       endif
@@ -568,7 +568,7 @@
       ! *** LAYER V BLOCKING
       if( SVB(L) > 0.0 .and. (BLDRAFTV(LP)+BLSILLV(LP)) > 0.0 )then
         LS = LSC(L)
-        FPGYE(L) = -SBY(L)*HV(L)*GP*( (BI2S(L)+BI2N(LS))*(HPS(L)-HPN(LS)) + 2.0*HV(L)*(BI1S(L)-BI1N(LS)) + (BES(L)+BEN(LS))*(BELVS(L)-BELVN(LS)) )
+        FPGYE(L) = -SBY(L)*SVBD(L)*HV(L)*GP*( (BI2S(L)+BI2N(LS))*(HPS(L)-HPN(LS)) + 2.0*HV(L)*(BI1S(L)-BI1N(LS)) + (BES(L)+BEN(LS))*(BELVS(L)-BELVN(LS)) )
 
         FVHDXE(L) = VHDXE(L) - DELTD2*SVB(L)*HRVO(L)*HV(L)*(P(L)-P(LS)) + SVB(L)*DELT*DYIV(L)*(DXYV(L)*(TSY(L)-RITB1*TBY(L)) - FCAYE(L) + FPGYE(L) - SNLT*FYE(L))
       endif
@@ -598,7 +598,7 @@
   !$OMP DO PRIVATE(ND,LF,LL,L,LE,LS,LN,C1)
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
 
     C1 = 0.5*G
     do L = LF,LL
@@ -646,9 +646,9 @@
   !$OMP DO PRIVATE(ND,LF,LL,L)
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
     do L = LF,LL
-      CCMNMD(ND) = MIN(CCMNMD(ND),CC(L))
+      CCMNMD(ND) = min(CCMNMD(ND),CC(L))
       FPTMP(L) = FP(L)
     enddo
   enddo   ! *** END OF DOMAIN LOOP
@@ -657,7 +657,7 @@
   !$OMP SINGLE
   CCMNM  = 1.E+18
   do ND = 1,NOPTIMAL(1)
-    CCMNM = MIN(CCMNM,CCMNMD(ND))
+    CCMNM = min(CCMNM,CCMNMD(ND))
   enddo
 
   CCMNMI = 1./CCMNM
@@ -669,7 +669,7 @@
   !$OMP DO PRIVATE(ND,LF,LL,L)
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
 
     do L = LF,LL
       CCS(L) = CS(L)*CCMNMI
@@ -695,7 +695,7 @@
   if( num_processors > 1 )then
     if( MDCHH == 0 ) CALL Congrad_MPI    ! *** MSCHH> = 1 not parallelized yet @todo
     TTDS = DSTIME(0)        ! delme - 2TL does not have this communicaiton...
-    call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(DSIcomm, ierr)
     TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
 
     TTDS = DSTIME(0)
@@ -707,7 +707,7 @@
   endif
   ! *********************************************************************************************
 
-  ITERMAX = MAX(ITERMAX,ITER)
+  ITERMAX = max(ITERMAX,ITER)
   ITERAVG = ITERAVG + ITER
   NITERAVG = NITERAVG + 1
 
@@ -715,7 +715,7 @@
   !$OMP DO PRIVATE(ND,LF,LL,L,LS,LW)
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
 
     ! *** CELL FACE DISCHARGE (M3/S)
     do L = LF,LL
@@ -764,7 +764,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L,LE,LN)
     do ND = 1,NOPTIMAL(1)
       LF = 2+(ND-1)*LDMOPT(1)
-      LL = MIN(LF+LDMOPT(1)-1,LA)
+      LL = min(LF+LDMOPT(1)-1,LA)
       do L = LF,LL
         LE = LEC(L)
         LN = LNC(L)
@@ -777,7 +777,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L,LE,LN)
     do ND = 1,NOPTIMAL(1)
       LF = 2+(ND-1)*LDMOPT(1)
-      LL = MIN(LF+LDMOPT(1)-1,LA)
+      LL = min(LF+LDMOPT(1)-1,LA)
       do L = LF,LL
         LE = LEC(L)
         LN = LNC(L)
@@ -793,7 +793,7 @@
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LN) NUM_THREADS(NOPTIMAL(1))
     do ND = 1,NOPTIMAL(1)
       LF = 2+(ND-1)*LDMOPT(1)
-      LL = MIN(LF+LDMOPT(1)-1,LA)
+      LL = min(LF+LDMOPT(1)-1,LA)
       do L = LF,LL
         HP(L) = HP(L) - DELT*DXYIP(L)*(EVAPSW(L)-QGW(L))   ! *** 2018-10-24 PMC CHANGED SIGN CONVENTION FOR SEEPAGE +(IN), -(OUT)
       enddo
@@ -818,7 +818,7 @@
           close(mpi_efdc_out_unit)
           HP(L) = 0.2*HDRY
         else
-          HP(L) = MIN(MAX(H1P(L),0.1*HDRY),0.9*HDRY)
+          HP(L) = min(MAX(H1P(L),0.1*HDRY),0.9*HDRY)
         endif
 
         ISCDRY(L) = 1
@@ -850,7 +850,7 @@
   ! *** Exchange HP ghost values
   ! ****************************************************************************
   TTDS = DSTIME(0)
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
 
   TTDS = DSTIME(0)
@@ -893,7 +893,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L,LN,LE,K,RVAL,HOLDTMP,HPPMC)
     do ND = 1,NOPTIMAL(1)
       LF = 2+(ND-1)*LDMOPT(1)
-      LL = MIN(LF+LDMOPT(1)-1,LA)
+      LL = min(LF+LDMOPT(1)-1,LA)
 
       do L = LF,LL
         if( HP(L) < HDRY )then
@@ -929,7 +929,7 @@
     !$OMP    PRIVATE(SUBW,SUBE,SVBS,SVBN,HPPMC,DHPDT,DHPDT2,RDRY,TMPVAL)
     do ND = 1,NOPTIMAL(1)
       LF = 2+(ND-1)*LDMOPT(1)
-      LL = MIN(LF+LDMOPT(1)-1,LA)
+      LL = min(LF+LDMOPT(1)-1,LA)
 
       do L = LF,LL
         if( HP(L) <= HDRY )then
@@ -1047,7 +1047,7 @@
   !$OMP DO PRIVATE(ND,LF,LL,L)
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
 
     do L = LF,LL
       P(L) = G*(HP(L) + BELV(L))
@@ -1061,7 +1061,7 @@
 
   ! *** Now gather sum of ICORDRY
   TTDS = DSTIME(0)
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
 
   TTDS = DSTIME(0)
@@ -1098,7 +1098,7 @@
     ! ****************************************************************************
     ! ***  IF SUB/SVB CHANGED THEN COMMUNICATE TO OTHER NODES
     TTDS = DSTIME(0)
-    call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(DSIcomm, ierr)
     TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
 
     TTDS = DSTIME(0)
@@ -1107,7 +1107,7 @@
     ! ****************************************************************************
   endif
 
-  NCORDRYMAX = MAX(NCORDRY,NCORDRYMAX)
+  NCORDRYMAX = max(NCORDRY,NCORDRYMAX)
   NCORDRYAVG = NCORDRYAVG + NCORDRY + 1
   NCOUNT = NCOUNT + 1
 
@@ -1159,7 +1159,7 @@
     !$OMP          PRIVATE(RDRY,BELVAVG,RVAL,HOLDTMP,TMPVAL,SVPW1,RNPORI,ETGWTMP,ETGWAVL) NUM_THREADS(NOPTIMAL(1))
     do ND = 1,NOPTIMAL(1)
       LF = 2+(ND-1)*LDMOPT(1)
-      LL = MIN(LF+LDMOPT(1)-1,LA)
+      LL = min(LF+LDMOPT(1)-1,LA)
 
       ! *** Count the number to time steps a cell is isolated, and if it has been
       ! *** isolated for more than ndrystp, and its bottom elevation is higher
@@ -1257,7 +1257,7 @@
   !$OMP                             NUM_THREADS(NOPTIMAL(1))
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
 
     !IF( ISDRY == 0 )then
     !  do L = LF,LL
@@ -1322,7 +1322,7 @@
       endif
 
       do L = LF,LL
-        AGWELV(L) = MIN(AGWELV(L),BELV(L))
+        AGWELV(L) = min(AGWELV(L),BELV(L))
       enddo
 
       ! *** ET STEP
@@ -1332,10 +1332,10 @@
           EVAPT(L) = CLEVAP(L)*0.7464E-3*WINDST(L)*(SVPW1 - VPAT(L))/PATMT(L)
         endif
         ETGWTMP = EVAPT(L)-EVAPSW(L)*DXYIP(L)        ! *** EXCESS EVAPORATION
-        ETGWTMP = MAX(ETGWTMP,0.0)
+        ETGWTMP = max(ETGWTMP,0.0)
         ETGWAVL = RNPOR*DELTI*(AGWELV(L)-BELAGW(L))
-        ETGWAVL = MAX(ETGWAVL,0.0)
-        ETGWTMP = MIN(ETGWTMP,ETGWAVL)
+        ETGWAVL = max(ETGWAVL,0.0)
+        ETGWTMP = min(ETGWTMP,ETGWAVL)
         EVAPGW(L) = ETGWTMP*DXYP(L)                  ! *** TRANSPIRATION
       enddo
 
@@ -1344,7 +1344,7 @@
       enddo
 
       do L = LF,LL
-        AGWELV(L) = MAX(AGWELV(L),BELAGW(L))
+        AGWELV(L) = max(AGWELV(L),BELAGW(L))
       enddo
     endif
 
@@ -1395,7 +1395,7 @@
       !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LN,LE,DIVEX,DIVEXMX,LMAX,LMIN,DIVEXMN) NUM_THREADS(NDM)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           if( SPB(L) /= 0 )then
             LN = LNC(L)
@@ -1419,7 +1419,7 @@
       !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LN,LE,DIVEX,DIVEXMX,LMAX,LMIN,DIVEXMN) NUM_THREADS(NDM)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           if( SPB(L) /= 0 )then
             LN = LNC(L)
@@ -1523,7 +1523,7 @@
     !$OMP                           PRIVATE(ND,LF,LL,K,LN,LP,L) NUM_THREADS(NDM)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       do K = 1,KC
         LN = 0
@@ -1561,7 +1561,7 @@
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,K,LP,L) NUM_THREADS(NDM)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       ! *** GLOBAL UPDATE OF LAYER THICKNESSES
       do K = 1,KC
@@ -1577,23 +1577,23 @@
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,K,LP,L,LW,LS) NUM_THREADS(NOPTIMAL(1))
     do ND = 1,NOPTIMAL(1)
       LF = 2+(ND-1)*LDMOPT(1)
-      LL = MIN(LF+LDMOPT(1)-1,LA)
+      LL = min(LF+LDMOPT(1)-1,LA)
       do L = LF,LL
         LW = LWC(L)
         LS = LSC(L)
 
         if( KSZ(LW) > KSZ(L) )then
-          HU(L) = MAX( 0.5*HPK(L,KSZ(LW)), HP(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
+          HU(L) = max( 0.5*HPK(L,KSZ(LW)), HP(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
         elseif( KSZ(LW) < KSZ(L) )then
-          HU(L) = MAX( 0.5*HPK(LW,KSZ(L)), HP(L)*(1.+DZC(LW,KSZ(L))*0.1) )
+          HU(L) = max( 0.5*HPK(LW,KSZ(L)), HP(L)*(1.+DZC(LW,KSZ(L))*0.1) )
         else
           HU(L) = ( DXYP(L)*HP(L) + DXYP(LW)*HP(LW) )*FSGZUDXYPI(L)
         endif
 
         if( KSZ(LS) > KSZ(L) )then
-          HV(L) = MAX( 0.5*HPK(L,KSZ(LS)), HP(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
+          HV(L) = max( 0.5*HPK(L,KSZ(LS)), HP(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
         elseif( KSZ(LS) < KSZ(L) )then
-          HV(L) = MAX( 0.5*HPK(LS,KSZ(L)), HP(L)*(1.+DZC(LS,KSZ(L))*0.1) )
+          HV(L) = max( 0.5*HPK(LS,KSZ(L)), HP(L)*(1.+DZC(LS,KSZ(L))*0.1) )
         else
           HV(L) = ( DXYP(L)*HP(L) + DXYP(LS)*HP(LS) )*FSGZVDXYPI(L)
         endif
@@ -1613,13 +1613,13 @@
       if( BLDRAFTUO(LP)+BLSILLU(LP) > 0.0 )then
         if( BLANCHORU(LP) /= 0. )then
           BLDRAFTU(LP) = BLDRAFTUO(LP) - (BLANCHORU(LP) - (BELV0(L) + HP(L)))
-          BLDRAFTU(LP) = MAX(BLDRAFTU(LP),0.0)
+          BLDRAFTU(LP) = max(BLDRAFTU(LP),0.0)
         else
           BLDRAFTU(LP) = BLDRAFTUO(LP)
         endif
 
         ! *** RESET TO DEFAULT LAYER
-        KSZU(L) = MAX(KSZ(L), KSZ(LWC(L)))      ! *** MINUMUM ACTIVE LAYERS FOR U FACE
+        KSZU(L) = max(KSZ(L), KSZ(LWC(L)))      ! *** MINUMUM ACTIVE LAYERS FOR U FACE
         do K = 1,KC
           SUB3D(L,K) = 0.0
           if( K >= KSZU(L) )then
@@ -1632,7 +1632,7 @@
                 SGZU(L,K)  = DZC(L,K)
               endif
             else
-              SGZU(L,K)  = MAX(DZC(LWC(L),K),DZC(L,K))
+              SGZU(L,K)  = max(DZC(LWC(L),K),DZC(L,K))
             endif
           endif
         enddo
@@ -1653,7 +1653,7 @@
           SUBO(L) = 1.0
           SAAX(L) = 1.0
 
-          HU(L) = MAX(HU(L),HWET)
+          HU(L) = max(HU(L),HWET)
           HUI(L) = 1./HU(L)
 
           ! *** BLOCK CELL FACES FROM TOP
@@ -1664,9 +1664,9 @@
               KTBU(LP) = K - 1
               SUB3D(L,K) = 0.0
               SGZU(L,K) = 0.0
-              if( TMPX > BLDRAFTU(LP) ) EXIT
+              if( TMPX > BLDRAFTU(LP) ) exit
             enddo
-            KTBU(LP) = MAX(KTBU(LP),KSZU(L))
+            KTBU(LP) = max(KTBU(LP),KSZU(L))
           else
             KTBU(LP) = KC
           endif
@@ -1679,9 +1679,9 @@
               KBBU(LP) = K + 1
               SUB3D(L,K) = 0.0
               SGZU(L,K) = 0.0
-              if( TMPX > BLSILLU(LP) ) EXIT
+              if( TMPX > BLSILLU(LP) ) exit
             enddo
-            KBBU(LP) = MIN(KBBU(LP),KTBU(LP))
+            KBBU(LP) = min(KBBU(LP),KTBU(LP))
           else
             KBBU(LP) = KSZU(L)
           endif
@@ -1724,13 +1724,13 @@
       if( BLDRAFTVO(LP)+BLSILLV(LP) > 0.0 )then
         if( BLANCHORV(LP) /= 0. )then
           BLDRAFTV(LP) = BLDRAFTVO(LP) - (BLANCHORV(LP) - (BELV0(L) + HP(L)))
-          BLDRAFTV(LP) = MAX(BLDRAFTV(LP),0.0)
+          BLDRAFTV(LP) = max(BLDRAFTV(LP),0.0)
         else
           BLDRAFTV(LP) = BLDRAFTVO(LP)
         endif
 
         ! *** RESET TO DEFAULT LAYER
-        KSZV(L) = MAX(KSZ(L), KSZ(LSC(L)))      ! *** MINUMUM ACTIVE LAYERS FOR V FACE
+        KSZV(L) = max(KSZ(L), KSZ(LSC(L)))      ! *** MINUMUM ACTIVE LAYERS FOR V FACE
         do K = 1,KC
           SVB3D(L,K)  = 0.0
           SVB3DO(L,K) = 0.0
@@ -1744,7 +1744,7 @@
                 SGZV(L,K)  = DZC(L,K)
               endif
             else
-              SGZV(L,K)  = MAX(DZC(LSC(L),K),DZC(L,K))
+              SGZV(L,K)  = max(DZC(LSC(L),K),DZC(L,K))
             endif
           endif
         enddo
@@ -1765,7 +1765,7 @@
           SVBO(L) = 1.0
           SAAY(L) = 1.0
 
-          HV(L) = MAX(HV(L),HWET)
+          HV(L) = max(HV(L),HWET)
           HVI(L) = 1./HV(L)
 
           ! *** BLOCK CELL FACES FROM TOP
@@ -1776,9 +1776,9 @@
               KTBV(LP) = K - 1
               SVB3D(L,K) = 0.0
               SGZV(L,K) = 0.0
-              if( TMPY > BLDRAFTV(LP) ) EXIT
+              if( TMPY > BLDRAFTV(LP) ) exit
             enddo
-            KTBV(LP) = MAX(KTBV(LP),KSZV(L))
+            KTBV(LP) = max(KTBV(LP),KSZV(L))
           else
             KTBV(LP) = KC
           endif
@@ -1791,9 +1791,9 @@
               KBBV(LP) = K + 1
               SVB3D(L,K) = 0.0
               SGZV(L,K) = 0.0
-              if( TMPX > BLSILLV(LP) ) EXIT
+              if( TMPX > BLSILLV(LP) ) exit
             enddo
-            KBBV(LP) = MIN(KBBV(LP),KTBV(LP))
+            KBBV(LP) = min(KBBV(LP),KTBV(LP))
           else
             KBBV(LP) = KSZV(L)
           endif
@@ -1851,7 +1851,7 @@
 
   ! ****************************************************************************
   TTDS = DSTIME(0)
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
 
   TTDS = DSTIME(0)
@@ -1863,7 +1863,7 @@
   !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NOPTIMAL, LDMOPT, LA, HP, HPI, HU, HUI, HV, HVI) PRIVATE(ND,LF,LL,L) NUM_THREADS(NOPTIMAL(1))
   do ND = 1,NOPTIMAL(1)
     LF = 2+(ND-1)*LDMOPT(1)
-    LL = MIN(LF+LDMOPT(1)-1,LA)
+    LL = min(LF+LDMOPT(1)-1,LA)
 
     do L = LF,LL
       HPI(L) = 1./HP(L)

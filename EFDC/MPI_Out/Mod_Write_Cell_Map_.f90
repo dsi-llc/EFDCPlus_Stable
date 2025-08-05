@@ -33,7 +33,7 @@
 
   ! *** Local
 
-  if(write_out )then
+  if( write_out )then
 
     call WriteBreak(mpi_log_unit)
 
@@ -149,7 +149,7 @@
 
   implicit none
 
-  if(MPI_Write_Flag )then
+  if( MPI_Write_Flag )then
 
     call WriteBreak(mpi_log_unit)
 

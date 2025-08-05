@@ -217,7 +217,7 @@ SUBROUTINE CALUVW
     if( ISDYNSTP > 0 .or. ISITB >= 1 .or. LSEDZLJ .or. (ISTRAN(5) > 0 .and. ISTRAN(2) > 0 .and. ANY(ITOXKIN(3,:) > 0)) ) IUPDATE_UVHE = 1
       
     ! ****************************************************************************
-    call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(DSIcomm, ierr)
     call communicate_ghost_cells(CERRU)
     call communicate_ghost_cells(CERRV)
     ! ****************************************************************************
@@ -277,7 +277,7 @@ SUBROUTINE CALUVW
     !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,LASGZ1,LDMSGZ1,LSGZ1,KSZ,UHDYE,UHDYF,UHDY,HUI,DYIU,U,VHDXE,VHDXF,VHDX,HVI,DXIV,V,W) PRIVATE(ND,LF,LL,LP,L)
     do ND = 1,NDM
       LF = (ND-1)*LDMSGZ1+1
-      LL = MIN(LF+LDMSGZ1-1,LASGZ1)
+      LL = min(LF+LDMSGZ1-1,LASGZ1)
 
       do LP = LF,LL
         L = LSGZ1(LP)
@@ -372,9 +372,9 @@ SUBROUTINE CALUVW
         Q2 = -0.5*DZC(L,K)*( UHDYE(LE)+UHDY1E(LE) - UHDYE(L)-UHDY1E(L) + &
                              VHDXE(LN)+VHDX1E(LN) - VHDXE(L)-VHDX1E(L) - QSUME(L) )    ! *** FLUX DUE TO HORIZONTAL IN/OUT FLOWS
         if( HPDEL > 0. )then
-          UHDYEK(L,K) = MAX(Q1,Q2)
+          UHDYEK(L,K) = max(Q1,Q2)
         else
-          UHDYEK(L,K) = MIN(Q1,Q2)
+          UHDYEK(L,K) = min(Q1,Q2)
         endif
         VHDXEK(L,K) = 0.0
       enddo
@@ -387,7 +387,7 @@ SUBROUTINE CALUVW
   !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,LE,LW,LS,LN,RCDZL,RCDZM,RCDZU,CMU,EU,CMV,EV,CRU,CRV)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do K = 1,KS
       do LP = 1,LLWETZ(K,ND)
@@ -500,7 +500,7 @@ SUBROUTINE CALUVW
   !$OMP DO PRIVATE(ND,LF,LL,K,LP,L)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     ! *** ADJUST FLOWS BASED ON INTERNAL SHEARS
 
@@ -584,7 +584,7 @@ SUBROUTINE CALUVW
   !$OMP DO PRIVATE(ND,LF,LL,LP,L,K)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do LP = 1,LLWETZ(KC,ND)
       L = LKWETZ(LP,KC,ND)
@@ -626,7 +626,7 @@ SUBROUTINE CALUVW
   !$OMP DO PRIVATE(ND,LF,LL,LP,L,K)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do K = 1,KC
       do LP = 1,LLWETZ(K,ND)
@@ -669,7 +669,7 @@ SUBROUTINE CALUVW
   !$OMP END DO
 
   !$OMP SINGLE
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TTDS = DSTIME(0)
   call Communicate_UVW1   ! *** Communicate UHDY and VHDX before W calculations
   
@@ -818,7 +818,7 @@ SUBROUTINE CALUVW
 
   ! ***************************************************************************
   ! *** MPI Communication
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TTDS = DSTIME(0)
   call Communicate_UVW3   ! *** Communicate U, V, and W
 
@@ -907,7 +907,7 @@ SUBROUTINE CALUVW
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,LE,LW,LS,LN,K,IOBC,HPPTMP)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       if( ISTL == 3 )then
         ! *** 3TL AND ISTL = 3
@@ -924,7 +924,7 @@ SUBROUTINE CALUVW
             LW = 0
             do IOBC = 1,NBCSOP
               LW = LOBCS(IOBC)
-              if( L == LW )EXIT
+              if( L == LW )exit
             enddo
             if( L == LW ) CYCLE
 
@@ -1018,7 +1018,7 @@ SUBROUTINE CALUVW
             LW = 0
             do IOBC = 1,NBCSOP
               LW = LOBCS(IOBC)
-              if( L == LW )EXIT
+              if( L == LW )exit
             enddo
             if( L == LW ) CYCLE
 
@@ -1117,7 +1117,7 @@ SUBROUTINE CALUVW
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,AMPL,SINHH,C1,C2,STOKESU,STOKESW,THETA,STOKESX,STOKESY)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       if( ISSSMMT == 2 )then
         do LP = LF,LL
@@ -1213,7 +1213,7 @@ SUBROUTINE CALUVW
     enddo
   endif
   
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TTDS = DSTIME(0)
   call Communicate_1D2(HP, HPI)   ! *** Communicate HP and HPI after continuity checks
   !Call communicate_ghost_cells(HP, 'HP')   ! *** Communicate HP after continuity checks
@@ -1225,7 +1225,7 @@ SUBROUTINE CALUVW
   !$OMP DO PRIVATE(ND,LF,LL,K,LP,L)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
     do K = 1,KC
       do LP = 1,LLWET(K,ND)
         L = LKWET(LP,K,ND)
@@ -1255,13 +1255,13 @@ SUBROUTINE CALUVW
     do K = 1,KC
       do L = 2,LA
         CFLUUUT     = DELT*ABS(DXIU(L)*U(L,K))
-        CFLUUU(L,K) = MAX(CFLUUUT,CFLUUU(L,K))
+        CFLUUU(L,K) = max(CFLUUUT,CFLUUU(L,K))
         CFLVVVT     = DELT*ABS(DYIV(L)*V(L,K))
-        CFLVVV(L,K) = MAX(CFLVVVT,CFLVVV(L,K))
+        CFLVVV(L,K) = max(CFLVVVT,CFLVVV(L,K))
         CFLWWWT     = DELT*ABS(HPI(L)*DZIG(L,K)*W(L,K))
-        CFLWWW(L,K) = MAX(CFLWWWT,CFLWWW(L,K))
+        CFLWWW(L,K) = max(CFLWWWT,CFLWWW(L,K))
         CFLCACT     = DELT*ABS(CAC(L,K)*DXYIP(L)*HPI(L))
-        CFLCAC(L,K) = MAX(CFLCACT,CFLCAC(L,K))
+        CFLCAC(L,K) = max(CFLCACT,CFLCAC(L,K))
       enddo
     enddo
   endif
@@ -1300,7 +1300,7 @@ SUBROUTINE CALUVW
       VNTMP = ABS(DYIV(LN)*U2(LN,K))
       WBTMP = 0.
       WTTMP = ABS(HPKI(L,K)*W2(L,K))
-      DTMAXI = MAX(UWTMP,UETMP)+MAX(VSTMP,VNTMP)+MAX(WBTMP,WTTMP)  +1.0E-12
+      DTMAXI = max(UWTMP,UETMP)+MAX(VSTMP,VNTMP)+MAX(WBTMP,WTTMP)  +1.0E-12
       DTMAXX = 0.5/DTMAXI
       if( DTMAXX < DTCFL )then
         DTCFL = DTMAXX
@@ -1319,7 +1319,7 @@ SUBROUTINE CALUVW
         VNTMP = ABS(DYIV(LN )*U2(LN ,K))
         WTTMP = 0.
         WBTMP = ABS(HPKI(L,K)*W2(L,K-1))
-        DTMAXI = MAX(UWTMP,UETMP)+MAX(VSTMP,VNTMP)+MAX(WBTMP,WTTMP)  +1.0E-12
+        DTMAXI = max(UWTMP,UETMP)+MAX(VSTMP,VNTMP)+MAX(WBTMP,WTTMP)  +1.0E-12
         DTMAXX = 0.5/DTMAXI
         if( DTMAXX < DTCFL )then
           DTCFL = DTMAXX
@@ -1339,7 +1339,7 @@ SUBROUTINE CALUVW
           VNTMP = ABS(DYIV(LN)*U2(LN,K))
           WBTMP = ABS(HPKI(L,K)*W2(L,K-1))
           WTTMP = ABS(HPKI(L,K)*W2(L,K))
-          DTMAXI = MAX(UWTMP,UETMP)+MAX(VSTMP,VNTMP)+MAX(WBTMP,WTTMP)  +1.0E-12
+          DTMAXI = max(UWTMP,UETMP)+MAX(VSTMP,VNTMP)+MAX(WBTMP,WTTMP)  +1.0E-12
           DTMAXX = 0.5/DTMAXI
           if( DTMAXX < DTCFL )then
             DTCFL = DTMAXX

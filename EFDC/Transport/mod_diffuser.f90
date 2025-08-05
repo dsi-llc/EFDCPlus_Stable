@@ -998,7 +998,7 @@ SUBROUTINE JPEFDC
           ENTF3 = 0.5*PI*RADJ(N2)*(COSPHJ*COSTHJL - COSPHJM*COSTHJLM)/(DELSIG)
         endif
         ENTF = ENTF1 + ENTF2 + ENTF3
-        ENTF = MAX(ENTF,0.)
+        ENTF = max(ENTF,0.)
         DRMAJF(N2) = DTJP*RHOA(N2)*RADJ(N2)*RLEJ(N2)*VAH*ENTF
         if( NJE == 2 .and. NI == 1 )DRMAJF(N2) = 0.
         DRMAJFA = 0.5*(DRMAJF(N2) + DRMAJF(N1))
@@ -1007,7 +1007,7 @@ SUBROUTINE JPEFDC
         IFORCE = 0
         if( JET_PLM(NJP).ISENT == 0 )then
           ! ***  TAKE MAX OF SHEAR AND FORCED
-          DRMAJ = MAX(DRMAJSA,DRMAJFA)
+          DRMAJ = max(DRMAJSA,DRMAJFA)
         else
           ! ***  TAKE SUM OF SHEAR AND FORCED
           DRMAJ = DRMAJSA + DRMAJFA
@@ -1229,7 +1229,7 @@ SUBROUTINE JPEFDC
               write(10,615) TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             endif
 
-            EXIT
+            exit
           endif
         endif
 
@@ -1246,7 +1246,7 @@ SUBROUTINE JPEFDC
               write(10,616) TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             endif
             
-            EXIT
+            exit
           endif
         endif
 
@@ -1263,7 +1263,7 @@ SUBROUTINE JPEFDC
               write(10,612) TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             endif
             
-            EXIT
+            exit
           endif
         endif
 
@@ -1280,7 +1280,7 @@ SUBROUTINE JPEFDC
               write(10,613) TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             endif
             
-            EXIT
+            exit
           endif
         endif
 
@@ -1298,7 +1298,7 @@ SUBROUTINE JPEFDC
               write(10,614)  "R", TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             endif
             
-            EXIT
+            exit
           endif
         endif
 
@@ -1315,7 +1315,7 @@ SUBROUTINE JPEFDC
               write(10,614)  "F", TIMEDAY, NJP, NJE, NI, BELV(LJP), ZJG(N2), ZSUR
             endif
             
-            EXIT
+            exit
           endif
         endif
 
@@ -1380,7 +1380,7 @@ SUBROUTINE JPEFDC
               VJPAVG(K,NJP) = VJG(N2)/RMAJI
               WJPAVG(K,NJP) = WJG(N2)/RMAJI
             endif
-            EXIT
+            exit
           endif
         enddo
 
@@ -1405,7 +1405,7 @@ SUBROUTINE JPEFDC
         !          !WRITE(10, '(A,I10,F15.4,I8,I5,4F8.3,3f10.3,A)') 'Rising Exit ',NITER, TIMEDAY, NJE, NI, ABS(RHOJ(N2)-RHOA(N2))/EXITRHO, abs(RHO_DELTA)/exitrho, TEMA, TEMJ(N2), RADJ(N2), SIG(N2), ZJG(N2), '  New Exit'
         !        endif
         !    
-        !        !EXIT                         ! *** Jet calculations diverging from convergence
+        !        !exit                         ! *** Jet calculations diverging from convergence
         !      endif
         !    else
         !      ! *** Falling plume
@@ -1419,7 +1419,7 @@ SUBROUTINE JPEFDC
         !          write(10, '(A,I10,F15.4,I8,I5,4F8.3,A)') 'Rising Exit ',NITER, TIMEDAY, NJE, NI, ABS(RHOJ(N2)-RHOA(N2))/EXITRHO, abs(RHO_DELTA)/exitrho, TEMA, TEMJ(N2), ZJG(N2), SIG(N2), '  New Exit'
         !        endif
         !        
-        !        EXIT                         ! *** Jet calculations diverging from convergence
+        !        exit                         ! *** Jet calculations diverging from convergence
         !      endif              
         !    endif
         !    RHO_DELTA2 = RHO_DELTA
@@ -1543,8 +1543,8 @@ SUBROUTINE JPEFDC
       ZTMP = ( ZJGNE-BELV(LJP) )/HP(LJP)
       ZTMP = RKC*ZTMP
       KTMP = INT(ZTMP) + KL 
-      KTMP = MAX(KL,KTMP)
-      KTMP = MIN(KC,KTMP)
+      KTMP = max(KL,KTMP)
+      KTMP = min(KC,KTMP)
       if( KFLAG == 0 ) KEFFJP(NJP) = KTMP
       GOTO 9001
 
@@ -1643,8 +1643,8 @@ FUNCTION FUNDEN(SALIN, SEDIN, TEMIN)
   SDEN = 1./2500000.
 
   ! ***  DENSITY AT GIVEN VALUES OF SAL AND TEM
-  SSTMP = MIN(MAX(SALIN,0.),70.)
-  TTMP  = MIN(MAX(TEMIN,0.),90.)
+  SSTMP = min(MAX(SALIN,0.),70.)
+  TTMP  = min(MAX(TEMIN,0.),90.)
   RHTMP = 999.842594
   
   RHTMP = RHTMP + 6.793952E-2*TTMP - 9.095290E-3*TTMP*TTMP +1.001685E-4*TTMP*TTMP*TTMP - 1.120083E-6*TTMP*TTMP*TTMP*TTMP + 6.536332E-9*TTMP*TTMP*TTMP*TTMP*TTMP

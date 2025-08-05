@@ -44,7 +44,7 @@ Subroutine Report_Max_Min_Timing(routine_time, time_id)
     open(time_log_unit,FILE = OUTDIR//'TIME.LOG',POSITION = 'APPEND')
   endif
 
-  if( first_time )then
+  if( first_time  )then
     if(process_id == master_id )then
       call WriteBreak(time_log_unit)
       write(time_log_unit,'(A,/)') 'Reporting Max/Min from each process for load balancing analysis'
@@ -59,7 +59,7 @@ Subroutine Report_Max_Min_Timing(routine_time, time_id)
   
   ! *** Get the time each process has spent in a respective routine
   ! *** This is collected in an array so we can identify which process was the min/max
-  call MPI_AllGather(routine_time, 1, MPI_Real8, timing_frm_all_procs, 1, MPI_Real8, comm_2d, ierr)
+  call MPI_AllGather(routine_time, 1, MPI_Real8, timing_frm_all_procs, 1, MPI_Real8, DSIcomm, ierr)
   
   ! ***  Write to the TIME.LOG file only on master
   if(process_id == master_id )then

@@ -136,8 +136,8 @@ SUBROUTINE CELLMAP
   JL(1)= 0
   JL(LC) = 0
 
-  ! *** Wind Fetch Mask Assingments
-  UMASK(0:1) = 1
+  ! *** Path intersect flags for masks ( 0 - No mask, 1 - mask set )
+  UMASK(0:1) = 1    
   UMASK(LC)  = 1
   VMASK(0:1) = 1
   VMASK(LC)  = 1
@@ -249,49 +249,49 @@ SUBROUTINE CELLMAP
     if( IJCT(I+1,J) == 0 .or. IJCT(I+1,J) == 9 )then
       LEC(L) = LC
     else
-      LEC(L) = MAX(LIJ(I+1,J), 1)
+      LEC(L) = max(LIJ(I+1,J), 1)
     endif
     
     if( IJCT(I-1,J) == 0 .or. IJCT(I-1,J) == 9 )then
       LWC(L) = LC
     else
-      LWC(L) = MAX(LIJ(I-1,J), 1)
+      LWC(L) = max(LIJ(I-1,J), 1)
     endif
 
     if( IJCT(I,J+1) == 0 .or. IJCT(I,J+1) == 9 )then
       LNC(L) = LC
     else
-      LNC(L) = MAX(LIJ(I,J+1), 1)
+      LNC(L) = max(LIJ(I,J+1), 1)
     endif
 
     if( IJCT(I,J-1) == 0 .or. IJCT(I,J-1) > 8 )then
       LSC(L) = LC
     else
-      LSC(L) = MAX(LIJ(I,J-1), 1)
+      LSC(L) = max(LIJ(I,J-1), 1)
     endif
 
     if( IJCT(I+1,J+1) == 0 .or. IJCT(I+1,J+1) == 9 )then
       LNEC(L) = LC
     else
-      LNEC(L) = MAX(LIJ(I+1,J+1),1)
+      LNEC(L) = max(LIJ(I+1,J+1),1)
     endif
 
     if( IJCT(I-1,J+1) == 0 .or. IJCT(I-1,J+1) == 9 )then
       LNWC(L) = LC
     else
-      LNWC(L) = MAX(LIJ(I-1,J+1),1)
+      LNWC(L) = max(LIJ(I-1,J+1),1)
     endif
     
     if( IJCT(I+1,J-1) == 0 .or. IJCT(I+1,J-1) == 9 )then
       LSEC(L) = LC
     else
-      LSEC(L) = MAX(LIJ(I+1,J-1),1)
+      LSEC(L) = max(LIJ(I+1,J-1),1)
     endif
 
     if( IJCT(I-1,J-1) == 0 .or. IJCT(I-1,J-1) == 9 )then
       LSWC(L) = LC
     else
-      LSWC(L) = MAX(LIJ(I-1,J-1),1)
+      LSWC(L) = max(LIJ(I-1,J-1),1)
     endif
 
   enddo
@@ -303,31 +303,31 @@ SUBROUTINE CELLMAP
     do NPN = 1,NPEWBP !***NPEWBP is now local to a subdomain
         
         L = LIJ(IWPEW(NPN),JWPEW(NPN))
-        LWC(L) = MAX(LIJ(IEPEW(NPN),JEPEW(NPN)), 1)
+        LWC(L) = max(LIJ(IEPEW(NPN),JEPEW(NPN)), 1)
         
         if( IJCT(IEPEW(NPN),JEPEW(NPN)-1) == 9 )then
             LSWC(L) = LC
         else
-            LSWC(L) = MAX(LIJ(IEPEW(NPN),JEPEW(NPN)-1), 1)
+            LSWC(L) = max(LIJ(IEPEW(NPN),JEPEW(NPN)-1), 1)
         endif
         if( IJCT(IEPEW(NPN),JEPEW(NPN)+1) == 9 )then
             LNWC(L) = LC
         else
-            LNWC(L) = MAX(LIJ(IEPEW(NPN),JEPEW(NPN)+1), 1)
+            LNWC(L) = max(LIJ(IEPEW(NPN),JEPEW(NPN)+1), 1)
         endif
 
         L = LIJ(IEPEW(NPN),JEPEW(NPN))
-        LEC(L) = MAX(LIJ(IWPEW(NPN),JWPEW(NPN)), 1)
+        LEC(L) = max(LIJ(IWPEW(NPN),JWPEW(NPN)), 1)
         
         if( IJCT(IWPEW(NPN),JWPEW(NPN)-1) == 9 )then
             LSEC(L) = LC
         else
-            LSEC(L) = MAX(LIJ(IWPEW(NPN),JWPEW(NPN)-1), 1)
+            LSEC(L) = max(LIJ(IWPEW(NPN),JWPEW(NPN)-1), 1)
         endif
         if( IJCT(IWPEW(NPN),JWPEW(NPN)+1) == 9 )then
             LNEC(L) = LC
         else
-            LNEC(L) = MAX(LIJ(IWPEW(NPN),JWPEW(NPN)+1), 1)
+            LNEC(L) = max(LIJ(IWPEW(NPN),JWPEW(NPN)+1), 1)
         endif
 
     enddo !***End do over # of connectors
@@ -340,31 +340,31 @@ SUBROUTINE CELLMAP
     do NPN = 1,NPNSBP
 
       LS = LIJ(ISPNS(NPN),JSPNS(NPN))
-      LSC(LS) = MAX(LIJ(INPNS(NPN),JNPNS(NPN)), 1)
+      LSC(LS) = max(LIJ(INPNS(NPN),JNPNS(NPN)), 1)
 
       if( IJCT(INPNS(NPN)+1,JNPNS(NPN)) == 9 )then
         LSEC(LS) = LC
       else
-        LSEC(LS) = MAX(LIJ(INPNS(NPN)+1,JNPNS(NPN)), 1)
+        LSEC(LS) = max(LIJ(INPNS(NPN)+1,JNPNS(NPN)), 1)
       endif
       if( IJCT(INPNS(NPN)-1,JNPNS(NPN)) == 9 )then
         LSWC(LS) = LC
       else
-        LSWC(LS) = MAX(LIJ(INPNS(NPN)-1,JNPNS(NPN)), 1)
+        LSWC(LS) = max(LIJ(INPNS(NPN)-1,JNPNS(NPN)), 1)
       endif
 
       LN = LIJ(INPNS(NPN),JNPNS(NPN))
-      LNC(LN) = MAX(LIJ(ISPNS(NPN),JSPNS(NPN)), 1)
+      LNC(LN) = max(LIJ(ISPNS(NPN),JSPNS(NPN)), 1)
 
       if( IJCT(ISPNS(NPN)+1,JSPNS(NPN)) == 9 )then
         LNEC(LN) = LC
       else
-        LNEC(LN) = MAX(LIJ(ISPNS(NPN)+1,JSPNS(NPN)), 1)
+        LNEC(LN) = max(LIJ(ISPNS(NPN)+1,JSPNS(NPN)), 1)
       endif
       if( IJCT(ISPNS(NPN)-1,JSPNS(NPN)) == 9 )then
         LNWC(LN) = LC
       else
-        LNWC(LN) = MAX(LIJ(ISPNS(NPN)-1,JSPNS(NPN)), 1)
+        LNWC(LN) = max(LIJ(ISPNS(NPN)-1,JSPNS(NPN)), 1)
       endif
     enddo
   endif ! isconnect = 1 or = 3

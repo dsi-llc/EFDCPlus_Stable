@@ -41,7 +41,7 @@ FUNCTION CSNDZEQ(IOPT, SNDDIA, GPDIASED, TAUR, TAUB, SNDDMX, DEP, SSG, WS)
     TMPVAL = 26.3*SNDDMX*(TAUB-TAUR)/GPDIASED  
     TMPVAL = TMPVAL*SNDDIA/SNDDMX  
     TMPVAL = TMPVAL/DEP  
-    CSNDZEQ = MAX(TMPVAL,0.01)  
+    CSNDZEQ = max(TMPVAL,0.01)  
 
   elseif( IOPT == 3 )then
     ! *** IOPT = 3  BASED ON  
@@ -53,12 +53,12 @@ FUNCTION CSNDZEQ(IOPT, SNDDIA, GPDIASED, TAUR, TAUB, SNDDMX, DEP, SSG, WS)
       if( REY <= 10. ) TAURS = (4.*WS/REY)**2  
       if( REY  > 10. ) TAURS = 0.16*WS*WS                      ! *** Corrected 2021-06 from 0.016.  0.16 = 0.4^2 from VanRijn 1984
       VAL = (TAUB/TAURS)-1.  
-      VAL = MIN(MAX(VAL,0.),100.)  
+      VAL = min(MAX(VAL,0.),100.)  
       VAL1 = 1.-EXP(-0.5*VAL)  
       VAL1 = 0.11*VAL1*(25.-VAL)  
       ZEQ1 = 0.5*VAL1*(DEP**0.7)*(SNDDMX**0.3)  
       ZEQ1 = ZEQ1/DEP  
-      CSNDZEQ = MAX(ZEQ1,0.01) 
+      CSNDZEQ = max(ZEQ1,0.01) 
     else
       CSNDZEQ = 0.01
     endif

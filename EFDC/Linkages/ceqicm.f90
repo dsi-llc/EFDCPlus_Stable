@@ -82,7 +82,7 @@ SUBROUTINE CEQICM
     if( NQSIJ > 0 )then
       do NS = 1,NQSIJ
         NINTFL = NINTFL+1
-        write(1,101)IDMPCL,JDMPCL,BCFL(NS).I,BCFL(NS).J
+        write(1,101)IDMPCL,JDMPCL,BCPS(NS).I,BCPS(NS).J
       enddo
     endif
     if( NQCTL > 0 )then
@@ -128,7 +128,7 @@ SUBROUTINE CEQICM
   write(1,111)
   if( NQSIJ >= 1 )then
     do NS = 1,NQSIJ
-      write(1,112)NS,BCFL(NS).I,BCFL(NS).J
+      write(1,112)NS,BCPS(NS).I,BCPS(NS).J
     enddo
   endif
   close(1)
@@ -318,7 +318,7 @@ SUBROUTINE CEQICM
       QINRCA(NS) = 0.
     enddo
     do NS = 1,NQSIJ
-      NQSTMP = BCFL(NS).NQSERQ
+      NQSTMP = BCPS(NS).NQSERQ
       if( NQSTMP > 0 )then
         do K = 1,KC
           QINRCA(NS) = QINRCA(NS)+QSRTLPP(K,NQSTMP)+MAX(QSS(K,NS),0.)
@@ -352,7 +352,7 @@ SUBROUTINE CEQICM
     if( NQSIJ > 0 )then
       do NS = 1,NQSIJ
         NINTFL = NINTFL+1
-        NQSTMP = BCFL(NS).NQSERQ
+        NQSTMP = BCPS(NS).NQSERQ
         if( NQSTMP > 0 )then
           do K = 1,KC
             QINTFL(NINTFL,K) = QINTFL(NINTFL,K)+QSRTLPN(K,NQSTMP) &

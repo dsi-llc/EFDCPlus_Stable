@@ -74,7 +74,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
   do K = 2,KB                       ! *** Ignore active layer
     if( TSED(K,L) > 0.001 )then   ! *** Ignore layers than are less than 0.1 mm (typically)
       SURFACE = K
-      EXIT
+      exit
     endif
   enddo
 
@@ -121,7 +121,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
           NSCD(2) = SCND(NS+1)
           NSC0 = NS
           NSC1 = NS+1
-          EXIT
+          exit
         endif
       enddo
     endif
@@ -165,7 +165,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
         NSCD(2) = SCND(NS+1)
         NSC0 = NS
         NSC1 = NS+1
-        EXIT
+        exit
       endif
     enddo
   endif
@@ -207,7 +207,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
           TAUDD(2) = TAULOC(NS+1)
           NTAU0 = NS
           NTAU1 = NS+1
-          EXIT
+          exit
         endif
       enddo
     endif
@@ -244,7 +244,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
 
         SN11 = (TSED0(K,L)-TSED(K,L))/TSED0(K,L)                                       ! *** Mass weighting factor
         ERATEMAX = ((SN10-SN00)*SN11 + SN00)*BULKDENS(K,L)*SQRT(ONE/SH_SCALE(L))       ! *** linear interpolation for remaining mass in current layer    (g/cm2/s)
-        ERATEMAX = MIN(ERATEMAX,MAXRATE(ICORE,K))                                      ! *** Limit erosion rate
+        ERATEMAX = min(ERATEMAX,MAXRATE(ICORE,K))                                      ! *** Limit erosion rate
       else
         ERATEMAX = 0.0
       endif
@@ -269,7 +269,7 @@ Subroutine Calc_Prop_Erosion_SEDZLJ(L, TAUP, ELAY, SURFACE)
       SN10 = ACTDEPA(NSC1)*TAUP**ACTDEPN(NSC1)                                       ! *** Erosion rate 2 (cm/s)
       SN11 = D50TMPP/NSCTOT                                                          ! *** Weighting factor
       ERATEMAX = ((SN10-SN00)*SN11 + SN00)*BULKDENS(K,L)*SQRT(1./SH_SCALE(L))        ! *** linear interpolation around size class (g/cm2/s)
-      ERATEMAX = MIN(ERATEMAX,ACTDEPMAX(NSC0))                                       ! *** Limit erosion rate
+      ERATEMAX = min(ERATEMAX,ACTDEPMAX(NSC0))                                       ! *** Limit erosion rate
     endif
   endif
 
@@ -341,7 +341,7 @@ Subroutine Calc_Prop_Erosion_Original(L, TAUP, ELAY, EBLD)
       if( TAUP > TAURB(L,KBT(L)) )then
         ! *** MASS/BULK EROSION
         WESE = WRSPB(L,KBT(L))*VFRBED(L,KBT(L),NS)
-        WESE = MIN(WESE,WESEMX)
+        WESE = min(WESE,WESEMX)
       else
         TAUE = 0.
         if( TAUP > TAURS(L,KBT(L)) )then
@@ -363,7 +363,7 @@ Subroutine Calc_Prop_Erosion_Original(L, TAUP, ELAY, EBLD)
           endif
 
           TAUE = (TAUP-TMPSTR*TAURS(L,KBT(L)))/TAURTMP
-          TAUE = MAX(TAUE,0.0)
+          TAUE = max(TAUE,0.0)
 
           ! *** SET NON-COHESIVE HIDING FACTOR
           TMPSEDHID = 1.0
@@ -378,7 +378,7 @@ Subroutine Calc_Prop_Erosion_Original(L, TAUP, ELAY, EBLD)
             ! *** SITE SPECIFIC/SPACIALLY VARIABLE TAU EXPONENT FROM SSCOHSEDPMAP
             WESE = TMPSEDHID*WESE*( TAUE**TEXPS(L,KBT(L)) )
           endif
-          WESE = MIN(WESE,WESEMX)
+          WESE = min(WESE,WESEMX)
         else
           ! *** NO EROSION 
           WESE = 0.0
@@ -425,7 +425,7 @@ Subroutine Calc_Prop_Erosion_Original(L, TAUP, ELAY, EBLD)
         ZEQP = CSNDZEQ(ISNDEQ(NS),DIASEDPROP,GPDIASEDPROP,TAUR(NS),TAUBSNDP,SEDDIA50(L,KBT(L)),HP(L),SSG(NS),WSETA(L,0,NS))
           
         ZEQMAX   = 0.5*DZC(L,KSZ(L))  
-        ZEQP   = MIN(ZEQP,ZEQMAX)  
+        ZEQP   = min(ZEQP,ZEQMAX)  
         ZEQDP  = ZEQP*DZIC(L,KSZ(L))  
         ZEQDIP = 1./ZEQDP  
         SIGP = SIGPHI(L,KBT(L))  
@@ -645,7 +645,7 @@ subroutine add_ship_momentum(FUHJ, FVHJ)
         PAREA = all_ships(i).prop_area * FRAC_POWER
         
         ! *** Add propeller momentum to ambient conditions.  
-        PTOP  = MAX((all_ships(i).draft - all_ships(i).prop_radius), 0.0)
+        PTOP  = max((all_ships(i).draft - all_ships(i).prop_radius), 0.0)
         PBOT  = PTOP + all_ships(i).ship.prop_diam
         DZPU  = 0.0     ! *** Depth to bottom of layer
         RATIO = 0.0
@@ -659,7 +659,7 @@ subroutine add_ship_momentum(FUHJ, FVHJ)
           if( FRAC == 0.0 )then
             ! *** Top fraction
             RATIO = (DZPU - PTOP)/all_ships(i).ship.prop_diam
-            RATIO = MIN(RATIO,1.0)
+            RATIO = min(RATIO,1.0)
             FRAC  = RATIO
           elseif( DZPU > PBOT )then
             ! *** Bottom fraction
@@ -668,7 +668,7 @@ subroutine add_ship_momentum(FUHJ, FVHJ)
           else
             ! *** Middle fractions
             RATIO = HPK(L,K)/all_ships(i).ship.prop_diam
-            RATIO = MIN(RATIO,1.0)
+            RATIO = min(RATIO,1.0)
             FRAC  = FRAC + RATIO
           endif
             
@@ -694,10 +694,10 @@ subroutine add_ship_momentum(FUHJ, FVHJ)
             ! *** Apply momentum to south face
             FVHJ(L,K)      = PSGZV*VHB2
           endif
-          if( FRAC >= 1.0 ) EXIT
+          if( FRAC >= 1.0 ) exit
         enddo    ! *** Layer Loop
         
-        if( ip > all_ships(i).ship.num_fixed_cells ) EXIT
+        if( ip > all_ships(i).ship.num_fixed_cells ) exit
       enddo
     endif
   enddo        ! *** Vessel Loop

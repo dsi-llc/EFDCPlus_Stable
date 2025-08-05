@@ -306,7 +306,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
         CYCLE                                                        ! *** Skip to next cell
       elseif( ELEV < (BELV(L) + HDRY10) )then
         ! *** Gradually reduce flows
-        FACTOR = MAX((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
+        FACTOR = max((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
         !CST = FACTOR*CST
       endif
       
@@ -411,7 +411,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
         CYCLE                                                        ! *** Skip to next cell
       elseif( ELEV < (BELV(L) + HDRY10) )then
         ! *** Gradually reduce flows
-        FACTOR = MAX((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
+        FACTOR = max((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
         !CWT = FACTOR*CWT
       endif
       
@@ -515,7 +515,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
         CYCLE                                                        ! *** Skip to next cell
       elseif( ELEV < (BELV(L) + HDRY10) )then
         ! *** Gradually reduce flows
-        FACTOR = MAX((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
+        FACTOR = max((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
         !CET = FACTOR*CET
       endif   
       
@@ -620,7 +620,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
         CYCLE                                                        ! *** Skip to next cell
       elseif( ELEV < (BELV(L) + HDRY10) )then
         ! *** Gradually reduce flows
-        FACTOR = MAX((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
+        FACTOR = max((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
         !CNT = FACTOR*CNT
       endif
       

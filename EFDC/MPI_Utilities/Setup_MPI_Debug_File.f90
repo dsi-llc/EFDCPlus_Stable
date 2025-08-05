@@ -22,7 +22,7 @@
   use Variables_MPI
   use Variables_MPI_Write_Out
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
 
   implicit none
@@ -43,7 +43,7 @@
 #else
   OUTDIR = '#output/'
 #endif
-  If( process_id == master_id )then
+  if( process_id == master_id )then
 #ifdef GNU
     RES = SYSTEM( 'mkdir -p ./' // trim(OUTDIR))
 #else       
@@ -56,7 +56,7 @@
         call STOPP('CANNOT CREATE THE FOLDER: PERMISSION DENIED!')
       endif
     endif
-#endif 
+#endif    
   endif
   call MPI_barrier(MPI_Comm_World, ierr)
 

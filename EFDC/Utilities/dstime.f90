@@ -11,7 +11,7 @@ REAL*8 FUNCTION DSTIME(IOPTION)
   ! *** DSTIME returns back the number of seconds since some event
   use GLOBAL,only:NTHREADS,RKD,IK4
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
   use OMP_LIB
   use MPI
@@ -36,15 +36,15 @@ REAL*8 FUNCTION DSTIME(IOPTION)
 #else
     ! *** ELAPSED TIME FROM January 1, 1970
     STARTEDD(1) = RTC()
-#endif     
+#endif    
   endif
   
-#ifdef GNU  
+#ifdef GNU
     ! *** TOTAL RUN CPU TIME
     call CPU_TIME(TPMC)
     DSTIME = DBLE(TPMC)-STARTEDD(1)
     !DSTIME = DBLE(TPMC)/DBLE(NTHREADS)
-#else
+#else  
   ! *** CHANGE THE FOLLOWING LINES TO CORRESPOND TO THE PLATORM AND COMPILER
   if( IOPTION == 0 )then
     ! *** MPI Timing in seconds
@@ -89,7 +89,8 @@ REAL*8 FUNCTION DSTIME(IOPTION)
     DSTIME = omp_get_wtime()
 #endif
   endif
-#endif 
+#endif  
+
   return
 
 END FUNCTION

@@ -95,12 +95,12 @@ Subroutine Communicate_Drifters_RK8(data_to_comm)
   if( send_west > 0 )then
     call Package_Drifters_in_Ghost_RK8(data_to_comm, drifter_ids_send_west, send_west_data)
 
-    call MPI_Send(send_west_data, global_max_drifters_to_comm, mpi_real8, nbr_west, process_id, comm_2d, ierr)
+    call MPI_Send(send_west_data, global_max_drifters_to_comm, mpi_real8, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
   if( recv_east > 0 )then
-    call MPI_RECV(recv_east_data, global_max_drifters_to_comm, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(recv_east_data, global_max_drifters_to_comm, mpi_real8, nbr_east, nbr_east, DSIcomm, status_message, ierr)
   endif
 
   ! ********************************************************************************************
@@ -109,12 +109,12 @@ Subroutine Communicate_Drifters_RK8(data_to_comm)
   if( send_east > 0 )then
     call Package_Drifters_in_Ghost_RK8(data_to_comm, drifter_ids_send_east, send_east_data)
 
-    call MPI_Send(send_east_data, global_max_drifters_to_comm, mpi_real8, nbr_east, process_id, comm_2d, ierr)
+    call MPI_Send(send_east_data, global_max_drifters_to_comm, mpi_real8, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
   if( recv_west > 0 )then
-    call MPI_Recv(recv_west_data, global_max_drifters_to_comm, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_Recv(recv_west_data, global_max_drifters_to_comm, mpi_real8, nbr_west, nbr_west, DSIcomm, status_message, ierr)
   endif
 
   ! ********************************************************************************************
@@ -123,12 +123,12 @@ Subroutine Communicate_Drifters_RK8(data_to_comm)
   if( send_north > 0 )then
     call Package_Drifters_in_Ghost_RK8(data_to_comm, drifter_ids_send_north, send_north_data)
 
-    call MPI_Send(send_north_data, global_max_drifters_to_comm, mpi_real8, nbr_north, process_id, comm_2d, ierr)
+    call MPI_Send(send_north_data, global_max_drifters_to_comm, mpi_real8, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
   if( recv_south > 0  )then
-    call MPI_Recv(recv_south_data, global_max_drifters_to_comm, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_Recv(recv_south_data, global_max_drifters_to_comm, mpi_real8, nbr_south, nbr_south, DSIcomm, status_message, ierr)
   endif
 
   ! ********************************************************************************************
@@ -136,12 +136,12 @@ Subroutine Communicate_Drifters_RK8(data_to_comm)
   ! *** South domain active: Gather South active cells to send to the South
   if( send_south > 0 )then
     call Package_Drifters_in_Ghost_RK8(data_to_comm, drifter_ids_send_south, send_south_data)
-    call MPI_Send(send_south_data, global_max_drifters_to_comm, mpi_real8, nbr_south, process_id, comm_2d, ierr)
+    call MPI_Send(send_south_data, global_max_drifters_to_comm, mpi_real8, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
   if( recv_north > 0 )then
-    call MPI_Recv(recv_north_data, global_max_drifters_to_comm, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_Recv(recv_north_data, global_max_drifters_to_comm, mpi_real8, nbr_north, nbr_north, DSIcomm, status_message, ierr)
   endif
 
   ! *** Unpack the received data and put into the correct global drifter
@@ -227,13 +227,13 @@ Subroutine Communicate_Drifters_Integer(data_to_comm, iLLA)
     call Package_Mapping(data_to_comm, drifter_ids_send_west, send_west_data, iMap)
 
     ! *** Send global mapping info for this drifter
-    call MPI_Send(send_west_data, global_max_drifters_to_comm, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
+    call MPI_Send(send_west_data, global_max_drifters_to_comm, MPI_Integer, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
   if( recv_east > 0 )then
     ! *** Recieve global mapping info for this drifter
-    call MPI_Recv(recv_east_data, global_max_drifters_to_comm, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_Recv(recv_east_data, global_max_drifters_to_comm, MPI_Integer, nbr_east, nbr_east, DSIcomm, status_message, ierr)
 
     if(MPI_DEBUG_FLAG )then
       call WriteBreak(mpi_log_unit)
@@ -248,12 +248,12 @@ Subroutine Communicate_Drifters_Integer(data_to_comm, iLLA)
     ! *** Package up ghost drifter data into send array
     call Package_Mapping(data_to_comm, drifter_ids_send_east, send_east_data, iMap)
 
-    call MPI_Send(send_east_data, global_max_drifters_to_comm, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
+    call MPI_Send(send_east_data, global_max_drifters_to_comm, MPI_Integer, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
   if( recv_west > 0 )then
-    call MPI_Recv(recv_west_data, global_max_drifters_to_comm, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_Recv(recv_west_data, global_max_drifters_to_comm, MPI_Integer, nbr_west, nbr_west, DSIcomm, status_message, ierr)
 
     if(MPI_DEBUG_FLAG )then
       call WriteBreak(mpi_log_unit)
@@ -268,12 +268,12 @@ Subroutine Communicate_Drifters_Integer(data_to_comm, iLLA)
     ! *** Package up ghost drifter data into send array
     call Package_Mapping(data_to_comm, drifter_ids_send_north, send_north_data, iMap)
 
-    call MPI_Send(send_north_data, global_max_drifters_to_comm, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
+    call MPI_Send(send_north_data, global_max_drifters_to_comm, MPI_Integer, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
   if( recv_south > 0  )then
-    call MPI_Recv(recv_south_data, global_max_drifters_to_comm, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_Recv(recv_south_data, global_max_drifters_to_comm, MPI_Integer, nbr_south, nbr_south, DSIcomm, status_message, ierr)
 
     if(MPI_DEBUG_FLAG )then
       call WriteBreak(mpi_log_unit)
@@ -288,12 +288,12 @@ Subroutine Communicate_Drifters_Integer(data_to_comm, iLLA)
     ! *** Package up ghost drifter data into send array
     call Package_Mapping(data_to_comm, drifter_ids_send_south, send_south_data, iMap)
 
-    call MPI_Send(send_south_data, global_max_drifters_to_comm, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
+    call MPI_Send(send_south_data, global_max_drifters_to_comm, MPI_Integer, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
   if( recv_north > 0 )then
-    call MPI_Recv(recv_north_data, global_max_drifters_to_comm, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_Recv(recv_north_data, global_max_drifters_to_comm, MPI_Integer, nbr_north, nbr_north, DSIcomm, status_message, ierr)
 
     if(MPI_DEBUG_FLAG )then
       call WriteBreak(mpi_log_unit)

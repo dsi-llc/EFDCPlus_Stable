@@ -150,7 +150,7 @@ SUBROUTINE SSEDTOX
   SEDMDGM = SQRT(SEDMDMX*SEDMDMN)
   NVAL = MOD(N,2)
   FOURDPI = 4./PI
-  MINTHICK = MIN(1E-6,DTSED*1E-6)           ! *** Minimum bed thickness
+  MINTHICK = min(1E-6,DTSED*1E-6)           ! *** Minimum bed thickness
   
   ! ***********************************************************************C                                                
   ! *** IF N = 1 CALCULATE INITIAL SEDIMENT BED THICKNESS
@@ -160,7 +160,7 @@ SUBROUTINE SSEDTOX
   !$OMP             PRIVATE(HDZBR,TMP,TMPTOP,TMPBOT,RVAL,ZOGRAINCOH,SHEAR,RAT1O,QCELLCTRA)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
                             
     ! *** SET SEDIMENT VOLUME FRACTIONS                                                                                     
     if( .not. LSEDZLJ )then
@@ -500,7 +500,7 @@ SUBROUTINE SSEDTOX
             VTMP = 0.5*STCUV(L)*(V(LNC(L),KSZ(L)) + V(L,KSZ(L)))
             CURANG = ATAN2(VTMP,UTMP)
             TAUB2 = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
-            TAUB2 = MAX(TAUB2,0.)
+            TAUB2 = max(TAUB2,0.)
             TAUB(L)  = SQRT(TAUB2)
             USTAR(L) = SQRT(TAUB(L))
           else
@@ -637,7 +637,7 @@ SUBROUTINE SSEDTOX
           endif
             
           HGDH(L) = HGDH(L)**0.75
-          HGDH(L) = MIN(HGDH(L),1.0)
+          HGDH(L) = min(HGDH(L),1.0)
             
           ! *** CONVERT HGDH TO 1/HGDH  IE HDHG                                                                                     
           if( HGDH(L) > 0.) HGDH(L) = 1./HGDH(L)
@@ -686,14 +686,14 @@ SUBROUTINE SSEDTOX
               SHEAR = CTAUC(L)
               if( SHEAR > 0. )then
                 ! *** COHESIVE FRACTION
-                RAT1O = MIN(TAUBSED(L)/SHEAR,2.)
-                RAT1O = MAX(RAT1O,0.2)
+                RAT1O = min(TAUBSED(L)/SHEAR,2.)
+                RAT1O = max(RAT1O,0.2)
                 TAUBSED(L) = TAUB(L)*RAT1O
                 !IF(L == 16459)PRINT *,L,RAT1O,TAUB(L),TAUBSED(L)
 
                 ! *** COHESIVE FRACTION
-                RAT1O = MIN(TAUBSND(L)/SHEAR,2.)
-                RAT1O = MAX(RAT1O,0.2)
+                RAT1O = min(TAUBSND(L)/SHEAR,2.)
+                RAT1O = max(RAT1O,0.2)
                 TAUBSND(L) = TAUB(L)*RAT1O
               endif
             endif
@@ -755,7 +755,7 @@ SUBROUTINE SSEDTOX
           if( TAUBSED(L) > 0.0 )then                                                                                            
             ZOGRAINCOH = 0.041*VISMUDST/SQRT(TAUBSED(L))
             ZOGRAIN(L) = ZOGRAIN(L)+FRACCOH(L,KBT(L))*ZOGRAINCOH
-            ZOGRAIN(L) = MAX(ZOGRAIN(L),ZOGRAINCOH)
+            ZOGRAIN(L) = max(ZOGRAIN(L),ZOGRAINCOH)
           endif
         enddo                                                                                                                  
 
@@ -768,7 +768,7 @@ SUBROUTINE SSEDTOX
           do KK = 1,100                                                                                                          
             RVAL = TMPTOP/(LOG(RVAL*RVAL)+TMPBOT)                                                                                
           enddo
-          RVAL = MIN(RVAL,1.0)
+          RVAL = min(RVAL,1.0)
           TAUBSED(L) = RVAL*RVAL*TAUB(L)
           TAUBSND(L) = RVAL*RVAL*TAUB(L)                                                                                         
         enddo                                                                                                                  
@@ -803,7 +803,7 @@ SUBROUTINE SSEDTOX
           if( TAUBSED(L) > 0.0 )then                                                                                            
             ZOGRAINCOH = 0.041*VISMUDST/SQRT(TAUBSED(L))
             ZOGRAIN(L) = ZOGRAIN(L)+FRACCOH(L,KBT(L))*ZOGRAINCOH
-            ZOGRAIN(L) = MAX(ZOGRAIN(L),ZOGRAINCOH)
+            ZOGRAIN(L) = max(ZOGRAIN(L),ZOGRAINCOH)
           endif                                                                                                                
         enddo                                                                                                                  
                               
@@ -811,7 +811,7 @@ SUBROUTINE SSEDTOX
         do LP = LF,LL
           L = LSED(LP)
           TMP = (ZOGRAIN(L)/ZOTOTAL(L))**0.25
-          TMP = MIN(TMP,1.0)
+          TMP = min(TMP,1.0)
           TAUBSED(L) = TMP*TAUB(L)
           TAUBSND(L) = TMP*TAUB(L)                                                                                               
         enddo                                                                                                                  
@@ -899,7 +899,7 @@ SUBROUTINE SSEDTOX
   !  $OMP             PRIVATE(DSEDGMM,DSEDGMMI,QSWPOS,QSWNEG,TMPVAL,TTHICK,SXD,SXD1)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
 
     ! ***********************************************************************C                                                
     ! *** CALCULATE PARENT TO ACTIVE LAYER SEDIMENT FLUX                                                                    
@@ -1132,7 +1132,7 @@ SUBROUTINE SSEDTOX
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,K,NS,NX)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do K = 1,KB
         do LP = LF,LL
@@ -1294,7 +1294,7 @@ SUBROUTINE SSEDTOX
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,K)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do LP = LF,LL
         L = LSED(LP)

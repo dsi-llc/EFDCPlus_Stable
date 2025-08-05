@@ -91,6 +91,6 @@
  950 Format (100(I5))     ! Formatting out the ic_decomp and jc_decomp arrays, max width of 100...
 1000 Format('(a,I4)')
 
-  call MPI_Barrier(comm_2d, ierr)
+  call MPI_Barrier(DSIcomm, ierr)
  
 End subroutine Read_JSON_Decomp

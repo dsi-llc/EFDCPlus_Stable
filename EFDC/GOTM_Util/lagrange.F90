@@ -86,11 +86,11 @@
          step = zloc-zp(n)
          if( step.gt.0 )then ! search new index above old index
             do i = zi(n),nlev
-               if( zlev(i) .gt. zloc) EXIT
+               if( zlev(i) .gt. zloc) exit
             enddo
          else                ! search new index below old index
             do i = zi(n),1,-1
-               if( zlev(i-1) .lt. zloc) EXIT
+               if( zlev(i-1) .lt. zloc) exit
             enddo
          endif
       else
@@ -113,11 +113,11 @@
       step = zp(n)-zp_old
       if( step.gt.0 )then ! search new index above old index
          do i = zi(n),nlev
-            if( zlev(i) .gt. zp(n)) EXIT
+            if( zlev(i) .gt. zp(n)) exit
          enddo
       else                ! search new index below old index
          do i = zi(n),1,-1
-            if( zlev(i-1) .lt. zp(n)) EXIT
+            if( zlev(i-1) .lt. zp(n)) exit
          enddo
       endif
       zi(n) = i

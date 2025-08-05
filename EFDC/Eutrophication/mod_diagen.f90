@@ -736,7 +736,7 @@
   !$OMP DO PRIVATE(ND, LF, LL, L, IZ, M, NAL, TIMTMP, SMDFNA, SMDFPA, SMDFCA)  
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
 
     ! *** SED TEMP., & FIND AN INDEX FOR LOOK-UP TABLE FOR TEMPERATURE DEPENDENCY
     do L = LF,LL
@@ -805,7 +805,7 @@
   !$OMP DO PRIVATE(ND, LF, LL, L, M)        
    do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
 
     !: SMW2 IN M/D,SMW2DTOH(IZ) = 1.0+SMW2*SMDTOH
     ! *** Solving mass balance equations for the concentration of POM 
@@ -827,7 +827,7 @@
   
       ! COMMON parameterS: SMBST1 = 1/(1+SMKBST*DTWQ),SM1OKMDP = 1/SMKMDP
       !: use SMTMP(L) TO STORE OLD SMBST(L)
-      XSMO20(L) = MAX( WQV(L,KSZ(L),IDOX), 3.0 )
+      XSMO20(L) = max( WQV(L,KSZ(L),IDOX), 3.0 )
       SMTMP(L) = SMBST(L)
       ! *** Computation of the accumulated bentic stress
       if( XSMO20(L) < SMKMDP )then
@@ -854,7 +854,7 @@
   !$OMP DO PRIVATE(ND, LF, LL, L, IZ)             
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
 
     ! *** BENTHIC MIXING USING HYSTERESIS
     if( ISMHYST == 1 )then
@@ -910,7 +910,7 @@
   !$OMP    PRIVATE(B11SISM, B22SISM, RSM1SI, RSM2SI)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
 
     ! *** Initialize conditional variables
     
@@ -1201,7 +1201,7 @@
   ! *** SMO2JC          - Max CH4 production
   ! *** SMO2NO3*RJDENSM - Nitrification
   ! *** SMJ2H2S         - Flux of methane in oxygen equivalent units (M/L2/T)
-  SMJ2H2S = MAX(SMO2JC - SMO2NO3*RJDENSM, 0.0)
+  SMJ2H2S = max(SMO2JC - SMO2NO3*RJDENSM, 0.0)
   if( SAL(L,KSZ(L)) > SMCSHSCH )then
     RRH2S = SK1H2SSM/(RSMSS+ 1.E-18)
     SMTT1 = RSMSS*SMFD1H2S
@@ -1216,7 +1216,7 @@
     AQJCH4SM = 0.0
     GJCH4SM = 0.0
   else
-    CSODMSM = MIN( SQRT(SMCH4S*SMJ2H2S), SMJ2H2S )
+    CSODMSM = min( SQRT(SMCH4S*SMJ2H2S), SMJ2H2S )
     SMTT2 = SMK1CH4 / (RSMSS+ 1.E-18)
     if( SMTT2 < 80.0 )then
       SMTT3 = EXP(SMTT2)
@@ -1355,7 +1355,7 @@
       endif
       if( P > 0.0) Q = -Q
       P = ABS(P)
-      if( 2.0*P  <  MIN(3.0*XM*Q-ABS(TOL1*Q), ABS(E*Q)) )then
+      if( 2.0*P  <  min(3.0*XM*Q-ABS(TOL1*Q), ABS(E*Q)) )then
         E = D
         D = P / Q
       else

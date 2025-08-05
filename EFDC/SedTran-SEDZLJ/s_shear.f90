@@ -60,7 +60,7 @@ SUBROUTINE SEDZLJ_SHEAR
       !$OMP             SHARED(NDM, LDMSED, LASED, LSED, WV, WVFREQ, WVORBIT, UWVSQ, WVANG)
       do ND = 1,NDM  
         LF = (ND-1)*LDMSED+1  
-        LL = MIN(LF+LDMSED-1,LASED)
+        LL = min(LF+LDMSED-1,LASED)
         do LP = LF,LL
           L = LSED(LP)
           WVFREQ(L)  = WV(L).FREQ
@@ -150,12 +150,12 @@ SUBROUTINE SEDZLJ_SHEAR
         !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,FWVHT,FC1,FC2,FWVTPP,WVLENGTH)
         do ND = 1,NDM  
           LF = (ND-1)*LDMSED+1  
-          LL = MIN(LF+LDMSED-1,LASED)
+          LL = min(LF+LDMSED-1,LASED)
           do LP = LF,LL
             L = LSED(LP)
             FC1   = (FWINDSQ/9.8)*0.283*TANH(0.530*(9.8*AVGDEPTH/FWINDSQ)**0.75)
             FC2   = TANH(0.0125*(9.8*FWDIR(L,FZONE)/FWINDSQ)**0.42/TANH(0.530*(9.8*AVGDEPTH/FWINDSQ)**0.75))   
-            FWVHT = MIN(HP(L),FC1*FC2)
+            FWVHT = min(HP(L),FC1*FC2)
               
             FC1       = (FWINDS/9.8)*7.54*TANH(0.833*(9.8*AVGDEPTH/FWINDSQ)**0.375)
             FC2       = TANH(0.077*(9.8*FWDIR(L,FZONE)/FWINDSQ)**0.25/TANH(0.833*(9.8*AVGDEPTH/FWINDSQ)**0.375))   
@@ -163,8 +163,8 @@ SUBROUTINE SEDZLJ_SHEAR
             WVFREQ(L) = 2.0*PI/FWVTPP
               
             WVLENGTH   = FWVTPP*SQRT(9.8*HP(L)/FC2)
-            WVLENGTH   = MAX(1.0,WVLENGTH)
-            WVORBIT(L) = MAX(0.01,PI*FWVHT/(FWVTPP*SINH(HP(L)*2.0*PI/WVLENGTH)))
+            WVLENGTH   = max(1.0,WVLENGTH)
+            WVORBIT(L) = max(0.01,PI*FWVHT/(FWVTPP*SINH(HP(L)*2.0*PI/WVLENGTH)))
 
             WVANG(L)   = WVANGLE
           enddo
@@ -174,7 +174,7 @@ SUBROUTINE SEDZLJ_SHEAR
         !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L)
         do ND = 1,NDM  
           LF = (ND-1)*LDMSED+1  
-          LL = MIN(LF+LDMSED-1,LASED)
+          LL = min(LF+LDMSED-1,LASED)
           do LP = LF,LL
             L = LSED(LP)
             WVFREQ(L)  = 0.0
@@ -194,19 +194,19 @@ SUBROUTINE SEDZLJ_SHEAR
         !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,FWVHT,FC1,FC2,WVLENGTH,EXCURSION)
         do ND = 1,NDM  
           LF = (ND-1)*LDMSED+1  
-          LL = MIN(LF+LDMSED-1,LASED)
+          LL = min(LF+LDMSED-1,LASED)
           do LP = LF,LL
             L = LSED(LP)
             if( STINC > STWVNUM ) EXIT
             if( STWVTP(L,STINC) > 0.0 )then
               WVFREQ(L)  = 2.0*PI/STWVTP(L,STINC)
-              FWVHT      = MIN(HP(L),STWVHT(L,STINC))
+              FWVHT      = min(HP(L),STWVHT(L,STINC))
               FC1        = 9.8*STWVTP(L,STINC)**2
               FC2        = 2.*PI*SQRT(TANH(4.*PI**2*HP(L)/(STWVTP(L,STINC)**2*9.8)))
               WVLENGTH   = FC1/FC2
               EXCURSION  = FWVHT/(2.*SINH((2.*PI/WVLENGTH)*HP(L)))
               WVORBIT(L) = EXCURSION*WVFREQ(L)
-              WVORBIT(L) = MAX(0.01,WVORBIT(L))
+              WVORBIT(L) = max(0.01,WVORBIT(L))
               WVANG(L)   = STWVDR(L,STINC)
             else
               WVFREQ(L)  = 0.0
@@ -228,14 +228,14 @@ SUBROUTINE SEDZLJ_SHEAR
     !$OMP                             PRIVATE(FWW, SIGMAWV, MMW, JJW, DELW, APROUGH, SHEAR, SHEARC, SHEARW)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       ! *** Set up roughness, velocities, and angles 
       if( ZBSKIN <= 0. )then
         ! *** VARIABLE BOTTOM SKIN FRICTION.  ZBTEMP(L) = ZBR(L)  [meters]
         do LP = LF,LL
           L = LSED(LP)
-          ZBTEMP(L) = MAX(D50AVG(L)*1.E-6,1.E-6)         ! *** Convert microns to meters
+          ZBTEMP(L) = max(D50AVG(L)*1.E-6,1.E-6)         ! *** Convert microns to meters
         enddo
       else
         do LP = LF,LL

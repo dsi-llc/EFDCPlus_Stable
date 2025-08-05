@@ -120,7 +120,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
 
     ierr = 0
-    call MPI_SEND(PSENDW, length_arg, mpi_real4, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDW, length_arg, mpi_real4, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -132,7 +132,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVE, length_arg, mpi_real4, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVE, length_arg, mpi_real4, nbr_east, nbr_east, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
@@ -158,7 +158,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDE, length_arg, mpi_real4, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDE, length_arg, mpi_real4, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -170,7 +170,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVW, length_arg, mpi_real4, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVW, length_arg, mpi_real4, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,1)
@@ -195,7 +195,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDN, length_arg, mpi_real4, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDN, length_arg, mpi_real4, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -207,7 +207,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVS, length_arg, mpi_real4, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVS, length_arg, mpi_real4, nbr_south, nbr_south, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -233,7 +233,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDS, length_arg, mpi_real4, nbr_south, process_id,  comm_2d, ierr)
+    call MPI_SEND(PSENDS, length_arg, mpi_real4, nbr_south, process_id,  DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -245,7 +245,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVN, length_arg, mpi_real4, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVN, length_arg, mpi_real4, nbr_north, nbr_north, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -332,7 +332,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
 
     ierr = 0
-    call MPI_SEND(PSENDW, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDW, length_arg, mpi_real8, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -344,7 +344,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVE, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVE, length_arg, mpi_real8, nbr_east, nbr_east, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
@@ -370,7 +370,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDE, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDE, length_arg, mpi_real8, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -382,7 +382,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVW, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVW, length_arg, mpi_real8, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,1)
@@ -407,7 +407,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDN, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDN, length_arg, mpi_real8, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -419,7 +419,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVS, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVS, length_arg, mpi_real8, nbr_south, nbr_south, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -445,7 +445,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDS, length_arg, mpi_real8, nbr_south, process_id,  comm_2d, ierr)
+    call MPI_SEND(PSENDS, length_arg, mpi_real8, nbr_south, process_id,  DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -457,7 +457,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVN, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVN, length_arg, mpi_real8, nbr_north, nbr_north, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -541,7 +541,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
 
     ierr = 0
-    call MPI_SEND(PSENDW, length_arg, mpi_integer, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDW, length_arg, mpi_integer, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -553,7 +553,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVE, length_arg, mpi_integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVE, length_arg, mpi_integer, nbr_east, nbr_east, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
@@ -579,7 +579,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDE, length_arg, mpi_integer, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDE, length_arg, mpi_integer, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -591,7 +591,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVW, length_arg, mpi_integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVW, length_arg, mpi_integer, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,1)
@@ -616,7 +616,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDN, length_arg, mpi_integer, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDN, length_arg, mpi_integer, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -628,7 +628,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVS, length_arg, mpi_integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVS, length_arg, mpi_integer, nbr_south, nbr_south, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -654,7 +654,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDS, length_arg, mpi_integer, nbr_south, process_id,  comm_2d, ierr)
+    call MPI_SEND(PSENDS, length_arg, mpi_integer, nbr_south, process_id,  DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -666,7 +666,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVN, length_arg, mpi_integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVN, length_arg, mpi_integer, nbr_north, nbr_north, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -750,7 +750,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
 
     ierr = 0
-    call MPI_SEND(PSENDW, length_arg, mpi_integer, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDW, length_arg, mpi_integer, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -762,7 +762,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVE, length_arg, mpi_integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVE, length_arg, mpi_integer, nbr_east, nbr_east, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
@@ -791,7 +791,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDE, length_arg, mpi_integer, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDE, length_arg, mpi_integer, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -803,7 +803,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVW, length_arg, mpi_integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVW, length_arg, mpi_integer, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,1)
@@ -830,7 +830,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDN, length_arg, mpi_integer, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(PSENDN, length_arg, mpi_integer, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -842,7 +842,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVS, length_arg, mpi_integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVS, length_arg, mpi_integer, nbr_south, nbr_south, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -870,7 +870,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(PSENDS, length_arg, mpi_integer, nbr_south, process_id,  comm_2d, ierr)
+    call MPI_SEND(PSENDS, length_arg, mpi_integer, nbr_south, process_id,  DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -882,7 +882,7 @@ Module Communicate_Ghost_Routines
       II = II + 1
     enddo
     length_arg = II
-    call MPI_RECV(PRECVN, length_arg, mpi_integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVN, length_arg, mpi_integer, nbr_north, nbr_north, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -976,7 +976,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsendw, length_arg, mpi_real, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(dsendw, length_arg, mpi_real, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -989,7 +989,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVE, length_arg, mpi_real, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE, length_arg, mpi_real, nbr_east, nbr_east, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     ii = 0
@@ -1019,7 +1019,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsende, length_arg, mpi_real, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(dsende, length_arg, mpi_real, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -1033,7 +1033,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVW, length_arg, mpi_real, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW, length_arg, mpi_real, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -1063,7 +1063,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsendn, length_arg, mpi_real, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(dsendn, length_arg, mpi_real, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -1077,7 +1077,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(drecvs, length_arg, mpi_real, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvs, length_arg, mpi_real, nbr_south, nbr_south, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     ii = 0
@@ -1107,7 +1107,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsends, length_arg, mpi_real, nbr_south, process_id, comm_2d, ierr)
+    call MPI_SEND(dsends, length_arg, mpi_real, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -1118,7 +1118,7 @@ Module Communicate_Ghost_Routines
       II = II + (KC-KSZ(L)+1)
     enddo
     length_arg = II
-    call MPI_RECV(drecvn, length_arg, mpi_real, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvn, length_arg, mpi_real, nbr_north, nbr_north, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     ii = 0
@@ -1215,7 +1215,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsendw, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(dsendw, length_arg, mpi_real8, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -1228,7 +1228,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVE, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE, length_arg, mpi_real8, nbr_east, nbr_east, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     ii = 0
@@ -1258,7 +1258,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsende, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(dsende, length_arg, mpi_real8, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -1271,7 +1271,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVW, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW, length_arg, mpi_real8, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -1301,7 +1301,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsendn, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(dsendn, length_arg, mpi_real8, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -1314,7 +1314,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(drecvs, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvs, length_arg, mpi_real8, nbr_south, nbr_south, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     ii = 0
@@ -1344,7 +1344,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsends, length_arg, mpi_real8, nbr_south, process_id, comm_2d, ierr)
+    call MPI_SEND(dsends, length_arg, mpi_real8, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -1355,7 +1355,7 @@ Module Communicate_Ghost_Routines
       II = II + (KC-KSZ(L)+1)
     enddo
     length_arg = II
-    call MPI_RECV(drecvn, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvn, length_arg, mpi_real8, nbr_north, nbr_north, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     ii = 0
@@ -1442,7 +1442,7 @@ Module Communicate_Ghost_Routines
     length_arg = II 
     
     ierr = 0
-    call MPI_SEND(dsendw, length_arg, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(dsendw, length_arg, MPI_Integer, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -1456,7 +1456,7 @@ Module Communicate_Ghost_Routines
     length_arg = II 
 
     ierr = 0
-    call MPI_RECV(drecve, length_arg, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(drecve, length_arg, MPI_Integer, nbr_east, nbr_east, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -1486,7 +1486,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsende, length_arg, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(dsende, length_arg, MPI_Integer, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -1500,7 +1500,7 @@ Module Communicate_Ghost_Routines
     length_arg = II   !  (jc-4)*2*KC
     
     ierr = 0
-    call MPI_RECV(DRECVW, length_arg, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW, length_arg, MPI_Integer, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -1530,7 +1530,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsendn, length_arg, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(dsendn, length_arg, MPI_Integer, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -1544,7 +1544,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(drecvs, length_arg, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvs, length_arg, MPI_Integer, nbr_south, nbr_south, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
@@ -1574,7 +1574,7 @@ Module Communicate_Ghost_Routines
     LENGTH_ARG = II
     
     ierr = 0
-    call MPI_SEND(dsends, length_arg, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
+    call MPI_SEND(dsends, length_arg, MPI_Integer, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -1588,7 +1588,7 @@ Module Communicate_Ghost_Routines
     LENGTH_ARG = II
     
     ierr = 0
-    call MPI_RECV(drecvn, length_arg, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvn, length_arg, MPI_Integer, nbr_north, nbr_north, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
@@ -1676,7 +1676,7 @@ Module Communicate_Ghost_Routines
     length_arg = II 
     
     ierr = 0
-    call MPI_SEND(dsendw, length_arg, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(dsendw, length_arg, MPI_Integer, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -1690,7 +1690,7 @@ Module Communicate_Ghost_Routines
     length_arg = II 
 
     ierr = 0
-    call MPI_RECV(drecve, length_arg, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(drecve, length_arg, MPI_Integer, nbr_east, nbr_east, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -1722,7 +1722,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsende, length_arg, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(dsende, length_arg, MPI_Integer, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -1736,7 +1736,7 @@ Module Communicate_Ghost_Routines
     length_arg = II   !  (jc-4)*2*KC
     
     ierr = 0
-    call MPI_RECV(DRECVW, length_arg, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW, length_arg, MPI_Integer, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -1768,7 +1768,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(dsendn, length_arg, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(dsendn, length_arg, MPI_Integer, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -1782,7 +1782,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(drecvs, length_arg, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvs, length_arg, MPI_Integer, nbr_south, nbr_south, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
@@ -1814,7 +1814,7 @@ Module Communicate_Ghost_Routines
     LENGTH_ARG = II
     
     ierr = 0
-    call MPI_SEND(dsends, length_arg, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
+    call MPI_SEND(dsends, length_arg, MPI_Integer, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -1828,7 +1828,7 @@ Module Communicate_Ghost_Routines
     LENGTH_ARG = II
     
     ierr = 0
-    call MPI_RECV(drecvn, length_arg, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvn, length_arg, MPI_Integer, nbr_north, nbr_north, DSIcomm, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
@@ -1920,7 +1920,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(DSENDW_4D, length_arg, mpi_real, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDW_4D, length_arg, mpi_real, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -1934,7 +1934,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVE_4D, length_arg, mpi_real, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, mpi_real, nbr_east, nbr_east, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -1968,7 +1968,7 @@ Module Communicate_Ghost_Routines
     length_arg = II 
     
     ierr = 0
-    call MPI_SEND(DSENDE_4D, length_arg, mpi_real, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDE_4D, length_arg, mpi_real, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -1982,7 +1982,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVW_4D, length_arg, mpi_real, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, mpi_real, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2016,7 +2016,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(DSENDN_4D, length_arg, mpi_real, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDN_4D, length_arg, mpi_real, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -2030,7 +2030,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVS_4D, length_arg, mpi_real, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, mpi_real, nbr_south, nbr_south, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2064,7 +2064,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
 
     ierr = 0
-    call MPI_SEND(DSENDS_4D, length_arg, mpi_real, nbr_south, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDS_4D, length_arg, mpi_real, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -2078,7 +2078,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVN_4D, length_arg, mpi_real, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, mpi_real, nbr_north, nbr_north, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,4)
@@ -2106,8 +2106,8 @@ Module Communicate_Ghost_Routines
   implicit none
 
   !***Passed in variables
-  integer, intent(in)    :: ndim !< Dimension of the third array index
   real(8), intent(inout) :: PARTEM(lcm, kcm, ndim)   ! (NCELLS, NLAYERS, NUM_WQ_VARS = 23)
+  integer, intent(in)    :: ndim !< Dimension of the third array index
 
   !***Local variables
   integer :: i, j, k, II, L, NW
@@ -2171,7 +2171,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(DSENDW_4D, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDW_4D, length_arg, mpi_real8, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -2185,7 +2185,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVE_4D, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, mpi_real8, nbr_east, nbr_east, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2219,7 +2219,7 @@ Module Communicate_Ghost_Routines
     length_arg = II 
     
     ierr = 0
-    call MPI_SEND(DSENDE_4D, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDE_4D, length_arg, mpi_real8, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -2233,7 +2233,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVW_4D, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, mpi_real8, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2267,7 +2267,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_SEND(DSENDN_4D, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDN_4D, length_arg, mpi_real8, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -2281,7 +2281,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVS_4D, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, mpi_real8, nbr_south, nbr_south, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2315,7 +2315,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
 
     ierr = 0
-    call MPI_SEND(DSENDS_4D, length_arg, mpi_real8, nbr_south, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDS_4D, length_arg, mpi_real8, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -2329,7 +2329,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVN_4D, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, mpi_real8, nbr_north, nbr_north, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,4)
@@ -2357,8 +2357,8 @@ Module Communicate_Ghost_Routines
   implicit none
 
   !***Passed in variables
-  integer, intent(in)    :: ndim !< Dimension of the third array index
   integer,intent(inout)  :: PARTEM(lcm, kcm, ndim)   ! (NCELLS, NLAYERS, NUM_WQ_VARS = 23)
+  integer, intent(in)    :: ndim !< Dimension of the third array index
 
   !***Local variables
   integer :: i, j, k, II, L, NW, NWE, NNS
@@ -2422,7 +2422,7 @@ Module Communicate_Ghost_Routines
     length_arg = II     ! (jc-4)*2*KC*ndim    ! *** Length of vector for East-West Communication
     
     ierr = 0
-    call MPI_SEND(DSENDW_4D, length_arg, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDW_4D, length_arg, MPI_Integer, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -2435,7 +2435,7 @@ Module Communicate_Ghost_Routines
     enddo
     length_arg = II     ! (jc-4)*2*KC*ndim    ! *** Length of vector for East-West Communication
     ierr = 0
-    call MPI_RECV(DRECVE_4D, length_arg, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, MPI_Integer, nbr_east, nbr_east, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2469,7 +2469,7 @@ Module Communicate_Ghost_Routines
     length_arg = II 
     
     ierr = 0
-    call MPI_SEND(DSENDE_4D, length_arg, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDE_4D, length_arg, MPI_Integer, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -2482,7 +2482,7 @@ Module Communicate_Ghost_Routines
     enddo
     length_arg = II
     ierr = 0
-    call MPI_RECV(DRECVW_4D, length_arg, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, MPI_Integer, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,1)
@@ -2515,7 +2515,7 @@ Module Communicate_Ghost_Routines
     length_arg = II     ! IC*2*KC*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    call MPI_SEND(DSENDN_4D, length_arg, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDN_4D, length_arg, MPI_Integer, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -2529,7 +2529,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVS_4D, length_arg, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, MPI_Integer, nbr_south, nbr_south, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2563,7 +2563,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
 
     ierr = 0
-    call MPI_SEND(DSENDS_4D, length_arg, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDS_4D, length_arg, MPI_Integer, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -2577,7 +2577,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVN_4D, length_arg, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, MPI_Integer, nbr_north, nbr_north, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,4)
@@ -2669,7 +2669,7 @@ Module Communicate_Ghost_Routines
     length_arg = II    ! (jc-4)*2*(KC+1)*ndim
 
     ierr = 0
-    call MPI_SEND(DSENDW_4D, length_arg, mpi_real, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDW_4D, length_arg, mpi_real, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -2683,7 +2683,7 @@ Module Communicate_Ghost_Routines
     length_arg = II     !  (jc-4)*2*(KC+1)*ndim    ! *** Length of vector for East-West Communication
     
     ierr = 0
-    call MPI_RECV(DRECVE_4D, length_arg, mpi_real, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, mpi_real, nbr_east, nbr_east, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2717,7 +2717,7 @@ Module Communicate_Ghost_Routines
     length_arg = II 
     
     ierr = 0
-    call MPI_SEND(DSENDE_4D, length_arg, mpi_real, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDE_4D, length_arg, mpi_real, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -2731,7 +2731,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVW_4D, length_arg, mpi_real, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, mpi_real, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2765,7 +2765,7 @@ Module Communicate_Ghost_Routines
     length_arg = II    ! IC*2*(KC+1)*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    call MPI_SEND(DSENDN_4D, length_arg, mpi_real, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDN_4D, length_arg, mpi_real, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -2779,7 +2779,7 @@ Module Communicate_Ghost_Routines
     length_arg = II    ! IC*2*(KC+1)*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    call MPI_RECV(DRECVS_4D, length_arg, mpi_real, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, mpi_real, nbr_south, nbr_south, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2813,7 +2813,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
 
     ierr = 0
-    call MPI_SEND(DSENDS_4D, length_arg, mpi_real, nbr_south, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDS_4D, length_arg, mpi_real, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -2827,7 +2827,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVN_4D, length_arg, mpi_real, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, mpi_real, nbr_north, nbr_north, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,4)
@@ -2919,7 +2919,7 @@ Module Communicate_Ghost_Routines
     length_arg = II    ! (jc-4)*2*(KC+1)*ndim
 
     ierr = 0
-    call MPI_SEND(DSENDW_4D, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDW_4D, length_arg, mpi_real8, nbr_west, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate East ghost cells if East is active
@@ -2933,7 +2933,7 @@ Module Communicate_Ghost_Routines
     length_arg = II     !  (jc-4)*2*(KC+1)*ndim    ! *** Length of vector for East-West Communication
     
     ierr = 0
-    call MPI_RECV(DRECVE_4D, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, mpi_real8, nbr_east, nbr_east, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -2967,7 +2967,7 @@ Module Communicate_Ghost_Routines
     length_arg = II 
     
     ierr = 0
-    call MPI_SEND(DSENDE_4D, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDE_4D, length_arg, mpi_real8, nbr_east, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate West ghost cells if West is active
@@ -2981,7 +2981,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVW_4D, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, mpi_real8, nbr_west, nbr_west, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -3015,7 +3015,7 @@ Module Communicate_Ghost_Routines
     length_arg = II    ! IC*2*(KC+1)*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    call MPI_SEND(DSENDN_4D, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDN_4D, length_arg, mpi_real8, nbr_north, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate South ghost cells if South is active
@@ -3029,7 +3029,7 @@ Module Communicate_Ghost_Routines
     length_arg = II    ! IC*2*(KC+1)*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    call MPI_RECV(DRECVS_4D, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, mpi_real8, nbr_south, nbr_south, DSIcomm, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
@@ -3063,7 +3063,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
 
     ierr = 0
-    call MPI_SEND(DSENDS_4D, length_arg, mpi_real8, nbr_south, process_id, comm_2d, ierr)
+    call MPI_SEND(DSENDS_4D, length_arg, mpi_real8, nbr_south, process_id, DSIcomm, ierr)
   endif
 
   ! *** Receive and populate North ghost cells if North is active
@@ -3077,7 +3077,7 @@ Module Communicate_Ghost_Routines
     length_arg = II
     
     ierr = 0
-    call MPI_RECV(DRECVN_4D, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, mpi_real8, nbr_north, nbr_north, DSIcomm, status_message, ierr)
     
     II = 0
     do I = 1,nComm_Cells(2,4)

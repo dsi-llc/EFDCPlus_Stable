@@ -33,7 +33,7 @@ SUBROUTINE SEDZLJ_SLOPE
   TUNER = 1.0          !Bedload roll  tuning factor
   MINTAU = 10000.
   do NS = 1,NSEDS
-    if( D50(NS) >= BEDLOAD_CUTOFF ) MINTAU = MIN(TCRE(NS),MINTAU)
+    if( D50(NS) >= BEDLOAD_CUTOFF ) MINTAU = min(TCRE(NS),MINTAU)
   enddo
   
   do L = 2,LA
@@ -86,7 +86,7 @@ SUBROUTINE SEDZLJ_SLOPE
     
       ! *** Slope erosion from Willy Lick Work
       if( TEMP1 > 0.0 )then                          ! *** Calculate shear stress and erosion scaling factor
-        SH_SCALE(L) = MAX(0.1,BB/AA*SINB+COSB*COST*SQRT(TEMP1)) ! *** Lick, 2009, Eqn.3.36
+        SH_SCALE(L) = max(0.1,BB/AA*SINB+COSB*COST*SQRT(TEMP1)) ! *** Lick, 2009, Eqn.3.36
       else
         SH_SCALE(L) = 0.1                              ! *** Minimum value
       endif

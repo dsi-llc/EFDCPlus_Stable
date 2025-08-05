@@ -100,7 +100,7 @@ SUBROUTINE CALHDMF3
     !$OMP DO PRIVATE(ND,K,L,LN,LF,LL)
     do ND = 1,NDM  
       LF = 2+(ND-1)*LDM  
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
       do K = 1,KC  
         LN = 0
         do L = LF,LL

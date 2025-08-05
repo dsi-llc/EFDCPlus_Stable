@@ -84,24 +84,24 @@
       call AllocateDSI( QSUM3,     2,     NGRPID, 0.0)
 
       do LL = 1,NQSIJ
-        FLOWTYPE(BCFL(LL).GRPID) = BCFL(LL).NQSMUL
+        FLOWTYPE(BCPS(LL).GRPID) = BCPS(LL).NQSMUL
       enddo
 
       ! *** LIST OF UNIQUE QSER SERIES FOR EACH GROUP
       do LL = 1,NQSIJ
-        do I = 1,NUNIQQSERQ(BCFL(LL).GRPID)
-          if( BCFL(LL).NQSERQ == UNIQQSERQ(I,BCFL(LL).GRPID) ) EXIT
+        do I = 1,NUNIQQSERQ(BCPS(LL).GRPID)
+          if( BCPS(LL).NQSERQ == UNIQQSERQ(I,BCPS(LL).GRPID) ) exit
         enddo
-        if( I > NUNIQQSERQ(BCFL(LL).GRPID) )then
-          NUNIQQSERQ(BCFL(LL).GRPID) = NUNIQQSERQ(BCFL(LL).GRPID) + 1
-          UNIQQSERQ(NUNIQQSERQ(BCFL(LL).GRPID),BCFL(LL).GRPID) = BCFL(LL).NQSERQ
+        if( I > NUNIQQSERQ(BCPS(LL).GRPID) )then
+          NUNIQQSERQ(BCPS(LL).GRPID) = NUNIQQSERQ(BCPS(LL).GRPID) + 1
+          UNIQQSERQ(NUNIQQSERQ(BCPS(LL).GRPID),BCPS(LL).GRPID) = BCPS(LL).NQSERQ
         endif
       enddo
     endif
 
     ! *** Save the initialize location for each NQSIJ
     do LL = 1,NQSIJ
-      LQSSAVE(LL) = BCFL(LL).L
+      LQSSAVED(LL) = BCPS(LL).L
     enddo
     
     LEVELFLAG = 0
@@ -226,7 +226,7 @@
             do M1 = 1,NQCTL
               if( LUR == LIJ(HYD_STR(M1).IQCTLU,HYD_STR(M1).JQCTLU) )then
                 HYD_STR(NCTL).IUSBC = M1
-                EXIT
+                exit
               endif
             enddo
           endif
@@ -239,7 +239,7 @@
             do M1 = 1,NQCTL
               if( LDR == LIJ(HYD_STR(M1).IQCTLD,HYD_STR(M1).JQCTLD) )then
                 HYD_STR(NCTL).IDSBC = M1
-                EXIT
+                exit
               endif
             enddo
           endif
@@ -270,7 +270,7 @@
           if( M2 == 0 .or. HYD_STR(M1).ISTATE == 0 )then
             HYD_STR(NCTL).LUR  = LIJ(HYD_STR(M1).IQCTLU,HYD_STR(M1).JQCTLU)
             HYD_STR(NCTL).ZHUR = BELV(HYD_STR(NCTL).LUR) + HP(HYD_STR(NCTL).LUR)
-            EXIT
+            exit
           endif
           M1 = M2                     ! *** Previous upstream cell (always valid)
         enddo        
@@ -353,7 +353,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L,NC)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do NC = 1,NCTMP
           do L = LF,LL
             CONGW(L,NC) = 0.0
@@ -368,7 +368,7 @@
   !$OMP DO PRIVATE(ND,LF,LL,L)
   do ND = 1,NDM
     LF = 2+(ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do L = LF,LL
       QSUM1E(L) = QSUME(L)
       QSUME(L)  = 0.
@@ -382,7 +382,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L,K)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           QSUM(L,KSZ(L)) = 0.
         enddo
@@ -394,7 +394,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L)
     do ND = 1,NDM
       LF = 2+(ND-1)*LDM
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
       do L = LF,LL
         QSUM(L,KC) = 0.
       enddo
@@ -416,7 +416,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L)
     do ND = 1,NDM
       LF = 2+(ND-1)*LDM
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
       do L = LF,LL
         QSUM(L,KC) = 0.
       enddo
@@ -435,7 +435,7 @@
       M2 = M2+1
       if( M2 > TSFL(NS).NREC )then
         M2 = TSFL(NS).NREC
-        EXIT
+        exit
       endif
     enddo
     MTSQLAST(NS) = M2
@@ -451,11 +451,11 @@
   if( N == 1 )then
     open(mpi_efdc_out_unit,FILE = OUTDIR//mpi_efdc_out_file,POSITION = 'APPEND')
     do LL = 1,NQSIJ
-      L = BCFL(LL).L
+      L = BCPS(LL).L
       ITYP = LCT(L)
       if( ITYP <= 0 .or. ITYP >= 8 )then
-        write(6,6111) LL,BCFL(LL).I,BCFL(LL).J
-        write(mpi_efdc_out_unit,6111) LL,BCFL(LL).I,BCFL(LL).J
+        write(6,6111) LL,BCPS(LL).I,BCPS(LL).J
+        write(mpi_efdc_out_unit,6111) LL,BCPS(LL).I,BCPS(LL).J
       endif
     enddo
     close(mpi_efdc_out_unit)
@@ -465,12 +465,12 @@
   
   if( HDRYMOVE > 0.0 )then
     do LL = 1,NQSIJ
-      LQSSAVE0(LL) = BCFL(LL).L          ! *** Save the previous location for each NQSIJ
+      LQSMOVED(LL) = BCPS(LL).L          ! *** Save the previous location for each NQSIJ
     enddo
     do LL = 1,NQSIJ
-      if( BCFL(LL).NQSMF > 0 ) CYCLE     ! *** Only allow total flow rates at this time
-      L = LQSSAVE(LL)                    ! *** Reset cell to original
-      BCFL(LL).L = L                     ! *** Reset cell to original
+      if( BCPS(LL).NQSMF > 0 ) CYCLE     ! *** Only allow total flow rates at this time
+      L = LQSSAVED(LL)                   ! *** Reset cell to original
+      BCPS(LL).L = L                     ! *** Reset cell to original
       LBCS(LL) = L                       ! *** Reset cell to original
       LU = L
       LD = L
@@ -482,48 +482,48 @@
         do NS = 1,9
           LF = LADJ(NS,LU)
           if( LF == LU ) CYCLE
-          if( LF == 0 )  CYCLE
+          if( LF == 1 )  CYCLE
           if( BELV(LF) < HDW )then
             LD = LF
             HDW = BELV(LD)
           endif                    
         enddo
-        if( LD == LU ) EXIT
+        if( LD == LU ) exit
         LU = LD
         M1 = M1 + 1
-        if( HP(LU) >= HDRYMOVE ) EXIT
+        if( HP(LU) >= HDRYMOVE ) exit
       enddo
-      BCFL(LL).L  = LU      ! *** Update receiving cell in the QSER list
+      BCPS(LL).L  = LU      ! *** Update receiving cell in the QSER list
       LBCS(LL) = LU         ! *** Update receiving cell in the global BC list
       QSUM(LU,:) = 0.       ! *** Zero new BC's cell
     enddo
   endif
   
   do LL = 1,NQSIJ
-    NS = BCFL(LL).NQSERQ
-    L = BCFL(LL).L
+    NS = BCPS(LL).NQSERQ
+    L = BCPS(LL).L
     QSUM1 = 0.
     QSUM2 = 0.
     do K = 1,KC
       ! *** APPLY MULTIPLIERS HERE TO CORRECT MASS BALANCE PROBLEMS
-      if( BCFL(LL).NQSMUL < 5 .or. ISDRY == 0 )then
+      if( BCPS(LL).NQSMUL < 5 .or. ISDRY == 0 )then
         ! *** FIXED BC GROUP DISTRIBUTION BY QFACTOR
-        QSS(K,LL)      = BCFL(LL).QSSE   *BCFL(LL).RQSMUL*DZC(L,K)
-        QSERCELL(K,LL) = QSERT(K,NS)*BCFL(LL).RQSMUL*BCFL(LL).QFACTOR
+        QSS(K,LL)      = BCPS(LL).QSSE   *BCPS(LL).RQSMUL*DZC(L,K)
+        QSERCELL(K,LL) = QSERT(K,NS)*BCPS(LL).RQSMUL*BCPS(LL).QFACTOR
 
-      elseif( BCFL(LL).NQSMUL == 5 )then
+      elseif( BCPS(LL).NQSMUL == 5 )then
         ! *** REDISTRIBUTION OF DRY CELL FLOWS
-        QSS(K,LL)      = BCFL(LL).QSSE*DZC(L,K)
-        QSERCELL(K,LL) = QSERT(K,NS)*BCFL(LL).QFACTOR
+        QSS(K,LL)      = BCPS(LL).QSSE*DZC(L,K)
+        QSERCELL(K,LL) = QSERT(K,NS)*BCPS(LL).QFACTOR
 
         if( HP(L) < HDRY )then
-          QSUM3(1,BCFL(LL).GRPID) = QSUM3(1,BCFL(LL).GRPID) + QSS(K,LL)
-          QSUM3(2,BCFL(LL).GRPID) = QSUM3(2,BCFL(LL).GRPID) + QSERCELL(K,LL)
+          QSUM3(1,BCPS(LL).GRPID) = QSUM3(1,BCPS(LL).GRPID) + QSS(K,LL)
+          QSUM3(2,BCPS(LL).GRPID) = QSUM3(2,BCPS(LL).GRPID) + QSERCELL(K,LL)
           QSS(K,LL) = 0.
           QSERCELL(K,LL) = 0.
         endif
 
-      elseif( BCFL(LL).NQSMUL == 6 )then
+      elseif( BCPS(LL).NQSMUL == 6 )then
         QSS(K,LL) = 0.
         QSERCELL(K,LL) = 0.
         CYCLE
@@ -567,9 +567,9 @@
           QSUM1 = 0.
           QSUM2 = 0.
           do LL = 1,NQSIJ
-            if( BCFL(LL).GRPID == IG )then
+            if( BCPS(LL).GRPID == IG )then
               ! *** FOUND A CELL IN THE GROUP.  GET VOLUME
-              L = BCFL(LL).L
+              L = BCPS(LL).L
               if( HP(L) > HDRY .or. ISDRY == 0 )then
                 QSUM1 = QSUM1 + HP(L)*DXYP(L)            ! *** TOTAL WET VOLUME
               else
@@ -580,9 +580,9 @@
 
           ! *** NOW REDISTRIBUTE IF WET CELLS AVAILABLE
           do LL = 1,NQSIJ
-            if( BCFL(LL).GRPID == IG )then
+            if( BCPS(LL).GRPID == IG )then
               ! *** TEST IF THERE ARE ANY WET CELLS IN GROUP
-              L = BCFL(LL).L
+              L = BCPS(LL).L
               if( QSUM1 > 0. )then
                 ! *** WET CELLS ARE AVAILABLE.  DISTRIBUTE FLOWS INTO GROUP
                 if( HP(L) > HDRY .or. ISDRY == 0 )then
@@ -621,17 +621,17 @@
 
         ! *** GET TOTAL CONSTANT FLOW (QSUM3(1,IG)) INTO THIS GROUP 
         do LL = 1,NQSIJ
-          if( BCFL(LL).GRPID == IG )then
+          if( BCPS(LL).GRPID == IG )then
             ! *** FOUND A CELL IN THE GROUP.  GET VOLUME
-            NS = BCFL(LL).NQSERQ
-            L = BCFL(LL).L
+            NS = BCPS(LL).NQSERQ
+            L = BCPS(LL).L
             if( HP(L) >= HDRY .or. ISDRY == 0 )then
               QSUM1 = QSUM1 + HP(L)*DXYP(L)            ! *** TOTAL WET VOLUME
               MWET = MWET + 1
             else
               QSUM2 = QSUM2 + HP(L)*DXYP(L)            ! *** TOTAL DRY VOLUME
             endif
-            QSUM3(1,IG) = QSUM3(1,IG) + BCFL(LL).QSSE       ! *** SUM CONSTANT FLOW
+            QSUM3(1,IG) = QSUM3(1,IG) + BCPS(LL).QSSE       ! *** SUM CONSTANT FLOW
             do K = 1,KC
               QSS(K,LL)      = 0.
               QSERCELL(K,LL) = 0.
@@ -650,15 +650,15 @@
         ! *** NOW REDISTRIBUTE IF WET CELLS AVAILABLE
         IU = 0
         do LL = 1,NQSIJ
-          if( BCFL(LL).GRPID == IG )then
+          if( BCPS(LL).GRPID == IG )then
             ! *** TEST IF THERE ARE ANY WET CELLS IN GROUP
-            L = BCFL(LL).L
+            L = BCPS(LL).L
 
             ! *** TEST IF UPDATE IS NEEDED
             if( QSUM1 > 0. )then
               if( MWET == NQWET(IG) .and. ABS(QSUM1-QSUM4(IG))/QSUM1 < 0.10 )then
                 ! *** Use PREVIOUS TIME STEPS SPLITS IF LITTLE HAS CHANGED SINCE THE LAST UPDATED SPLITS
-                SPLIT = BCFL(LL).QFACTOR
+                SPLIT = BCPS(LL).QFACTOR
                 do K = KSZ(L),KC
                   QLAYER1 = SPLIT*QSUM3(1,IG)*DBLE(DZC(L,K))
                   QLAYER2 = SPLIT*QSUM3(2,IG)*DBLE(DZC(L,K))
@@ -677,9 +677,9 @@
                     QSERCELL(K,LL) = QLAYER2
                     QSUM(L,K)      = QSUM(L,K) + QLAYER1 + QLAYER2
                   enddo
-                  BCFL(LL).QFACTOR = SPLIT
+                  BCPS(LL).QFACTOR = SPLIT
                 else
-                  BCFL(LL).QFACTOR = 0.0
+                  BCPS(LL).QFACTOR = 0.0
                 endif
                 IU = 1
               endif
@@ -694,7 +694,7 @@
                 QSERCELL(K,LL) = QLAYER2
                 QSUM(L,K)      = QSUM(L,K) + QLAYER1 + QLAYER2
               enddo
-              BCFL(LL).QFACTOR = SPLIT
+              BCPS(LL).QFACTOR = SPLIT
             endif
           endif
         enddo
@@ -724,7 +724,7 @@
         M2 = M2+1
         if( M2 > MGWSER(NS) )then
           M2 = MGWSER(NS)
-          EXIT
+          exit
         endif
       enddo
       MTSGWLAST(NS) = M2
@@ -859,9 +859,6 @@
       endif
 
       DELH = HCTLUM(NCTLT)*HUP - HCTLDM(NCTLT)*HDW
-      if( HYD_STR(NCTL).NQCTYP == 0 .and. AQCTL(NCTLT) > 0.0 )then
-        if( HUP < AQCTL(NCTLT) ) DELH = -100.
-      endif
       if( DELH <= 0. .or. HP(LU) < HWET )then
         ! *** PREVENT REVERSE FLOW OR INSUFFICENT DEPTH
         do K = 1,KC
@@ -899,21 +896,23 @@
 
       if( HYD_STR(NCTL).NQCTYP == 1 )then
         ! *** ACCELERATION TYPE
-        if( ISTL == 3 )then
-          do K = 1,KC
-            QCTLST(K,NCTL) = QCTLT(K,NCTL,1)
-            TMPVAL = QCTLTO(K,NCTL) + DT*AQCTL(NCTLT)*QCTLST(K,NCTL)*QCTLST(K,NCTL)
-            QCTLT(K,NCTL,1) = TMPVAL/(1.+DT*AQCTL(NCTLT)*QCTLTO(K,NCTL))
-            QCTLTO(K,NCTL) = QCTLT(K,NCTL,1)
-            QCTLSTO(K,NCTL) = QCTLST(K,NCTL)
-          enddo
-        else
-          do K = 1,KC
-            QCTLST(K,NCTL) = QCTLT(K,NCTL,1)
-            TMPVAL = QCTLTO(K,NCTL) + DT*AQCTL(NCTLT)*QCTLST(K,NCTL)*QCTLST(K,NCTL)
-            QCTLT(K,NCTL,1) = TMPVAL/(1.+DT*AQCTL(NCTLT)*QCTLTO(K,NCTL))
-            QCTLT(K,NCTL,1) = 0.5*(QCTLT(K,NCTL,1)+QCTLTO(K,NCTL))
-          enddo
+        if( AQCTL(NCTLT) > 0.0 )then
+          if( ISTL == 3 )then
+            do K = 1,KC
+              QCTLST(K,NCTL) = QCTLT(K,NCTL,1)
+              TMPVAL = QCTLTO(K,NCTL) + DT*AQCTL(NCTLT)*QCTLST(K,NCTL)*QCTLST(K,NCTL)
+              QCTLT(K,NCTL,1) = TMPVAL/(1.+DT*AQCTL(NCTLT)*QCTLTO(K,NCTL))
+              QCTLTO(K,NCTL) = QCTLT(K,NCTL,1)
+              QCTLSTO(K,NCTL) = QCTLST(K,NCTL)
+            enddo
+          else
+            do K = 1,KC
+              QCTLST(K,NCTL) = QCTLT(K,NCTL,1)
+              TMPVAL = QCTLTO(K,NCTL) + DT*AQCTL(NCTLT)*QCTLST(K,NCTL)*QCTLST(K,NCTL)
+              QCTLT(K,NCTL,1) = TMPVAL/(1.+DT*AQCTL(NCTLT)*QCTLTO(K,NCTL))
+              QCTLT(K,NCTL,1) = 0.5*(QCTLT(K,NCTL,1)+QCTLTO(K,NCTL))
+            enddo
+          endif
         endif
       endif
 
@@ -952,7 +951,7 @@
         LD = LIJ(ID,JD)
         HDW = HP(LD) + BELV(LD) + HCTLDA(NCTLT) + HYD_STR(NCTL).HQCTLD
         HTMPD = HDIFCTD(1,NCTLT)+0.001
-        HDW = MAX(HDW,HTMPD)
+        HDW = max(HDW,HTMPD)
 
         MU1 = 0
         MU2 = 1
@@ -1173,7 +1172,7 @@
           HDW  = HP(LD) + BELV(LD) + HCTLDA(NCTLT) + HYD_STR(NCTL).HQCTLD
           DELH = HCTLUM(NCTLT)*HUP - HCTLDM(NCTLT)*HDW
         endif
-        DELH = MAX( DELH,HDIFCTL(1,NCTLT) )
+        DELH = max( DELH,HDIFCTL(1,NCTLT) )
 
         ! *** LOOKUP THE FLOWS
         M1 = 0
@@ -1198,7 +1197,7 @@
           do K = 1,KC
             QCTLT(K,NCTL,1) = WTM1*QCTL(M1,1,K,NCTLT) + WTM2*QCTL(M2,1,K,NCTLT)
             ! *** SUBTRACT LOW CHORD FLOWS
-            QCTLT(K,NCTL,1) = MAX(QCTLT(K,NCTL,1) - QLAYER(NCTL,K),0.)
+            QCTLT(K,NCTL,1) = max(QCTLT(K,NCTL,1) - QLAYER(NCTL,K),0.)
           enddo
           do K = 1,KC
             ! ***                                 ** TOTAL FLOW OPEN CHANNEL FLOW  **
@@ -1244,7 +1243,7 @@
       QCTLMAX = (HP(LU) - HDRY)*DXYP(LU)/(DELT*DZI)
       if( QCTLMAX < 0. ) QCTLMAX = 0.
       do K = 1,KC
-        QCTLT(K,NCTL,1) = MIN(QCTLT(K,NCTL,1),QCTLMAX)
+        QCTLT(K,NCTL,1) = min(QCTLT(K,NCTL,1),QCTLMAX)
       enddo
 
       ! *** FINAL ADJUSTED LAYER FLOWS ADDED TO TOTAL FLOWS
@@ -1288,7 +1287,7 @@
       M2 = M2+1
       if( M2 > TSWR(NS).NREC )then
         M2 = TSWR(NS).NREC
-        EXIT
+        exit
       endif
     enddo
     MTSWRLAST(NS) = M2
@@ -1461,7 +1460,7 @@
         !$OMP DO PRIVATE(ND,LF,LL,L)
         do ND = 1,NDM
           LF = 2+(ND-1)*LDM
-          LL = MIN(LF+LDM-1,LA)
+          LL = min(LF+LDM-1,LA)
           do L = LF,LL
             QGW(L) = GWFAC(L)*GWSERT(NGWSL(L))
           enddo
@@ -1472,7 +1471,7 @@
         !$OMP DO PRIVATE(ND,LF,LL,L)
         do ND = 1,NDM
           LF = 2+(ND-1)*LDM
-          LL = MIN(LF+LDM-1,LA)
+          LL = min(LF+LDM-1,LA)
           do L = LF,LL
             QGW(L) = GWFAC(L)*DXYP(L)*GWSERT(NGWSL(L))
           enddo
@@ -1483,7 +1482,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           if( IGWSER(NGWSL(L)) == 0 )then
             ! *** FLOW SERIES
@@ -1503,7 +1502,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L)
     do ND = 1,NDM
       LF = 2+(ND-1)*LDM
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
       do L = LF,LL
         QSUM(L,KSZ(L)) = QSUM(L,KSZ(L)) + QGW(L)
       enddo
@@ -1516,7 +1515,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L,HPICE) REDUCTION(+:NLIMITICE)
     do ND = 1,NDM
       LF = 2+(ND-1)*LDM
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
       do L = LF,LL
 
         ! *** DUE TO MACHINE PRECISION ISSUES, ONLY APPLY ICE MET/FREEZE FLOW RATES WHEN LARGE ENOUGH
@@ -1558,7 +1557,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           SVPW(L) = (10.**((0.7859+0.03477*TEM(L,KC))/(1.+0.00412*TEM(L,KC))))
         enddo
@@ -1573,7 +1572,7 @@
         !$OMP DO PRIVATE(ND,LF,LL,L)
         do ND = 1,NDM
           LF = 2+(ND-1)*LDM
-          LL = MIN(LF+LDM-1,LA)
+          LL = min(LF+LDM-1,LA)
 
           if( LFRAZIL .and. IEVAP == 1 )then
             do L = LF,LL
@@ -1614,7 +1613,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           QSUM(L,KC) = QSUM(L,KC) + DXYP(L)*(RAINT(L)-EVAPT(L))
         enddo
@@ -1626,7 +1625,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           EVAPT(L) = CLEVAP(L)*0.7464E-3*WINDST(L)*(SVPW(L) - VPAT(L))/PATMT(L)
           QSUM(L,KC) = QSUM(L,KC) + DXYP(L)*(RAINT(L)-EVAPT(L))
@@ -1640,7 +1639,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L,CLEVAPTMP)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           CLEVAPTMP  = WINDFA + WINDFB*WINDST(L) + WINDFC*WINDST(L)**2
           EVAPT(L)   = CLEVAPTMP*(SVPW(L)-VPAT(L))
@@ -1654,7 +1653,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L,TVW,TVA,DTV,DTVL,LAMBDA,TM,VPTG)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           TVA  = (TATMT(L) +273.0)/(1.0-0.378*VPAT(L)/PATMT(L))
           TVW  = (TEM(L,KC)+273.0)/(1.0-0.378*SVPW(L)/PATMT(L))
@@ -1677,7 +1676,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           EVAPT(L) = EVACOARE(L)
           QSUM(L,KC) = QSUM(L,KC) + DXYP(L)*(RAINT(L)-EVAPT(L))
@@ -1691,7 +1690,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L,DENAIR,CLEVAPTMP,FWUP,QSW,QAA)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           DENAIR = PATMT(L)*100./287.05 /(TATMT(L) + 273.15)                          ! *** Density of air (kg/m^3)
           CLEVAPTMP = 8.*10E-4*DENAIR/RHOW(L,KC)
@@ -1712,7 +1711,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,L,TVW,TVA,DTV,DTVL,LAMBDA,TM,VPTG)
       do ND = 1,NDM
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           if( ICECELL(L) )then
             ! *** BACK OUT ANY ADDED FLOWS
@@ -1731,7 +1730,7 @@
   !$OMP DO PRIVATE(ND,LF,LL,L,K)
   do ND = 1,NDM
     LF = 2+(ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do K = 1,KC
       do L = LF,LL
         QSUME(L) = QSUME(L) + QSUM(L,K)
@@ -1745,7 +1744,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L,K,QEAVAIL,RAVAIL,TMPVAL,TF,I)
     do ND = 1,NDM
       LF = 2+(ND-1)*LDM
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
       do L = LF,LL
         if( QSUME(L) < 0. )then
           ! *** LIMIT WITHDRAWAL VOLUMES TO AVAILABLE WATER IN CELL
@@ -1767,7 +1766,7 @@
                 if( ICEVOL(L) < 0. )then
                   TMPVAL = ICEVOL(L)*999.8426/RHOI/DXYP(L)
                   ICETHICK(L) = ICETHICK(L) + TMPVAL
-                  ICETHICK(L) = MAX(ICETHICK(L),0.)
+                  ICETHICK(L) = max(ICETHICK(L),0.)
                   if( ICETHICK(L) < MINICETHICK )ICECELL(L) = .FALSE.
                   ICEVOL(L) = 0.
                 endif
@@ -1809,14 +1808,14 @@
                     if( ISICE == 3 )then
                       ! *** REDUCE ICE COVER THICKNESS
                       ICETHICK(L) = ICETHICK(L) + TMPVAL
-                      ICETHICK(L) = MAX(ICETHICK(L),0.)
+                      ICETHICK(L) = max(ICETHICK(L),0.)
                     else
                       ! *** RESTORE THE FRAZIL ICE
                       if( TMPVAL+ICETHICK(L) > 0. )then
                         ICETHICK(L) = ICETHICK(L) + TMPVAL
                       else
                         FRAZILICE(L,KC) = FRAZILICE(L,KC) + TMPVAL
-                        FRAZILICE(L,KC) = MAX(FRAZILICE(L,KC),0.)
+                        FRAZILICE(L,KC) = max(FRAZILICE(L,KC),0.)
                       endif
                     endif
                     if( ICETHICK(L) < MINICETHICK )then
@@ -1844,7 +1843,7 @@
     !$OMP DO PRIVATE(ND,LF,LL,L,K,DTAGW,RIFTRL,RAVAIL,QSUMIET,QEAVAIL,QSUMTMP,DIFQVOL)
     do ND = 1,NDM
       LF = 2+(ND-1)*LDM
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
       do L = LF,LL
         EVAPSW(L) = 0.
         EVAPGW(L) = 0.
@@ -1863,13 +1862,13 @@
             RIFTRL = RNPOR*DTAGW*DELTI
 
             ! *** SET RIFTRL TO MIN OF LIMITING RATE OR ACTUAL RATE
-            RIFTRL = MIN(RIFTRM,RIFTRL)
+            RIFTRL = min(RIFTRM,RIFTRL)
 
             ! *** ESTIMATE RATE BASED ON AVAILABLE SURFACE WATER
             RAVAIL = (H1P(L)-HDRY)*DELTI-EVAPT(L)
 
             ! *** SET RIFTRL TO MIN OF AVAILABLE RATE OR LIMITING RATE
-            RIFTRL = MIN(RAVAIL,RIFTRL)
+            RIFTRL = min(RAVAIL,RIFTRL)
 
             ! *** CONVERT TO VOLUME FLOW UNITS
             QGW(L) = -RIFTRL*DXYP(L)           ! *** 2018-10-24 PMC CHANGED SIGN CONVENTION FOR SEEPAGE +(IN), -(OUT)
@@ -1879,9 +1878,9 @@
           if( QSUME(L) < 0.0 .and. HP(L) < HWET )then
             QSUMIET = EVAPSW(L)-QGW(L)
             QEAVAIL = DXYP(L)*(H1P(L)-HDRY)*DELTI-QSUMIET
-            QEAVAIL = MAX(QEAVAIL,0.0)
+            QEAVAIL = max(QEAVAIL,0.0)
             QEAVAIL = -QEAVAIL
-            QSUMTMP = MAX(QSUME(L),QEAVAIL)
+            QSUMTMP = max(QSUME(L),QEAVAIL)
 
             ! *** UPDATE LAYER FLOWS
             DIFQVOL = QSUME(L)-QSUMTMP
@@ -1894,9 +1893,9 @@
           ! *** CELL IS 'DRY'
           QGW(L)  = 0.
           EVAPSW(L) = 0.
-          QSUME(L) = MAX(QSUME(L),0.0)      ! *** ONLY ALLOW INFLOWS
+          QSUME(L) = max(QSUME(L),0.0)      ! *** ONLY ALLOW INFLOWS
           do K = 1,KC
-            QSUM(L,K) = MAX(QSUM(L,K),0.0)
+            QSUM(L,K) = max(QSUM(L,K),0.0)
           enddo
         endif
       enddo

@@ -198,7 +198,7 @@ SUBROUTINE CALEXP2T
   !$OMP DO PRIVATE(ND,LF,LL,LP,L)
   do ND = 1,NDM  
     LF = (ND-1)*LDMWET+1  
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do LP = LF,LL
       L = LWET(LP)  
@@ -228,18 +228,18 @@ SUBROUTINE CALEXP2T
           VHC = 0.5*(VHDX(L,K) + VHDX(LW,K))                                  ! *** m3/s 
 
           ! ***      |-- EAST FLOWING --|  |-- WEST FLOWING --|
-          FUHU(L,K) = MAX(UHB,0.)*U(L,K)  + MIN(UHB,0.)*U(LE,K)               ! *** m4/s2 
+          FUHU(L,K) = max(UHB,0.)*U(L,K)  + min(UHB,0.)*U(LE,K)               ! *** m4/s2 
           ! ***      |-- NORTH FLOWING -|  |-- SOUTH FLOWING -|
-          FVHU(L,K) = MAX(VHC,0.)*U(LS,K) + MIN(VHC,0.)*U(L,K)                ! *** m4/s2 
+          FVHU(L,K) = max(VHC,0.)*U(LS,K) + min(VHC,0.)*U(L,K)                ! *** m4/s2 
 
           ! *** V COMPONENTS
           VHB = 0.5*(VHDX(L,K) + VHDX(LN,K))                                  ! *** m3/s 
           UHC = 0.5*(UHDY(L,K) + UHDY(LS,K))                                  ! *** m3/s 
 
           ! ***      |-- NORTH FLOWING -|  |-- SOUTH FLOWING -|
-          FVHV(L,K) = MAX(VHB,0.)*V(L,K)  + MIN(VHB,0.)*V(LN,K)               ! *** m4/s2
+          FVHV(L,K) = max(VHB,0.)*V(L,K)  + min(VHB,0.)*V(LN,K)               ! *** m4/s2
           ! ***      |-- EAST FLOWING --|  |-- WEST FLOWING --|
-          FUHV(L,K) = MAX(UHC,0.)*V(LW,K) + MIN(UHC,0.)*V(L,K)                ! *** m4/s2 
+          FUHV(L,K) = max(UHC,0.)*V(LW,K) + min(UHC,0.)*V(L,K)                ! *** m4/s2 
 
         enddo
       enddo  
@@ -254,7 +254,7 @@ SUBROUTINE CALEXP2T
     !$OMP    PRIVATE(VHC2MX,VHC2MN,UHC2MX,UHC2MN,VHB2MX,VHB2MN,BOTT) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       do LP = LF,LL
         L = LWET(LP)
@@ -407,8 +407,8 @@ SUBROUTINE CALEXP2T
   ! *** ADD QSER MOMENTUM FLUXES
 
   do LL = 1,NQSIJ
-    if( ABS(BCFL(LL).NQSMF) > 0 .and. BCFL(LL).NQSMF /= 5 )then  
-      L = BCFL(LL).L
+    if( ABS(BCPS(LL).NQSMF) > 0 .and. BCPS(LL).NQSMF /= 5 )then  
+      L = BCPS(LL).L
       do K = KSZ(L),KC
         ! *** Handle reversing flows in/out of domain
         if( QSERCELL(K,LL) >= 0. )then
@@ -416,18 +416,18 @@ SUBROUTINE CALEXP2T
         else
           VDIR = -1.
         endif
-        !LD = LIJ(BCFL(LL).I,BCFL(LL).J)
+        !LD = LIJ(BCPS(LL).I,BCPS(LL).J)
         
         QMF = ABS(QSERCELL(K,LL))
-        QUMF = VDIR*QMF*( QMF/( HPK(L,K)*BCFL(LL).QWIDTH ) )   ! *** M4/S2
-        if( BCFL(LL).NQSMF ==  1 ) FUHJ(L     ,K) = -QUMF  
-        if( BCFL(LL).NQSMF ==  2 ) FVHJ(L     ,K) = -QUMF  
-        if( BCFL(LL).NQSMF ==  3 ) FUHJ(LEC(L),K) = -QUMF  
-        if( BCFL(LL).NQSMF ==  4 ) FVHJ(LNC(L),K) = -QUMF  
-        if( BCFL(LL).NQSMF == -1 ) FUHJ(L     ,K) = QUMF  
-        if( BCFL(LL).NQSMF == -2 ) FVHJ(L     ,K) = QUMF  
-        if( BCFL(LL).NQSMF == -3 ) FUHJ(LEC(L),K) = QUMF  
-        if( BCFL(LL).NQSMF == -4 ) FVHJ(LNC(L),K) = QUMF  
+        QUMF = VDIR*QMF*( QMF/( HPK(L,K)*BCPS(LL).QWIDTH ) )   ! *** M4/S2
+        if( BCPS(LL).NQSMF ==  1 ) FUHJ(L     ,K) = -QUMF  
+        if( BCPS(LL).NQSMF ==  2 ) FVHJ(L     ,K) = -QUMF  
+        if( BCPS(LL).NQSMF ==  3 ) FUHJ(LEC(L),K) = -QUMF  
+        if( BCPS(LL).NQSMF ==  4 ) FVHJ(LNC(L),K) = -QUMF  
+        if( BCPS(LL).NQSMF == -1 ) FUHJ(L     ,K) = QUMF  
+        if( BCPS(LL).NQSMF == -2 ) FVHJ(L     ,K) = QUMF  
+        if( BCPS(LL).NQSMF == -3 ) FUHJ(LEC(L),K) = QUMF  
+        if( BCPS(LL).NQSMF == -4 ) FVHJ(LNC(L),K) = QUMF  
       enddo
     endif  
   enddo
@@ -451,8 +451,8 @@ SUBROUTINE CALEXP2T
           LS = LSC(L)
           WUU = 0.5*DXYU(L)*(W(L,K) + W(LW,K))  
           WVV = 0.5*DXYV(L)*(W(L,K) + W(LS,K))  
-          FWU(L,K) = MAX(WUU,0.)*U(L,K) + MIN(WUU,0.)*U(L,K+1)
-          FWV(L,K) = MAX(WVV,0.)*V(L,K) + MIN(WVV,0.)*V(L,K+1)
+          FWU(L,K) = max(WUU,0.)*U(L,K) + min(WUU,0.)*U(L,K+1)
+          FWV(L,K) = max(WVV,0.)*V(L,K) + min(WVV,0.)*V(L,K+1)
         enddo  
       enddo
     enddo  
@@ -522,7 +522,7 @@ SUBROUTINE CALEXP2T
           LN = LNC(L)  
           CAC(L,K) = ( FCORC(L)*DXYP(L) + 0.5*SNLT*(V(LN,K)+V(L,K))*DYDI(L) - 0.5*SNLT*(U(LE,K)+U(L,K))*DXDJ(L) )*HP(L)  
           CFEFF = ABS(CAC(L,K))*DXYIP(L)*HPI(L)  
-          CFMAX = MAX(CFMAX,CFEFF)  
+          CFMAX = max(CFMAX,CFEFF)  
           CACSUM(IT) = CACSUM(IT)+CAC(L,K) 
         enddo  
       enddo  
@@ -689,13 +689,13 @@ SUBROUTINE CALEXP2T
     enddo
 
     ! *** EAST/WEST ADJACENT CELL
-    L = MAX(1,LBERC(LL))
+    L = max(1,LBERC(LL))
     do K = KSZ(L),KC
       FX(L,K) = SAAX(L)*FX(L,K) + FUHJ(L,K)   ! ***  M4/S2
     enddo
 
     ! *** NORTH/SOUTH ADJACENT CELL
-    L = MAX(1,LBNRC(LL))
+    L = max(1,LBNRC(LL))
     do K = KSZ(L),KC
       FY(L,K) = SAAY(L)*FY(L,K) + FVHJ(L,K)   ! ***  M4/S2
     enddo
@@ -856,8 +856,8 @@ SUBROUTINE CALEXP2T
         LE  = LEC(L)
         LEE = LEC(LE)
         ! *** Both adjacent and connected cell must both meet aspect criteria
-        if( MAX(DXP(LE),DYP(LE)) / MIN(DXP(LE),DYP(LE)) > 4.0 )then
-          if( MAX(DXP(LEE),DYP(LEE)) / MIN(DXP(LEE),DYP(LEE)) > 4.0 )then
+        if( max(DXP(LE),DYP(LE)) / min(DXP(LE),DYP(LE)) > 4.0 )then
+          if( max(DXP(LEE),DYP(LEE)) / min(DXP(LEE),DYP(LEE)) > 4.0 )then
             do K = KSZ(LE),KC
               FMDUY(LE,K) = 0.0
             enddo
@@ -875,8 +875,8 @@ SUBROUTINE CALEXP2T
         LW  = LWC(L)
         LWW = LEC(LW)
         ! *** Both adjacent and connected cell must both meet aspect criteria
-        if( MAX(DXP(LW),DYP(LW)) / MIN(DXP(LW),DYP(LW)) > 4.0 )then
-          if( MAX(DXP(LWW),DYP(LWW)) / MIN(DXP(LWW),DYP(LWW)) > 4.0 )then
+        if( max(DXP(LW),DYP(LW)) / min(DXP(LW),DYP(LW)) > 4.0 )then
+          if( max(DXP(LWW),DYP(LWW)) / min(DXP(LWW),DYP(LWW)) > 4.0 )then
             do K = KSZ(LW),KC
               FMDUY(LW,K) = 0.0
             enddo
@@ -894,8 +894,8 @@ SUBROUTINE CALEXP2T
         LN = LNC(L)
         LNN = LEC(LN)
         ! *** Both adjacent and connected cell must both meet aspect criteria
-        if( MAX(DXP(LN),DYP(LN)) / MIN(DXP(LN),DYP(LN)) > 4.0 )then
-          if( MAX(DXP(LNN),DYP(LNN)) / MIN(DXP(LNN),DYP(LNN)) > 4.0 )then
+        if( max(DXP(LN),DYP(LN)) / min(DXP(LN),DYP(LN)) > 4.0 )then
+          if( max(DXP(LNN),DYP(LNN)) / min(DXP(LNN),DYP(LNN)) > 4.0 )then
             do K = KSZ(LN),KC
               FMDUY(LN,K) = 0.0
             enddo
@@ -913,8 +913,8 @@ SUBROUTINE CALEXP2T
         LS = LSC(L)
         LSS = LEC(LS)
         ! *** Both adjacent and connected cell must both meet aspect criteria
-        if( MAX(DXP(LS),DYP(LS)) / MIN(DXP(LS),DYP(LS)) > 4.0 )then
-          if( MAX(DXP(LSS),DYP(LSS)) / MIN(DXP(LSS),DYP(LSS)) > 4.0 )then
+        if( max(DXP(LS),DYP(LS)) / min(DXP(LS),DYP(LS)) > 4.0 )then
+          if( max(DXP(LSS),DYP(LSS)) / min(DXP(LSS),DYP(LSS)) > 4.0 )then
             do K = KSZ(LS),KC
               FMDUY(LS,K) = 0.0
             enddo
@@ -966,7 +966,7 @@ SUBROUTINE CALEXP2T
     !$OMP DO PRIVATE(ND,LF,LL,LP,L)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       do LP = LF,LL
         L = LWET(LP)
         FX(L,KC) = FX(L,KC) - DZIC(L,KC)*DYU(L)*HU(L)*FBODYFX(L,KC)
@@ -1055,7 +1055,7 @@ SUBROUTINE CALEXP2T
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L) 
     do ND = 1,NDM  
       LF = (ND-1)*NWVCELLS+1  
-      LL = MIN(LF+NWVCELLS-1,NWVCELLS)
+      LL = min(LF+NWVCELLS-1,NWVCELLS)
       
       do K = 1,KC
         do LP = LF,LL
@@ -1129,7 +1129,7 @@ SUBROUTINE CALEXP2T
       !$OMP DO PRIVATE(ND,LF,LL,L,LP,K)
       do ND = 1,NDM  
         LF = (ND-1)*LDMWET+1  
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
 
         do K = 1,KC  
           do LP = 1,LLWET(K,ND)
@@ -1238,25 +1238,25 @@ SUBROUTINE CALEXP2T
           LN = LNC(L)  
           if( QMCSOURX(L,K) /= 0.0 )then  
             TMPVAL = SUB3D(L,K)+SUB(LE)  
-            TMPVAL = MAX(TMPVAL,1.0)  
+            TMPVAL = max(TMPVAL,1.0)  
             FX(L,K)  = FX(L,K)  - SUB3D(L,K)*QMCSOURX(L,K)/TMPVAL  
             FX(LE,K) = FX(LE,K) - SUB3D(LE,K)*QMCSOURX(L,K)/TMPVAL  
           endif  
           if( QMCSOURY(L,K) /= 0.0 )then  
             TMPVAL = SVB(L)+SVB(LN)  
-            TMPVAL = MAX(TMPVAL,1.0)  
+            TMPVAL = max(TMPVAL,1.0)  
             FY(L,K)  = FY(L,K)  - SVB3D(L ,K)*QMCSOURX(L,K)/TMPVAL  
             FY(LN,K) = FY(LN,K) - SVB3D(LN,K)*QMCSOURX(L,K)/TMPVAL  
           endif  
           if( QMCSINKX(L,K) /= 0.0 )then  
             TMPVAL = SUB3D(L,K)+SUB(LE)  
-            TMPVAL = MAX(TMPVAL,1.0)  
+            TMPVAL = max(TMPVAL,1.0)  
             FX(L,K)  = FX(L,K)  - SUB3D(L,K)*QMCSINKX(L,K)/TMPVAL  
             FX(LE,K) = FX(LE,K) - SUB3D(LE,K)*QMCSINKX(L,K)/TMPVAL  
           endif  
           if( QMCSINKY(L,K) /= 0.0 )then  
             TMPVAL = SVB(L)+SVB(LNC(L))  
-            TMPVAL = MAX(TMPVAL,1.0)  
+            TMPVAL = max(TMPVAL,1.0)  
             FY(L,K)  = FY(L,K)  - SVB3D(L,K)*QMCSINKX(L,K)/TMPVAL  
             FY(LN,K) = FY(LN,K) - SVB3D(LN,K)*QMCSINKX(L,K)/TMPVAL  
           endif  
@@ -1292,6 +1292,8 @@ SUBROUTINE CALEXP2T
                                                     - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
             FBBY(L,K) = SVB3D(L,K)*SBY(L)*GP*HV(L)*( HV(L)*( (B(L,K+1)-B(LS,K+1))*SGZV(L,K+1) + (B(L,K)-B(LS,K))*SGZV(L,K) )                                &
                                                     - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) )  
+            FBBX(L,K) = SUBD(L)*FBBX(L,K)                                    
+            FBBY(L,K) = SVBD(L)*FBBY(L,K)                                    
           enddo  
         enddo  
       enddo
@@ -1312,6 +1314,8 @@ SUBROUTINE CALEXP2T
                                                   - (BW(L,K+1)-BW(L,K)+BE(LW,K+1) - BE(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
             FBBY(L,K) = SVB3D(L,K)*SBY(L)*GP*HV(L)*( BS(L,K+1)*HPS(L)*SGZS(L,K+1) - BN(LS,K+1)*HPN(LS)*SGZN(LS,K+1) + BS(L,K)*HPS(L)*SGZS(L,K) - BN(LS,K)*HPN(LS)*SGZN(LS,K)   &
                                                   - (BS(L,K+1)-BS(L,K)+BN(LS,K+1) - BN(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) )  
+            FBBX(L,K) = SUBD(L)*FBBX(L,K)                                    
+            FBBY(L,K) = SVBD(L)*FBBY(L,K)                                    
           enddo  
         enddo
       enddo
@@ -1322,7 +1326,7 @@ SUBROUTINE CALEXP2T
       !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,LS,LW) 
       do ND = 1,NDM  
         LF = (ND-1)*LDMWET+1  
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
       
         do K = 1,KS  
           do LP = LF,LL
@@ -1331,6 +1335,8 @@ SUBROUTINE CALEXP2T
             LW = LWC(L)
             FBBX(L,K) = SBX(L)*GP*HU(L)*(HU(L)*( (B(L,K+1)-B(LW,K+1))*DZCK(K+1) + (B(L,K)-B(LW,K))*DZCK(K) ) - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*(BELV(L)-BELV(LW)+Z(L,K)*(HP(L)-HP(LW))) )  
             FBBY(L,K) = SBY(L)*GP*HV(L)*(HV(L)*( (B(L,K+1)-B(LS,K+1))*DZCK(K+1) + (B(L,K)-B(LS,K))*DZCK(K) ) - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*(BELV(L)-BELV(LS)+Z(L,K)*(HP(L)-HP(LS))) )  
+            FBBX(L,K) = SUBD(L)*FBBX(L,K)                                    
+            FBBY(L,K) = SVBD(L)*FBBY(L,K)                                    
           enddo  
         enddo  
       enddo
@@ -1345,7 +1351,7 @@ SUBROUTINE CALEXP2T
         !$OMP DO PRIVATE(ND,LF,LL,L,LP,K,LS,LW) 
         do ND = 1,NDM  
           LF = (ND-1)*LDMWET+1  
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
       
           do K = 1,KS
             do LP = 1,LLWET(K,ND)
@@ -1367,7 +1373,7 @@ SUBROUTINE CALEXP2T
         !$OMP DO PRIVATE(ND,LF,LL,L,LP,K,LS,LW) 
         do ND = 1,NDM  
           LF = (ND-1)*LDMWET+1  
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
       
           do LP = LF,LL
             L = LWET(LP)  
@@ -1389,7 +1395,7 @@ SUBROUTINE CALEXP2T
         !$OMP DO PRIVATE(ND,LF,LL,L,LP,K,LS,LW) 
         do ND = 1,NDM  
           LF = (ND-1)*LDMWET+1  
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
       
           K = KS
           do LP = LF,LL
@@ -1544,7 +1550,7 @@ SUBROUTINE CALEXP2T
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       
       ! *** COMPUTE THE INTERNAL SHEARS FOR THE LOWER LAYERS
       do K = 1,KS

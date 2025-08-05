@@ -202,23 +202,23 @@ SUBROUTINE CALSFT
   !
   do K = 0,KS
     do L = 2,LA
-      WWW(L,K) = MIN(WWQ(L,K),0.)
+      WWW(L,K) = min(WWQ(L,K),0.)
       WWW(L,K) = ABS(WWW(L,K))
-      WWQ(L,K) = MAX(WWQ(L,K),0.)
+      WWQ(L,K) = max(WWQ(L,K),0.)
     enddo
   enddo
   TMPVAL = 0.25/(DELT*DZI)
   do K = 1,KS
     do L = 2,LA
       WMAXX = TMPVAL*HWQ(L)
-      WWW(L,K) = MIN(WWW(L,K),WMAXX)
-      WWQ(L,K) = MIN(WWQ(L,K),WMAXX)
+      WWW(L,K) = min(WWW(L,K),WMAXX)
+      WWQ(L,K) = min(WWQ(L,K),WMAXX)
       WWQ(L,K) = WWQ(L,K)-WWW(L,K)
     enddo
   enddo
   do K = 1,KS
     do L = 2,LA
-      FWU(L,K) = MAX(WWQ(L,K),0.)*SFL(L,K) &
+      FWU(L,K) = max(WWQ(L,K),0.)*SFL(L,K) &
           +MIN(WWQ(L,K),0.)*SFL(L,K+1)
     enddo
   enddo
@@ -288,7 +288,7 @@ SUBROUTINE CALSFT
   enddo
   do ND = 1,NDM
     LF = 2+(ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do L = LF,LL
       RCDZKK = -DELT*CDZKK(L,KSZ(L))
       CCUBTMP = RCDZKK*HWQI(L)*AB(L,KSZ(L))
@@ -300,7 +300,7 @@ SUBROUTINE CALSFT
   enddo
   do ND = 1,NDM
     LF = 2+(ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do K = 2,KS
       do L = LF,LL
         if( K < KSZ(L)+1 ) CYCLE
@@ -318,7 +318,7 @@ SUBROUTINE CALSFT
   K = KC
   do ND = 1,NDM
     LF = 2+(ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do L = LF,LL
       RCDZKMK = -DELT*CDZKMK(L,K)
       CCLBTMP = RCDZKMK*HWQI(L)*AB(L,K-1)
@@ -329,7 +329,7 @@ SUBROUTINE CALSFT
   enddo
   do ND = 1,NDM
     LF = 2+(ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do K = KC-1,1,-1
       do L = LF,LL
         SFL(L,K) = SFL(L,K)-CU1(L,K)*SFL(L,K+1)

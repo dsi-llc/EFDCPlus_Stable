@@ -619,10 +619,10 @@ end function psiu_26
     real, intent(out) :: q, em
 
     Tf = 0. !%assumes relative humidity for pure water
-    es = bucksat(T,P)    ! es = bucksat(T,P,Tf)    
+    es = bucksat(T,P)    ! bucksat(T,P,Tf)
     em = 0.01*rh*es  !% in mb, partial pressure of water vapor
     q = 622.*em/(P-0.378*em)
-    end subroutine qsat26air
+  end subroutine qsat26air
     
       !%----------------------------------------------------------------------------
   real function bucksat(T,P)

@@ -206,7 +206,7 @@ Module Mod_Map_Global_to_Local
 
     ! *** Setup temporary arrays for transfer
     allocate(ArrayG(LCM_Global))
-    ArrayG(:) = .false.
+    ArrayG(:) = .FALSE.
     
     do LG = 1,LCM_Global
       ArrayG(LG) = Array(LG)
@@ -217,7 +217,7 @@ Module Mod_Map_Global_to_Local
     
     ! *** Reallocate to local LCM
     allocate(Array(LCM))
-    Array = .false.
+    Array = .FALSE.
     
     ! *** Now map global to local
     do LG = 1,LCM_Global

@@ -25,7 +25,8 @@ SUBROUTINE BEDLOADJ
   !  Paul M. Craig
   
   use GLOBAL    
-  use MPI
+  !use MPI
+  use Variables_MPI
   use Communicate_Ghost_Routines
 
   implicit none 
@@ -62,7 +63,7 @@ SUBROUTINE BEDLOADJ
     !$OMP DO PRIVATE(ND,LF,LL,NT,NS,LP,L)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do NT = 1,NTOX
         do NS = 1,NSEDS
@@ -88,7 +89,7 @@ SUBROUTINE BEDLOADJ
   !$OMP DO PRIVATE(ND,LF,LL,LP,L,NS)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
     do NS = 1,NSEDS
       if( D50(NS) < BEDLOAD_CUTOFF ) CYCLE
       do LP = LF,LL
@@ -110,7 +111,7 @@ SUBROUTINE BEDLOADJ
   !$OMP DO PRIVATE(ND,LF,LL,NS,LP,L)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
     do NS = 1,NSEDS
       if( D50(NS) < BEDLOAD_CUTOFF ) CYCLE
       do LP = LF,LL
@@ -122,7 +123,7 @@ SUBROUTINE BEDLOADJ
             PSUS(L,NS) = 0.0
           else      
             ISKIP(NS) = 0
-            PSUS(L,NS) = MAX((LOG(USW(L,NS))-LOG(SQRT(TCRSUS(NS))/DWS(NS)))/(LOG(4.0)-LOG(SQRT(TCRSUS(NS))/DWS(NS))),0.0)
+            PSUS(L,NS) = max((LOG(USW(L,NS))-LOG(SQRT(TCRSUS(NS))/DWS(NS)))/(LOG(4.0)-LOG(SQRT(TCRSUS(NS))/DWS(NS))),0.0)
           endif
         else
           ! *** Shear is high enough to move all eroded material to suspension
@@ -137,15 +138,15 @@ SUBROUTINE BEDLOADJ
   !$OMP DO PRIVATE(ND,LF,LL,NS,LP,L)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
     do NS = 1,NSEDS
       if( D50(NS) < BEDLOAD_CUTOFF ) CYCLE
       if( ISKIP(NS) == 0 )then
         do LP = LF,LL
           L = LSED(LP)
-          TRANS(L,NS) = MAX((TAU(L)-TCRE(NS))/TCRE(NS),0.0)                     ! *** eqn. 21
+          TRANS(L,NS) = max((TAU(L)-TCRE(NS))/TCRE(NS),0.0)                     ! *** eqn. 21
           DZBL(L,NS)  = D50(NS)/10000.0*0.3*DISTAR(NS)**0.7*SQRT(TRANS(L,NS))   ! *** eqn. 20b
-          DZBL(L,NS)  = MIN(DZBL(L,NS), HPCM(L))                                ! *** Don't allow bedload height to exceed water column depth
+          DZBL(L,NS)  = min(DZBL(L,NS), HPCM(L))                                ! *** Don't allow bedload height to exceed water column depth
           BLVEL(L,NS) = 1.5*TRANS(L,NS)**0.6*SQRT(((SEDDENS(NCORENO(IL(L),JL(L)))/WATERDENS) -1.0)*980.0*D50(NS)/10000.0)    ! *** eqn. 20a  (cm/s)
         enddo
       endif
@@ -156,7 +157,7 @@ SUBROUTINE BEDLOADJ
   !$OMP DO PRIVATE(ND,LF,LL,NS,LP,L,LS,LW)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
     do NS = 1,NSEDS
       if( D50(NS) < BEDLOAD_CUTOFF ) CYCLE
       if( ISKIP(NS) == 0 )then
@@ -177,7 +178,7 @@ SUBROUTINE BEDLOADJ
     !$OMP DO PRIVATE(ND,LF,LL,NS,LP,L,UTMP,VTMP)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do NS = 1,NSEDS
         if( D50(NS) < BEDLOAD_CUTOFF ) CYCLE
@@ -211,7 +212,7 @@ SUBROUTINE BEDLOADJ
   !$OMP DO PRIVATE(ND,LF,LL,NS,LP,L,LS,LW)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
 
     ! *** CBL     - Bedload concentration (g/cm^2)     (Original SNL was in g/cm^3)
     ! *** QSBDLDX - Bedload flux in X direction (g/s)  (Original SNL was in g/cm^2)
@@ -258,7 +259,7 @@ SUBROUTINE BEDLOADJ
      
   !$OMP SINGLE
   TTDS = DSTIME(0)
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   TWAIT = DSTIME(0) - TTDS
   TTSED = TTSED - TWAIT
 
@@ -272,7 +273,7 @@ SUBROUTINE BEDLOADJ
   !$OMP DO PRIVATE(ND,LF,LL,NS,LP,L,LE,LN)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
 
     do NS = 1,NSEDS
       if( D50(NS) < BEDLOAD_CUTOFF ) CYCLE

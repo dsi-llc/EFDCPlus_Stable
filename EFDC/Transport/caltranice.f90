@@ -181,14 +181,14 @@ SUBROUTINE CALTRANICE(CON, CON1, IT)
         L = LCBS(LL)  
         LN = LNC(L)  
         if( VHDX2(LN,K) <= 0. )then  
-          ! *** FLOWING OUT OF DOMAIN  
+          ! *** Flowing out of domain  
           if( ISTL == 2 )then  
             CTMP = CON1(L,K)+DDELT*(VHDX2(LN,K)*CON1(L,K)-FVHUD(LN,K,IT))*DXYIP(L)*HPI(L)  
           else  
             CTMP = CON1(L,K)+DDELT*(VHDX2(LN,K)*CON1(L,K)-FVHUD(LN,K,IT))*DXYIP(L)*HPI(L)  
             CON1(L,K) = CON(L,K)  
           endif  
-          CON(L,K) = MAX(CTMP  ,0.)
+          CON(L,K) = max(CTMP  ,0.)
         endif  
       enddo  
     enddo  
@@ -200,14 +200,14 @@ SUBROUTINE CALTRANICE(CON, CON1, IT)
       do LL = 1,NCBW  
         L = LCBW(LL)  
         if( UHDY2(LEC(L),K) <= 0. )then  
-          ! *** FLOWING OUT OF DOMAIN  
+          ! *** Flowing out of domain  
           if( ISTL == 2 )then  
             CTMP = CON1(L,K)+DDELT*(UHDY2(LEC(L),K)*CON1(L,K)-FUHUD(LEC(L),K,IT))*DXYIP(L)*HPI(L)  
           else  
             CTMP = CON1(L,K)+DDELT*(UHDY2(LEC(L),K)*CON1(L,K)-FUHUD(LEC(L),K,IT))*DXYIP(L)*HPI(L)  
             CON1(L,K) = CON(L,K)  
           endif  
-          CON(L,K) = MAX(CTMP  ,0.)
+          CON(L,K) = max(CTMP  ,0.)
         endif  
       enddo  
     enddo  
@@ -219,14 +219,14 @@ SUBROUTINE CALTRANICE(CON, CON1, IT)
       do LL = 1,NCBE  
         L = LCBE(LL)  
         if( UHDY2(L,K) >= 0. )then  
-          ! *** FLOWING OUT OF DOMAIN  
+          ! *** Flowing out of domain  
           if( ISTL == 2 )then  
             CTMP = CON1(L,K)+DDELT*(FUHUD(L,K,IT)-UHDY2(L,K)*CON1(L,K))*DXYIP(L)*HPI(L)  
           else  
             CTMP = CON1(L,K)+DDELT*(FUHUD(L,K,IT)-UHDY2(L,K)*CON1(L,K))*DXYIP(L)*HPI(L)  
             CON1(L,K) = CON(L,K)  
           endif  
-          CON(L,K) = MAX(CTMP  ,0.)
+          CON(L,K) = max(CTMP  ,0.)
         endif  
       enddo  
     enddo  
@@ -239,14 +239,14 @@ SUBROUTINE CALTRANICE(CON, CON1, IT)
         L = LCBN(LL)  
         LS = LSC(L)  
         if( VHDX2(L,K) >= 0. )then  
-          ! *** FLOWING OUT OF DOMAIN  
+          ! *** Flowing out of domain  
           if( ISTL == 2 )then  
             CTMP = CON1(L,K)+DDELT*(FVHUD(L,K,IT)-VHDX2(L,K)*CON1(L,K))*DXYIP(L)*HPI(L)  
           else  
             CTMP = CON1(L,K)+DDELT*(FVHUD(L,K,IT)-VHDX2(L,K)*CON1(L,K))*DXYIP(L)*HPI(L)  
             CON1(L,K) = CON(L,K)  
           endif  
-          CON(L,K) = MAX(CTMP  ,0.)
+          CON(L,K) = max(CTMP  ,0.)
         endif  
       enddo  
     enddo  

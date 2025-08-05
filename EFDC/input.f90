@@ -37,7 +37,7 @@
   ! *** End new for MPI
 
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
 
   implicit none
@@ -324,7 +324,7 @@
     call SLEEP(5)       !< 5 seconds
 #else
     call SLEEPQQ(5000)  !< 5000 milliseconds
-#endif 
+#endif    
   endif
 
   ! *** ********************************************************
@@ -490,7 +490,7 @@
     if( process_map(x_id,y_id-1) /= -1 )  JC = JC + n_ghost_rows   ! *** South Edge
     if( process_map(x_id,y_id+1) /= -1 )  JC = JC + n_ghost_rows   ! *** North Edge
   endif
-  call MPI_Barrier(comm_2d, ierr)
+  call MPI_Barrier(DSIcomm, ierr)
 
   call Parent_Grid
 
@@ -796,7 +796,7 @@
       call Broadcast_Scalar(ISWCBL, master_id)
       call Broadcast_Scalar(ISDZBR, master_id)
 
-      NTSWV = MAX(NTSWV,1)
+      NTSWV = max(NTSWV,1)
     endif
   endif
 
@@ -978,7 +978,7 @@
           if( ISO > 0 ) GOTO 100
 
           do M = 1,MTIDE
-            if( NPFORS == 0) EXIT
+            if( NPFORS == 0) exit
             RAD = PI2*PFPH(NPFORS,M)/TCP(M)
             AMP = G*PFAM(NPFORS,M)
             PCBS_GL(L,M) = AMP*COS(RAD)
@@ -994,7 +994,7 @@
           write(mpi_efdc_out_unit,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORS == 0) EXIT
+            if( NPFORS == 0) exit
             PCBS_GL(L,M) = CPFAM0(NPFORS,M)+TPCOORDS_GL(L)*CPFAM1(NPFORS,M) + TPCOORDS_GL(L)*TPCOORDS_GL(L)*CPFAM2(NPFORS,M)
             PSBS_GL(L,M) = SPFAM0(NPFORS,M)+TPCOORDS_GL(L)*SPFAM1(NPFORS,M) + TPCOORDS_GL(L)*TPCOORDS_GL(L)*SPFAM2(NPFORS,M)
             TMPAMP = SQRT(PCBS(L,M)*PCBS(L,M)+PSBS_GL(L,M)*PSBS_GL(L,M))
@@ -1014,7 +1014,7 @@
           write(mpi_efdc_out_unit,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORS == 0) EXIT
+            if( NPFORS == 0) exit
             BOTTOM = PFX2(NPFORS,M)*(1.0-PFX2(NPFORS,M))
             TOP1 = TPCOORDS_GL(L)*PFX2(NPFORS,M)*(TPCOORDS_GL(L)-PFX2(NPFORS,M))
             TOP2 = TPCOORDS_GL(L)*(1.0-TPCOORDS_GL(L))
@@ -1068,7 +1068,7 @@
           write(mpi_efdc_out_unit,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORW == 0) EXIT
+            if( NPFORW == 0) exit
             RAD = PI2*PFPH(NPFORW,M)/TCP(M)
             AMP = G*PFAM(NPFORW,M)
             PCBW_GL(L,M) = AMP*COS(RAD)
@@ -1084,7 +1084,7 @@
           write(mpi_efdc_out_unit,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORW == 0) EXIT
+            if( NPFORW == 0) exit
             PCBW_GL(L,M) = CPFAM0(NPFORW,M)+TPCOORDW_GL(L)*CPFAM1(NPFORW,M)+TPCOORDW_GL(L)*TPCOORDW_GL(L)*CPFAM2(NPFORW,M)
             PSBW_GL(L,M) = SPFAM0(NPFORW,M)+TPCOORDW_GL(L)*SPFAM1(NPFORW,M)+TPCOORDW_GL(L)*TPCOORDW_GL(L)*SPFAM2(NPFORW,M)
             TMPAMP = SQRT(PCBW_GL(L,M)*PCBW_GL(L,M)+PSBW_GL(L,M)*PSBW_GL(L,M))
@@ -1105,7 +1105,7 @@
           write(mpi_efdc_out_unit,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORW == 0) EXIT
+            if( NPFORW == 0) exit
             BOTTOM = PFX2(NPFORW,M)*(1.0-PFX2(NPFORW,M))
             TOP1 = TPCOORDW_GL(L)*PFX2(NPFORW,M)*(TPCOORDW_GL(L)-PFX2(NPFORW,M))
             TOP2 = TPCOORDW_GL(L)*(1.0-TPCOORDW_GL(L))
@@ -1157,7 +1157,7 @@
           write(mpi_efdc_out_unit,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORE == 0) EXIT
+            if( NPFORE == 0) exit
             RAD = PI2*PFPH(NPFORE,M)/TCP(M)
             AMP = G*PFAM(NPFORE,M)
             PCBE_GL(L,M) = AMP*COS(RAD)
@@ -1173,7 +1173,7 @@
           write(mpi_efdc_out_unit,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORE == 0) EXIT
+            if( NPFORE == 0) exit
             PCBE_GL(L,M) = CPFAM0(NPFORE,M)+TPCOORDE_GL(L)*CPFAM1(NPFORE,M)+TPCOORDE_GL(L)*TPCOORDE_GL(L)*CPFAM2(NPFORE,M)
             PSBE_GL(L,M) = SPFAM0(NPFORE,M)+TPCOORDE_GL(L)*SPFAM1(NPFORE,M)+TPCOORDE_GL(L)*TPCOORDE_GL(L)*SPFAM2(NPFORE,M)
             TMPAMP = SQRT(PCBE_GL(L,M)*PCBE_GL(L,M)+PSBE_GL(L,M)*PSBE_GL(L,M))
@@ -1194,7 +1194,7 @@
           write(mpi_efdc_out_unit,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORE == 0) EXIT
+            if( NPFORE == 0) exit
             BOTTOM = PFX2(NPFORE,M)*(1.0-PFX2(NPFORE,M))
             TOP1 = TPCOORDE_GL(L)*PFX2(NPFORE,M)*(TPCOORDE_GL(L)-PFX2(NPFORE,M))
             TOP2 = TPCOORDE_GL(L)*(1.0-TPCOORDE_GL(L))
@@ -1247,7 +1247,7 @@
           write(mpi_efdc_out_unit,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORN == 0) EXIT
+            if( NPFORN == 0) exit
             RAD = PI2*PFPH(NPFORN,M)/TCP(M)
             AMP = G*PFAM(NPFORN,M)
             PCBN_GL(L,M) = AMP*COS(RAD)
@@ -1263,7 +1263,7 @@
           write(mpi_efdc_out_unit,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORN == 0) EXIT
+            if( NPFORN == 0) exit
             PCBN_GL(L,M) = CPFAM0(NPFORN,M)+TPCOORDN_GL(L)*CPFAM1(NPFORN,M)+TPCOORDN_GL(L)*TPCOORDN_GL(L)*CPFAM2(NPFORN,M)
             PSBN_GL(L,M) = SPFAM0(NPFORN,M)+TPCOORDN_GL(L)*SPFAM1(NPFORN,M)+TPCOORDN_GL(L)*TPCOORDN_GL(L)*SPFAM2(NPFORN,M)
             TMPAMP = SQRT(PCBN_GL(L,M)*PCBN_GL(L,M)+PSBN_GL(L,M)*PSBN_GL(L,M))
@@ -1284,7 +1284,7 @@
           write(mpi_efdc_out_unit,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
-            if( NPFORN == 0) EXIT
+            if( NPFORN == 0) exit
             BOTTOM = PFX2(NPFORN,M)*(1.0-PFX2(NPFORN,M))
             TOP1 = TPCOORDN_GL(L)*PFX2(NPFORN,M)*(TPCOORDN_GL(L)-PFX2(NPFORN,M))
             TOP2 = TPCOORDN_GL(L)*(1.0-TPCOORDN_GL(L))
@@ -1369,12 +1369,12 @@
     if( process_id == master_id )then
       call SEEK('C24',0)
       do NS = 1,NQSIJ
-        read(1,*,IOSTAT = ISO) BCFL_GL(NS).I, BCFL_GL(NS).J, BCFL_GL(NS).QSSE, BCFL_GL(NS).NQSMUL, BCFL_GL(NS).NQSMF, BCFL_GL(NS).NQSERQ,   BCFL_GL(NS).NCSERQ(1), BCFL_GL(NS).NCSERQ(2), BCFL_GL(NS).NCSERQ(3), BCFL_GL(NS).NCSERQ(4), BCFL_GL(NS).NCSERQ(5),  &
-          BCFL_GL(NS).NCSERQ(6), BCFL_GL(NS).NCSERQ(7), BCFL_GL(NS).QWIDTH,   BCFL_GL(NS).QFACTOR,  BCFL_GL(NS).GRPID
+        read(1,*,IOSTAT = ISO) BCPS_GL(NS).I, BCPS_GL(NS).J, BCPS_GL(NS).QSSE, BCPS_GL(NS).NQSMUL, BCPS_GL(NS).NQSMF, BCPS_GL(NS).NQSERQ,   BCPS_GL(NS).NCSERQ(1), BCPS_GL(NS).NCSERQ(2), BCPS_GL(NS).NCSERQ(3), BCPS_GL(NS).NCSERQ(4), BCPS_GL(NS).NCSERQ(5),  &
+          BCPS_GL(NS).NCSERQ(6), BCPS_GL(NS).NCSERQ(7), BCPS_GL(NS).QWIDTH,   BCPS_GL(NS).QFACTOR,  BCPS_GL(NS).GRPID
 
         write(mpi_efdc_out_unit,1002) NCARD
-        write(mpi_efdc_out_unit,*) BCFL_GL(NS).I, BCFL_GL(NS).J, BCFL_GL(NS).QSSE, BCFL_GL(NS).NQSMUL, BCFL_GL(NS).NQSMF, BCFL_GL(NS).NQSERQ,   BCFL_GL(NS).NCSERQ(1), BCFL_GL(NS).NCSERQ(2), BCFL_GL(NS).NCSERQ(3), BCFL_GL(NS).NCSERQ(4), BCFL_GL(NS).NCSERQ(5),  &
-          BCFL_GL(NS).NCSERQ(6), BCFL_GL(NS).NCSERQ(7), BCFL_GL(NS).QWIDTH,   BCFL_GL(NS).QFACTOR,  BCFL_GL(NS).GRPID
+        write(mpi_efdc_out_unit,*) BCPS_GL(NS).I, BCPS_GL(NS).J, BCPS_GL(NS).QSSE, BCPS_GL(NS).NQSMUL, BCPS_GL(NS).NQSMF, BCPS_GL(NS).NQSERQ,   BCPS_GL(NS).NCSERQ(1), BCPS_GL(NS).NCSERQ(2), BCPS_GL(NS).NCSERQ(3), BCPS_GL(NS).NCSERQ(4), BCPS_GL(NS).NCSERQ(5),  &
+          BCPS_GL(NS).NCSERQ(6), BCPS_GL(NS).NCSERQ(7), BCPS_GL(NS).QWIDTH,   BCPS_GL(NS).QFACTOR,  BCPS_GL(NS).GRPID
         if( ISO > 0 ) GOTO 100
 
       enddo
@@ -1387,10 +1387,10 @@
       call SEEK('C25',0)
       MMAX = 3 + NDYM + NTOX
       do NS = 1,NQSIJ
-        read(1,*,IOSTAT = ISO) (BCFL_GL(NS).CQSE(M),M = 1,MMAX)
+        read(1,*,IOSTAT = ISO) (BCPS_GL(NS).CQSE(M),M = 1,MMAX)
 
         write(mpi_efdc_out_unit,1002) NCARD
-        write(mpi_efdc_out_unit,*) (BCFL_GL(NS).CQSE(M),M = 1,MMAX)
+        write(mpi_efdc_out_unit,*) (BCPS_GL(NS).CQSE(M),M = 1,MMAX)
         if( ISO > 0 ) GOTO 100
       enddo
     endif
@@ -1404,27 +1404,27 @@
       MMIN = MMAX+1
       MMAX = MMAX+NSED+NSND
       do NS = 1,NQSIJ
-        read(1,*,IOSTAT = ISO) (BCFL_GL(NS).CQSE(M),M = MMIN,MMAX)
+        read(1,*,IOSTAT = ISO) (BCPS_GL(NS).CQSE(M),M = MMIN,MMAX)
         write(mpi_efdc_out_unit,1002) NCARD
 
-        write(mpi_efdc_out_unit,*) (BCFL_GL(NS).CQSE(M),M = MMIN,MMAX)
+        write(mpi_efdc_out_unit,*) (BCPS_GL(NS).CQSE(M),M = MMIN,MMAX)
         if( ISO > 0 ) GOTO 100
       enddo
     endif
     
     do NS = 1, NQSIJ
-      call Broadcast_Scalar( BCFL_GL(NS).I       , master_id)
-      call Broadcast_Scalar( BCFL_GL(NS).J       , master_id)
-      call Broadcast_Scalar( BCFL_GL(NS).QSSE    , master_id)
-      call Broadcast_Scalar( BCFL_GL(NS).NQSMUL  , master_id)
-      call Broadcast_Scalar( BCFL_GL(NS).NQSMF   , master_id)
-      call Broadcast_Scalar( BCFL_GL(NS).NQSERQ  , master_id)
-      call Broadcast_Scalar( BCFL_GL(NS).QWIDTH  , master_id)
-      call Broadcast_Scalar( BCFL_GL(NS).QFACTOR , master_id)
-      call Broadcast_Scalar( BCFL_GL(NS).GRPID   , master_id)
+      call Broadcast_Scalar( BCPS_GL(NS).I       , master_id)
+      call Broadcast_Scalar( BCPS_GL(NS).J       , master_id)
+      call Broadcast_Scalar( BCPS_GL(NS).QSSE    , master_id)
+      call Broadcast_Scalar( BCPS_GL(NS).NQSMUL  , master_id)
+      call Broadcast_Scalar( BCPS_GL(NS).NQSMF   , master_id)
+      call Broadcast_Scalar( BCPS_GL(NS).NQSERQ  , master_id)
+      call Broadcast_Scalar( BCPS_GL(NS).QWIDTH  , master_id)
+      call Broadcast_Scalar( BCPS_GL(NS).QFACTOR , master_id)
+      call Broadcast_Scalar( BCPS_GL(NS).GRPID   , master_id)
                                                  
-      call Broadcast_Array( BCFL_GL(NS).NCSERQ   , master_id)
-      call Broadcast_Array( BCFL_GL(NS).CQSE     , master_id)
+      call Broadcast_Array( BCPS_GL(NS).NCSERQ   , master_id)
+      call Broadcast_Array( BCPS_GL(NS).CQSE     , master_id)
     enddo
 
   endif
@@ -1536,7 +1536,7 @@
         write(mpi_efdc_out_unit,*) (CQSTMP(M),M = MMIN,MMAX)
         if( ISO > 0 ) GOTO 100
 
-        MS = MAX(MMIN-1, 0)
+        MS = max(MMIN-1, 0)
         if( JET_PLM_GL(NJP).ICALJP == 1 )then
           do MS = MMIN,MMAX
             JET_PLM_GL(NJP).CWRCJP(MS) = 0.0
@@ -1778,7 +1778,7 @@
           WITH_RET_GL(NWR).BQWRMFU, WITH_RET_GL(NWR).BQWRMFD,  WITH_RET_GL(NWR).ANGWRMFD
         if( ISO > 0 ) GOTO 100
 
-        !J = MAX(J,WITH_RET_GL(NWR).GROUPID)
+        !J = max(J,WITH_RET_GL(NWR).GROUPID)
         !IF( WITH_RET_GL(NWR).GROUPID < 1 )then
         !  J = J + 1
         !  WITH_RET_GL(NWR).GROUPID = J
@@ -2112,7 +2112,7 @@
           call SETSHLD(TAUR(NS),TCSHIELDS(NS),SEDDIA(NS),SSG(NS),DSTR,USTR)
           TAUN(NS) = TAUR(NS)
         endif
-        TAUCMIN = MIN(TAUCMIN,TAUR(NS))
+        TAUCMIN = min(TAUCMIN,TAUR(NS))
 
         write(mpi_efdc_out_unit,1002) NCARD
         write(mpi_efdc_out_unit,*)ISNDEQ(NS),TAUR(NS),TAUN(NS),TCSHIELDS(NS),SEDDIA(NS),SSG(NS),DSTR,USTR
@@ -3345,7 +3345,21 @@
     call Broadcast_Array( IS_NC_OUT, master_id)
 
   endif
+  ! *** array out option
+  if( ISINWV == 2 )then
+    NCARD = '91C'
+    if( process_id == master_id )then
+      call SEEK('C91C',0)
+      read(1,*,ERR = 100) (IS_ARRAY_OUT(i), i = 1,5)
+          
+      write(mpi_efdc_out_unit,1002) NCARD
+      write(mpi_efdc_out_unit,*) IS_ARRAY_OUT(1:5)
+    endif
+    
+    call Broadcast_Array( IS_ARRAY_OUT, master_id)
+  endif
 
+  
   NTS = INT8(NTC)*NTSPTC
   NSVSFP = 0
 
@@ -3542,16 +3556,16 @@
       DXP_Global(LG)  = DXIJ
       DYP_Global(LG)  = DYIJ
       HP_Global(LG)   = HADADJ + HCVRT*HIJ
-      HP_Global(LG)   = MAX(HP_Global(LG), HMIN)
+      HP_Global(LG)   = max(HP_Global(LG), HMIN)
       BELV_GLOBAL(LG) = BELADJ + BELCVRT*BELVIJ
       ZBR_GLOBAL(LG)  = ZBRADJ + ZBRCVRT*ZBRIJ
       MVEG_GLOBAL(LG) = MVEGIJT
 
       ! *** get global versions as they are needed for the NETCDF writing out
-      IMN_Global = MIN(IMN_Global, IGL)
-      JMN_Global = MIN(JMN_Global, JGL)
-      IMX_Global = MAX(IMX_Global, IGL)
-      JMX_Global = MAX(JMX_Global, JGL)
+      IMN_Global = min(IMN_Global, IGL)
+      JMN_Global = min(JMN_Global, JGL)
+      IMX_Global = max(IMX_Global, IGL)
+      JMX_Global = max(JMX_Global, JGL)
     enddo
 
     close(1)
@@ -3711,8 +3725,8 @@
     AHMIN = 1.0E32
     do L = 2,LA
       AHOXY(L) = ABS(AHO)*DXP(L)*DYP(L)
-      AHMAX    = MAX(AHOXY(L),AHMAX)
-      AHMIN    = MIN(AHOXY(L),AHMIN)
+      AHMAX    = max(AHOXY(L),AHMAX)
+      AHMIN    = min(AHOXY(L),AHMIN)
     enddo
 
     if( process_id == master_id )then
@@ -3766,10 +3780,10 @@
         endif
         AHDXY(L) = R2D_Global(LG,2)
 
-        AHMAX = MAX(AHOXY(L),AHMAX)
-        AHMIN = MIN(AHOXY(L),AHMIN)
-        ADMAX = MAX(AHDXY(L),ADMAX)
-        ADMIN = MIN(AHDXY(L),ADMIN)
+        AHMAX = max(AHOXY(L),AHMAX)
+        AHMIN = min(AHOXY(L),AHMIN)
+        ADMAX = max(AHDXY(L),ADMAX)
+        ADMIN = min(AHDXY(L),ADMIN)
       endif
     enddo
     deallocate(R2D_Global)
@@ -3820,10 +3834,10 @@
         AVOXY(L) = R2D_Global(LG,1)
         AVBXY(L) = R2D_Global(LG,2)
 
-        AHMAX = MAX(AVOXY(L), AVMAX)
-        AHMIN = MIN(AVOXY(L), AVMIN)
-        ADMAX = MAX(AVBXY(L), ABMAX)
-        ADMIN = MIN(AVBXY(L), ABMIN)
+        AHMAX = max(AVOXY(L), AVMAX)
+        AHMIN = min(AVOXY(L), AVMIN)
+        ADMAX = max(AVBXY(L), ABMAX)
+        ADMIN = min(AVBXY(L), ABMIN)
       endif
 
       PRINT '(A,4E12.4)','VARIABLE AVO & ABO USED (MIN,MAX): ',AHMIN,AHMAX,ADMIN,ADMAX
@@ -4723,98 +4737,94 @@
   ! *** READ IN INITIAL SALINITY, TEMPERATURE, DYE, SED, SND, TOX
   ! *** FOR COLD STARTS FORM FILE XXXX.INP
   ! *** SALINITY
-  if( ISTRAN(1) >= 1 )then
-      do K = 1,KC
-        do L = 2,LA
-          SALINIT(L,K) = 0.
-        enddo
-      enddo
+  do K = 1,KC
+    do L = 2,LA
+      SALINIT(L,K) = 0.
+    enddo
+  enddo
 
-      if( ISRESTI == 0 .or. (ISRESTI >= 1 .and. ISCI(1) == 0) .or. (ISTOPT(1) > 1))  then
-        if( ISTOPT(1) >= 1 )then
-          if( process_id == master_id )then
-            write(*,'(A)')'READING SALT.INP'
-            open(1,FILE = 'salt.inp',STATUS = 'UNKNOWN')
+  if( ISTRAN(1) >= 1 .and. (ISRESTI == 0 .or. (ISRESTI >= 1 .and. ISCI(1) == 0) .or. (ISTOPT(1) > 1))  )then
+    if( ISTOPT(1) >= 1 )then
+      if( process_id == master_id )then
+        write(*,'(A)')'READING SALT.INP'
+        open(1,FILE = 'salt.inp',STATUS = 'UNKNOWN')
 
-            ! ***   SKIP OVER TITLE AND AND HEADER LINES
-            STR = READSTR(1)
-            read(1,*)ISALTYP
+        ! ***   SKIP OVER TITLE AND AND HEADER LINES
+        STR = READSTR(1)
+        read(1,*)ISALTYP
 
-            if( ISALTYP == 0 )then
-              do LG = 2, LA_GLOBAL
-                read(1,*,IOSTAT = ISO) (SAL_Global(LG,K),K = 1,KC)
-                if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE SALT.INP')
-              enddo
-            else
-              do L = 2, LA_GLOBAL
-                read(1,*,IOSTAT = ISO)LDUM,IDUM,JDUM,(CONINIT(K),K = 1,KC)
-                if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE SALT.INP')
+        if( ISALTYP == 0 )then
+          do LG = 2, LA_GLOBAL
+            read(1,*,IOSTAT = ISO) (SAL_Global(LG,K),K = 1,KC)
+            if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE SALT.INP')
+          enddo
+        else
+          do L = 2, LA_GLOBAL
+            read(1,*,IOSTAT = ISO)LDUM,IDUM,JDUM,(CONINIT(K),K = 1,KC)
+            if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE SALT.INP')
 
-                LG = LIJ_Global(IDUM,JDUM)
-                SAL_Global(LG,:) = CONINIT(:)
-              enddo
-            endif
-            close(1)
-          endif
-
-          call Broadcast_Array(SAL_Global, master_id)
-
-          ! *** Map to Local Domain
-          do LG = 2,LA_GLOBAL
-            L = Map2Local(LG).LL
-            if( L > 1 )then
-              SALINIT(L,:) = SAL_Global(LG,:)
-            endif
+            LG = LIJ_Global(IDUM,JDUM)
+            SAL_Global(LG,:) = CONINIT(:)
           enddo
         endif
+        close(1)
       endif
+
+      call Broadcast_Array(SAL_Global, master_id)
+
+      ! *** Map to Local Domain
+      do LG = 2,LA_GLOBAL
+        L = Map2Local(LG).LL
+        if( L > 1 )then
+          SALINIT(L,:) = SAL_Global(LG,:)
+        endif
+      enddo
+    endif
 
   endif
 
   ! *** TEMPERATURE
-  if( ISTRAN(2) >= 1 )then
-      TEM_Global = TEMO
-      do K = 1,KC
-        do L = 2,LA
-          TEMINIT(L,K) = TEMO
-        enddo
-      enddo
+  TEM_Global = TEMO
+  do K = 1,KC
+    do L = 2,LA
+      TEMINIT(L,K) = TEMO
+    enddo
+  enddo
 
-      if( ISRESTI == 0 .or. (ISRESTI >= 1 .and. ISCI(2) == 0) .or. (ISTOPT(2) > 9) ) then
-        if( ISTOPT(2) >= 1 .or. INITTEMP > 0 )then
-          if( process_id == master_id )then
-            write(*,'(A)')'READING TEMP.INP'
-            open(1,FILE = 'temp.inp',STATUS = 'UNKNOWN')
-            ! ***   SKIP OVER TITLE AND AND HEADER LINES
-            STR = READSTR(1)
-            read(1,*) ISALTYP
+  if( ISTRAN(2) >= 1 .and. (ISRESTI == 0 .or. (ISRESTI >= 1 .and. ISCI(2) == 0) .or. (ISTOPT(2) > 9) ) )then
+    if( ISTOPT(2) >= 1 .or. INITTEMP > 0 )then
+      if( process_id == master_id )then
+        write(*,'(A)')'READING TEMP.INP'
+        open(1,FILE = 'temp.inp',STATUS = 'UNKNOWN')
+        ! ***   SKIP OVER TITLE AND AND HEADER LINES
+        STR = READSTR(1)
+        read(1,*) ISALTYP
 
-            if( ISALTYP == 0 )then
-              do LG = 2,LA_Global
-                read(1,*,IOSTAT = ISO) (TEM_Global(LG,K),K = 1,KC)
-                if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE TEMP.INP')
-              enddo
-            else
-              do L = 2,LA_Global
-                read(1,*,IOSTAT = ISO) LDUM, IDUM, JDUM, (CONINIT(K),K = 1,KC)
+        if( ISALTYP == 0 )then
+          do LG = 2,LA_Global
+            read(1,*,IOSTAT = ISO) (TEM_Global(LG,K),K = 1,KC)
+            if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE TEMP.INP')
+          enddo
+        else
+          do L = 2,LA_Global
+            read(1,*,IOSTAT = ISO) LDUM, IDUM, JDUM, (CONINIT(K),K = 1,KC)
 
-                LG = LIJ_Global(IDUM,JDUM)
-                TEM_Global(LG,:) = CONINIT(:)
-              enddo
-            endif
-            close(1)
-          endif
-          call Broadcast_Array(TEM_Global, master_id)
-
-          ! *** Map to Local Domain
-          do LG = 2,LA_GLOBAL
-            L = Map2Local(LG).LL
-            if( L > 1 )then
-              TEMINIT(L,:) = TEM_Global(LG,:)
-            endif
+            LG = LIJ_Global(IDUM,JDUM)
+            TEM_Global(LG,:) = CONINIT(:)
           enddo
         endif
+        close(1)
       endif
+      call Broadcast_Array(TEM_Global, master_id)
+
+      ! *** Map to Local Domain
+      do LG = 2,LA_GLOBAL
+        L = Map2Local(LG).LL
+        if( L > 1 )then
+          TEMINIT(L,:) = TEM_Global(LG,:)
+        endif
+      enddo
+    endif
   endif
 
   ! *** DYE
@@ -5010,7 +5020,7 @@
         if( LU > 0 )then
           ! *** ENSURE US CELLS ARE PART OF THE ACTIVE MAP, OTHERWISE DISREGARD
           do LL= 1,LASED
-            if( LSED(LL) == LU ) EXIT
+            if( LSED(LL) == LU ) exit
           enddo
           if( LL > LASED ) CYCLE
 
@@ -5720,8 +5730,8 @@
             if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE QSER.INP')
             TSFL(NS).TIM(M) = TSFL(NS).TIM(M)+TSFL(NS).TOFFSET
             QSERTMP = RMULADJ*(QSERTMP+ADDADJ)
-            if( ICHGQS == 1)  QSERTMP = MAX(QSERTMP,0.0)
-            if( ICHGQS == -1) QSERTMP = MIN(QSERTMP,0.0)
+            if( ICHGQS == 1)  QSERTMP = max(QSERTMP,0.0)
+            if( ICHGQS == -1) QSERTMP = min(QSERTMP,0.0)
             do K = 1,KC
               TSFL(NS).VAL(M,K) = QSERTMP*WKQ(K)
             enddo
@@ -5733,8 +5743,8 @@
             TSFL(NS).TIM(M) = TSFL(NS).TIM(M)+TSFL(NS).TOFFSET
             do K = 1,KC
               TSFL(NS).VAL(M,K) = RMULADJ*(TSFL(NS).VAL(M,K) + ADDADJ)
-              if( ICHGQS == 1)  TSFL(NS).VAL(M,K) = MAX(TSFL(NS).VAL(M,K),0.0)
-              if( ICHGQS == -1) TSFL(NS).VAL(M,K) = MIN(TSFL(NS).VAL(M,K),0.0)
+              if( ICHGQS == 1)  TSFL(NS).VAL(M,K) = max(TSFL(NS).VAL(M,K),0.0)
+              if( ICHGQS == -1) TSFL(NS).VAL(M,K) = min(TSFL(NS).VAL(M,K),0.0)
             enddo
           enddo
         endif
@@ -6704,7 +6714,7 @@
 
   ! *** Initialization of atmospheric data
   do L = 1,LC
-    PATMT(L) = 1000.
+    PATMT(L) = 1013.25
     TATMT(L) = 0.
     RAINT(L) = 0.
     EVAPT(L) = 0.
@@ -7145,7 +7155,7 @@
       do M = 1,MVEGTYP
         read(1,*,ERR = 3120)IDUM, NVEGSERV(M), RDLPSQ(M), BPVEG(M), HPVEG(M), ALPVEG(M), SCVEG(M)
         BDLTMP   = BPVEG(M)*BPVEG(M)*RDLPSQ(M)          ! *** "ad" - dimensionless population density
-        PVEGZ(M) = MAX(1.E-18,(1. - ALPVEG(M)*BDLTMP))  ! *** Turbulence/canopy adjustment factor to increase drag and turbulence. 0-No adjustment, 1-Infinite drag (invalid) (dimensionless)
+        PVEGZ(M) = max(1.E-18,(1. - ALPVEG(M)*BDLTMP))  ! *** Turbulence/canopy adjustment factor to increase drag and turbulence. 0-No adjustment, 1-Infinite drag (invalid) (dimensionless)
         BDLPSQ(M) = BPVEG(M)*RDLPSQ(M)                  ! *** "a" - projected plant area per unit volume  (1/m)
       enddo
       close(1)
@@ -7518,7 +7528,7 @@
   do I1 = 1,ILEN
     if( INLINE(I1:I1) == ':' )then
       do IPOS = I1+1,ILEN
-        if( INLINE(IPOS:IPOS) /= ' ')EXIT
+        if( INLINE(IPOS:IPOS) /= ' ')exit
       enddo
       if( IPOS>ILEN) return
       CVAL = INLINE(IPOS:ILEN)
@@ -7549,7 +7559,7 @@
   do IC = 1,ILEN
     if( INLINE(IC:IC) == ':' )then
       do IPOS = IC+1,ILEN
-        if( INLINE(IPOS:IPOS) /= ' ')EXIT
+        if( INLINE(IPOS:IPOS) /= ' ')exit
       enddo
       if( IPOS>ILEN ) return
       CVAL = INLINE(IPOS:ILEN)

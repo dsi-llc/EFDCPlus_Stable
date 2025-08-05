@@ -45,7 +45,7 @@
   integer :: ISUD, K, KMAX, NSID, IOBC, NMNLOD, NCELL, NPAR
   integer :: LP, L, LN, LS, LE, LW, LSE, LNW, LL, LMAX
   
-  ! *** ZERO ANY INITIALIZED CONCENTRATIONS BELOW BOTTOM ACTIVE LAYER
+  ! *** Zero any initialized concentrations below bottom active layer
   if( IGRIDV > 0 .and. N < 5 )then
     do L = 2,LA
       do K = 1,KSZ(L)-1
@@ -55,7 +55,7 @@
     enddo
   endif
   
-  ! *** SET UP FLOC TRANSPORT
+  ! *** Set up floc transport
   ITRANFLOC = 0
   
   ISUD = 1  
@@ -71,7 +71,7 @@
       if( IS2TIM == 0 ) ISUD = 0          ! *** 3TL CORRECTOR TIME STEP (ISTL = 2)
     endif  
   else  
-    ! *** DYNAMIC DELTA T
+    ! *** Dynamic delta T
     DDELT = DTDYN  
     DDELTA = DTDYN  
     DDELTD2 = 0.5*DTDYN  
@@ -121,13 +121,13 @@
       do K = 1,KC  
         do LP = 1,LLWET(K,0)
           L = LKWET(LP,K,0)
-          WCVMAX = MAX(WCVMAX, CON(L,K))
+          WCVMAX = max(WCVMAX, CON(L,K))
           if( WCVMAX >= WCCUTOFF )then
             ISKIP = 0
-            EXIT
+            exit
           endif
         enddo  
-        if( ISKIP == 0 ) EXIT
+        if( ISKIP == 0 ) exit
       enddo
       
       ! *** If minimum concentration not found.  Skip the transport for this consituent 
@@ -173,7 +173,7 @@
     enddo
 
     if( ISFCT(MVAR) >= 1 .and. ISADAC(MVAR) > 0 .and. IW <= NACTIVEWC )then 
-      CON2(:,:,IW) = MAX(CON1(:,:),0.0)                      ! *** Save previous concentration for flux corrector
+      CON2(:,:,IW) = max(CON1(:,:),0.0)                      ! *** Save previous concentration for flux corrector
     endif  
     
   else  ! *** IF ISTL = 3
@@ -187,7 +187,7 @@
     enddo
       
     if( ISFCT(MVAR) >= 1 .and. ISADAC(MVAR) > 0 .and. IW <= NACTIVEWC )then
-      CON2(:,:,IW) = MAX(CON(:,:),0.0)
+      CON2(:,:,IW) = max(CON(:,:),0.0)
     endif  
       
   endif   ! *** For ISTL = 2 and ISTL = 3
@@ -205,7 +205,6 @@
     enddo
   enddo
 
-
   ! *** OPEN BOUNDARIES.  BYPASS FOR TURBULENCE ADVECTION (IW = 0)
   if( IW <= NACTIVEWC )then
     ! *** RESTORE ORIGINAL CONCENTRATIONS PRIOR TO APPLYING OPEN BC'S - 2TL & 3TL
@@ -217,37 +216,34 @@
     enddo
 
     ! ******************************************************************************************
-    ! *** APPLY OPEN BOUNDARY CONDITIONS, BASED ON DIRECTION OF FLOW
-    ! *** SOUTH OPEN BC, WITHOUT FLOCS
+    ! *** Apply open boundary conditions, based on direction of flow
+    
+    ! *** SOUTH OPEN BC
     if( NCBS > 0 )then
       do K = 1,KC
         do LL = 1,NCBS
           NSID = NCSERS(LL,MVAR)
           L = LCBS(LL)
-          if( LKSZ(L,K) .or. .not. LMASKDRY(L) ) CYCLE
           LN = LNC(L)
+          if( LKSZ(L,K) .or. .not. LMASKDRY(L) ) CYCLE
+          
           if( VHDX2(LN,K) <= 0. )then
-            ! *** FLOWING OUT OF DOMAIN
-            CTMP = CON1(L,K) + DDELT*(VHDX2(LN,K)*CON1(L,K) - FVHUD(LNC(L),K,IW))*DXYIP(L)*HPKI(L,K)
-            CON(L,K) = MAX(CTMP  ,0.)
-            if( M == 1 .and. BSC > 0.0 )then
-              ! *** LIMIT CONCENTRATIONS TO MAXIMUM BC CONCENTRATIONS AT BOTTOM LAYER (SALINITY ONLY)
-              CBSTMP = CBS(LL,1,M) + CSERT(1,NSID,M)
-              if( CON(L,K) > CBSTMP )then
-                CON(L,K) = CBSTMP
-              endif
-            endif
+            ! *** Flowing out of domain
+            CTMP = CON1(L,K) + DDELT*(VHDX2(LN,K)*CON1(L,K) - FVHUD(LN,K,IW))*DXYIP(L)*HPKI(L,K)
+            CON(L,K) = max(CTMP  ,0.)
+
             CLOS(LL,K,M) = CON(L,K)
             NLOS(LL,K,M) = NITER
           else
-            ! *** FLOWING INTO DOMAIN
+            ! *** Flowing into domain
             CBT = WTCI(K,1)*CBS(LL,1,M) + WTCI(K,2)*CBS(LL,2,M) + CSERT(K,NSID,M)
+            
             NMNLOD = NITER - NLOS(LL,K,M)
             if( NMNLOD >= NTSCRS(LL) )then
               CON(L,K) = CBT
             else
               CBSTMP = CLOS(LL,K,M) + (CBT-CLOS(LL,K,M))*FLOAT(NMNLOD)/FLOAT(NTSCRS(LL))
-              CON(L,K) = MAX(CBSTMP,0.)
+              CON(L,K) = max(CBSTMP,0.)
             endif
           endif
           if( ISUD == 1 ) CON1(L,K) = CON(L,K)
@@ -255,30 +251,32 @@
       enddo
     endif
 
-    ! *** WEST OPEN BC, WITHOUT FLOCS
+    ! *** WEST OPEN BC
     if( NCBW > 0 )then
       do K = 1,KC
         do LL = 1,NCBW
           NSID = NCSERW(LL,MVAR)
           L = LCBW(LL)
+          LE = LEC(L)
           if( LKSZ(L,K) .or. .not. LMASKDRY(L) ) CYCLE
-          if( UHDY2(LEC(L),K) <= 0. )then
-            ! *** FLOWING OUT OF DOMAIN
-            CTMP = CON1(L,K) + DDELT*(UHDY2(LEC(L),K)*CON1(L,K) - FUHUD(LEC(L),K,IW))*DXYIP(L)*HPKI(L,K)
-            CON(L,K) = MAX(CTMP  ,0.)
-            CBWTMP = CBW(LL,1,M) + CSERT(1,NSID,M)
-            if( M == 1 .and. BSC > 0.0 .and. CON(L,K) > CBWTMP ) CON(L,K) = CBWTMP    ! *** PREVENT INVERTED DENSITY PROFILES AT OPEN BOUNDARY
+          
+          if( UHDY2(LE,K) <= 0. )then
+            ! *** Flowing out of domain
+            CTMP = CON1(L,K) + DDELT*(UHDY2(LE,K)*CON1(L,K) - FUHUD(LE,K,IW))*DXYIP(L)*HPKI(L,K)
+            CON(L,K) = max(CTMP  ,0.)
+            
             CLOW(LL,K,M) = CON(L,K)
             NLOW(LL,K,M) = NITER
           else
-            ! *** FLOWING INTO DOMAIN
+            ! *** Flowing into domain
             CBT = WTCI(K,1)*CBW(LL,1,M) + WTCI(K,2)*CBW(LL,2,M) + CSERT(K,NSID,M)
+
             NMNLOD = NITER - NLOW(LL,K,M)
             if( NMNLOD >= NTSCRW(LL) )then
               CON(L,K) = CBT
             else
               CBWTMP = CLOW(LL,K,M)+(CBT-CLOW(LL,K,M))*FLOAT(NMNLOD)/FLOAT(NTSCRW(LL))
-              CON(L,K) = MAX(CBWTMP,0.)
+              CON(L,K) = max(CBWTMP,0.)
             endif
           endif
           if( ISUD == 1 ) CON1(L,K) = CON(L,K)
@@ -286,31 +284,31 @@
       enddo
     endif
 
-    ! *** EAST OPEN BC, WITHOUT FLOCS
+    ! *** EAST OPEN BC
     if( NCBE > 0 )then
       do K = 1,KC
         do LL = 1,NCBE
           NSID = NCSERE(LL,MVAR)
           L = LCBE(LL)
-          NMNLOD = -1
           if( LKSZ(L,K) .or. .not. LMASKDRY(L) ) CYCLE
+          
           if( UHDY2(L,K) >= 0. )then
-            ! *** FLOWING OUT OF DOMAIN
+            ! *** Flowing out of domain
             CTMP = CON1(L,K) + DDELT*(FUHUD(L,K,IW) - UHDY2(L,K)*CON1(L,K))*DXYIP(L)*HPKI(L,K)
-            CON(L,K) = MAX(CTMP  ,0.)
-            CBETMP = CBE(LL,1,M) + CSERT(1,NSID,M)
-            if( M == 1 .and. BSC > 0.0 .and. CON(L,K) > CBETMP ) CON(L,K) = CBETMP    ! *** PREVENT INVERTED DENSITY PROFILES AT OPEN BOUNDARY
+            CON(L,K) = max(CTMP  ,0.)
+
             CLOE(LL,K,M) = CON(L,K)
             NLOE(LL,K,M) = NITER
           else
-            ! *** FLOWING INTO DOMAIN
+            ! *** Flowing into domain
             CBT = WTCI(K,1)*CBE(LL,1,M) + WTCI(K,2)*CBE(LL,2,M) + CSERT(K,NSID,M)
+            
             NMNLOD = NITER - NLOE(LL,K,M)
             if( NMNLOD >= NTSCRE(LL) )then
               CON(L,K) = CBT
             else
               CBETMP = CLOE(LL,K,M) + (CBT-CLOE(LL,K,M)) * FLOAT(NMNLOD)/FLOAT(NTSCRE(LL))
-              CON(L,K) = MAX(CBETMP,0.)
+              CON(L,K) = max(CBETMP,0.)
             endif
           endif
           if( ISUD == 1 ) CON1(L,K) = CON(L,K)
@@ -318,31 +316,31 @@
       enddo
     endif
 
-    ! *** NORTH OPEN BC, WITHOUT FLOCS
+    ! *** NORTH OPEN BC
     if( NCBN > 0 )then
       do K = 1,KC
         do LL = 1,NCBN
           NSID = NCSERN(LL,MVAR)
           L = LCBN(LL)
           if( LKSZ(L,K) .or. .not. LMASKDRY(L) ) CYCLE
-          LS = LSC(L)
+
           if( VHDX2(L,K) >= 0. )then
-            ! *** FLOWING OUT OF DOMAIN
+            ! *** Flowing out of domain
             CTMP = CON1(L,K) + DDELT*(FVHUD(L,K,IW) - VHDX2(L,K)*CON1(L,K))*DXYIP(L)*HPKI(L,K)
-            CON(L,K) = MAX(CTMP,0.)
-            CBNTMP = CBN(LL,1,M) + CSERT(1,NSID,M)
-            if( M == 1 .and. BSC > 0.0 .and. CON(L,K) > CBNTMP ) CON(L,K) = CBNTMP    ! *** PREVENT INVERTED DENSITY PROFILES AT OPEN BOUNDARY
+            CON(L,K) = max(CTMP,0.)
+            
             CLON(LL,K,M) = CON(L,K)
             NLON(LL,K,M) = NITER
           else
-            ! *** FLOWING INTO DOMAIN
+            ! *** Flowing into domain
             CBT = WTCI(K,1)*CBN(LL,1,M) + WTCI(K,2)*CBN(LL,2,M) + CSERT(K,NSID,M)
+
             NMNLOD = NITER - NLON(LL,K,M)
             if( NMNLOD >= NTSCRN(LL) )then
               CON(L,K) = CBT
             else
               CBNTMP = CLON(LL,K,M)+(CBT-CLON(LL,K,M))*FLOAT(NMNLOD)/FLOAT(NTSCRN(LL))
-              CON(L,K) = MAX(CBNTMP,0.)
+              CON(L,K) = max(CBNTMP,0.)
             endif
           endif
           if( ISUD == 1 ) CON1(L,K) = CON(L,K)

@@ -338,7 +338,7 @@ SUBROUTINE CALTOX
   !$OMP DO PRIVATE(ND, LF, LL)
   do ND = 1,NDM
     LF = (ND-1)*LDMSED + 1  
-    LL = MIN(LF + LDMSED - 1,LASED)
+    LL = min(LF + LDMSED - 1,LASED)
     call CALTOXB_FRACTIONS(LF,LL)
   enddo
   !$OMP END DO 
@@ -355,7 +355,7 @@ SUBROUTINE CALTOX
   !$OMP DO PRIVATE(ND, LF, LL, LP, L, K, NT, NS, NX, TMPEXP, TMPVAL)
   do ND = 1,NDM
     LF = (ND-1)*LDMSED + 1  
-    LL = MIN(LF + LDMSED - 1,LASED)
+    LL = min(LF + LDMSED - 1,LASED)
     
     do NT = 1,NTOX
       ! *** Water column
@@ -506,7 +506,7 @@ SUBROUTINE CALTOX
   !$OMP DO PRIVATE(ND, LF, LL, LP, L, K, NT, NS, NX, TMPEXP, TMPVAL, SNDFEFF)
   do ND = 1,NDM
     LF = (ND-1)*LDMSED + 1  
-    LL = MIN(LF + LDMSED - 1,LASED)
+    LL = min(LF + LDMSED - 1,LASED)
     
     do NT = 1,NTOX
       ! *** PARTICLE COHESIVE DEPOSITIONAL FLUX,  (SEDF) < 0 
@@ -518,7 +518,7 @@ SUBROUTINE CALTOX
               do LP = LF,LL
                 L = LSED(LP)
                 ! *** M/S         M/S                G/M2/S                                M3/G
-                TOXF(L,0,NT) = TOXF(L,0,NT) + MIN(SEDF(L,0,NS),0.)*STFPOCW(L,KSZ(L),NS)*TOXPARW(L,NS,NT)
+                TOXF(L,0,NT) = TOXF(L,0,NT) + min(SEDF(L,0,NS),0.)*STFPOCW(L,KSZ(L),NS)*TOXPARW(L,NS,NT)
               enddo
             endif
                 
@@ -540,7 +540,7 @@ SUBROUTINE CALTOX
               do LP = LF,LL
                 L = LSED(LP)
                 ! *** M/S         M/S                G/M2/S           M3/G
-                TOXF(L,0,NT) = TOXF(L,0,NT) + MIN(SEDF(L,0,NS),0.)*TOXPARW(L,NS,NT)
+                TOXF(L,0,NT) = TOXF(L,0,NT) + min(SEDF(L,0,NS),0.)*TOXPARW(L,NS,NT)
               enddo
             endif
             if( ITXPARW(NS,NT) == 1 )then
@@ -567,7 +567,7 @@ SUBROUTINE CALTOX
               do LP = LF,LL
                 L = LSED(LP)
                 SNDFEFF = SNDF(L,0,NX) - SNDFBL(L,NX)
-                TOXF(L,0,NT) = TOXF(L,0,NT) + MIN(SNDFEFF,0.)*STFPOCW(L,KSZ(L),NS)*TOXPARW(L,NS,NT)
+                TOXF(L,0,NT) = TOXF(L,0,NT) + min(SNDFEFF,0.)*STFPOCW(L,KSZ(L),NS)*TOXPARW(L,NS,NT)
               enddo
             endif
             if( ITXPARW(NS,NT) == 1 )then
@@ -588,7 +588,7 @@ SUBROUTINE CALTOX
               do LP = LF,LL
                 L = LSED(LP)
                 SNDFEFF = SNDF(L,0,NX) - SNDFBL(L,NX)
-                TOXF(L,0,NT) = TOXF(L,0,NT) + MIN(SNDFEFF,0.)*TOXPARW(L,NS,NT)
+                TOXF(L,0,NT) = TOXF(L,0,NT) + min(SNDFEFF,0.)*TOXPARW(L,NS,NT)
               enddo
             endif
             if( ITXPARW(NS,NT) == 1 )then
@@ -612,7 +612,7 @@ SUBROUTINE CALTOX
   !$OMP DO PRIVATE(ND, LF, LL, LP, L, NT)
   do ND = 1,NDM
     LF = (ND-1)*LDMSED + 1  
-    LL = MIN(LF + LDMSED - 1,LASED)
+    LL = min(LF + LDMSED - 1,LASED)
     
     do NT = 1,NTOX
       do LP = LF,LL
@@ -629,7 +629,7 @@ SUBROUTINE CALTOX
   !$OMP DO PRIVATE(ND, LF, LL, LP, L, NT, NS, NX, TMPVAL, SNDFEFF)
   do ND = 1,NDM
     LF = (ND-1)*LDMSED + 1  
-    LL = MIN(LF + LDMSED - 1,LASED)
+    LL = min(LF + LDMSED - 1,LASED)
     
     do NT = 1,NTOX
       do LP = LF,LL
@@ -647,7 +647,7 @@ SUBROUTINE CALTOX
             do LP = LF,LL
               L = LSED(LP)
               ! *** M/S          M/S             G/M2/S                               M3/G
-              TOXFB(L,NT) = TOXFB(L,NT) + MAX(SEDF(L,0,NS),0.)*STFPOCB(L,KBT(L),NS)*TOXPARB(L,NS,NT)
+              TOXFB(L,NT) = TOXFB(L,NT) + max(SEDF(L,0,NS),0.)*STFPOCB(L,KBT(L),NS)*TOXPARB(L,NS,NT)
             enddo
           enddo
         elseif( ISTOC(NT) == 0 )then
@@ -656,7 +656,7 @@ SUBROUTINE CALTOX
             do LP = LF,LL
               L = LSED(LP)
               ! ***  M/S         M/S                  G/M2/S          M3/G
-              TOXFB(L,NT) = TOXFB(L,NT) + MAX(SEDF(L,0,NS),0.)*TOXPARB(L,NS,NT)
+              TOXFB(L,NT) = TOXFB(L,NT) + max(SEDF(L,0,NS),0.)*TOXPARB(L,NS,NT)
             enddo
           enddo
         endif
@@ -671,7 +671,7 @@ SUBROUTINE CALTOX
             do LP = LF,LL
               L = LSED(LP)
               SNDFEFF = SNDF(L,0,NX) - SNDFBL(L,NX)
-              TOXFB(L,NT) = TOXFB(L,NT) + MAX(SNDFEFF,0.)*STFPOCB(L,KBT(L),NS)*TOXPARB(L,NS,NT)
+              TOXFB(L,NT) = TOXFB(L,NT) + max(SNDFEFF,0.)*STFPOCB(L,KBT(L),NS)*TOXPARB(L,NS,NT)
             enddo
           enddo
         elseif( ISTOC(NT) == 0 )then
@@ -681,7 +681,7 @@ SUBROUTINE CALTOX
             do LP = LF,LL
               L = LSED(LP)
               SNDFEFF = SNDF(L,0,NX) - SNDFBL(L,NX)
-              TOXFB(L,NT) = TOXFB(L,NT) + MAX(SNDFEFF,0.)*TOXPARB(L,NS,NT)
+              TOXFB(L,NT) = TOXFB(L,NT) + max(SNDFEFF,0.)*TOXPARB(L,NS,NT)
             enddo
           enddo
         endif      
@@ -772,7 +772,7 @@ SUBROUTINE CALTOX
   !$OMP DO PRIVATE(ND,LF,LL,NT,K,LP,L)
   do ND = 1,NDM
     LF = (ND-1)*LDMSED + 1  
-    LL = MIN(LF + LDMSED - 1,LASED)
+    LL = min(LF + LDMSED - 1,LASED)
 
     !**********************************************************************CC
     ! ***  CALCULATE TOTAL PARTICULATE FRACTIONS IN WATER COLUMN AND BED
@@ -784,7 +784,7 @@ SUBROUTINE CALTOX
           L = LKWET(LP,K,ND)  
           ! ***                                                          SORBED TO DOC
           TOXPFTW(L,K,NT) = ( TOXPFTW(L,K,NT)/(1. + TOXPFTW(L,K,NT)) ) - TOXPFW(L,K,NFD,NT)
-          TOXPFTW(L,K,NT) = MIN(TOXPFTW(L,K,NT),SORBMIN)
+          TOXPFTW(L,K,NT) = min(TOXPFTW(L,K,NT),SORBMIN)
         enddo
       enddo
     enddo
@@ -797,7 +797,7 @@ SUBROUTINE CALTOX
           if( HBED(L,K) >= HBEDMIN0 .and. PORBED(L,K) > 0. )then
             ! ***                                                                                 SORBED TO DOC
             TOXPFTB(L,K,NT) = ( TOXPFTB(L,K,NT)/( PORBED(L,K)*HBED(L,K) + TOXPFTB(L,K,NT) ) ) - TOXPFB(L,K,NFD,NT)
-            TOXPFTB(L,K,NT) = MAX(TOXPFTB(L,K,NT),SORBMIN)
+            TOXPFTB(L,K,NT) = max(TOXPFTB(L,K,NT),SORBMIN)
           else
             TOXPFTB(L,K,NT) = SORBMIN
           endif
@@ -814,7 +814,7 @@ SUBROUTINE CALTOX
     !$OMP    PRIVATE(TMPTOXC, TMPTOXE, TMPTOXW, TMPTOXN, TMPTOXS)
     do ND = 1,NDM
       LF = (ND-1)*LDMSED + 1  
-      LL = MIN(LF + LDMSED - 1,LASED)
+      LL = min(LF + LDMSED - 1,LASED)
 
       do NT = 1,NTOX
         do LP = LF,LL
@@ -904,7 +904,7 @@ SUBROUTINE CALTOX
     !$OMP    PRIVATE(TMPTOXB,TMPTOXC,TMPTOXE,TMPTOXW,TMPTOXN,TMPTOXS,TMPVAL,TOXFLUX,CBLTOXTMP)
     do ND = 1,NDM
       LF = (ND-1)*LDMSED + 1  
-      LL = MIN(LF + LDMSED-1,LASED)
+      LL = min(LF + LDMSED-1,LASED)
 
       do NT = 1,NTOX
         do LP = LF,LL
@@ -941,10 +941,10 @@ SUBROUTINE CALTOX
 
             ! *** CONCENTRATION OF TOXIC IN BEDLOAD LAYER (MG/M2)
             TMPVAL = DTSED*DXYIP(L)
-            CBLTOXTMP = CBLTOX(L,NT) + TMPVAL*(  MAX(QSBDLDX(L,NS),0.)*TMPTOXW - MIN(QSBDLDX(LE,NS),0.)*TMPTOXE   &   ! *** EAST/WEST: IN 
-                                               + MIN(QSBDLDX(L,NS),0.)*TMPTOXC - MAX(QSBDLDX(LE,NS),0.)*TMPTOXC   &   ! *** EAST/WEST: OUT 
-                                               + MAX(QSBDLDY(L,NS),0.)*TMPTOXS - MIN(QSBDLDY(LN,NS),0.)*TMPTOXN   &   ! *** NORTH/SOUTH: IN
-                                               + MIN(QSBDLDY(L,NS),0.)*TMPTOXC - MAX(QSBDLDY(LN,NS),0.)*TMPTOXC ) &   ! *** NORTH/SOUTH: OUT
+            CBLTOXTMP = CBLTOX(L,NT) + TMPVAL*(  max(QSBDLDX(L,NS),0.)*TMPTOXW - min(QSBDLDX(LE,NS),0.)*TMPTOXE   &   ! *** EAST/WEST: IN 
+                                               + min(QSBDLDX(L,NS),0.)*TMPTOXC - max(QSBDLDX(LE,NS),0.)*TMPTOXC   &   ! *** EAST/WEST: OUT 
+                                               + max(QSBDLDY(L,NS),0.)*TMPTOXS - min(QSBDLDY(LN,NS),0.)*TMPTOXN   &   ! *** NORTH/SOUTH: IN
+                                               + min(QSBDLDY(L,NS),0.)*TMPTOXC - max(QSBDLDY(LN,NS),0.)*TMPTOXC ) &   ! *** NORTH/SOUTH: OUT
                                                + TOXFLUX
             
             if( CBLTOXTMP >= 0. )then
@@ -953,7 +953,7 @@ SUBROUTINE CALTOX
               ! *** LIMIT FLUX TO AVAILABLE MASS
               CBLTOX(L,NT) = 0.0
               TOXFBL(L,NT) = TOXFBL(L,NT) - CBLTOXTMP*DELTI
-              EXIT
+              exit
             endif
             
             TOXFBL(L,NT) = TOXFBL(L,NT) + TOXFLUX*DELTI                                                                   ! *** TOXFBL FLUX RATE   (MG/M2/S)
@@ -1006,7 +1006,7 @@ SUBROUTINE CALTOX
   !$OMP DO PRIVATE(ND,LF,LL,LP,L,K,NT,NS,NX,TMPVAL)
   do ND = 1,NDM
     LF = (ND-1)*LDMSED + 1  
-    LL = MIN(LF + LDMSED - 1,LASED)
+    LL = min(LF + LDMSED - 1,LASED)
 
     !**********************************************************************C
     ! ***  ADJUST TOXIC FLUXES ACROSS WATER COLUMN - BED INTERFACE TO
@@ -1017,7 +1017,7 @@ SUBROUTINE CALTOX
     do NT = 1,NTOX
       do LP = LF,LL
         L = LSED(LP)
-        TMPVAL = ( MIN(QSBDTOP(L),0.0) + MIN(QWBDTOP(L),0.0) )    ! *** TOTAL DEPOSITIONAL VOLUMETRIC RATE (M/S)
+        TMPVAL = ( min(QSBDTOP(L),0.0) + min(QWBDTOP(L),0.0) )    ! *** TOTAL DEPOSITIONAL VOLUMETRIC RATE (M/S)
         TOXF(L,0,NT) = TOXF(L,0,NT) + TMPVAL*(1.-TOXPFTW(L,KSZ(L),NT))
       enddo
     enddo
@@ -1028,7 +1028,7 @@ SUBROUTINE CALTOX
         L = LSED(LP)
         K = KBT(L)
         if( HBED(L,K) > 1.E-6 )then
-          TMPVAL = ( MAX(QSBDTOP(L),0.0) + MAX(QWBDTOP(L),0.0) )/HBED(L,K)      ! *** TOTAL EROSIONAL VOLUMETRIC RATE (M/S)/BED THICKNESS (M)
+          TMPVAL = ( max(QSBDTOP(L),0.0) + max(QWBDTOP(L),0.0) )/HBED(L,K)      ! *** TOTAL EROSIONAL VOLUMETRIC RATE (M/S)/BED THICKNESS (M)
         else
           TMPVAL = 0.
         endif       
@@ -1063,7 +1063,7 @@ SUBROUTINE CALTOX
   !$OMP    PRIVATE(AA11, BB11, BB22, TMPVAL, CLEFT, CRIGHT, WVEL)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET + 1  
-    LL = MIN(LF + LDMWET-1,LAWET)
+    LL = min(LF + LDMWET-1,LAWET)
 
     ! ----------------------------------------------------------------
     ! *** KC = 1 (SINGLE LAYER IN VERTICAL)
@@ -1091,7 +1091,7 @@ SUBROUTINE CALTOX
           TMPVAL = TOXB(L,KBT(L),NT) - DTSED*( BB22 + BB11 + TOXFBL(L,NT) )
           if( TMPVAL < 0.0 )then
             BB11 = TOXB(L,KBT(L),NT)*DELTI - BB22 - TOXFBL(L,NT)
-            BB11 = MAX(BB11,0.0)
+            BB11 = max(BB11,0.0)
           endif
             
           ! *** MASS BALANCE AROUND WATER COLUMN BOTTOM LAYER
@@ -1311,7 +1311,7 @@ SUBROUTINE CALTOX
     !$OMP    PRIVATE(FTPOS,FTNEG)
     do ND = 1,NDM
       LF = (ND-1)*LDMSED + 1  
-      LL = MIN(LF + LDMSED-1,LASED)
+      LL = min(LF + LDMSED-1,LASED)
     
       !**********************************************************************C
       !

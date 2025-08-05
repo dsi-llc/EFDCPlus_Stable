@@ -795,7 +795,7 @@ SUBROUTINE TMSR
         open(41,FILE = FNBED(MLTM),POSITION = 'APPEND')
         KTMP = KBT(L)
         KTMP1 = KBT(L)-1
-        KTMP1 = MAX(KTMP1,1)
+        KTMP1 = max(KTMP1,1)
         NSXD = NSED+NSND
   !            write(41,221)TIME,KTMP,HBED(L,KTMP),HBED(L,KTMP1),
         write(41,221)TIME,KTMP,HBED(L,KTMP),HBED(L,KTMP1),HBEDA(L), &
@@ -942,7 +942,7 @@ SUBROUTINE TMSR
         TAUW2 = 10000.*QQWV2(L)
         TAUB2 = TAUB2 + (TAUW2*TAUW2) + 2.*TAUBDYN*TAUW2*COS(CURANG-WV(L).DIR)
       endif
-      TAUB2 = MAX(TAUB2,0.)
+      TAUB2 = max(TAUB2,0.)
       TAUTOT = SQRT(TAUB2)
       VELMAG = UTMP*UTMP+VTMP*VTMP
       TMPDRAG = 0.0

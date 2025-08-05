@@ -128,8 +128,8 @@ SUBROUTINE CALQQ2T()
       do LP = 1,LLWETZ(K,ND)
         L = LKWETZ(LP,K,ND)  
         WB = 0.5*DXYP(L)*(W2(L,K-1) + W2(L,K))
-        FWQQ(L,K)  = MAX(WB,0.)*QQ(L,K-1)        + MIN(WB,0.)*QQ(L,K)
-        FWQQL(L,K) = MAX(WB,0.)*QQL(L,K-1)*HP(L) + MIN(WB,0.)*QQL(L,K)*HP(L)
+        FWQQ(L,K)  = max(WB,0.)*QQ(L,K-1)        + min(WB,0.)*QQ(L,K)
+        FWQQL(L,K) = max(WB,0.)*QQL(L,K-1)*HP(L) + min(WB,0.)*QQL(L,K)*HP(L)
       enddo
     enddo
   enddo
@@ -144,12 +144,12 @@ SUBROUTINE CALQQ2T()
         LS = LSC(L)
         LW = LWC(L)
         UHUW = 0.5*(UHDYF2(L,K)+UHDYF2(L,K+1))
-        FUHU(L,K) = MAX(UHUW,0.)*QQ(LW,K)         + MIN(UHUW,0.)*QQ(L,K)
-        FUHV(L,K) = MAX(UHUW,0.)*QQL(LW,K)*HP(LW) + MIN(UHUW,0.)*QQL(L,K)*HP(L)
+        FUHU(L,K) = max(UHUW,0.)*QQ(LW,K)         + min(UHUW,0.)*QQ(L,K)
+        FUHV(L,K) = max(UHUW,0.)*QQL(LW,K)*HP(LW) + min(UHUW,0.)*QQL(L,K)*HP(L)
 
         VHVW = 0.5*(VHDXF2(L,K)+VHDXF2(L,K+1))
-        FVHU(L,K) = MAX(VHVW,0.)*QQ(LS,K)         + MIN(VHVW,0.)*QQ(L,K)
-        FVHV(L,K) = MAX(VHVW,0.)*QQL(LS,K)*HP(LS) + MIN(VHVW,0.)*QQL(L,K)*HP(L)
+        FVHU(L,K) = max(VHVW,0.)*QQ(LS,K)         + min(VHVW,0.)*QQ(L,K)
+        FVHV(L,K) = max(VHVW,0.)*QQL(LS,K)*HP(LS) + min(VHVW,0.)*QQL(L,K)*HP(L)
       enddo
     enddo
   enddo
@@ -322,11 +322,11 @@ SUBROUTINE CALQQ2T()
           PQQW = WVFACT*TVAR1W(L,K)
 
           PQQ = DELT*( PQQU + PQQV + PQQB + PQQW + PQQVEGE(L,K) + PQQMHKE(L,K) + PQQSUPE(L,K))
-          FFTMP = MAX( FUHU(L,K)-FUHU(LE,K) + FVHU(L,K)-FVHU(LN,K) + (FWQQ(L,K)-FWQQ(L,K+1))*DZIG(L,K),0.)
+          FFTMP = max( FUHU(L,K)-FUHU(LE,K) + FVHU(L,K)-FVHU(LN,K) + (FWQQ(L,K)-FWQQ(L,K+1))*DZIG(L,K),0.)
           UUU(L,K) = QQ(L,K)*HP(L) + DELT*FFTMP*DXYIP(L) + 2.*PQQ
 
           PQQL  = DELT*HP(L)*(CTE3TMP*PQQB + CTE1*(PQQU+PQQV+PQQW) + CE4VEG*PQQVEGE(L,K) + CE4MHK*PQQMHKE(L,K) + CE4SUP*PQQSUPE(L,K))
-          FFTMP = MAX( FUHV(L,K)-FUHV(LE,K) + FVHV(L,K)-FVHV(LN,K) + (FWQQL(L,K)-FWQQL(L,K+1))*DZIG(L,K),0.)
+          FFTMP = max( FUHV(L,K)-FUHV(LE,K) + FVHV(L,K)-FVHV(LN,K) + (FWQQL(L,K)-FWQQL(L,K+1))*DZIG(L,K),0.)
           VVV(L,K) = QQL(L,K)*HP(L)*HP(L)+DELT*FFTMP*DXYIP(L) + DML(L,K)*PQQL
         enddo
       enddo
@@ -342,7 +342,7 @@ SUBROUTINE CALQQ2T()
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,K,LN,CLQTMP,CUQTMP,CLQLTMP,CUQLTMP,CMQTMP,CMQLTMP,EQ,EQL)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       do LP = LF,LL  
         L = LWET(LP)  
@@ -370,7 +370,7 @@ SUBROUTINE CALQQ2T()
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,K,LN,CLQTMP,CUQTMP,CLQLTMP,CUQLTMP,CMQTMP,CMQLTMP,EQ,EQL)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       ! *** BOTTOM ACTIVE LAYER
       do LP = 1,LLWET(KS,ND)
@@ -441,7 +441,7 @@ SUBROUTINE CALQQ2T()
       do LP = 1,LLWET(K,ND)
         L = LKWET(LP,K,ND)  
         QQHDH    = UUU(L,K)*HPI(L)
-        QQ(L,K)  = MAX(QQHDH,QQMIN)
+        QQ(L,K)  = max(QQHDH,QQMIN)
       enddo
     enddo
 
@@ -450,14 +450,14 @@ SUBROUTINE CALQQ2T()
       do LP = 1,LLWET(K,ND)
         L = LKWET(LP,K,ND)  
         QQHDH = VVV(L,K)*HPI(L)*HPI(L)
-        QQHDH = MIN(QQHDH,HP(L))              ! LIMIT DML
-        QQL(L,K) = MAX(QQHDH,QQLMIN)
+        QQHDH = min(QQHDH,HP(L))              ! LIMIT DML
+        QQL(L,K) = max(QQHDH,QQLMIN)
         DMLTMP = QQL(L,K)/QQ(L,K)
-        DMLTMP = MAX(DMLTMP,DMLMIN)
+        DMLTMP = max(DMLTMP,DMLMIN)
         DELB = B(L,K)-B(L,K+1)
         if( DELB > 1.0E-12 .and. ISLLIM == 2 )then
           DMLMAX = SQRT(RIQMAX)*SQRT(QQ(L,K)/(G*HP(L)*DZIG(L,K)*DELB))
-          DML(L,K) = MIN(DMLMAX,DMLTMP)
+          DML(L,K) = min(DMLMAX,DMLTMP)
           QQL(L,K) = QQ(L,K)*DML(L,K)
         else
           DML(L,K) = DMLTMP
@@ -478,7 +478,7 @@ SUBROUTINE CALQQ2T()
         if( HPK(L,KSZ(L)) < ZBR(L) )then
           ! *** SPECIAL CASE: LAYER 1 OR MORE THICKNESSES < Z0
           do K = KSZ(L),KS
-            if( HP(L)*Z(L,K-1)>ZBR(L) )EXIT
+            if( HP(L)*Z(L,K-1)>ZBR(L) )exit
             QQ(L,K) = QQMIN
             QQL(L,K) = QQLMIN
             DML(L,K) = DMLMIN

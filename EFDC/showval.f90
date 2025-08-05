@@ -142,7 +142,7 @@ SUBROUTINE SHOWVAL
   endif
   
   ! *** Set L to a value that definitely will be inside so that we don't index arrays outside of domain
-  if(.NOT. SHOW_VAL_INSIDE)then  ! *** L is outside of domain
+  if(.NOT. SHOW_VAL_INSIDE )then  ! *** L is outside of domain
     L = 2
   endif
   
@@ -293,7 +293,7 @@ SUBROUTINE SHOWVAL
       T2 = (TBEGIN*TCON + TIDALP*NTC)
       TSPEED = TCGRS/(TIMESEC - T1)
       ETA = (T2 - TIMESEC)*TSPEED/3600.
-      ETA = MIN(ETA,99999.989)
+      ETA = min(ETA,99999.989)
       T1 = TCGRS/3600.
       write(*,'('' ** ELAPSED TIME: '',F8.2,'' (hr)   ESTIMATED TIME TO COMPLETION:'',F10.2,'' (hr)'')') T1,ETA
     endif
@@ -336,10 +336,10 @@ SUBROUTINE SHOWVAL
   VTMP = 0.5*STCUV(L)*(V(LN,KSZ(L))+V(L,KSZ(L)))*100.
   VELEKB = CUE(L)*UTMP+CVE(L)*VTMP
   VELNKB = CUN(L)*UTMP+CVN(L)*VTMP
-  AVKS = MIN(AV(L,KS)*10000.*HP(L),99999.)
-  AVKB = MIN(AV(L,KSZ(L))*10000.*HP(L),99999.)
-  ABKS = MIN(AB(L,KS)*10000.*HP(L),99999.)
-  ABKB = MIN(AB(L,KSZ(L))*10000.*HP(L),99999.)
+  AVKS = min(AV(L,KS)*10000.*HP(L),99999.)
+  AVKB = min(AV(L,KSZ(L))*10000.*HP(L),99999.)
+  ABKS = min(AB(L,KS)*10000.*HP(L),99999.)
+  ABKB = min(AB(L,KSZ(L))*10000.*HP(L),99999.)
 
   IZSURF = NINT(ZSURF)
   IVELEKC = NINT(VELEKC)
@@ -352,10 +352,10 @@ SUBROUTINE SHOWVAL
   IABKB = NINT(ABKB)
   
   ! *** CONTROL SIZE TO PREVENT FORMAT ERRORS
-  IAVKS = MIN(IAVKS,99999)
-  IABKS = MIN(IABKS,99999)
-  IAVKB = MIN(IAVKB,99999)
-  IABKB = MIN(IABKB,99999)
+  IAVKS = min(IAVKS,99999)
+  IABKS = min(IABKS,99999)
+  IAVKB = min(IAVKB,99999)
+  IABKB = min(IABKB,99999)
 
   ! *** CONSTITUENTS
   CKC = 0.
@@ -415,8 +415,8 @@ SUBROUTINE SHOWVAL
 
   endif
 
-  ICKC = MIN(NINT(CKC),99999)
-  ICKB = MIN(NINT(CKB),99999)
+  ICKC = min(NINT(CKC),99999)
+  ICKB = min(NINT(CKB),99999)
   if( ISDYNSTP > 0 )then
     write(*,9100)TIME,DELT,IZSURF,IVELEKC,IVELNKC,ICKC,IAVKS,IABKS,IVELEKB,IVELNKB,ICKB,IAVKB,LMINSTEP
   else

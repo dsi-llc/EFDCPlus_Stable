@@ -226,12 +226,12 @@
         if(delP < 1.) delP = 1.
         Rmw = pt.Rmw
         coeffB = pt.B 
-        if(coeffB <= 0.) coeffB = MIN(MAX(rho_a*EXP(1.0)*Vm**2/delP, 1.0), 2.5)
+        if(coeffB <= 0.) coeffB = min(MAX(rho_a*EXP(1.0)*Vm**2/delP, 1.0), 2.5)
 
         !$OMP DO PRIVATE(ND,LF,LL,L,X,Y)
         do ND = 1,NDM  
             LF = 2+(ND-1)*LDM  
-            LL = MIN(LF+LDM-1,LA)
+            LL = min(LF+LDM-1,LA)
             
             do L = LF,LL 
                 x = DLON(L) !XCOR(L,5)
@@ -301,7 +301,7 @@
         !$OMP DO PRIVATE(ND,LF,LL,L,X,Y)
         do ND = 1,NDM  
             LF = 2+(ND-1)*LDM  
-            LL = MIN(LF+LDM-1,LA)
+            LL = min(LF+LDM-1,LA)
             
             do L = LF,LL 
                 x = DLON(L) !XCOR(L,5)
@@ -370,7 +370,7 @@
         !$OMP DO PRIVATE(ND,LF,LL,L,X,Y)
         do ND = 1,NDM  
             LF = 2+(ND-1)*LDM  
-            LL = MIN(LF+LDM-1,LA)
+            LL = min(LF+LDM-1,LA)
             
             do L = LF,LL 
                 x = DLON(L) !XCOR(L,5)
@@ -491,7 +491,7 @@
         !$OMP DO PRIVATE(ND,LF,LL,L,X,Y)
         do ND = 1,NDM  
             LF = 2+(ND-1)*LDM  
-            LL = MIN(LF+LDM-1,LA)
+            LL = min(LF+LDM-1,LA)
             
             do L = LF,LL 
                 x = DLON(L) !XCOR(L,5)

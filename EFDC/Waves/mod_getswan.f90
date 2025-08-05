@@ -223,7 +223,7 @@ MODULE GETSWANMOD
         open(ULOC,FILE = 'swan_loc.inp',ACTION = 'READ')
         STR = READSTR(ULOC)  
         NP = 0
-        do while (.true.)
+        do while(.TRUE.)
           read(ULOC,'(A)',end = 250) STR
           NP = NP+1
         enddo
@@ -349,7 +349,7 @@ MODULE GETSWANMOD
   STRL = LEN_TRIM(SSTR)
   SSTR = SSTR(2:STRL)
   N = 0
-  do while (.true.)
+  do while(.TRUE.)
     SSTR = ADJUSTL(SSTR)
     STRL = LEN_TRIM(SSTR)
     if( STRL > 0 )then
@@ -380,7 +380,7 @@ MODULE GETSWANMOD
     open(1,FILE = 'wavetime.inp',ACTION = 'READ')
     STR = READSTR(1)  
     NP = 0
-    do while (.true.)
+    do while(.TRUE.)
       read(1,'(A)',end = 100,IOSTAT = IOS) STR
       if( IOS > 0 ) STOP 'WAVETIME.INP: READING ERROR'  
       NP = NP + 1

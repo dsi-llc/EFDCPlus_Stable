@@ -63,7 +63,7 @@ SUBROUTINE WINDWAVETUR
   !$OMP    PRIVATE(UWORBIT,AEXTMP,VISMUDD,REYWAVE,RA,CDTMP,WVFF,TMPVAL,TAUTMP,CORZBR,CDRGTMP)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do LP = LF,LL
       L = LWET(LP)
@@ -71,7 +71,7 @@ SUBROUTINE WINDWAVETUR
         ! *** SET ZBRE AS NIKURADSE ROUGHNESS
         if( ISTRAN(7) > 0 )then
           ! *** BASE ON NIKURADSE ROUGHNESS (APPROXIMATE 2.5*D50)
-          ZBRE(L) = MAX(SEDDIA50(L,KBT(L)),1D-6)*2.5
+          ZBRE(L) = max(SEDDIA50(L,KBT(L)),1D-6)*2.5
         else
           ZBRE(L) = KSW
         endif
@@ -103,10 +103,10 @@ SUBROUTINE WINDWAVETUR
             elseif( REYWAVE > 5D5 .and. RA  <= 1.57 )then
               ! *** TURBULENT ROUGH WAVE BOUNDARY LAYER
               WVFF = EXP(5.2*RA**(-0.19)-6)    ! *** Baird's paper
-              WVFF = MIN(WVFF,0.3)
+              WVFF = min(WVFF,0.3)
             endif
             CDTMP = 0.5*WVFF
-            QQWV1(L) = MIN(CDTMP*UWORBIT*UWORBIT,QQMAX)
+            QQWV1(L) = min(CDTMP*UWORBIT*UWORBIT,QQMAX)
 
           elseif( ISWAVE == 4 )then
             ! *** CHECK FOR NON-COHESIVE TRANSPORT
@@ -119,9 +119,9 @@ SUBROUTINE WINDWAVETUR
             CDRGTMP = (30.*ZBRE(L)/AEXTMP)**0.2
             CDRGTMP = 5.57*CDRGTMP-6.13
             CDRGTMP = EXP(CDRGTMP)
-            CDRGTMP = MIN(CDRGTMP,0.22)
+            CDRGTMP = min(CDRGTMP,0.22)
             TMPVAL = 0.5*CDRGTMP*UWVSQ(L)
-            QQWV2(L) = MIN(CTURB2*TMPVAL,QQMAX)
+            QQWV2(L) = min(CTURB2*TMPVAL,QQMAX)
           endif
 
         else
@@ -184,7 +184,7 @@ SUBROUTINE WINDWAVECAL
   !$OMP    PRIVATE(AVEDEP, WINX, WINY, WINDVEL2, WINDVEL, WINDDIR, ZONE, FC0, FC1, FC2, FC3, L0, L1, WL0, WL1)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do LP = LF,LL
       L = LWET(LP)
@@ -217,7 +217,7 @@ SUBROUTINE WINDWAVECAL
             FC1 = TANH(0.530*FC0)
             FC2 = WINDVEL2*GI*0.283*FC1
             FC3 = TANH(0.0125*(G*FWDIR(L,ZONE)/WINDVEL2)**0.42/FC1)
-            WV(L).HEIGHT = MIN(0.75*HP(L), FC2*FC3)                                      ! *** Wave height (m)
+            WV(L).HEIGHT = min(0.75*HP(L), FC2*FC3)                                      ! *** Wave height (m)
 
             ! *** Vegetation effect    delme - Disable for now.  Add more robust way of treating wave/veg interactions
             !IF( ISVEG > 0 )then
@@ -235,7 +235,7 @@ SUBROUTINE WINDWAVECAL
             FC0 = TANH(0.833*(G*AVEDEP/WINDVEL2)**0.375)
             FC1 = 7.54*WINDVEL*GI*FC0
             FC2 = TANH(0.077*(G*FWDIR(L,ZONE)/WINDVEL2)**0.25/FC0)
-            WV(L).PERIOD = MAX(1.D-3, FC1*FC2)
+            WV(L).PERIOD = max(1.D-3, FC1*FC2)
             WV(L).FREQ   = 2.0*PI/WV(L).PERIOD
 
             ! *** Wave length (m)
@@ -255,9 +255,9 @@ SUBROUTINE WINDWAVECAL
             WV(L).LENGTH = WV(L).PERIOD*SQRT(G*HP(L)/FC2)                                         ! *** EFDC+ Eq. 2.53
 
             ! *** Orbital velocity (m/s)
-            WV(L).K = MAX( 2.*PI/WV(L).LENGTH, 0.01 )
-            WV(L).KHP = MIN(WV(L).K*HP(L),SHLIM)
-            WV(L).UDEL = MAX(1.D-6, PI*WV(L).HEIGHT/( WV(L).PERIOD*SINH(WV(L).KHP) ))              ! *** Orbital velocity    Eq. 2.59
+            WV(L).K = max( 2.*PI/WV(L).LENGTH, 0.01 )
+            WV(L).KHP = min(WV(L).K*HP(L),SHLIM)
+            WV(L).UDEL = max(1.D-6, PI*WV(L).HEIGHT/( WV(L).PERIOD*SINH(WV(L).KHP) ))              ! *** Orbital velocity    Eq. 2.59
 
             ! *** Wave direction (radians) counter-clockwise (cell-east axis,wave)
             WINX =  CVN(L)*WNDVELE(L) - CVE(L)*WNDVELN(L)                                         ! *** Curvilinear system
@@ -388,16 +388,17 @@ FUNCTION FETZONE(WINDDIR) RESULT(ZONE)
 END FUNCTION
 
 SUBROUTINE FETCH_Global
-  ! *** DETERMINING THE FETCH FOR EACH CELL:
-  ! *** OUTPUT: FWDIR(2:LA,1:NZONE) IN M
-  use DRIFTER,only:INSIDECELL_GL
+  ! *** Determining the fetch for each cell
+  ! *** Output: FWDIR(2:LA,1:NZONE) in meters
+
+use DRIFTER,only:INSIDECELL_GL
   real(RKD) :: AL(NZONE), RL, XM, YM, RL0, DOTX, DOTY
   integer   :: I, J, LG, LL, LM, LE, LN, LS, LW, NZ, NCELLS, IM, JM, STATUS
   logical   :: ULOG, VLOG
 
   AL  = (90_8 - FETANG - ROTAT)*PI/180._8                                          ! *** Angle (trig) to check fetch moving up the wind fetch (away from the cell).  Fetch angle the direction wind is coming from
   AL  = PI + AL                                                                    ! *** Angle (trig) to check fetch moving up the wind fetch (away from the cell).  Fetch angle the direction wind is coming from
-  RL0 = 0.25*MIN(MINVAL(DXP_Global(2:LA_Global)),MINVAL(DYP_Global(2:LA_Global)))  ! *** Distance increment to seach along the fetch.  MIN(DX,DY)/4
+  RL0 = 0.25*MIN(MINVAL(DXP_Global(2:LA_Global)),MINVAL(DYP_Global(2:LA_Global)))  ! *** Distance increment to seach along the fetch.  min(DX,DY)/4
 
   do LG = 2, LA_GLOBAL
     if( LWVMASK_Global(LG) )then
@@ -411,7 +412,7 @@ SUBROUTINE FETCH_Global
         LWDIR_Global(LG,NZ,NCELLS) = LG        ! *** Current cell is always included in fetch
         
         ! *** Search for the 9 cells around the current fetch endpoint
-        LOOP1:DO while (.true.)
+        LOOP1:DO WHILE(.TRUE.)
           STATUS = 0
           RL = RL + RL0                                    ! *** Current fetch
           XM = XCOR_Global(LG,5) + RL*COS(AL(NZ))          ! *** X coordinate in global model coordinate system
@@ -561,14 +562,14 @@ SUBROUTINE WINDWAVEINIT
     call READWAVECELLS
   endif
 
-  KSW = MAX(1D-6,KSW)
+  KSW = max(1D-6,KSW)
 
   if(process_id == master_id )then
     write(*,'(A)')'COMPUTING FETCH'
     call FETCH_Global
   endif
 
-  call MPI_Barrier(comm_2d, ierr)
+  call MPI_Barrier(DSIcomm, ierr)
   call Broadcast_Array(FWDIR_Global, master_id)
   call Broadcast_Array(LWDIR_Global, master_id)
 
@@ -694,7 +695,7 @@ SUBROUTINE W_WAVESXY
   !$OMP DO PRIVATE(ND,LF,LL,LP,L,DISPTMP,WK,WG,WN)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do LP = LF,LL
       L = LWET(LP)
@@ -727,7 +728,7 @@ SUBROUTINE W_WAVESXY
   !$OMP DO PRIVATE(ND,LF,LL,LP,L,LS,LW,LSW)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do LP = LF,LL
       L = LWET(LP)
@@ -748,7 +749,7 @@ SUBROUTINE W_WAVESXY
   !$OMP    PRIVATE(SINHTOP,SINHBOT,COSHTOP,COSHBOT,TMPVAL,TMP,TMPP1,TMPP2)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do LP = LF,LL
       L = LWET(LP)
@@ -817,14 +818,14 @@ SUBROUTINE W_WAVESXY
   !$OMP DO PRIVATE(ND,LF,LL,LP,L)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do LP = LF,LL
       L = LWET(LP)
       if( LWVMASK(L) )then
         if( WV(L).HEIGHT  >= WHMI .and. HP(L) > HDRY )then
-          WVKHU(L) = MIN(HMUW(L)*WV(L).K,SHLIM)
-          WVKHV(L) = MIN(HMVW(L)*WV(L).K,SHLIM)
+          WVKHU(L) = min(HMUW(L)*WV(L).K,SHLIM)
+          WVKHV(L) = min(HMVW(L)*WV(L).K,SHLIM)
         else
           WVKHU(L) = 1.D-12
           WVKHV(L) = 1.D-12
@@ -838,17 +839,17 @@ SUBROUTINE W_WAVESXY
   !$OMP    PRIVATE(TMPVAL,WVWHAUT,WVWHAVT)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     do LP = LF,LL
       L = LWET(LP)
       if( LWVMASK(L) )then
         TMPVAL    = 0.5*WV(L).FREQ*WV(L).FREQ
-        WVTMP1(L) = MAX(SINH(WVKHU(L)),1D-6)
+        WVTMP1(L) = max(SINH(WVKHU(L)),1D-6)
         WVWHAUT   = (WV(L).HEIGHT + SUB(L)*WV(LWC(L)).HEIGHT)/(1. + SUB(L))
         WVTMP2(L) = TMPVAL*WVWHAUT*WVWHAUT/(WVTMP1(L)*WVTMP1(L))
         WVWHAVT   = (WV(L).HEIGHT + SVB(L)*WV(LSC(L)).HEIGHT)/(1. + SVB(L))
-        WVTMP3(L) = MAX(SINH(WVKHV(L)),1D-6)
+        WVTMP3(L) = max(SINH(WVKHV(L)),1D-6)
         WVTMP4(L) = TMPVAL*WVWHAVT*WVWHAVT/(WVTMP3(L)*WVTMP3(L))
       endif
     enddo

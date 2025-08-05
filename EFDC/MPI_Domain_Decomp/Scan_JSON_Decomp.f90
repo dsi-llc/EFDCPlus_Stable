@@ -66,7 +66,7 @@ Subroutine Scan_JSON_Decomp
   endif
   
   ! *** Need to do broadcast with communicator MPI_Comm_World because 
-  !     the comm_2d communicator has not been initiated yet
+  !     the DSIcomm communicator has not been initiated yet
   call MPI_BCAST(n_x_partitions, 1, MPI_Integer, master_id, MPI_Comm_World, ierr)
   call MPI_BARRIER(MPI_Comm_World, ierr)
 

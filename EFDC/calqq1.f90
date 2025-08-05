@@ -141,8 +141,8 @@ SUBROUTINE CALQQ1
         do LP = 1,LLWETZ(K,ND)
           L = LKWETZ(LP,K,ND)  
           WB = 0.5*DXYP(L)*(W2(L,K-1)+W2(L,K))
-          FWQQ(L,K)  = MAX(WB,0.)*QQ1(L,K-1)         + MIN(WB,0.)*QQ1(L,K)
-          FWQQL(L,K) = MAX(WB,0.)*QQL1(L,K-1)*H1P(L) + MIN(WB,0.)*QQL1(L,K)*H1P(L)
+          FWQQ(L,K)  = max(WB,0.)*QQ1(L,K-1)         + min(WB,0.)*QQ1(L,K)
+          FWQQL(L,K) = max(WB,0.)*QQL1(L,K-1)*H1P(L) + min(WB,0.)*QQL1(L,K)*H1P(L)
         enddo
       enddo
     enddo  ! *** END OF DOMAIN
@@ -157,8 +157,8 @@ SUBROUTINE CALQQ1
         do LP = 1,LLWETZ(K,ND)
           L = LKWETZ(LP,K,ND)  
           WB = 0.25*DXYP(L)*(W2(L,K-1)+W2(L,K))
-          FWQQ(L,K)  = MAX(WB,0.)*QQ2(L,K-1)         + MIN(WB,0.)*QQ2(L,K)
-          FWQQL(L,K) = MAX(WB,0.)*QQL2(L,K-1)*H2P(L) + MIN(WB,0.)*QQL2(L,K)*H2P(L)
+          FWQQ(L,K)  = max(WB,0.)*QQ2(L,K-1)         + min(WB,0.)*QQ2(L,K)
+          FWQQL(L,K) = max(WB,0.)*QQL2(L,K-1)*H2P(L) + min(WB,0.)*QQL2(L,K)*H2P(L)
         enddo
       enddo
     enddo  ! *** END OF DOMAIN
@@ -176,12 +176,12 @@ SUBROUTINE CALQQ1
           LS = LSC(L)
           LW = LWC(L)
           UHUW = 0.5*(UHDYF2(L,K)+UHDYF2(L,K+1))
-          FUHU(L,K) = MAX(UHUW,0.)*QQ1(LW,K)          + MIN(UHUW,0.)*QQ1(L,K)
-          FUHV(L,K) = MAX(UHUW,0.)*QQL1(LW,K)*H1P(LW) + MIN(UHUW,0.)*QQL1(L,K)*H1P(L)
+          FUHU(L,K) = max(UHUW,0.)*QQ1(LW,K)          + min(UHUW,0.)*QQ1(L,K)
+          FUHV(L,K) = max(UHUW,0.)*QQL1(LW,K)*H1P(LW) + min(UHUW,0.)*QQL1(L,K)*H1P(L)
 
           VHVW = 0.5*(VHDXF2(L,K)+VHDXF2(L,K+1))
-          FVHU(L,K) = MAX(VHVW,0.)*QQ1(LS,K)          + MIN(VHVW,0.)*QQ1(L,K)
-          FVHV(L,K) = MAX(VHVW,0.)*QQL1(LS,K)*H1P(LS) + MIN(VHVW,0.)*QQL1(L,K)*H1P(L)
+          FVHU(L,K) = max(VHVW,0.)*QQ1(LS,K)          + min(VHVW,0.)*QQ1(L,K)
+          FVHV(L,K) = max(VHVW,0.)*QQL1(LS,K)*H1P(LS) + min(VHVW,0.)*QQL1(L,K)*H1P(L)
         enddo
       enddo
     enddo  ! *** END OF DOMAIN
@@ -197,12 +197,12 @@ SUBROUTINE CALQQ1
           LS = LSC(L)
           LW = LWC(L)
           UHUW = 0.25*(UHDYF2(L,K)+UHDYF2(L,K+1))
-          FUHU(L,K) = MAX(UHUW,0.)*QQ2(LW,K)          + MIN(UHUW,0.)*QQ2(L,K)
-          FUHV(L,K) = MAX(UHUW,0.)*QQL2(LW,K)*H2P(LW) + MIN(UHUW,0.)*QQL2(L,K)*H2P(L)
+          FUHU(L,K) = max(UHUW,0.)*QQ2(LW,K)          + min(UHUW,0.)*QQ2(L,K)
+          FUHV(L,K) = max(UHUW,0.)*QQL2(LW,K)*H2P(LW) + min(UHUW,0.)*QQL2(L,K)*H2P(L)
 
           VHVW = 0.25*(VHDXF2(L,K)+VHDXF2(L,K+1))
-          FVHU(L,K) = MAX(VHVW,0.)*QQ2(LS,K)          + MIN(VHVW,0.)*QQ2(L,K)
-          FVHV(L,K) = MAX(VHVW,0.)*QQL2(LS,K)*H2P(LS) + MIN(VHVW,0.)*QQL2(L,K)*H2P(L)
+          FVHU(L,K) = max(VHVW,0.)*QQ2(LS,K)          + min(VHVW,0.)*QQ2(L,K)
+          FVHV(L,K) = max(VHVW,0.)*QQL2(LS,K)*H2P(LS) + min(VHVW,0.)*QQL2(L,K)*H2P(L)
         enddo
       enddo
     enddo  ! *** END OF DOMAIN
@@ -419,9 +419,9 @@ SUBROUTINE CALQQ1
             PQQW = WVFACT*TVAR1W(L,K)
             
             PQQ  = DELT*(PQQU+PQQV+PQQB+PQQW+PQQVEGE(L,K)+PQQMHKE(L,K)+PQQSUPE(L,K))
-            FFTMP    = MAX( FUHU(L,K)-FUHU(LE,K)+FVHU(L,K)-FVHU(LN,K) + (FWQQ(L,K)-FWQQ(L,K+1))*DZIG(L,K), 0. )
+            FFTMP    = max( FUHU(L,K)-FUHU(LE,K)+FVHU(L,K)-FVHU(LN,K) + (FWQQ(L,K)-FWQQ(L,K+1))*DZIG(L,K), 0. )
             UUU(L,K) = QQ1(L,K)*H1P(L)         + DELT*FFTMP*DXYIP(L) + 2.*PQQ
-            FFTMP    = MAX( FUHV(L,K)-FUHV(LE,K)+FVHV(L,K)-FVHV(LN,K) + (FWQQL(L,K)-FWQQL(L,K+1))*DZIG(L,K), 0. )
+            FFTMP    = max( FUHV(L,K)-FUHV(LE,K)+FVHV(L,K)-FVHV(LN,K) + (FWQQL(L,K)-FWQQL(L,K+1))*DZIG(L,K), 0. )
             PQQL     = DELT*H1P(L)*(CTE3TMP*PQQB + CTE1*(PQQU+PQQV) + CE4VEG*PQQVEGE(L,K) + CE4MHK*PQQMHKE(L,K) + CE4SUP*PQQSUPE(L,K))
             VVV(L,K) = QQL1(L,K)*H1P(L)*H1P(L) + DELT*FFTMP*DXYIP(L) + DML(L,K)*PQQL
           enddo
@@ -447,9 +447,9 @@ SUBROUTINE CALQQ1
             PQQW = WVFACT*TVAR1W(L,K)
             
             PQQ  = DELT*(PQQU+PQQV+PQQB+PQQW+PQQVEGE(L,K)+PQQMHKE(L,K)+PQQSUPE(L,K))
-            FFTMP    = MAX( FUHU(L,K)-FUHU(LE,K)+FVHU(L,K)-FVHU(LN,K) + (FWQQ(L,K)-FWQQ(L,K+1))*DZIG(L,K),0. )
+            FFTMP    = max( FUHU(L,K)-FUHU(LE,K)+FVHU(L,K)-FVHU(LN,K) + (FWQQ(L,K)-FWQQ(L,K+1))*DZIG(L,K),0. )
             UUU(L,K) = QQ1(L,K) *H2P(L)           + DELT*FFTMP*DXYIP(L) + 2.*PQQ
-            FFTMP    = MAX( FUHV(L,K)-FUHV(LE,K)+FVHV(L,K)-FVHV(LN,K) + (FWQQL(L,K)-FWQQL(L,K+1))*DZIG(L,K),0. )
+            FFTMP    = max( FUHV(L,K)-FUHV(LE,K)+FVHV(L,K)-FVHV(LN,K) + (FWQQL(L,K)-FWQQL(L,K+1))*DZIG(L,K),0. )
             PQQL     = DELT*H2P(L)*(CTE3TMP*PQQB + CTE1*(PQQU+PQQV) + CE4VEG*PQQVEGE(L,K) + CE4MHK*PQQMHKE(L,K) + CE4SUP*PQQSUPE(L,K))
             VVV(L,K) = QQL1(L,K)*H2P(L)*H2P(L) + DELT*FFTMP*DXYIP(L) + DML(L,K)*PQQL
           enddo
@@ -465,7 +465,7 @@ SUBROUTINE CALQQ1
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,CLQTMP,CUQTMP,CLQLTMP,CUQLTMP,CMQTMP,CMQLTMP,EQ,EQL)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       do LP = LF,LL  
         L = LWET(LP)  
@@ -491,7 +491,7 @@ SUBROUTINE CALQQ1
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,LN,CLQTMP,CUQTMP,CLQLTMP,CUQLTMP,CMQTMP,CMQLTMP,EQ,EQL)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       ! *** BOTTOM ACTIVE LAYER
       do LP = 1,LLWET(KS,ND)
@@ -551,7 +551,7 @@ SUBROUTINE CALQQ1
         L = LKWET(LP,K,ND)  
         QQ1(L,K) = S2TL*QQ1(L,K) + S3TL*QQ(L,K)
         QQHDH    = UUU(L,K)*HPI(L)
-        QQ(L,K)  = MAX(QQHDH,QQMIN)
+        QQ(L,K)  = max(QQHDH,QQMIN)
       enddo
     enddo
 
@@ -561,15 +561,15 @@ SUBROUTINE CALQQ1
         L = LKWET(LP,K,ND)  
         QQL1(L,K) = S2TL*QQL1(L,K)+S3TL*QQL(L,K)
         QQHDH = VVV(L,K)*HPI(L)
-        QQHDH = MIN(QQHDH,HP(L))    ! LIMIT DML
-        QQHDH = MAX(QQHDH,QQLMIN)
+        QQHDH = min(QQHDH,HP(L))    ! LIMIT DML
+        QQHDH = max(QQHDH,QQLMIN)
         QQL(L,K) = QQHDH/HP(L)
         DMLTMP = QQL(L,K)/QQ(L,K)
-        DMLTMP = MAX(DMLTMP,DMLMIN)
+        DMLTMP = max(DMLTMP,DMLMIN)
         DELB   = B(L,K)-B(L,K+1)
         if( DELB > 0.0 .and. ISLLIM == 2 )then
           DMLMAX = SQRT(RIQMAX)*SQRT(QQ(L,K)/(G*HP(L)*DZIG(L,K)*DELB))
-          DML(L,K) = MIN(DMLMAX,DMLTMP)
+          DML(L,K) = min(DMLMAX,DMLTMP)
           QQL(L,K) = QQ(L,K)*DML(L,K)
         else
           DML(L,K) = DMLTMP
@@ -585,14 +585,14 @@ SUBROUTINE CALQQ1
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,K) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
     
       do LP = LF,LL  
         L = LWET(LP)  
         if( HPK(L,KSZ(L)) < ZBR(L) )then
           ! *** SPECIAL CASE: LAYER 1 OR MORE THICKNESSES < Z0
           do K = KSZ(L),KS
-            if( HP(L)*Z(L,K-1)>ZBR(L) )EXIT
+            if( HP(L)*Z(L,K-1)>ZBR(L) )exit
             QQ(L,K) = QQMIN
             QQL(L,K) = QQLMIN
             DML(L,K) = DMLMIN

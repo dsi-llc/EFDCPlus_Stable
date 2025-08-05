@@ -62,7 +62,7 @@ Subroutine Calculate_Local_Shear
     else
       ! *** TOTAL BED SHEAR STRESS
       do L = 2,LA
-        if( LBED(L) )then
+        if( LBED(L) .OR. TIMEDAY < SEDSTART )then
           SHEAR_Local(L) = QQ(L,0)/CTURB2
         else
           SHEAR_Local(L) = TAUB(L)
@@ -74,11 +74,11 @@ Subroutine Calculate_Local_Shear
     ! *** TOTAL BED SHEAR STRESS
     if( ISGOTM > 0 )then
       do L = 2,LA
-        SHEAR_Local(L) = MAX(QQ(L,KSZ(L)-1),QQMIN)/CTURB2
+        SHEAR_Local(L) = max(QQ(L,KSZ(L)-1),QQMIN)/CTURB2
       enddo
     else    
       do L = 2,LA
-        SHEAR_Local(L) = MAX(QQ(L,0),QQMIN)/CTURB2
+        SHEAR_Local(L) = max(QQ(L,0),QQMIN)/CTURB2
       enddo
     endif
   endif

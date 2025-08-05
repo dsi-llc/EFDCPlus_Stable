@@ -28,18 +28,18 @@ MODULE HYDSTRUCMOD
   implicit none
   
   type OPERATIONDATA                !< Trigger for operation of gates/pumps
-    integer :: STATE                !< Gate position
+    integer :: STATE = 1            !< Gate position
                                     !    0 = Completely Closed/Off
                                     !    1 = Fully Open/On
                                     !    2 = Opening
                                     !    3 = Closing
     integer :: ID                   !< Index of rating curve/mask for control parameter
-    real :: LEVEL                   !< Trigger level
-    real :: HEIGHT                  !< Opening height (m), for upward opening
-    real :: WIDTH                   !< Opening width (m), for sideward opening
-    real :: SILL                    !< Sill level change (m), for downward opening
-    real :: FLOW                    !< Flow rate (m3/s), for pumps
-    real :: RATE                    !< Rate of opening/closing
+    real :: LEVEL  = 0.0            !< Trigger level
+    real :: HEIGHT = 0.0            !< Opening height (m), for upward opening
+    real :: WIDTH  = 0.0            !< Opening width (m), for sideward opening
+    real :: SILL   = 0.0            !< Sill level change (m), for downward opening
+    real :: FLOW   = 0.0            !< Flow rate (m3/s), for pumps
+    real :: RATE   = 0.0            !< Rate of opening/closing
     !INTEGER :: UNITS                !< Number of gates, pump units  (NOT USED)
   end type 
 
@@ -254,7 +254,7 @@ MODULE HYDSTRUCMOD
       call CROSS_SECTION(IHYD, HUD, HOPEN, WOPEN, SOPEN, DIA, FAREA, WETPER, HRAD, TWID, KCON)
       
       HCR =  HUD - 0.5*HRAD               ! *** Critical depth
-      HCR = MIN(HCR,DIA)
+      HCR = min(HCR,DIA)
       VCR = SQRT(9.81*HRAD)
       QCR = VCR*FAREA
       SCR = (QCR/KCON)**2   
@@ -282,7 +282,7 @@ MODULE HYDSTRUCMOD
           ! *** Flow leaves domain
           S = ABS(S)
         else
-          S = MIN(S,(ZHU-ZHD)/HS_LENGTH(IHYD))  ! *** Minimum of energy grade or pipe slope
+          S = min(S,(ZHU-ZHD)/HS_LENGTH(IHYD))  ! *** Minimum of energy grade or pipe slope
         endif      
       endif
 
@@ -297,7 +297,7 @@ MODULE HYDSTRUCMOD
           
       elseif( S < SCR .and. HDD >= HCR  )then
         ! *** Subcritical flow tailwater control LD
-        DELZ = MIN(HDD,HUD)
+        DELZ = min(HDD,HUD)
         call CROSS_SECTION(IHYD, DELZ, HOPEN, WOPEN, SOPEN, DIA, FAREA, WETPER, HRAD, TWID)
         VN = HRAD**0.6667 * S**0.5 / HS_MANN(IHYD)
         QHS = VN*FAREA     ! *** Q AT HDD
@@ -346,7 +346,7 @@ MODULE HYDSTRUCMOD
       HDD = ZHD - USINV
       W  = WOPEN              ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
       HB = HOPEN              ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
-      DIA = MIN(HB,HUD)
+      DIA = min(HB,HUD)
       
       if( HB <= 1E-6 .or. W <= 1E-6 ) return
       
@@ -689,11 +689,11 @@ MODULE HYDSTRUCMOD
     else
       HSZ = 0.
       CUMZ = 0.
-      TOPZ = MIN(DIA+USINV,ZHU)
+      TOPZ = min(DIA+USINV,ZHU)
       do K = 1,KC
         TOLZ = BELV(LU) + Z(LU,K)*HP(LU)
         if( TOLZ > USINV )then
-          DELZ = MIN( (TOLZ-USINV)/DIA, 1.0) - CUMZ
+          DELZ = min( (TOLZ-USINV)/DIA, 1.0) - CUMZ
           HSZ(K) = DELZ
           CUMZ = CUMZ + DELZ
           if( CUMZ >= 1.0 .or. TOLZ > TOPZ )EXIT
@@ -712,7 +712,7 @@ MODULE HYDSTRUCMOD
       ! *** DOWNSTREAM ACTIVE
       HSZ = 0.
       CUMZ = 0.
-      TOPZ = MIN(DIA+DSINV,ZHD)
+      TOPZ = min(DIA+DSINV,ZHD)
       if( (DSINV+0.0001) >= TOPZ .or. KC == 1 )then
         ! *** PLACE ALL OF THE FLOW IN THE TOP LAYER
         HSZ(KC) = 1.0
@@ -721,7 +721,7 @@ MODULE HYDSTRUCMOD
         do K = 1,KC
           TOLZ = BELV(LD) + Z(LD,K)*HP(LD)
           if( TOLZ > DSINV )then
-            DELZ = MIN( (TOLZ-DSINV)/DIA, 1.0) - CUMZ
+            DELZ = min( (TOLZ-DSINV)/DIA, 1.0) - CUMZ
             HSZ(K) = DELZ
             CUMZ = CUMZ + DELZ
             if( CUMZ >= 1.0 .or. TOLZ > TOPZ )EXIT
@@ -768,9 +768,9 @@ MODULE HYDSTRUCMOD
       RA = HS_WIDTH(IHYD)/2.
       DIA = 2.*RA
       if( HS_XSTYPE(IHYD) == 2 )then
-        YH = MIN(HUD+RA,DIA)
+        YH = min(HUD+RA,DIA)
       else
-        YH = MIN(HUD,DIA)
+        YH = min(HUD,DIA)
       endif
       if( YH >= DIA  )then
         ! *** PIPE IS FULL
@@ -803,10 +803,10 @@ MODULE HYDSTRUCMOD
 
       if( HS_XSTYPE(IHYD) == 4 )then
         RB = HS_HEIGHT(IHYD)
-        YH = MIN(HUD+RB,DIA)
+        YH = min(HUD+RB,DIA)
       else
         RB = HS_HEIGHT(IHYD)/2.
-        YH = MIN(HUD,DIA)
+        YH = min(HUD,DIA)
       endif
 
       X = (/ ((NN-1)*RA/(NMAX-1),NN = 1,NMAX) /) 
@@ -865,7 +865,7 @@ MODULE HYDSTRUCMOD
       RA = WOPEN                                    ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
       RB = HOPEN                                    ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
       DIA = RB
-      YH = MIN(HUD,RB)
+      YH = min(HUD,RB)
       TWID = RA
       FAREA  = TWID*YH
       WETPER = TWID + 2.*YH   
@@ -892,7 +892,7 @@ MODULE HYDSTRUCMOD
       RA = HS_WIDTH(IHYD)/2.
       RB = HS_HEIGHT(IHYD)/2.
       DIA = 2.*RB
-      YH = MIN(HUD,2.*RB)
+      YH = min(HUD,2.*RB)
       A  = 2*RB/RA**2
       X = (/ ((NN-1)*RA/(NMAX-1),NN = 1,NMAX) /) 
       Y  = A*X**2

@@ -62,21 +62,21 @@ Subroutine Setup_MPI_Topology
   if( .false. )then
     ! *** Cartesian Topology
     ! *** MPI Tolopolgy routine, creates new communictor for 2d decomp
-    call MPI_Cart_Create(MPI_Comm_World, ndim, dimensions, is_periodic, reorder, comm_2d, ierr )
+    call MPI_Cart_Create(MPI_Comm_World, ndim, dimensions, is_periodic, reorder, DSIcomm, ierr )
 
-    ! *** Get rank of the process within the 'new' communicator comm_2d
-    call MPI_Comm_Rank(comm_2d,   process_id, ierr)  ! process_id becomes 'new id'
+    ! *** Get rank of the process within the 'new' communicator DSIcomm
+    call MPI_Comm_Rank(DSIcomm,   process_id, ierr)  ! process_id becomes 'new id'
 
     ! *** Gets the location of each processes reference to one another
 #ifdef GNU
-    call MPI_Cart_Coords(comm_2d, process_id, 2, domain_coords,  ierr)
+    call MPI_Cart_Coords(DSIcomm, process_id, 2, domain_coords,  ierr)
 #else
-    call MPI_Cart_Coords(comm_2d, process_id, 2, domain_coords)
+    call MPI_Cart_Coords(DSIcomm, process_id, 2, domain_coords)
 #endif     
 
     ! *** Get the East and West neighbors in addition to the north and south neighbors
-    call MPI_Cart_Shift(comm_2d, 0, 1, nbr_west,  nbr_east,  ierr)
-    call MPI_Cart_Shift(comm_2d, 1, 1, nbr_south, nbr_north, ierr)
+    call MPI_Cart_Shift(DSIcomm, 0, 1, nbr_west,  nbr_east,  ierr)
+    call MPI_Cart_Shift(DSIcomm, 1, 1, nbr_south, nbr_north, ierr)
   else
     ! *** Graph Topology
     ! *** Initial Graph Topology Arrays
@@ -136,10 +136,10 @@ Subroutine Setup_MPI_Topology
     enddo
     
     ! *** Create the Topology
-    call MPI_Graph_Create(MPI_Comm_World, nnodes, index, edges, .false., comm_2d, ierr)
+    call MPI_Graph_Create(MPI_Comm_World, nnodes, index, edges, .false., DSIcomm, ierr)
     
-    ! *** Get rank of the process within the 'new' communicator comm_2d
-    call MPI_Comm_Rank(comm_2d, process_id, ierr) 
+    ! *** Get rank of the process within the 'new' communicator DSIcomm
+    call MPI_Comm_Rank(DSIcomm, process_id, ierr) 
 
     ! *** Initialize to Unconnected
     nbr_west  = -1
@@ -186,6 +186,6 @@ Subroutine Setup_MPI_Topology
   write(mpi_log_unit, '(a)') 'Ending setup of MPI Topology'
   call WriteBreak(mpi_log_unit)
 
-  call MPI_Barrier(comm_2d, ierr)
+  call MPI_Barrier(DSIcomm, ierr)
 
 End subroutine Setup_MPI_Topology

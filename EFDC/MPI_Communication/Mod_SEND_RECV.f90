@@ -53,7 +53,7 @@ SUBROUTINE DSI_SEND_Integer(ValIn, iLen, iDir)
 
   if( num_Processors > 1 )then
     IERR = 0
-    call MPI_SEND(ValIn, iLen, mpi_integer, iDir, process_id, comm_2d, IERR)
+    call MPI_SEND(ValIn, iLen, mpi_integer, iDir, process_id, DSIcomm, IERR)
   endif
   
 END SUBROUTINE DSI_SEND_Integer
@@ -66,7 +66,7 @@ SUBROUTINE DSI_SEND_Real4(ValIn, iLen, iDir)
 
   if( num_Processors > 1 )then
     IERR = 0
-    call MPI_SEND(ValIn, iLen, mpi_real4, iDir, process_id, comm_2d, IERR)
+    call MPI_SEND(ValIn, iLen, mpi_real4, iDir, process_id, DSIcomm, IERR)
   endif
   
 END SUBROUTINE DSI_SEND_Real4
@@ -79,7 +79,7 @@ SUBROUTINE DSI_SEND_Real8(ValIn, iLen, iDir)
 
   if( num_Processors > 1 )then
     IERR = 0
-    call MPI_SEND(ValIn, iLen, mpi_real8, iDir, process_id, comm_2d, IERR)
+    call MPI_SEND(ValIn, iLen, mpi_real8, iDir, process_id, DSIcomm, IERR)
   endif
   
 END SUBROUTINE DSI_SEND_Real8
@@ -95,7 +95,7 @@ SUBROUTINE DSI_RECV_Integer(Valout, iLen, iDir)
 
   if( num_Processors > 1 )then
     IERR = 0
-    call MPI_RECV(Valout, iLen, mpi_integer, iDir, iDir, comm_2d, status_message, IERR)
+    call MPI_RECV(Valout, iLen, mpi_integer, iDir, iDir, DSIcomm, status_message, IERR)
   endif
   
 END SUBROUTINE DSI_RECV_Integer
@@ -108,7 +108,7 @@ SUBROUTINE DSI_RECV_Real4(Valout, iLen, iDir)
 
   if( num_Processors > 1 )then
     IERR = 0
-    call MPI_RECV(Valout, iLen, mpi_real4, iDir, iDir, comm_2d, status_message, IERR)
+    call MPI_RECV(Valout, iLen, mpi_real4, iDir, iDir, DSIcomm, status_message, IERR)
   endif
   
 END SUBROUTINE DSI_RECV_Real4
@@ -121,7 +121,7 @@ SUBROUTINE DSI_RECV_Real8(Valout, iLen, iDir)
 
   if( num_Processors > 1 )then
     IERR = 0
-    call MPI_RECV(Valout, iLen, mpi_real8, iDir, iDir, comm_2d, status_message, IERR)
+    call MPI_RECV(Valout, iLen, mpi_real8, iDir, iDir, DSIcomm, status_message, IERR)
   endif
   
 END SUBROUTINE DSI_RECV_Real8

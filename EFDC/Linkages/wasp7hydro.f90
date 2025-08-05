@@ -36,7 +36,7 @@ Subroutine WASP7HYDRO
   ! *** 
   use GLOBAL
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
   use INFOMOD,only:SKIPCOM,READSTR
   
@@ -392,9 +392,9 @@ Subroutine WASP7HYDRO
     RES = SYSTEM( 'mkdir -p ./' // trim(OUTDIR)//'wasp')
 #else       
     RES = MAKEDIRQQ(OUTDIR//'wasp')
-#endif     
+#endif    
 
-    open(1,FILE = OUTDIR//'wasp\ABmax.txt',STATUS = 'UNKNOWN') 
+    open(1,FILE = OUTDIR//'wasp/ABmax.txt',STATUS = 'UNKNOWN') 
     write(1,*)'    I    J     ABmax'        
     do LT = 2,LALT                                  
       l = lij(illt(lt),jllt(lt))                    
@@ -766,16 +766,16 @@ Subroutine WASP7HYDRO
 
     NQ = NQSIJ
     do L = 1,NQSIJ
-      if( LIJLT(BCFL(L).I,BCFL(L).J) == 0 ) NQ = NQ-1
+      if( LIJLT(BCPS(L).I,BCPS(L).J) == 0 ) NQ = NQ-1
     enddo
     NCHN = NCHN+KC*NQ
 
     NQ = 0                                    
     do L = 1,NQSIJ                            
-      I = BCFL(L).I                           
-      J = BCFL(L).J                           
+      I = BCPS(L).I                           
+      J = BCPS(L).J                           
       if( LIJLT(I,J) == 0 ) GOTO 1001     
-        NS = BCFL(L).NQSERQ                     
+        NS = BCPS(L).NQSERQ                     
         do K = 1,KC                             
           !IF(flagwaspbC(ns,k) == 1 ) NQ = NQ+1   
         enddo                                
@@ -878,10 +878,10 @@ Subroutine WASP7HYDRO
 
     do K = KC,1,-1
       do LT = 1,NQSIJ
-        I = BCFL(LT).I
-        J = BCFL(LT).J
+        I = BCPS(LT).I
+        J = BCPS(LT).J
         if( LIJLT(I,J) == 0 ) GOTO 100
-        NS = BCFL(Lt).NQSERQ                                      
+        NS = BCPS(Lt).NQSERQ                                      
         !IF(flagwaspbC(ns,k) == 1 ) GOTO 100               
         LWASP = LWASP+1
         LDTM = LAUX(I,J,K)
@@ -1264,14 +1264,14 @@ Subroutine WASP7HYDRO
     ! ***  Advection and dispersion in input flows
         do K = KC,1,-1
           do LT = 1,nqsij
-            I = BCFL(LT).I
-            J = BCFL(LT).J
+            I = BCPS(LT).I
+            J = BCPS(LT).J
             if( LIJLT(I,J) == 0 ) GOTO 310
-            NS = BCFL(Lt).NQSERQ
-            L = BCFL(Lt).L
+            NS = BCPS(Lt).NQSERQ
+            L = BCPS(Lt).L
             !IF(flagwaspbC(ns,k) == 1 ) GOTO 310                   
             LWASP = LWASP+1
-            FLOW(LWASP) = BCFL(Lt).RQSMUL*(QSS(K,Lt)+BCFL(lt).QFACTOR*QSERT(K,NS))
+            FLOW(LWASP) = BCPS(Lt).RQSMUL*(QSS(K,Lt)+BCPS(lt).QFACTOR*QSERT(K,NS))
             CRNU(LWASP) = flow(LWASP)/DXp(L)/dyp(l)/(HPK(L,K))
             ! ***          BRINTT(LWASP) = dyp(l)*ah(l,k)*HPK(L,K)/dxp(l)
             BRINTT(LWASP) = 0.0
@@ -1525,13 +1525,13 @@ Subroutine WASP7HYDRO
   ! ***  Advection and dispersion in input flows
   do K = KC,1,-1
     do LT = 1,nqsij
-      I = BCFL(LT).I
-      J = BCFL(LT).J
+      I = BCPS(LT).I
+      J = BCPS(LT).J
       if( LIJLT(I,J) == 0 ) GOTO 300
-      NS = BCFL(Lt).NQSERQ
-      L = BCFL(Lt).L
+      NS = BCPS(Lt).NQSERQ
+      L = BCPS(Lt).L
       !IF(flagwaspbC(ns,k) == 1 ) GOTO 300                   
-      flowx = BCFL(Lt).RQSMUL*(QSS(K,Lt)+BCFL(lt).QFACTOR*QSERT(K,NS))
+      flowx = BCPS(Lt).RQSMUL*(QSS(K,Lt)+BCPS(lt).QFACTOR*QSERT(K,NS))
       UDDXTMP = flowx/DXp(L)/dyp(l)/(HPK(L,K))
       ! ***      addlw = dyp(l)*ahulpf(l,k)*DZC(L,K)*hlpf(l)/dxp(l)  !hnr
       addlw = 0.0                                    

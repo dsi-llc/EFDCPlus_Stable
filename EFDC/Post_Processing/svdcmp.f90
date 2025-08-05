@@ -101,7 +101,7 @@ SUBROUTINE SVDCMP(A,M,N,MP,NP,W,V)
      24       continue
       endif
     endif
-    ANORM = MAX(ANORM,(ABS(W(I))+ABS(RV1(I))))
+    ANORM = max(ANORM,(ABS(W(I))+ABS(RV1(I))))
      25 continue
   do 32 I = N,1,-1
     if( I < N )then

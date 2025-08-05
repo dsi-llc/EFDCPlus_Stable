@@ -77,9 +77,9 @@ Subroutine broadcast_scalar_real(scalar, root_pe)
 !***local variables
    integer  :: ierr  !< local MPI error flag
 
-   call MPI_BCAST(scalar, 1, mpi_real4, root_pe, comm_2d, ierr)
+   call MPI_BCAST(scalar, 1, mpi_real4, root_pe, DSIcomm, ierr)
    
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
  End Subroutine broadcast_scalar_real
 !---------------------------------------------------------------------------!
@@ -100,8 +100,8 @@ Subroutine broadcast_scalar_real(scalar, root_pe)
     integer  :: ierr  !< local MPI error flag
     
     ! *** Must specify MPI_Real8 
-    call MPI_BCAST(scalar, 1, MPI_REAL8, root_pe, comm_2d, ierr)
-    call MPI_BARRIER(comm_2d, ierr)
+    call MPI_BCAST(scalar, 1, MPI_REAL8, root_pe, DSIcomm, ierr)
+    call MPI_BARRIER(DSIcomm, ierr)
 
  End Subroutine broadcast_scalar_real8
 !---------------------------------------------------------------------------!
@@ -120,8 +120,8 @@ Subroutine broadcast_scalar_int(scalar, root_pe)
 !***Local variables
    integer  :: ierr  !< local MPI error flag
 
-   call MPI_BCAST(scalar, 1, MPI_Integer4, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(scalar, 1, MPI_Integer4, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
  End Subroutine broadcast_scalar_int
 
@@ -141,8 +141,8 @@ Subroutine broadcast_scalar_int8(scalar, root_pe)
 !***Local variables
     integer  :: ierr  ! local MPI error flag
 
-   call MPI_BCAST(scalar, 1, MPI_Integer8, root_pe, comm_2d,ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(scalar, 1, MPI_Integer8, root_pe, DSIcomm,ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 End Subroutine broadcast_scalar_int8
 !---------------------------------------------------------------------------!
@@ -169,8 +169,8 @@ Subroutine broadcast_scalar_log(scalar, root_pe)
      itmp = 0
    Endif
 
-   call MPI_BCAST(itmp, 1, MPI_Int, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(itmp, 1, MPI_Int, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !***Remaps the integer value recieved back to a logical value
    if( itmp == 1 )then
@@ -199,8 +199,8 @@ Subroutine broadcast_scalar_char(scalar, root_pe)
 
    clength = len(scalar)
 
-   call MPI_BCAST(scalar, clength, MPI_CHARACTER, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(scalar, clength, MPI_CHARACTER, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
  End Subroutine broadcast_scalar_char
 !--------------------------------------------------------------------
@@ -223,8 +223,8 @@ Subroutine broadcast_array_real_1d(array, root_pe)
     
    nelements = size(array) ! get the size of the array for broadcasting
    
-   call MPI_BCAST(array, nelements, mpi_real4, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, mpi_real4, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 End Subroutine broadcast_array_real_1d
 !--------------------------------------------------------------------
@@ -247,8 +247,8 @@ Subroutine broadcast_array_real8_1d(array, root_pe)
    integer :: ierr      !< local MPI error flag
     
    nelements = size(array)
-   call MPI_BCAST(array, nelements, MPI_REAL8, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, MPI_REAL8, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 End Subroutine broadcast_array_real8_1d
 !---------------------------------------------------------------------------!
@@ -268,8 +268,8 @@ Subroutine broadcast_array_int_1d(array, root_pe)
    integer :: ierr      !< local MPI error flag
   
    nelements = size(array)
-   call MPI_BCAST(array, nelements, MPI_Int, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, MPI_Int, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
        
  End Subroutine broadcast_array_int_1d
 
@@ -291,8 +291,8 @@ Subroutine broadcast_array_char_1d(array,  root_pe)
 
    nelements = size(array)
 
-   call MPI_BCAST(array, nelements, MPI_CHARACTER, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, MPI_CHARACTER, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
  End Subroutine broadcast_array_char_1d
 !---------------------------------------------------------------------------!
@@ -333,8 +333,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
    End where
 
    call MPI_BCAST(array_int, nelements, MPI_Int, root_pe, &
-                  comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+                  DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
    where (array_int == 1)
      array = .true.
@@ -389,8 +389,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
    nelements = size(array)
    
-   call MPI_BCAST(array, nelements, mpi_real4, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, mpi_real4, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !---------------------------------------------------------------------------!
 !EOC
@@ -438,8 +438,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
    nelements = size(array)
    
-   call MPI_BCAST(array, nelements, MPI_REAL8, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, MPI_REAL8, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !---------------------------------------------------------------------------!
 !EOC
@@ -488,8 +488,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
    nelements = size(array)
 
-   call MPI_BCAST(array, nelements, MPI_Integer4, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, MPI_Integer4, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !---------------------------------------------------------------------------!
 !EOC
@@ -553,8 +553,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
    End where
 
    call MPI_BCAST(array_int, nelements, MPI_Int, root_pe, &
-                  comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+                  DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
    where (array_int == 1)
      array = .true.
@@ -615,8 +615,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
    nelements = size(array)
 
-   call MPI_BCAST(array, nelements, mpi_real4, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, mpi_real4, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !---------------------------------------------------------------------------!
 !EOC
@@ -663,8 +663,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
    nelements = size(array)
 
-   call MPI_BCAST(array, nelements, MPI_REAL8, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, MPI_REAL8, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !---------------------------------------------------------------------------!
 !EOC
@@ -715,8 +715,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
    nelements = size(array)
 
-   call MPI_BCAST(array, nelements, mpi_real4, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, mpi_real4, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !---------------------------------------------------------------------------!
 !EOC
@@ -766,8 +766,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
    nelements = size(array)
 
-   call MPI_BCAST(array, nelements, mpi_real8, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, mpi_real8, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !---------------------------------------------------------------------------!
 !EOC
@@ -819,8 +819,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
    nelements = size(array)
 
-   call MPI_BCAST(array, nelements, MPI_Int, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, MPI_Int, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !---------------------------------------------------------------------------!
 !EOC
@@ -873,8 +873,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
    nelements = size(array)
 
-   call MPI_BCAST(array, nelements, MPI_Integer8, root_pe, comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, MPI_Integer8, root_pe, DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
 !---------------------------------------------------------------------------!
 !EOC
@@ -941,8 +941,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
    End where
 
    call MPI_BCAST(array_int, nelements, MPI_Int, root_pe, &
-                  comm_2d, ierr)
-   call MPI_BARRIER(comm_2d, ierr)
+                  DSIcomm, ierr)
+   call MPI_BARRIER(DSIcomm, ierr)
 
    where (array_int == 1)
      array = .true.

@@ -37,7 +37,7 @@ SUBROUTINE SEEK(TAG, ISKIP)
   
   do K = 1,2
 10  read(1,'(A)',END = 20)TEXT
-    M = MAX(1,LEN_TRIM(TEXT))
+    M = max(1,LEN_TRIM(TEXT))
     if( OPN .and. ECHO ) WRITE(mpi_efdc_out_unit,'(A)') TEXT(1:M)
     do while( M > L .and. TEXT(1:1) == '' )
       TEXT(1:M-1) = TEXT(2:M)

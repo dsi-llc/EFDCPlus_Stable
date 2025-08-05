@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------!
-! Copyright 2021-2024 DSI, LLC
+! Copyright 2021-2025 DSI, LLC
 !
 ! This program is free software: you can redistribute it and/or modify
 ! it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !----------------------------------------------------------------------!
 !
-!  RELEASE:         EFDCPlus_12.1
+!  RELEASE:         EFDCPlus_12.3
 !                   Domain Decomposition with MPI
 !                   Propeller Wash 
 !                   New WQ kinetics with user defined algal groups and zooplankton
@@ -27,7 +27,7 @@
 !                   General Ocean Turbulence Model (GOTM)
 !                   SIGMA-Zed (SGZ) Vertical Layering
 !
-!  DATE:            2024-06-06
+!  DATE:            2025-05-01
 !  BY:              DSI, LLC
 !                   EDMONDS, WASHINGTON  98020
 !                   USA
@@ -115,7 +115,7 @@ PROGRAM EFDC
   use OMP_LIB
   use Allocate_Initialize      
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
   use XYIJCONV,only:XY2IJ
   use RESTART_MODULE
@@ -194,7 +194,7 @@ PROGRAM EFDC
   Double Precision :: starting_time, ending_time
   
   ! *** When updating the version date also update the EXE date in the project settings
-  EFDC_VER = '2024-10-11'
+  EFDC_VER = '2025-05-01'
   
   ! *** GET START TIME OF ELAPSED TIME COUNTER
   TCPU = DTIME(CPUTIME)
@@ -203,7 +203,7 @@ PROGRAM EFDC
 
   IERR = 0
 #ifdef DEBUGGING
-  !call sleep(10)
+  call sleep(10)
 #endif
 
   ! ****************************************************************************
@@ -247,7 +247,7 @@ PROGRAM EFDC
       call GETARG(1, BUFFER)
 #else
       call GETARG(1, BUFFER, iStatus)
-#endif        
+#endif          
       !$  if( Buffer(1:3) == '-NT' .or. Buffer(1:3) == '-nt' )then
       !$    read(Buffer(4:10),*) NTHREADS
       !$  endif
@@ -257,7 +257,7 @@ PROGRAM EFDC
         call GETARG(2, BUFFER)
 #else
         call GETARG(2, BUFFER, iStatus)
-#endif          
+#endif            
         !$  if( Buffer(1:3) == '-NT' .or. Buffer(1:3) == '-nt' )then
         !$    read(Buffer(4:10),*) NTHREADS
         !$  endif
@@ -307,10 +307,6 @@ PROGRAM EFDC
 #else
   FMT_BINARY = 'BINARY'
 #endif 
-
-
-  ! *** Create output file for each processor to record inputted parameters, etc.
-  call MPI_barrier(MPI_Comm_World, ierr)
 
   ! *** Always create the new file
   call MPI_barrier(MPI_Comm_World, ierr)
@@ -611,7 +607,7 @@ PROGRAM EFDC
         ISNAP = ISNAP+1
         if( ISNAP > NSHOTS )then
           NSHOTS = 0
-          EXIT
+          exit
         endif
         T4 = SHOTS(ISNAP,1) + SHOTS(ISNAP,2)
       enddo
@@ -699,7 +695,7 @@ PROGRAM EFDC
   ! *** ENSURE LAST SNAPSHOT SPANS THE END OF THE MODEL RUN
   SNAPSHOTS(NSNAPSHOTS+1) = T2 + 1.
   NSNAPMAX = NSNAPSHOTS
-  NSNAPSHOTS = MIN(NSNAPSHOTS,2)        ! *** NSNAPSHOTS = 1 IS THE INITIAL CONDITION.  SET TO FIRST MODEL RESULTS SNAPSHOT
+  NSNAPSHOTS = min(NSNAPSHOTS,2)        ! *** NSNAPSHOTS = 1 IS THE INITIAL CONDITION.  SET TO FIRST MODEL RESULTS SNAPSHOT
 
   ! *** SET CONTROLS FOR WRITING TO FILTERED, AVERAGED OR RESIDUAL
   ! *** 2D SCALAR CONTOURING AND 2D VELOCITY VECTOR PLOTTING FILES
@@ -754,7 +750,7 @@ PROGRAM EFDC
   ierr = 0
   ! ****************************************************************************
   ! *** MPI communication
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   call communicate_ghost_cells(DXU, 'DXU')
   call communicate_ghost_cells(DYU, 'DYU')
   call communicate_ghost_cells(DXV, 'DXV')
@@ -834,7 +830,7 @@ PROGRAM EFDC
     enddo
   endif   ! *** End of master process
     
-  call MPI_Barrier(comm_2d, ierr)
+  call MPI_Barrier(DSIcomm, ierr)
   call Broadcast_Array(R2D_Global, master_id)
   call Broadcast_Scalar(Center_X,  master_id)
   call Broadcast_Scalar(Center_Y,  master_id)
@@ -1026,8 +1022,6 @@ PROGRAM EFDC
   ! *** ALLOCATE MEMORY FOR VARIABLE TO STORE CONCENTRATIONS AT OPEN BOUNDARIES
   call AllocateDSI( WQBCCON,  NBCSOP, KCM, NACTIVEWC, 0.0)
   call AllocateDSI( WQBCCON1, NBCSOP, KCM, NACTIVEWC, 0.0)
-  WQBCCON  = 0.0
-  WQBCCON1 = 0.0
 
   ! *** READ THE DRIFTER DATA
   if( ISPD > 0 ) CALL DRIFTER_INP
@@ -1293,7 +1287,7 @@ PROGRAM EFDC
 1000    close(1)
       endif
 
-      call MPI_Barrier(comm_2d, ierr)
+      call MPI_Barrier(DSIcomm, ierr)
       call Broadcast_Array(DZC_Global, master_id)
       call Broadcast_Array(KSZ_Global, master_id)
 
@@ -1362,21 +1356,21 @@ PROGRAM EFDC
 
       ! *** INACTIVE LAYER MASK FOR CURRENT CELL
       if( K < KSZ(L) )then
-        DZC(L,K)  = 0.0
         LKSZ(L,K) = .TRUE.
+        DZC(L,K)  = 0.0
       elseif( IGRIDV > 0 )then
         ! *** SIGMA-ZED DZC
         LKSZ(L,K) = .FALSE.
         if( IGRIDV == 1 ) DZC(L,K) = DZCK(K)/DZPC
       else
         ! *** SIGMA STRETCH DZC
-        DZC(L,K)  = DZCK(K)/DZPC
         LKSZ(L,K) = .FALSE.
+        DZC(L,K)  = DZCK(K)/DZPC
       endif
 
       ! *** U FACE
       if( SUBO(L) > 0. )then
-        KM = MAX(KSZ(LW), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR U FACE
+        KM = max(KSZ(LW), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR U FACE
         if( K >= KM )then
           LSGZU(L,K) = .TRUE.
         else
@@ -1386,7 +1380,7 @@ PROGRAM EFDC
 
       ! *** V FACE
       if( SVBO(L) > 0. )then
-        KM = MAX(KSZ(LS), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR V FACE
+        KM = max(KSZ(LS), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR V FACE
         if( K >= KM )then
           LSGZV(L,K) = .TRUE.
         else
@@ -1404,12 +1398,12 @@ PROGRAM EFDC
     if( SUBO(L) < 0.5 )then
       KSZU(L) = KSZ(L)
     else
-      KSZU(L) = MAX(KSZ(L),KSZ(LW))
+      KSZU(L) = max(KSZ(L),KSZ(LW))
     endif
     if( SVBO(L) < 0.5 )then
       KSZV(L) = KSZ(L)
     else
-      KSZV(L) = MAX(KSZ(L),KSZ(LS))
+      KSZV(L) = max(KSZ(L),KSZ(LS))
     endif
 
     do K = KSZ(L),KC
@@ -1523,7 +1517,7 @@ PROGRAM EFDC
   ! *** SET ACTIVE CELL LIST (WITHOUT WET/DRY CELL CONSIDERATION)
   do ND = 1,NDM
     LF = 2 + (ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do K = 1,KC
       LN = 0
       do L = LF,LL
@@ -1540,18 +1534,18 @@ PROGRAM EFDC
     IU = WITH_RET(NWR).IQWRU
     JU = WITH_RET(NWR).JQWRU
     LU = LIJ(IU,JU)
-    WITH_RET(NWR).KQWRU = MAX(WITH_RET(NWR).KQWRU, KSZ(LU))
+    WITH_RET(NWR).KQWRU = max(WITH_RET(NWR).KQWRU, KSZ(LU))
     
     ID = WITH_RET(NWR).IQWRD
     JD = WITH_RET(NWR).JQWRD
     LD = LIJ(ID,JD)
     if( LD > 1 )then
-      WITH_RET(NWR).KQWRD = MAX(WITH_RET(NWR).KQWRD, KSZ(LD))  
+      WITH_RET(NWR).KQWRD = max(WITH_RET(NWR).KQWRD, KSZ(LD))  
     endif
   enddo
   do NJP = 1,NQJPIJ
     LU = LIJ(JET_PLM(NJP).IQJP,JET_PLM(NJP).JQJP)
-    JET_PLM(NJP).KUPCJP = MAX(JET_PLM(NJP).KUPCJP, KSZ(LU))
+    JET_PLM(NJP).KUPCJP = max(JET_PLM(NJP).KUPCJP, KSZ(LU))
   enddo
   
   If( process_id == master_id )then
@@ -2318,7 +2312,7 @@ PROGRAM EFDC
     do K = 1,KC
       ! *** U FACE
       if( SUBO(L) > 0. )then
-        KM = MAX(KSZ(LW), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR U FACE
+        KM = max(KSZ(LW), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR U FACE
         if( K >= KM )then
           if( IGRIDV > 0 )then
             if( KSZ(LW) > KSZ(L) )then
@@ -2327,14 +2321,14 @@ PROGRAM EFDC
               SGZU(L,K)  = DZC(L,K)
             endif
           else
-            SGZU(L,K)  = MAX(DZC(LW,K),DZC(L,K))
+            SGZU(L,K)  = max(DZC(LW,K),DZC(L,K))
           endif
         endif
       endif
 
       ! *** V FACE
       if( SVBO(L) > 0. )then
-        KM = MAX(KSZ(LS), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR V FACE
+        KM = max(KSZ(LS), KSZ(L))      ! *** MINUMUM ACTIVE LAYERS FOR V FACE
         if( K >= KM )then
           if( IGRIDV > 0 )then
             if( KSZ(LS) > KSZ(L) )then
@@ -2343,7 +2337,7 @@ PROGRAM EFDC
               SGZV(L,K)  = DZC(L,K)
             endif
           else
-            SGZV(L,K)  = MAX(DZC(LS,K),DZC(L,K))
+            SGZV(L,K)  = max(DZC(LS,K),DZC(L,K))
           endif
         endif
       endif
@@ -2405,7 +2399,7 @@ PROGRAM EFDC
       CDZRU(L,KSZU(L)) = SGZU(L,KSZU(L))-1.
       CDZDU(L,KSZU(L)) = SGZU(L,KSZU(L))
       do K = KSZU(L)+1,KS
-        KM = MAX(KSZ(LW), KSZ(L))      ! *** MINIMUM ACTIVE LAYERS FOR U FACE
+        KM = max(KSZ(LW), KSZ(L))      ! *** MINIMUM ACTIVE LAYERS FOR U FACE
         if( K >= KM )then
           CDZRU(L,K) = CDZRU(L,K-1)+SGZU(L,K)
           CDZDU(L,K) = CDZDU(L,K-1)+SGZU(L,K)
@@ -2418,7 +2412,7 @@ PROGRAM EFDC
       CDZRV(L,KSZV(L)) = SGZV(L,KSZV(L))-1.
       CDZDV(L,KSZV(L)) = SGZV(L,KSZV(L))
       do K = KSZV(L)+1,KS
-        KM = MAX(KSZ(LS), KSZ(L))      ! *** MINIMUM ACTIVE LAYERS FOR V FACE
+        KM = max(KSZ(LS), KSZ(L))      ! *** MINIMUM ACTIVE LAYERS FOR V FACE
         if( K >= KM )then
           CDZRV(L,K) = CDZRV(L,K-1)+SGZV(L,K)
           CDZDV(L,K) = CDZDV(L,K-1)+SGZV(L,K)
@@ -2516,7 +2510,7 @@ PROGRAM EFDC
   call communicate_ghost_cells(SBY, 'HRVO')
   ! ****************************************************************************
 
-  ! *** DETERMINE FSGZU/FSGZV FOR GROSS MOMENTUM
+  ! *** Determine FSGZU/FSGZV for gross momentum
   do L = 2,LA
     LW = LWC(L)
     LS = LSC(L)
@@ -2534,7 +2528,7 @@ PROGRAM EFDC
     enddo
   enddo
 
-  ! *** THIRD PASS AT CELL CONSTANTS
+  ! *** Third pass at cell constants
   do L = 2,LA
     LW = LWC(L)
     LE = LEC(L)
@@ -2542,8 +2536,8 @@ PROGRAM EFDC
     LN = LNC(L)
 
     if( IGRIDV > 0 )then
-      ! *** CELL INTERFACE METRICS
-      FRACK = MIN(0.1*MAXTHICK/REAL(KC), 0.25)
+      ! *** Cell interface metrics
+      FRACK = min(0.1*MAXTHICK/REAL(KC), 0.25)
 
       BELVW(L) = BELV(L)
       BELVE(L) = BELV(L)
@@ -2566,13 +2560,13 @@ PROGRAM EFDC
         SGZKS(K,L) = DZC(L,K)
         SGZKN(K,L) = DZC(L,K)
 
-        ! *** TOP OF LAYER
+        ! *** Top of layer
         ZW(L,K) = Z(L,K)
         ZE(L,K) = Z(L,K)
         ZS(L,K) = Z(L,K)
         ZN(L,K) = Z(L,K)
 
-        ! *** MIDDLE OF LAYER
+        ! *** Middle of layer
         ZZW(K,L) = ZZ(L,K)
         ZZE(K,L) = ZZ(L,K)
         ZZS(K,L) = ZZ(L,K)
@@ -2583,7 +2577,7 @@ PROGRAM EFDC
         KSZW(L) = KSZU(L)
         if( KSZ(LW) > KSZ(L) )then
           BELVW(L) = BELV(LW)
-          !BELVW(L) = MAX(BELV(LW)-FRACK,BELV(L))
+          !BELVW(L) = max(BELV(LW)-FRACK,BELV(L))
           do K = 1,KC
             SGZW(L,K)  = DZC(LW,K)
             SGZKW(K,L) = DZC(LW,K)
@@ -2611,7 +2605,7 @@ PROGRAM EFDC
         KSZE(L) = KSZU(LE)
         if( KSZ(LE) > KSZ(L) )then
           BELVE(L) = BELV(LE)
-          !BELVE(L) = MAX(BELV(LE)-FRACK,BELV(L))
+          !BELVE(L) = max(BELV(LE)-FRACK,BELV(L))
           do K = 1,KC
             SGZE(L,K)  = DZC(LE,K)
             SGZKE(K,L) = DZC(LE,K)
@@ -2638,7 +2632,7 @@ PROGRAM EFDC
         KSZS(L) = KSZV(L)
         if( KSZ(LS) > KSZ(L) )then
           BELVS(L) = BELV(LS)
-          !BELVS(L) = MAX(BELV(LS)-FRACK,BELV(L))
+          !BELVS(L) = max(BELV(LS)-FRACK,BELV(L))
           do K = 1,KC
             SGZS(L,K)  = DZC(LS,K)
             SGZKS(K,L) = DZC(LS,K)
@@ -2665,7 +2659,7 @@ PROGRAM EFDC
         KSZN(L) = KSZV(LN)
         if( KSZ(LN) > KSZ(L) )then
           BELVN(L) = BELV(LN)
-          !BELVN(L) = MAX(BELV(LN)-FRACK,BELV(L))
+          !BELVN(L) = max(BELV(LN)-FRACK,BELV(L))
           do K = 1,KC
             SGZN(L,K)  = DZC(LN,K)
             SGZKN(K,L) = DZC(LN,K)
@@ -2775,17 +2769,17 @@ PROGRAM EFDC
       LS = LSC(L)
     
       if( KSZ(LW) > KSZ(L) )then
-        HU(L) = MAX( 0.5*HPK(L,KSZ(LW)), HP(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
+        HU(L) = max( 0.5*HPK(L,KSZ(LW)), HP(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
       elseif( KSZ(LW) < KSZ(L) )then
-        HU(L) = MAX( 0.5*HPK(LW,KSZ(L)), HP(L)*(1.+DZC(LW,KSZ(L))*0.1) )
+        HU(L) = max( 0.5*HPK(LW,KSZ(L)), HP(L)*(1.+DZC(LW,KSZ(L))*0.1) )
       else
         HU(L) = ( DXYP(L)*HP(L) + DXYP(LW)*HP(LW) )/(DXYP(L) + DXYP(LW))
       endif
     
       if( KSZ(LS) > KSZ(L) )then
-        HV(L) = MAX( 0.5*HPK(L,KSZ(LS)), HP(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
+        HV(L) = max( 0.5*HPK(L,KSZ(LS)), HP(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
       elseif( KSZ(LS) < KSZ(L) )then
-        HV(L) = MAX( 0.5*HPK(LS,KSZ(L)), HP(L)*(1.+DZC(LS,KSZ(L))*0.1) )
+        HV(L) = max( 0.5*HPK(LS,KSZ(L)), HP(L)*(1.+DZC(LS,KSZ(L))*0.1) )
       else
         HV(L) = ( DXYP(L)*HP(L) + DXYP(LS)*HP(LS) )/(DXYP(L) + DXYP(LS))
       endif
@@ -2816,7 +2810,7 @@ PROGRAM EFDC
   ! *** COMPUTATIONAL CELL LIST BY SUB-DOMAIN AND LAYER (WET/DRY CONSIDERED)
   do ND = 1,NDM
     LF = 2+(ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do K = 1,KC
       LN = 0
       do L = LF,LL
@@ -2857,7 +2851,7 @@ PROGRAM EFDC
     enddo
   endif
 
-  TMPVAL = MAX(HMIN,.01)
+  TMPVAL = max(HMIN,.01)
   HPKI = 1./TMPVAL
   do K = 1,KC
     do L = 2,LA
@@ -3259,8 +3253,8 @@ PROGRAM EFDC
 2004 FORMAT('WQ DIAGEN    = ',F8.4,'  NOT USED     = ',F8.4)
 2005 FORMAT('T PROPWASH   = ',F8.4,'  NOT USED     = ',F8.4)
 2006 FORMAT('MPI EE GATH  = ',F8.4,'  MPI COMMUNIC = ',F8.4)
-2007 FORMAT('CPU USER     = ',F8.4, '  CPU SYSTEM   = ',F8.4)
-2008 FORMAT('ELAPSED TIME = ',F8.4,'  CPU TIME   = ',F8.4)
+2007 FORMAT('CPU USER     = ',F8.4,'  CPU SYSTEM   = ',F8.4)
+2008 FORMAT('ELAPSED TIME = ',F8.4,'  CPU TIME     = ',F8.4)
 
     !------------------------------------------------------------------------
     ! *** WRITE THE TIME SUMMARY TO THE TIME LOG
@@ -3467,7 +3461,7 @@ PROGRAM EFDC
   SUBROUTINE STOPP(MSG)
 #else
   SUBROUTINE STOPP(MSG, IOPEN)
-#endif  
+#endif   
   use GLOBAL
   use Variables_MPI
   
@@ -3481,7 +3475,8 @@ PROGRAM EFDC
     open(mpi_error_unit,FILE = OUTDIR//mpi_error_file,POSITION = 'APPEND')
 #ifndef GNU  
   endif
-#endif    
+#endif   
+  
 
   if( LEN_TRIM(MSG) < 1 )then
     if( process_id == master_id) PRINT '("EFDCPlus Stopped: ",A)', 'SEE #OUTPUT\log_error_proc_xxx FOR MORE INFORMATION'

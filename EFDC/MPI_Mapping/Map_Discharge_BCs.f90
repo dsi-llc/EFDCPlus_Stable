@@ -41,46 +41,46 @@ Subroutine Map_River
   NQSIJ = 0
   II = 0
   do LL = 1, NQSIJ_GL
-    BCFL_GL(LL).L = LIJ_Global(BCFL_GL(LL).I,BCFL_GL(LL).J)
-    if( BCFL_GL(LL).L < 2 )then
+    BCPS_GL(LL).L = LIJ_Global(BCPS_GL(LL).I,BCPS_GL(LL).J)
+    if( BCPS_GL(LL).L < 2 )then
       write(6,*) 'ERROR! FLOW CELL IS NOT IN GLOBAL DOMAIN FOR FLOW BOUNDARY: ',LL
       call STOPP('.')
     endif
 
-    III = IG2IL(BCFL_GL(LL).I)
-    JJJ = JG2JL(BCFL_GL(LL).J)
+    III = IG2IL(BCPS_GL(LL).I)
+    JJJ = JG2JL(BCPS_GL(LL).J)
     if( III > 0 .and. III <= IC )then     ! *** Allow ghost cells containing inflow
       if( JJJ > 0 .and. JJJ <= JC )then   ! *** Allow ghost cells containing inflow
         NQSIJ   = NQSIJ + 1
 
         II = II + 1
         LLSave(II) = LL
-        BCFL(II).I    = III
-        BCFL(II).J    = JJJ
+        BCPS(II).I    = III
+        BCPS(II).J    = JJJ
 
-        BCFL(II).NQSMUL    = BCFL_GL(LL).NQSMUL
-        BCFL(II).NQSMF     = BCFL_GL(LL).NQSMF
-        BCFL(II).NQSERQ    = BCFL_GL(LL).NQSERQ
-        BCFL(II).NCSERQ(:) = BCFL_GL(LL).NCSERQ(:)
-        BCFL(II).QWIDTH    = BCFL_GL(LL).QWIDTH
-        BCFL(II).QFACTOR   = BCFL_GL(LL).QFACTOR
-        BCFL(II).GRPID     = BCFL_GL(LL).GRPID
+        BCPS(II).NQSMUL    = BCPS_GL(LL).NQSMUL
+        BCPS(II).NQSMF     = BCPS_GL(LL).NQSMF
+        BCPS(II).NQSERQ    = BCPS_GL(LL).NQSERQ
+        BCPS(II).NCSERQ(:) = BCPS_GL(LL).NCSERQ(:)
+        BCPS(II).QWIDTH    = BCPS_GL(LL).QWIDTH
+        BCPS(II).QFACTOR   = BCPS_GL(LL).QFACTOR
+        BCPS(II).GRPID     = BCPS_GL(LL).GRPID
         
-        BCFL(II).QSSE    = BCFL_GL(LL).QSSE
+        BCPS(II).QSSE    = BCPS_GL(LL).QSSE
         do K = 1,KC
-          QSS(K,II) = BCFL(II).QSSE*DZCK(K)
+          QSS(K,II) = BCPS(II).QSSE*DZCK(K)
         enddo
 
         ! *** Constituent Constants
         MMAX = 3 + NDYM + NTOX + NSED + NSND
         do MS = 1,MMAX
           do K  = 1,KC
-            CQS(K,II,MS) = BCFL_GL(LL).CQSE(MS)
+            CQS(K,II,MS) = BCPS_GL(LL).CQSE(MS)
           enddo
         enddo
         
         ! *** GET NUMBER OF GROUPS.  GROUP NUMBERS ARE NOT REQUIRED TO BE CONTINGUOUS.
-        if( BCFL(II).GRPID > NGRPID ) NGRPID = BCFL(II).GRPID
+        if( BCPS(II).GRPID > NGRPID ) NGRPID = BCPS(II).GRPID
       endif
     endif
   enddo
@@ -91,15 +91,15 @@ Subroutine Map_River
   !DO L = 1,NQSIJ
   !  do N = 1,NTOX
   !    M = MSVTOX(N)
-  !    BCFL(L).NCSERQ(M) = NTOXSRQ(L)
+  !    BCPS(L).NCSERQ(M) = NTOXSRQ(L)
   !  enddo
   !  do N = 1,NSED
   !    M = MSVSED(N)
-  !    BCFL(L).NCSERQ(M) = NSEDSRQ(L)
+  !    BCPS(L).NCSERQ(M) = NSEDSRQ(L)
   !  enddo
   !  do N = 1,NSND
   !    M = MSVSND(N)
-  !    BCFL(L).NCSERQ(M) = NSNDSRQ(L)
+  !    BCPS(L).NCSERQ(M) = NSNDSRQ(L)
   !  enddo
   !END DO
 
@@ -110,8 +110,8 @@ Subroutine Map_River
   write(mpi_mapping_unit,'(2(a5,6a8,1x))') 'N','IQS','JQS','QSSE','QFACTOR','CQS3','NCSR3','N','IQS','JQS','QSSE','QFACTOR','CQS3','NCSR3'
   do II = 1,NQSIJ
     LL = LLSave(II)
-    write(mpi_mapping_unit,'(2(I5,2I8,F8.1,F8.4,F8.1,I8,1X))') LL, BCFL_GL(LL).I, BCFL_GL(LL).J, BCFL_GL(LL).QSSE, BCFL_GL(LL).QFACTOR, BCFL_GL(LL).CQSE(3), BCFL_GL(LL).NCSERQ(3),  &
-                                                               II, BCFL(II).I,    BCFL(II).J,    BCFL(II).QSSE,    BCFL(II).QFACTOR,    CQS(KC,II,3),        BCFL(II).NCSERQ(3)
+    write(mpi_mapping_unit,'(2(I5,2I8,F8.1,F8.4,F8.1,I8,1X))') LL, BCPS_GL(LL).I, BCPS_GL(LL).J, BCPS_GL(LL).QSSE, BCPS_GL(LL).QFACTOR, BCPS_GL(LL).CQSE(3), BCPS_GL(LL).NCSERQ(3),  &
+                                                               II, BCPS(II).I,    BCPS(II).J,    BCPS(II).QSSE,    BCPS(II).QFACTOR,    CQS(KC,II,3),        BCPS(II).NCSERQ(3)
   enddo
 
   call WriteBreak(mpi_mapping_unit)
@@ -462,14 +462,19 @@ Subroutine Map_WQ_PointSource
   ! *** Local
   integer :: II, LL, MS, K, III, JJJ, L, M, NT, NW
   integer :: MMAX, MMIN
-  integer :: IWQPS_GL
+  integer :: NWQPS_GL
+  integer :: LPSL_GL (NWQPSM)
+  integer :: ICPSL_GL(NWQPSM)
+  integer :: JCPSL_GL(NWQPSM)
   integer :: KCPSL_GL(NWQPSM)
   integer :: MVPSL_GL(NWQPSM)
   real    :: XPSL_GL(0:NWQPSM,NWQVM)
   integer :: LLSave(NWQPSM)
 
-  IWQPS_GL = NWQPS
+  NWQPS_GL = NWQPS
   KCPSL_GL = KCPSL
+  ICPSL_GL = ICPSL
+  JCPSL_GL = JCPSL
   MVPSL_GL = MVPSL
   XPSL_GL  = WQWPSLC
   LLSave = 0
@@ -480,12 +485,13 @@ Subroutine Map_WQ_PointSource
   MVPSL = 0
   WQWPSLC = 0.
   II = 0
-  do LL = 1, IWQPS_GL
-  
-    III = Map2Local(BCFL_GL(LL).L).IL           ! *** Assumes WQ point source cells use the same order and number
-    JJJ = Map2Local(BCFL_GL(LL).L).JL           ! *** Assumes WQ point source cells use the same order and number
-    if( III > 0 .and. III <= IC )then        ! *** Allow ghost cells containing inflow
-      if( JJJ > 0 .and. JJJ <= JC )then      ! *** Allow ghost cells containing inflow
+  do LL = 1, NWQPS_GL
+    LPSL_GL(LL) = LIJ_Global(ICPSL_GL(LL),JCPSL_GL(LL))
+    
+    III = Map2Local(LPSL_GL(LL)).IL           ! *** Assumes WQ point source cells use the same order and number
+    JJJ = Map2Local(LPSL_GL(LL)).JL           ! *** Assumes WQ point source cells use the same order and number
+    if( III > 0 .and. III <= IC )then         ! *** Allow ghost cells containing inflow
+      if( JJJ > 0 .and. JJJ <= JC )then       ! *** Allow ghost cells containing inflow
         NWQPS   = NWQPS + 1
 
         II = II + 1
@@ -499,7 +505,7 @@ Subroutine Map_WQ_PointSource
         ! *** ASSIGN GLOBAL CONCENTRATION TIME SERIES INDEX
         if( IWQPSL == 2 )then
           ! *** CONSTAND CONCENTRATIONS
-          BCFL(II).NCSERQ(8) = NSERWQ(LL)          ! *** All WQ variables use same time series
+          BCPS(II).NCSERQ(8) = NSERWQ(LL)          ! *** All WQ variables use same time series
           do NW = 1,NWQV
             if( ISTRWQ(NW) > 0 )then
               NT = MSVWQV(NW)
@@ -539,8 +545,8 @@ Subroutine Map_WQ_PointSource
   write(mpi_mapping_unit,'(2(a5,6a8,1x))') 'N','IQS','JQS','QSSE','QFACTOR','CQS3','NCSR3','N','IQS','JQS','QSSE','QFACTOR','CQS3','NCSR3'
   do II = 1,NWQPS
     LL = LLSave(II)
-    write(mpi_mapping_unit,'(2(I5,2I8,F8.1,F8.4,F8.1,I8,1X))') LL, BCFL_GL(LL).I, BCFL_GL(LL).J, BCFL_GL(LL).QSSE, BCFL_GL(LL).QFACTOR, BCFL_GL(LL).CQSE(3), BCFL_GL(LL).NCSERQ(3),  &
-                                                               II, BCFL(II).I,    BCFL(II).J,    BCFL(II).QSSE,    BCFL(II).QFACTOR,    CQS(KC,II,3),        BCFL(II).NCSERQ(3)
+    write(mpi_mapping_unit,'(2(I5,2I8,F8.1,F8.4,F8.1,I8,1X))') LL, BCPS_GL(LL).I, BCPS_GL(LL).J, BCPS_GL(LL).QSSE, BCPS_GL(LL).QFACTOR, BCPS_GL(LL).CQSE(3), BCPS_GL(LL).NCSERQ(3),  &
+                                                               II, BCPS(II).I,    BCPS(II).J,    BCPS(II).QSSE,    BCPS(II).QFACTOR,    CQS(KC,II,3),        BCPS(II).NCSERQ(3)
   enddo
 
   call WriteBreak(mpi_mapping_unit)

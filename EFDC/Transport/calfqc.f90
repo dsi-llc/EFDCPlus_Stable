@@ -104,7 +104,7 @@ SUBROUTINE CALFQC(MVAR, MO, CON, CON1, IT)
     enddo
     if( HDRYMOVE > 0.0 )then
       do NS = 1,NQSIJ  
-        L = LQSSAVE0(NS)
+        L = LQSMOVED(NS)
         do K = 1,KC
           FQC(L,K,IT) = 0.  
           CONQ(L,K,IT) = 0.
@@ -238,28 +238,28 @@ SUBROUTINE CALFQC(MVAR, MO, CON, CON1, IT)
   ! *** FLOW BOUNDARY CELLS
   if( USENQSIJ )then
     do NS = 1,NQSIJ  
-      L = BCFL(NS).L  
-      NQSTMP = BCFL(NS).NQSERQ  
-      NCSTMP = BCFL(NS).NCSERQ(MVAR)  
+      L = BCPS(NS).L  
+      NQSTMP = BCPS(NS).NQSERQ  
+      NCSTMP = BCPS(NS).NCSERQ(MVAR)  
       do K = KSZ(L),KC  
         ! ***                             |----------------  IN  -----------------|   |-----------  OUT  ----------------|
-        FQC(L,K,IT)     = FQC(L,K,IT)     + MAX(QSS(K,NS),     0.) *CQS(K,NS,M)       + MIN(QSS(K,NS),0.)     *CONQ(L,K,IT)  &
-                                          + MAX(QSERCELL(K,NS),0.) *CSERT(K,NCSTMP,M) + MIN(QSERCELL(K,NS),0.)*CONQ(L,K,IT)  
+        FQC(L,K,IT)     = FQC(L,K,IT)     + max(QSS(K,NS),     0.) *CQS(K,NS,M)       + min(QSS(K,NS),0.)     *CONQ(L,K,IT)  &
+                                          + max(QSERCELL(K,NS),0.) *CSERT(K,NCSTMP,M) + min(QSERCELL(K,NS),0.)*CONQ(L,K,IT)  
         
-        ! FQCPAD(L,K,IT)  = FQCPAD(L,K,IT)  + MAX(QSS(K,NS),0.)*CQS(K,NS,M) + MAX(QSERCELL(K,NS),0.)*CSERT(K,NCSTMP,M)  
-        ! QSUMPAD(L,K,IT) = QSUMPAD(L,K,IT) + MAX(QSS(K,NS),0.)             + MAX(QSERCELL(K,NS),0.)  
+        ! FQCPAD(L,K,IT)  = FQCPAD(L,K,IT)  + max(QSS(K,NS),0.)*CQS(K,NS,M) + max(QSERCELL(K,NS),0.)*CSERT(K,NCSTMP,M)  
+        ! QSUMPAD(L,K,IT) = QSUMPAD(L,K,IT) + max(QSS(K,NS),0.)             + max(QSERCELL(K,NS),0.)  
       enddo  
     enddo  
   else
     ! *** Handle WQ mass loading withdrawals
     do NS = 1,NQSIJ  
-      L = BCFL(NS).L  
-      NQSTMP = BCFL(NS).NQSERQ  
-      NCSTMP = BCFL(NS).NCSERQ(MVAR)  
+      L = BCPS(NS).L  
+      NQSTMP = BCPS(NS).NQSERQ  
+      NCSTMP = BCPS(NS).NCSERQ(MVAR)  
       do K = KSZ(L),KC  
         ! ***                             |-----------  OUT  ----------------|
-        FQC(L,K,IT)     = FQC(L,K,IT)     + MIN(QSS(K,NS),0.)     *CONQ(L,K,IT)  &
-                                          + MIN(QSERCELL(K,NS),0.)*CONQ(L,K,IT)  
+        FQC(L,K,IT)     = FQC(L,K,IT)     + min(QSS(K,NS),0.)     *CONQ(L,K,IT)  &
+                                          + min(QSERCELL(K,NS),0.)*CONQ(L,K,IT)  
       enddo  
     enddo
   endif

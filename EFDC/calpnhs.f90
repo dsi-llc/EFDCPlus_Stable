@@ -91,14 +91,14 @@ SUBROUTINE CALPNHS
       LS = LSC(L)
       UHUW = 0.5*(UHDY(L,K)+UHDY(L,K+1))
       VHVW = 0.5*(VHDX(L,K)+VHDX(L,K+1))
-      FUHU(L,K) = MAX(UHUW,0.)*WZ(LW,K) + MIN(UHUW,0.)*WZ(L,K)
-      FVHU(L,K) = MAX(VHVW,0.)*WZ(LS,K)  + MIN(VHVW,0.)*WZ(L,K)
+      FUHU(L,K) = max(UHUW,0.)*WZ(LW,K) + min(UHUW,0.)*WZ(L,K)
+      FVHU(L,K) = max(VHVW,0.)*WZ(LS,K)  + min(VHVW,0.)*WZ(L,K)
     enddo
   enddo
   do K = 1,KC
     do L = 2,LA
       WB = 0.5*DXYP(L)*(W(L,K-1)+W(L,K))
-      FWQQ(L,K) = MAX(WB,0.)*WZ(L,K-1) + MIN(WB,0.)*WZ(L,K)
+      FWQQ(L,K) = max(WB,0.)*WZ(L,K-1) + min(WB,0.)*WZ(L,K)
       FWJET(L,K) = 0.
     enddo
   enddo

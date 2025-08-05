@@ -1,4 +1,5 @@
 module yaml_settings
+
    use iso_fortran_env, only: error_unit
 
    use yaml_types, only: yaml_real_kind => real_kind, type_yaml_node => type_node, type_yaml_null => type_null, &
@@ -10,13 +11,10 @@ module yaml_settings
 
    private
 
-   public type_settings, type_option, type_header
-#ifdef USE_YAML      
-   public option, report_error, type_settings_create
+   public type_settings, type_option, option, report_error, type_settings_create, type_header
    public type_dictionary_populator, type_list_populator, type_settings_node, type_key_value_pair, type_list_item
    public type_real_setting, type_logical_setting, type_integer_setting, type_string_setting
    public type_real_setting_create, type_logical_setting_create, type_integer_setting_create, type_string_setting_create
-#endif	  
 
    integer, parameter :: rk = yaml_real_kind
 
@@ -41,7 +39,6 @@ module yaml_settings
       character(len = :), allocatable   :: path
       class (type_value), pointer     :: parent => null()
       integer                         :: display = display_inherit
-#ifdef USE_YAML      
    contains
       procedure :: write_schema      => value_write_schema
       procedure :: write_yaml        => value_write_yaml
@@ -50,15 +47,12 @@ module yaml_settings
       procedure :: get_yaml_style    => value_get_yaml_style
       procedure :: create_child
       procedure :: finalize          => value_finalize
-#endif	  
    end type type_value
 
    type type_settings_node
       class (type_value), pointer :: value => null()
-#ifdef USE_YAML      
    contains
       procedure :: set_value => node_set_value
-#endif	  
    end type
 
    type, extends(type_settings_node) :: type_key_value_pair
@@ -75,21 +69,16 @@ module yaml_settings
    end type
 
    type, abstract :: type_dictionary_populator
-#ifdef USE_YAML      
    contains
       procedure (dictionary_populator_create), deferred :: create
-#endif	  
    end type
 
    type, abstract :: type_list_populator
-#ifdef USE_YAML      
    contains
       procedure :: set_length => list_populator_set_length
       procedure (list_populator_create), deferred :: create
-#endif	  
    end type
 
-#ifdef USE_YAML      
    interface
       recursive subroutine list_populator_create(self, index, item)
          import type_list_populator, type_list_item
@@ -104,12 +93,10 @@ module yaml_settings
          type(type_key_value_pair),        intent(inout) :: pair
       end subroutine
    end interface
-#endif	  
 
    type, extends(type_value) :: type_settings
       class (type_yaml_dictionary), pointer :: backing_store => null()
       type(type_key_value_pair),   pointer :: first         => null()
-#ifdef USE_YAML      
    contains
       procedure :: write_schema => settings_write_schema
       procedure :: write_yaml => settings_write_yaml
@@ -135,13 +122,11 @@ module yaml_settings
       procedure :: populate => settings_populate
       procedure :: ignore
       procedure :: finalize
-#endif	  
    end type type_settings
 
    type, abstract, extends(type_value) :: type_scalar_value
       character(:),allocatable :: units
       logical                  :: has_default = .false.
-#ifdef USE_YAML      
    contains
       procedure (scalar_value_as_string),  deferred :: as_string
       procedure (scalar_value_at_default), deferred :: at_default
@@ -149,10 +134,8 @@ module yaml_settings
       procedure :: get_comment       => scalar_value_get_comment
       procedure :: get_maximum_depth => scalar_value_get_maximum_depth
       procedure :: is_visible        => scalar_value_is_visible
-#endif	  
    end type type_scalar_value
 
-#ifdef USE_YAML      
    abstract interface
       function scalar_value_as_string(self, use_default) result(string)
          import type_scalar_value
@@ -166,7 +149,6 @@ module yaml_settings
          class (type_scalar_value), intent(in) :: self
       end function
    end interface
-#endif	  
 
    type type_option
       integer                   :: value
@@ -176,7 +158,6 @@ module yaml_settings
 
    type, extends(type_value) :: type_list
       type(type_list_item), pointer :: first => null()
-#ifdef USE_YAML      
    contains
       procedure :: write_schema      => list_write_schema
       procedure :: write_yaml        => list_write_yaml
@@ -184,7 +165,6 @@ module yaml_settings
       procedure :: get_yaml_style    => list_get_yaml_style
       procedure :: is_visible        => list_is_visible
       procedure :: finalize          => list_finalize
-#endif	  
    end type
 
    type, extends(type_scalar_value) :: type_integer_setting
@@ -194,13 +174,11 @@ module yaml_settings
       integer :: minimum = default_minimum_integer
       integer :: maximum = default_maximum_integer
       type(type_option), allocatable :: options(:)
-#ifdef USE_YAML      
    contains
       procedure :: as_string    => integer_as_string
       procedure :: write_schema => integer_write_schema
       procedure :: get_comment  => integer_get_comment
       procedure :: at_default   => integer_at_default
-#endif	  
    end type
 
    type, extends(type_scalar_value) :: type_real_setting
@@ -209,39 +187,33 @@ module yaml_settings
       real(rk) :: default = 0.0_rk
       real(rk) :: minimum = default_minimum_real
       real(rk) :: maximum = default_maximum_real
-#ifdef USE_YAML      
    contains
       procedure, nopass :: create => type_real_setting_create
       procedure :: as_string    => real_as_string
       procedure :: write_schema => real_write_schema
       procedure :: get_comment  => real_get_comment
       procedure :: at_default   => real_at_default
-#endif	  
    end type
 
    type, extends(type_scalar_value) :: type_logical_setting
       logical, pointer :: pvalue => null()
       logical :: value
       logical :: default = .true.
-#ifdef USE_YAML      
    contains
       procedure, nopass :: create => type_logical_setting_create
       procedure :: as_string    => logical_as_string
       procedure :: write_schema => logical_write_schema
       procedure :: at_default   => logical_at_default
-#endif	  
    end type
 
    type, extends(type_scalar_value) :: type_string_setting
       character(:), pointer :: pvalue => null()
       character(:), allocatable :: value
       character(:), allocatable :: default
-#ifdef USE_YAML      
    contains
       procedure :: as_string    => string_as_string
       procedure :: write_schema => string_write_schema
       procedure :: at_default   => string_at_default
-#endif	  
    end type
 
    type type_line
@@ -251,13 +223,10 @@ module yaml_settings
 
    type type_header
       type(type_line), pointer :: first_line => null()
-#ifdef USE_YAML      
    contains
       procedure :: append => header_append
-#endif	  
    end type
 
-#ifdef USE_YAML      
 contains
 
    type(type_option) function option(value, long_name, key)
@@ -409,6 +378,7 @@ contains
 
    logical function check_all_used(self)
       class (type_settings), intent(inout) :: self
+
       integer :: n
 
       n = 0
@@ -418,7 +388,7 @@ contains
          call node_check(self%backing_store_node, n)
          call self%backing_store_node%finalize()
          deallocate(self%backing_store_node)
-	  endif
+      endif
       check_all_used = n == 0
 
    contains
@@ -1814,5 +1784,5 @@ contains
       endif
       line%text = text
    end subroutine
-#endif	  
+
 end module yaml_settings

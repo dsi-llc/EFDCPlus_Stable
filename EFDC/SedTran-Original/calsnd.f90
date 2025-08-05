@@ -72,7 +72,7 @@ SUBROUTINE CALSND
     SNDDMX = 0.0
     do NX = 1,NSND  
       NS = NSED + NX  
-      SNDDMX = MAX(SNDDMX,SEDDIA(NS))  
+      SNDDMX = max(SNDDMX,SEDDIA(NS))  
     enddo  
 
     if( ISNDVW == 0 )then 
@@ -108,7 +108,7 @@ SUBROUTINE CALSND
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,K,NS,NX,KTOP,NXX,NSS)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       ! *** SET SIGPHI FOR GARCIA AND PARKER (1991) EQS 46 AND 47  
       if( ISGPFLAG == 1 )then  
@@ -207,7 +207,7 @@ SUBROUTINE CALSND
   !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,DUM1,DUM3,DUM4)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
     do LP = LF,LL
       L = LSED(LP)
       call SETSHLD(DUM1,CSHIELDS50(L),SEDDIA50(L,KBT(L)),SSG(NSED+1),DUM3,DUM4)  
@@ -223,7 +223,7 @@ SUBROUTINE CALSND
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,K,LP,L) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       !----------------------------------------------------------------------!  
       ! *** SET SETTLING VELOCITIES  
@@ -283,7 +283,7 @@ SUBROUTINE CALSND
   if( ICALC_BL > 0 )then
     ! ****************************************************************************
     TTDS = DSTIME(0)
-    call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(DSIcomm, ierr)
     TWAIT = DSTIME(0) - TTDS
     TTSED = TTSED - TWAIT
   
@@ -297,7 +297,7 @@ SUBROUTINE CALSND
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,NX,LP,L,LE,LN)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do NX = 1,NSND  
         ! *** CALCULATE MASS PER UNIT AREA CHANGE IN BED CONCENTRATION DUE TO TO NET BED LOAD (G/M2/S)                                                                                                  
@@ -352,7 +352,7 @@ SUBROUTINE CALSND
     !$OMP  SHARED(TVAR1S, TVAR2S, TVAR3S, TVAR1N, TVAR2N, TVAR1W, TVAR1E, KSZ, ICALC_BL, NSBDLDBC, LSBLBCU, LSBLBCD, LBED, PROP_ERO) 
     do ND = 1, NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       
       ! *** SET THE ROUSE parameter
       if( IROUSE(NX) == 0 )then  
@@ -388,7 +388,7 @@ SUBROUTINE CALSND
           SNDF(L,K,NX) = 0.                              !  (G/M2/S)
           WVEL = DTSED*HPKI(L,K)  
           CLEFT = 1.+WSETA(L,K-1,NS)*WVEL  
-          CRIGHT = MAX(SND(L,K,NX),0.)  
+          CRIGHT = max(SND(L,K,NX),0.)  
           SND(L,K,NX) = CRIGHT/CLEFT  
           SNDF(L,K-1,NX) = -WSETA(L,K-1,NS)*SND(L,K,NX)  
         enddo  
@@ -399,7 +399,7 @@ SUBROUTINE CALSND
             L = LKWET(LP,K-1,ND) 
             WVEL = DTSED*HPKI(L,K)  
             CLEFT = 1.+WSETA(L,K-1,NS)*WVEL  
-            CRIGHT = MAX(SND(L,K,NX),0.)-SNDF(L,K,NX)*WVEL  
+            CRIGHT = max(SND(L,K,NX),0.)-SNDF(L,K,NX)*WVEL  
             SND(L,K,NX) = CRIGHT/CLEFT  
             SNDF(L,K-1,NX) = -WSETA(L,K-1,NS)*SND(L,K,NX)  
           enddo  
@@ -415,7 +415,7 @@ SUBROUTINE CALSND
             ! *** ADD SETTLING FROM THE LAYER ABOVE
             K = KSZ(L)
             WVEL = DTSED*HPKI(L,K)  
-            SND(L,K,NX) = MAX(SND(L,K,NX),0.) - SNDF(L,K,NX)*WVEL  
+            SND(L,K,NX) = max(SND(L,K,NX),0.) - SNDF(L,K,NX)*WVEL  
           endif
         enddo
       endif
@@ -446,7 +446,7 @@ SUBROUTINE CALSND
           ZEQ(L) = CSNDZEQ(ISNDEQ(NS),DIASED,GPDIASED,TAUR(NS),TAUBSND(L),SEDDIA50(L,KBT(L)),HP(L),SSG(NS),WSETA(L,0,NS))
           
           ZEQMAX   = 0.5*DZC(L,KSZ(L))  
-          ZEQ(L)   = MIN(ZEQ(L),ZEQMAX)  
+          ZEQ(L)   = min(ZEQ(L),ZEQMAX)  
           ZEQD(L)  = ZEQ(L)*DZIC(L,KSZ(L))  
           ZEQDI(L) = 1./ZEQD(L)  
           SIGP = SIGPHI(L,KBT(L))  
@@ -525,7 +525,7 @@ SUBROUTINE CALSND
         
         ! *** SET BOTTOM LAYER SND CONCENTRATION AND FLUX TO SUSPENDED LOAD
         CLEFT  = 1. + WSETMP*WVEL  
-        CRIGHT = MAX(SND(L,KSZ(L),NX),0.) + ( WESE-SNDF(L,KSZ(L),NX) )*WVEL  
+        CRIGHT = max(SND(L,KSZ(L),NX),0.) + ( WESE-SNDF(L,KSZ(L),NX) )*WVEL  
         SND(L,KSZ(L),NX) = CRIGHT/CLEFT  
         SNDF(L,0,NX) = -WSETMP*SND(L,KSZ(L),NX) + WESE  
 
@@ -542,10 +542,10 @@ SUBROUTINE CALSND
             if( ICALC_BL > 0 )then
               IFLAG = 2
               ! *** ZERO BEDLOAD OUTFLUX
-              QSBDLDX(L,NX) = MAX(QSBDLDX(L,NX),0.0)
-              QSBDLDY(L,NX) = MAX(QSBDLDY(L,NX),0.0)
-              QSBDLDX(LE,NX) = MIN(QSBDLDX(LE,NX),0.0)
-              QSBDLDY(LN,NX) = MIN(QSBDLDY(LN,NX),0.0)
+              QSBDLDX(L,NX) = max(QSBDLDX(L,NX),0.0)
+              QSBDLDY(L,NX) = max(QSBDLDY(L,NX),0.0)
+              QSBDLDX(LE,NX) = min(QSBDLDX(LE,NX),0.0)
+              QSBDLDY(LN,NX) = min(QSBDLDY(LN,NX),0.0)
               if( NSBDLDBC > 0 )then
                 do NSB = 1,NSBDLDBC
                   LUTMP = LSBLBCU(NSB)
@@ -553,7 +553,7 @@ SUBROUTINE CALSND
                   if( L == LUTMP )then
                     if( LDTMP > 0 ) QSBDLDIN(LDTMP,NX) = QSBDLDIN(LDTMP,NX) - QSBDLDOT(LUTMP,NX)
                     QSBDLDOT(LUTMP,NX) = 0.
-                    EXIT
+                    exit
                   endif
                 enddo
               endif
@@ -579,7 +579,7 @@ SUBROUTINE CALSND
                 if( L == LUTMP )then
                   if( LDTMP > 0 ) QSBDLDIN(LDTMP,NX) = QSBDLDIN(LDTMP,NX) - QSBDLDOT(LUTMP,NX)
                   QSBDLDOT(L,NX) = FLUXFAC*QSBDLDOT(L,NX) 
-                  EXIT
+                  exit
                 endif
               enddo
             endif
@@ -608,7 +608,7 @@ SUBROUTINE CALSND
         do K = 2,KC  
           do LP = 1,LLWET(K-1,ND)
             L = LKWET(LP,K-1,ND) 
-            TVAR1S(L,K) = MIN(WSETA(L,K-1,NS),0.)  
+            TVAR1S(L,K) = min(WSETA(L,K-1,NS),0.)  
           enddo  
         enddo  
 
@@ -698,7 +698,7 @@ SUBROUTINE CALSND
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,K,KTOP,LE,LW,LS,LN,SNDBTMP,WVEL)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
       
       if( ICALC_BL > 0 .and. IFLAG > 0 )then
         ! *** RECALCULATE THE BEDLOAD FLUXES CONSISTENT WITH THE NEW FACE FLUXES
@@ -720,7 +720,7 @@ SUBROUTINE CALSND
                   SNDFBL(LDTMP,NX) = SNDFBL(LDTMP,NX) + SNDFBL(LUTMP,NX)
                 endif
                 SNDFBL(LUTMP,NX) = 0.0
-                EXIT
+                exit
               endif
             enddo
           endif

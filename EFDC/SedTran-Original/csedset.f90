@@ -71,7 +71,7 @@ FUNCTION CSEDSET(SED,SHEAR,IOPT)
     TMPSED  = 1.E-6*SED        ! *** CONVERT G/M^3 TO G/CM^3
     GG      = 1.E4*SHEAR       ! *** CONVERT FROM M^2/S^2 TO CM^2/S^2
     CG      = GG*TMPSED        ! *** G/CM/S^2 = G/CM^3 * CM^2/S^2
-    CG      = MAX(CG,7.51E-6)
+    CG      = max(CG,7.51E-6)
     BD2     = -0.4 - 0.25*LOG10(CG - 7.5E-6)
     CON     = 9.6E-4*(1.E-8)**BD2
     VAL     = CG**(-0.85-BD2)

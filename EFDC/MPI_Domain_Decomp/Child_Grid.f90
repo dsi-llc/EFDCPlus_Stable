@@ -72,7 +72,7 @@
     do j = 1, jc
       write(mpi_log_unit, '(I5)', ADVANCE = 'NO') JL2JG(j)
     enddo
-    call MPI_Barrier(comm_2d, ierr)
+    call MPI_Barrier(DSIcomm, ierr)
   endif
 
   End subroutine Child_Grid

@@ -109,7 +109,7 @@ SUBROUTINE CALTOX_KINETICS
         !$OMP DO PRIVATE(ND,LF,LL,L,K,COEFF,DEPTH) 
         do ND = 1,NDM  
           LF = 2+(ND-1)*LDM
-          LL = MIN(LF+LDM-1,LA)
+          LL = min(LF+LDM-1,LA)
           do L = LF,LL
             DEPTH = 0.0
             do K = KBT(L),KBOT,KINC
@@ -149,7 +149,7 @@ SUBROUTINE CALTOX_KINETICS
           !$OMP DO PRIVATE(ND,LF,LL,L,K,COEFF,DEPTH) 
           do ND = 1,NDM  
             LF = 2+(ND-1)*LDM
-            LL = MIN(LF+LDM-1,LA)
+            LL = min(LF+LDM-1,LA)
             do L = LF,LL
               DEPTH = 0.0
               do K = KBT(L),KBOT,KINC
@@ -166,7 +166,7 @@ SUBROUTINE CALTOX_KINETICS
           !$OMP DO PRIVATE(ND,LF,LL,LP,L,K,COEFF,DEPTH) 
           do ND = 1,NDM  
             LF = 2+(ND-1)*LDM
-            LL = MIN(LF+LDM-1,LA)
+            LL = min(LF+LDM-1,LA)
             do L = LF,LL
               DEPTH = 0.0
               do K = KBT(L),KBOT,KINC
@@ -202,7 +202,7 @@ SUBROUTINE CALTOX_KINETICS
       !$OMP DO PRIVATE(ND,LL,LF,L,K) 
       do ND = 1,NDM  
         LF = 2+(ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
         do L = LF,LL
           do K = KBOT,KBT(L),-KINC
             TOXB(L,K,NT) = TOXB(L,K,NT)*(1.0 - TOXTIME*CDECAYB(L,K))
@@ -227,7 +227,7 @@ SUBROUTINE CALTOX_KINETICS
              TOXS(NT).VOL.TCOEFF, TOXS(NT).VOL.MULT, TOX(L,KC,NT), TOXS(NT).VOL.KL_OPT, PFTWC)
                          
           TOX(L,KC,NT) = TOX(L,KC,NT) - VOLTERM*TOXTIME
-          TOX(L,KC,NT) = MAX(TOX(L,KC,NT), 0.0)
+          TOX(L,KC,NT) = max(TOX(L,KC,NT), 0.0)
           
         enddo
       enddo   ! *** END OF DOMAIN LOOP

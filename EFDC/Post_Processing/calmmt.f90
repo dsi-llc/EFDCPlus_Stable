@@ -248,8 +248,8 @@
   ! *** SOURCE SINK
   do NS = 1,NQSER
     do K = 1,KC
-      QSRTLPP(K,NS) = QSRTLPP(K,NS) + MAX(QSERT(K,NS),0.)*DELT
-      QSRTLPN(K,NS) = QSRTLPN(K,NS) + MIN(QSERT(K,NS),0.)*DELT
+      QSRTLPP(K,NS) = QSRTLPP(K,NS) + max(QSERT(K,NS),0.)*DELT
+      QSRTLPN(K,NS) = QSRTLPN(K,NS) + min(QSERT(K,NS),0.)*DELT
     enddo
   enddo
   do NS = 1,NQCTL

@@ -129,7 +129,7 @@ SUBROUTINE VARINIT
   if( NCSER5 > 0 .or. NCSER6 > 0 .or. NCSER7 > 0 ) CALL SCNTXSED
   if( ISPROPWASH > 0 ) CALL SCANPROPWASH
 
-  call MPI_Barrier(comm_2d, ierr)
+  call MPI_Barrier(DSIcomm, ierr)
 
   ! *** These need to be broadcast to allocate the following variables correctly
   call Broadcast_Scalar(NDYM, master_id)
@@ -194,12 +194,12 @@ SUBROUTINE VARINIT
   endif
 
   KSM = KCM
-  NSTM   = MAX(3, NSCM  + NSNM  + NTXM)                      ! *** Maximum number of SedTox variables
-  NSTM2  = MAX(3, NSEDS2 + NSNM2 + NTXM)                      ! *** Maximum number of SedTox variables with fast settling classes
-  NSTVM  = MAX(7, 3 + NDYM + NSCM  + NSNM  + NTXM + NWQV)    ! *** Maximum number of constituents
-  NSTVM2 = MAX(7, 3 + NDYM + NSEDS2 + NSNM2 + NTXM + NWQV)    ! *** Maximum number of constituents with fast settling classes
+  NSTM   = max(3, NSCM  + NSNM  + NTXM)                      ! *** Maximum number of SedTox variables
+  NSTM2  = max(3, NSEDS2 + NSNM2 + NTXM)                      ! *** Maximum number of SedTox variables with fast settling classes
+  NSTVM  = max(7, 3 + NDYM + NSCM  + NSNM  + NTXM + NWQV)    ! *** Maximum number of constituents
+  NSTVM2 = max(7, 3 + NDYM + NSEDS2 + NSNM2 + NTXM + NWQV)    ! *** Maximum number of constituents with fast settling classes
 
-  NQINFLM = MAX(1,NQSIJ+NQCTL+NQWR+2*MDCHH)
+  NQINFLM = max(1,NQSIJ+NQCTL+NQWR+2*MDCHH)
 
   ! *** CALCULATE SHELL FISH LARVAE AND/OR WATER QUALITY CONSTITUENTS
   ISWQFLUX = 0

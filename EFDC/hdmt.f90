@@ -345,7 +345,7 @@
       VTMP = 0.5*STCUV(L)*( V1(LNC(L),KSZ(L)) + V1(L,KSZ(L)) )
       CURANG = ATAN2(VTMP,UTMP)
       TAUB2 = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
-      TAUB2 = MAX(TAUB2,0.)
+      TAUB2 = max(TAUB2,0.)
       QQ1(L,0)  = CTURB2*SQRT(TAUB2)
       QQ1(L,KC) = 0.5*CTURB2*SQRT( (TVAR3W(L)+TSX1(L))**2 + (TVAR3S(L)+TSY1(L))**2 )
     enddo
@@ -365,7 +365,7 @@
       VTMP = 0.5*STCUV(L)*(V(LN,KSZV(LNC(L)))     + V(L,KSZV(L)))
       CURANG = ATAN2(VTMP,UTMP)
       TAUB2 =  TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
-      TAUB2 =  MAX(TAUB2,0.)
+      TAUB2 =  max(TAUB2,0.)
       QQ(L,0)  = CTURB2*SQRT(TAUB2)
       QQ(L,KC) = 0.5*CTURB2*SQRT( (TVAR3W(L)+TSX(L))**2 + (TVAR3S(L)+TSY(L))**2 )
       QQSQR(L,0) = SQRT(QQ(L,0))
@@ -458,7 +458,7 @@
               M2 = M2 + 1
               if( M2 > TSFL(NS).NREC )then
                 M2 = TSFL(NS).NREC
-                EXIT
+                exit
               endif
             enddo
             if( M2 > TSFL(NS).NREC ) CYCLE
@@ -482,10 +482,10 @@
         ! *** Compute metrics for each cell to determine limiting cell and inflow
         PRISEMAX = 0.0
         do LL = 1,NQSIJ
-          NS = BCFL(LL).NQSERQ
+          NS = BCPS(LL).NQSERQ
           if( NS < 1 ) CYCLE
-          L = BCFL(LL).L
-          DTHMIN = MAX(DEPTHMIN(LL),0.5*HDRY)
+          L = BCPS(LL).L
+          DTHMIN = max(DEPTHMIN(LL),0.5*HDRY)
 
           PRISE = PEAKFLOW(NS)/DTHMIN/DXYP(L)         ! *** 1/s = (m3/s) / (m) / (m2)
           if( PRISE > PRISEMAX )then
@@ -498,8 +498,8 @@
         ! *** Adjust DT, if needed
         TDIFF = VARYTHRESH / PRISEMAX
         DTDYN = TDIFF
-        DTDYN = MIN(DTDYN,VARYMAX)
-        DTDYN = MAX(DTDYN,VARYMIN)
+        DTDYN = min(DTDYN,VARYMAX)
+        DTDYN = max(DTDYN,VARYMIN)
 
         if( ABS(DT-DTDYN) >= 0.999*DTINC )then
           ! *** Report the change in delta t
@@ -539,9 +539,9 @@
 
       ! *** Check minimum depths
       do LL = 1,NQSIJ
-        NS = BCFL(LL).NQSERQ
-        L = BCFL(LL).L
-        DEPTHMIN(LL) = MIN(DEPTHMIN(LL), HP(L))
+        NS = BCPS(LL).NQSERQ
+        L = BCPS(LL).L
+        DEPTHMIN(LL) = min(DEPTHMIN(LL), HP(L))
       enddo
 
     endif     ! *** End of variable delta T
@@ -607,8 +607,8 @@
                 L = LKWET(LP,K,ND)
                 AVTMP = AVMX*HPI(L)
                 ABTMP = ABMX*HPI(L)
-                AV(L,K) = MIN(AV(L,K),AVTMP)
-                AB(L,K) = MIN(AB(L,K),ABTMP)
+                AV(L,K) = min(AV(L,K),AVTMP)
+                AB(L,K) = min(AB(L,K),ABTMP)
               enddo
             enddo
           enddo
@@ -616,7 +616,7 @@
         endif
 
         ! ****************************************************************************
-        !call MPI_barrier(MPI_Comm_World, ierr)
+        !call MPI_barrier(DSIcomm, ierr)
         !call communicate_ghost_3d0(AV)
         ! ****************************************************************************
 
@@ -697,7 +697,7 @@
       !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,K,L)
       do ND = 1,NDM
         LF = 2 + (ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
 
         do K = 1,KC
           do L = LF,LL
@@ -737,7 +737,7 @@
       !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         do LP = LF,LL
           L = LWET(LP)
           TSX1(L) = TSX(L)
@@ -751,7 +751,7 @@
       !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         do LP = LF,LL
           L = LWET(LP)
           DU(L,KS) = DU(L,KS) - CDZUU(L,KS)*TSX(L)
@@ -775,7 +775,7 @@
       !$OMP                           PRIVATE(ND,LF,LL,L)
       do ND = 1,NDM
         LF = 2 + (ND-1)*LDM
-        LL = MIN(LF+LDM-1,LA)
+        LL = min(LF+LDM-1,LA)
 
         do L = LF,LL
           UHDYF(L,1) = UHDYE(L)
@@ -820,7 +820,7 @@
     endif
 
     ! *** Communicate variables with MPI calls before writing to files and looping computations
-    call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(DSIcomm, ierr)
     TTDS = DSTIME(0)
     call Communicate_CON1(0)
 
@@ -952,7 +952,7 @@
         !$OMP DO PRIVATE(ND,LF,LL,LP,L)
         do ND = 1,NDM
           LF = (ND-1)*LDMWET+1
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
           do LP = LF,LL
             L = LWET(LP)
             HWQ(L) = 0.25*(H2P(L) + 2.*H1P(L) + HP(L))
@@ -964,7 +964,7 @@
           !$OMP DO PRIVATE(ND,LF,LL,LP,L)
           do ND = 1,NDM
             LF = (ND-1)*LDMWET+1
-            LL = MIN(LF+LDMWET-1,LAWET)
+            LL = min(LF+LDMWET-1,LAWET)
             do LP = LF,LL
               L = LWET(LP)
               TVAR3E(L) = UHDY2E(LEC(L))
@@ -988,7 +988,7 @@
           !$OMP DO PRIVATE(ND,LF,LL,LP,L,HPPTMP)
           do ND = 1,NDM
             LF = (ND-1)*LDMWET+1
-            LL = MIN(LF+LDMWET-1,LAWET)
+            LL = min(LF+LDMWET-1,LAWET)
             do LP = LF,LL
               L = LWET(LP)
               HPPTMP = H2WQ(L) + DT2*DXYIP(L)*( QSUME(L) - (TVAR3E(L)-UHDY2E(L)+TVAR3N(L)-VHDX2E(L)) )
@@ -1030,7 +1030,7 @@
 
         ! *** Communicate variables with MPI calls before writing to files and looping computations
         if( ISTRAN(8) >= 1 )then
-          call MPI_barrier(MPI_Comm_World, ierr)
+          call MPI_barrier(DSIcomm, ierr)
           TTDS = DSTIME(0)
           call communicate_ghost_cells(WQV, NWQV)
           TMPITMP = DSTIME(0) - TTDS
@@ -1061,7 +1061,7 @@
     !$OMP             SHARED(SUB,SVB,UV,VU,HP,U,V,U1V,V1U,HVI,HUI,KSZ,KSZU,KSZV,HPW,HPE,HPN,HPS)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       do LP = LF,LL
         L = LWET(LP)
         LN = LNC(L)
@@ -1106,7 +1106,7 @@
         !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L)
         do ND = 1,NDM
           LF = (ND-1)*LDMWET+1
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
           do LP = LF,LL
             L = LWET(LP)
             TBX1(L)   = TBX(L)
@@ -1124,7 +1124,7 @@
         !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L)
         do ND = 1,NDM
           LF = (ND-1)*LDMWET+1
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
           do LP = LF,LL
             L = LWET(LP)
             TBX1(L)   = TBX(L)
@@ -1152,7 +1152,7 @@
     !$OMP             SHARED(HUI,HVI,TBX,STBX,VU,U,TBY,STBY,UV,V)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       if( ICALTB > 0 .and. ISAVCOMP == 0 )then
         do LP = LF,LL
@@ -1191,7 +1191,7 @@
       !$OMP             SHARED(CTURB2,RSSBCE,RSSBCW,RSSBCN,RSSBCS,QQ)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
 
         do LP = LF,LL
           L = LWET(LP)
@@ -1225,7 +1225,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,LP,L)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         do LP = LF,LL
           L = LWET(LP)
           TVAR3W(L) = TSX(LEC(L))
@@ -1239,7 +1239,7 @@
       !$OMP DO PRIVATE(ND,LF,LL,LP,L,TAUBC,TAUBC2,UTMP,VTMP,CURANG,TAUB2,TMP)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         do LP = LF,LL
           L = LWET(LP)
           if( LWVMASK(L) )then
@@ -1250,7 +1250,7 @@
             VTMP = 0.5*STCUV(L)*( V(LN ,KSZV(LN) ) + V(L,KSZV(L)) )
             CURANG = ATAN2(VTMP,UTMP)
             TAUB2 = TAUBC*TAUBC +      (QQWV3(L)*QQWV3(L)) + 2.     *TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
-            TAUB2 = MAX(TAUB2,0.)              ! *** CURRENT & WAVE
+            TAUB2 = max(TAUB2,0.)              ! *** CURRENT & WAVE
             QQ(L,0 )   = CTURB2*SQRT(TAUB2)  ! *** CELL CENTERED TURBULENT INTENSITY DUE TO CURRENTS & WAVES
 
             QQ(L,KC)   = 0.5*CTURB2*SQRT((TVAR3W(L)+TSX(L))**2 + (TVAR3S(L)+TSY(L))**2)
@@ -1288,7 +1288,7 @@
 
     ! ****************************************************************************
     ! *** MPI communication
-    call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(DSIcomm, ierr)
     TTDS = DSTIME(0)
     if( KC > 1 )then
       call Communicate_QQ
@@ -1305,7 +1305,7 @@
       do K = 0,KS
         if( K == 0 )then
           LF = (ND-1)*LDMWET+1
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
           do LP = LF,LL
             L = LWET(LP)
             QQSQR(L,0) = SQRT(QQ(L,0))  
@@ -1491,7 +1491,7 @@
 
           call EE_LINKAGE(-1)
 
-          EXIT                      ! *** Break out of time loop
+          exit                      ! *** Break out of time loop
         endif
       endif
     endif

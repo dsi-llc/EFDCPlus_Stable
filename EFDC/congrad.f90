@@ -60,7 +60,7 @@ SUBROUTINE CONGRAD
   !$OMP PARALLEL DO PRIVATE(ND,L,LF,LL,LN,LS,LE,LW) NUM_THREADS(NOPTIMAL(0))
   do ND = 1,NOPTIMAL(0)  
     LF = 2+(ND-1)*LDMOPT(0)  
-    LL = MIN(LF+LDMOPT(0)-1,LA)
+    LL = min(LF+LDMOPT(0)-1,LA)
     
     do L = LF,LL  
       LN = LNC(L)
@@ -99,7 +99,7 @@ SUBROUTINE CONGRAD
     !$OMP DO PRIVATE(ND,L,LF,LL,LN,LS,LE,LW)
     do ND = 1,NOPTIMAL(0)  
       LF = 2+(ND-1)*LDMOPT(0)  
-      LL = MIN(LF+LDMOPT(0)-1,LA)
+      LL = min(LF+LDMOPT(0)-1,LA)
 
       do L = LF,LL 
         LN = LNC(L)
@@ -124,7 +124,7 @@ SUBROUTINE CONGRAD
     !$OMP DO PRIVATE(ND,L,LF,LL)   
     do ND = 1,NOPTIMAL(0)
       LF = 2+(ND-1)*LDMOPT(0)  
-      LL = MIN(LF+LDMOPT(0)-1,LA)
+      LL = min(LF+LDMOPT(0)-1,LA)
       
       do L = LF,LL 
         P(L)      = P(L) + ALPHA*PCG(L)
@@ -158,7 +158,7 @@ SUBROUTINE CONGRAD
       !$OMP DO PRIVATE(ND,L,LF,LL)
       do ND = 1,NOPTIMAL(0)  
         LF = 2+(ND-1)*LDMOPT(0)  
-        LL = MIN(LF+LDMOPT(0)-1,LA)
+        LL = min(LF+LDMOPT(0)-1,LA)
         
         do L = LF,LL 
           PCG(L) = TMPCG(L)+BETA*PCG(L)  
@@ -169,7 +169,7 @@ SUBROUTINE CONGRAD
     !$OMP END PARALLEL
       
     if( RSQ <= RSQM )then
-      EXIT
+      exit
     endif
   
   enddo  ! *** END OF ITERATION LOOP

@@ -89,7 +89,7 @@ SUBROUTINE CALSED
     !$OMP             PRIVATE(SEDBTMP,CRNUM,GRADSED,SEDAVG,WESEMX,TAURTMP)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       
       !----------------------------------------------------------------------!
       ! ***  SET SETTLING VELOCITIES  ( ISEDVW == 0 SET ABOVE )
@@ -136,7 +136,7 @@ SUBROUTINE CALSED
               VTMP = 0.5*STCUV(L)*(V(LNC(L),K1) + V(L,K1))
               CURANG = ATAN2(VTMP,UTMP)
               TAUB2 = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
-              TAUB2 = MAX(TAUB2,0.)
+              TAUB2 = max(TAUB2,0.)
               STRESS = SQRT(TAUB2)
               SHEAR = 2.*HPKI(L,K1)*SQRT(STRESS)/VKC
               WSETA(L,K,NS) = CSEDSET(SEDT(L,K1),SHEAR,ISEDVW)
@@ -186,7 +186,7 @@ SUBROUTINE CALSED
               VTMP = 0.5*STCUV(L)*(V(LNC(L),K1) + V(L,K1))
               CURANG = ATAN2(VTMP,UTMP)
               TAUB2 = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
-              TAUB2 = MAX(TAUB2,0.)
+              TAUB2 = max(TAUB2,0.)
               STRESS = SQRT(TAUB2)
               WSETA(L,K,NS) = CSEDSET(SEDT(L,K1),STRESS,ISEDVW)
             else
@@ -268,7 +268,7 @@ SUBROUTINE CALSED
           SEDF(L,K,NS) = 0.
           WVEL = DTSED*HPKI(L,K)
           CLEFT = 1. + WSETA(L,K-1,NS)*WVEL
-          CRIGHT = MAX(SED(L,K,NS),0.)
+          CRIGHT = max(SED(L,K,NS),0.)
           SED(L,K,NS) = CRIGHT/CLEFT
           SEDF(L,K-1,NS) = -WSETA(L,K-1,NS)*SED(L,K,NS)
         enddo
@@ -279,7 +279,7 @@ SUBROUTINE CALSED
             L = LKWET(LP,K-1,ND)
             WVEL = DTSED*HPKI(L,K)
             CLEFT = 1. + WSETA(L,K-1,NS)*WVEL
-            CRIGHT = MAX(SED(L,K,NS),0.) - SEDF(L,K,NS)*WVEL
+            CRIGHT = max(SED(L,K,NS),0.) - SEDF(L,K,NS)*WVEL
             SED(L,K,NS) = CRIGHT/CLEFT
             SEDF(L,K-1,NS) = -WSETA(L,K-1,NS)*SED(L,K,NS)
           enddo
@@ -293,7 +293,7 @@ SUBROUTINE CALSED
               ! *** ADD SETTLING FROM THE LAYER ABOVE
               K = KSZ(L)
               WVEL = DTSED*HPKI(L,K)  
-              SED(L,K,NS) = MAX(SED(L,K,NS),0.) - SEDF(L,K,NS)*WVEL  
+              SED(L,K,NS) = max(SED(L,K,NS),0.) - SEDF(L,K,NS)*WVEL  
             endif
           enddo
         endif
@@ -328,7 +328,7 @@ SUBROUTINE CALSED
         if( TAUBSED(L) > TAURB(L,KBT(L)) )then
           ! *** MASS/BULK EROSION
           WESE = WRSPB(L,KBT(L))*VFRBED(L,KBT(L),NS)
-          WESE = MIN(WESE,WESEMX)
+          WESE = min(WESE,WESEMX)
         else
           TAUE = 0.
           if( TAUBSED(L) > TAURS(L,KBT(L)) )then
@@ -350,7 +350,7 @@ SUBROUTINE CALSED
             endif
 
             TAUE = (TAUBSED(L)-TMPSTR*TAURS(L,KBT(L)))/TAURTMP
-            TAUE = MAX(TAUE,0.0)
+            TAUE = max(TAUE,0.0)
 
             ! *** SET NON-COHESIVE HIDING FACTOR
             if( ISTRAN(7) >= 1 .and. COSEDHID(1) /= 0.0 )then
@@ -364,7 +364,7 @@ SUBROUTINE CALSED
               ! *** SITE SPECIFIC/SPACIALLY VARIABLE TAU EXPONENT FROM SSCOHSEDPMAP
               WESE = TMPSEDHID*WESE*( TAUE**TEXPS(L,KBT(L)) )
             endif
-            WESE = MIN(WESE,WESEMX)
+            WESE = min(WESE,WESEMX)
           else
             ! *** NO EROSION 
             WESE = 0.0
@@ -417,7 +417,7 @@ SUBROUTINE CALSED
         
         WVEL   = DTSED*HPKI(L,KSZ(L))
         CLEFT  = 1. + WSETMP*WVEL
-        CRIGHT = MAX(SED(L,KSZ(L),NS),0.) + (WESE-SEDF(L,KSZ(L),NS))*WVEL
+        CRIGHT = max(SED(L,KSZ(L),NS),0.) + (WESE-SEDF(L,KSZ(L),NS))*WVEL
         SED(L,KSZ(L),NS) = CRIGHT/CLEFT
         SEDF(L,0,NS)     = -WSETMP*SED(L,KSZ(L),NS) + WESE
         SEDBTMP          = SEDB(L,KBT(L),NS) - DTSED*SEDF(L,0,NS)
@@ -449,7 +449,7 @@ SUBROUTINE CALSED
             CRNUM = 1.+DTSED*WSETA(L,K,NS)*HPKI(L,K+1)
             GRADSED = (SED(L,K+1,NS)-SED(L,K,NS))/(DZC(L,K+1)+DZC(L,K))
             SEDAVG = 0.5*(SED(L,K+1,NS)+SED(L,K,NS)+1.E-16)
-            WSETA(L,K,NS) = MIN(-CRNUM*DZC(L,K+1)*WSETA(L,K,NS)*GRADSED/SEDAVG, 1.0)
+            WSETA(L,K,NS) = min(-CRNUM*DZC(L,K+1)*WSETA(L,K,NS)*GRADSED/SEDAVG, 1.0)
           enddo
         enddo
 
@@ -461,7 +461,7 @@ SUBROUTINE CALSED
         do K = 2,KC
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
-            TVAR1S(L,K) = MIN(WSETA(L,K-1,NS),0.)
+            TVAR1S(L,K) = min(WSETA(L,K-1,NS),0.)
           enddo
         enddo
 
@@ -480,8 +480,8 @@ SUBROUTINE CALSED
         ! *** TVAR1W = MAIN DIAGONAL
         do LP = LF,LL
           L = LWET(LP)  
-          TVAR1W(L,KSZ(L)) = DELTI*HPK(L,KSZ(L)) - MIN(WSETA(L,KSZ(L),NS),0.)
-          TVAR1W(L,KC)     = DELTI*HPK(L,KC)     + MAX(WSETA(L,KC-1,NS),0.)
+          TVAR1W(L,KSZ(L)) = DELTI*HPK(L,KSZ(L)) - min(WSETA(L,KSZ(L),NS),0.)
+          TVAR1W(L,KC)     = DELTI*HPK(L,KC)     + max(WSETA(L,KC-1,NS),0.)
         enddo
         do K = 2,KS
           do LP = 1,LLWET(K-1,ND)

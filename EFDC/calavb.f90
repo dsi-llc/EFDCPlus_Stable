@@ -148,8 +148,8 @@ SUBROUTINE CALAVB ()
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
             RIQ = -GP*HP(L)*DML(L,K)*DML(L,K)*DZIG(L,K)*(B(L,K+1)-B(L,K))/QQ(L,K)  
-            RIQ = MAX(RIQ,RIQMIN)  
-            RIQ = MIN(RIQ,RIQMAXX)
+            RIQ = max(RIQ,RIQMIN)  
+            RIQ = min(RIQ,RIQMAXX)
             SFAV = SFAV0*(1.+SFAV1*RIQ)/((1.+SFAV2*RIQ)*(1.+SFAV3*RIQ))
             SFAB = SFAB0/(1.+SFAB1*RIQ)
             AB(L,K) = SFAB*DML(L,K)*HP(L)*QQSQR(L,K) + AVBXY(L)
@@ -171,8 +171,8 @@ SUBROUTINE CALAVB ()
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
             RIQ = -GP*HP(L)*DML(L,K)*DML(L,K)*DZIG(L,K)*(B(L,K+1)-B(L,K))/QQ(L,K)  
-            RIQ = MAX(RIQ,RIQMIN)  
-            RIQ = MIN(RIQ,RIQMAXX)  
+            RIQ = max(RIQ,RIQMIN)  
+            RIQ = min(RIQ,RIQMAXX)  
             SFAV = SFAV0*(1.+SFAV1*RIQ)/((1.+SFAV2*RIQ)*(1.+SFAV3*RIQ))
             SFAB = SFAB0/(1.+SFAB1*RIQ)
             ABTMP = SFAB*DML(L,K)*HP(L)*QQSQR(L,K) + AVBXY(L)  
@@ -194,8 +194,8 @@ SUBROUTINE CALAVB ()
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
             RIQ = -GP*HP(L)*DML(L,K)*DML(L,K)*DZIG(L,K)*(B(L,K+1)-B(L,K))/QQ(L,K)  
-            RIQ = MAX(RIQ,RIQMIN)  
-            RIQ = MIN(RIQ,RIQMAXX)  
+            RIQ = max(RIQ,RIQMIN)  
+            RIQ = min(RIQ,RIQMAXX)  
             SFAV = SFAV0*(1.+SFAV1*RIQ)/((1.+SFAV2*RIQ)*(1.+SFAV3*RIQ))
             SFAB = SFAB0/(1.+SFAB1*RIQ)
             ABTMP = SFAB*DML(L,K)*HP(L)*QQSQR(L,K) + AVBXY(L)  
@@ -230,10 +230,10 @@ SUBROUTINE CALAVB ()
     do K = 1,KS  
       do L = 2,LA  
         if( LKSZ(L,K) ) CYCLE 
-        AVMAX = MAX(AVMAX,AV(L,K))  
-        ABMAX = MAX(ABMAX,AB(L,K))  
-        AVMIN = MIN(AVMIN,AV(L,K))  
-        ABMIN = MIN(ABMIN,AB(L,K))  
+        AVMAX = max(AVMAX,AV(L,K))  
+        ABMAX = max(ABMAX,AB(L,K))  
+        AVMIN = min(AVMIN,AV(L,K))  
+        ABMIN = min(ABMIN,AB(L,K))  
       enddo
     enddo
     !$OMP END SINGLE
@@ -245,7 +245,7 @@ SUBROUTINE CALAVB ()
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,K) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
     
       do LP = LF,LL  
         L = LWET(LP)  
@@ -272,8 +272,8 @@ SUBROUTINE CALAVB ()
           L = LKWET(LP,K,ND)  
           AVTMP = AVMX*HPI(L)  
           ABTMP = ABMX*HPI(L)  
-          AV(L,K) = MIN(AV(L,K),AVTMP)  
-          AB(L,K) = MIN(AB(L,K),ABTMP)  
+          AV(L,K) = min(AV(L,K),AVTMP)  
+          AB(L,K) = min(AB(L,K),ABTMP)  
         enddo  
       enddo  
     enddo
@@ -339,7 +339,7 @@ SUBROUTINE CALAVB ()
       !$OMP DO PRIVATE(ND,LF,LL,K,LP,L)
       do ND = 1,NDM  
         LF = (ND-1)*LDMWET+1  
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
     
         do LP = 1,LLWET(KS,ND)
           L = LKWET(LP,KS,ND) 
@@ -366,7 +366,7 @@ SUBROUTINE CALAVB ()
       !$OMP DO PRIVATE(ND,LF,LL,K,LP,L)
       do ND = 1,NDM  
         LF = (ND-1)*LDMWET+1  
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         
         do K = 2,KS
           do LP = 1,LLWET(K-1,ND)

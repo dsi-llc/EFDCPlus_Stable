@@ -65,7 +65,7 @@ FUNCTION CSNDEQC(IOPT,SNDDIA,SSG,WS,TAUR,TAUB,D50,SIGPHI,SNDDMX,VDR,ISNDAL)
     ! *** OVER A WAVY SURFACE, J. GEOPHYSICAL RESEARCH, 82, 1735-1746.  
 
     VAL = 2.4E-3*( (TAUB/TAUR)-1. )  
-    VAL = MAX(VAL,0.)  
+    VAL = max(VAL,0.)  
     TMP = 0.65*VAL/(1.+VAL)  
     CSNDEQC = 1.E6*SSG*TMP  
 
@@ -81,7 +81,7 @@ FUNCTION CSNDEQC(IOPT,SNDDIA,SSG,WS,TAUR,TAUB,D50,SIGPHI,SNDDMX,VDR,ISNDAL)
       if( REY  > 10. ) TAURS = 0.16*WS*WS                      ! *** Corrected 2021-06 from 0.016.  0.16 = 0.4^2 from VanRijn 1984
       REY3 = REY**0.3  
       VAL = (TAUB/TAURS)-1.  
-      VAL = MAX(VAL,0.)  
+      VAL = max(VAL,0.)  
       VAL = VAL**1.5  
       RATIO = SNDDIA/(3.*SNDDMX)  
       TMP = 0.015*RATIO*VAL/REY3  

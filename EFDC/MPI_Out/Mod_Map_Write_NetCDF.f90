@@ -48,6 +48,10 @@
     real(rkd), Target, Allocatable, Dimension(:,:)   :: Gl_Reverse_Temp_2D_TSED
     real(rkd), Target, Allocatable, Dimension(:,:)   :: Gl_Reverse_Temp_2D_BULKDENS
     real(rkd), Target, Allocatable, Dimension(:,:,:) :: Gl_Reverse_Temp_3D
+    real,target,allocatable,dimension(:) :: WVHEIGHT_temp_gl
+    real,target,allocatable,dimension(:) :: PERIOD_temp_gl
+    real,target,allocatable,dimension(:) :: WVDIR_temp_gl
+    real,target,allocatable,dimension(:) :: WVDISSIPA_temp_gl
 
 
     integer,target,allocatable,dimension(:) :: LEC_temp_gl
@@ -66,6 +70,10 @@
     allocate(Gl_Reverse_Temp_2D_TSED(LCM_Global,KB))
     allocate(Gl_Reverse_Temp_2D_BULKDENS(LCM_Global,KB))
     allocate(GL_Reverse_Temp_3D(LCM_Global,KB,NSCM))
+    allocate(WVHEIGHT_temp_gl(LCM))
+    allocate(PERIOD_temp_gl(LCM))
+    allocate(WVDIR_temp_gl(LCM))
+    allocate(WVDISSIPA_temp_gl(LCM))
     
     LEC_temp_gl = 0
     LNC_temp_gl = 0
@@ -78,7 +86,11 @@
     Gl_Reverse_Temp_2D_TSED     = 0.0
     Gl_Reverse_Temp_2D_BULKDENS = 0.0
     Gl_Reverse_Temp_3D          = 0.0
-
+    WVHEIGHT_temp_gl = 0.
+    PERIOD_temp_gl   = 0.
+    WVDIR_temp_gl    = 0.
+    WVDISSIPA_temp_gl = 0.
+    
     j = 0
 
     j = j + 1
@@ -173,9 +185,49 @@
     !---------------------------------------------------------
     ! *** NC_WRITE_WAVE(NC_ID, NTI)
     if( IS_NC_OUT(3) == 1 )then
+      if( ISWAVE >= 3 )then
         j = j + 1
-        call Assign_Loc_Glob_For_Write(j, size(WQV,1), size(WQV,2), size(WQV,3), WQV, &
-            size(WQV_Global,1), size(WQV_Global,2), size(WQV_Global,3), WQV_Global)
+        do l = 1, LA
+          WVHEIGHT_temp_gl(l) = WV(l).HEIGHT
+        enddo
+        
+        call Assign_Loc_Glob_For_Write(j, size(WVHEIGHT_temp_gl,1), WVHEIGHT_temp_gl, size(WV_HEIGHT_Global,1), WV_HEIGHT_Global)
+        
+        j = j + 1
+        do l = 1, LA
+          PERIOD_temp_gl(l) = WV(l).PERIOD
+        enddo
+        call Assign_Loc_Glob_For_Write(j, size(PERIOD_temp_gl,1), PERIOD_temp_gl, size(WV_PERIOD_Global,1), WV_PERIOD_Global)
+        
+        j = j + 1
+        do l = 1, LA
+          WVDIR_temp_gl(l) = WV(l).DIR
+        enddo
+        call Assign_Loc_Glob_For_Write(j, size(WVDIR_temp_gl,1), WVDIR_temp_gl, size(WV_DIR_Global, 1), WV_DIR_Global)
+      
+      endif
+      
+      if( ISWAVE == 4 )then
+        j = j + 1
+        do l = 1, LA
+          WVDISSIPA_temp_gl(l) = WV(l).DISSIPA(KC)
+        enddo
+        call Assign_Loc_Glob_For_Write(j, size(WVDISSIPA_temp_gl,1), WVDISSIPA_temp_gl, &
+          size(WV_DISSIPA_Global,1), WV_DISSIPA_Global)
+        
+        j = j + 1
+        call Assign_Loc_Glob_For_Write(j, size(WVHUU,1), size(WVHUU,2), WVHUU, &
+          size(WVHUU_Global,1), size(WVHUU_Global,2), WVHUU_Global)
+        
+        j = j + 1
+        call Assign_Loc_Glob_For_Write(j, size(WVHVV,1), size(WVHVV,2), WVHVV, &
+          size(WVHVV_Global,1), size(WVHVV_Global,2), WVHVV_Global)
+        
+        j = j + 1
+        call Assign_Loc_Glob_For_Write(j, size(WVHUV,1), size(WVHUV,2), WVHUV, &
+          size(WVHUV_Global,1), size(WVHUV_Global,2), WVHUV_Global)
+        
+      endif
     endif
 
     !---------------------------------------------------------
@@ -192,6 +244,11 @@
         j = j + 1
         call Assign_Loc_Glob_For_Write(j, size(TEM,1), size(TEM,2), TEM, &
             size(TEM_Global,1), size(TEM_Global,2), TEM_Global)
+    endif
+        
+    if( IS_NC_OUT(14) == 1 )then
+        j = j + 1
+        call Assign_Loc_Glob_For_Write(j, size(TEMB,1), TEMB, size(TEMB_Global), TEMB_Global)
     endif
 
     !---------------------------------------------------------

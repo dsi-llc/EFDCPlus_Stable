@@ -42,7 +42,7 @@ SUBROUTINE CALBED
   if( ISTRAN(6) >= 1 .or. ISTRAN(7) >= 1 )then  
     HBEDMIN = 1.E-4  
     if( ISTRAN(7) >= 1 )then  
-      HBEDMIN = MAX(HBEDMIN,SNDDMX)  
+      HBEDMIN = max(HBEDMIN,SNDDMX)  
     endif  
 
     ! *********************************************************************
@@ -56,7 +56,7 @@ SUBROUTINE CALBED
       !$OMP             PRIVATE(HBEDTMP,TMPVALO,TMPVALN)
       do ND = 1,NDM  
         LF = (ND-1)*LDMSED + 1  
-        LL = MIN(LF+LDMSED-1,LASED)
+        LL = min(LF+LDMSED-1,LASED)
 
         do LP = LF,LL  
           L = LSED(LP)
@@ -89,7 +89,7 @@ SUBROUTINE CALBED
       !$OMP             PRIVATE(TMPEXP,TMPTOP,TMPBOT,TMPVAL)
       do ND = 1,NDM  
         LF = (ND-1)*LDMSED + 1  
-        LL = MIN(LF+LDMSED-1,LASED)
+        LL = min(LF+LDMSED-1,LASED)
 
       ! ***  IF SEDVRDT > 0.0 CONSOLIDATE TO SEDVRM (THE MINIMUM VOID RATIO)  
         if( SEDVRDT > 0.0 )then  
@@ -149,7 +149,7 @@ SUBROUTINE CALBED
           TMPEXP = 1.0  
           do LP = LF,LL  
             L = LSED(LP)
-            KK = MAX(1,KBT(L)-2)
+            KK = max(1,KBT(L)-2)
             do K = KK,KBT(L)
               VDRBED1(L,K) = VDRBED(L,K)                        ! *** void ratio has been updated based on sediment mass flux in SSEDTOX
               HBED1(L,K) = HBED(L,K)  
@@ -196,7 +196,7 @@ SUBROUTINE CALBED
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,K,L,NS) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED + 1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       if( ISTRAN(6) >= 1 )then
         do K = 1,KB

@@ -59,11 +59,11 @@ Subroutine Initialize_MPI
 
   !  *** Define MPI real
 
-!***Required first call to start the environment
+  !***Required first call to start the environment
     !Call MPI_INIT(ierr)
     
-!***Determine the rank of the calling process in the communicator
-    call MPI_COMM_RANK(MPI_Comm_World, process_id, ierr)
+  !***Determine the rank of the calling process in the communicator
+  call MPI_COMM_RANK(MPI_Comm_World, process_id, ierr)
 
   !***Setup File for writing info out from each process
   call Setup_MPI_Debug_File

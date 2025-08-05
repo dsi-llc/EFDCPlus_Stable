@@ -42,7 +42,7 @@ SUBROUTINE SEDZLJ_MAIN
   !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND, LF, LL, LP, L)
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
     do LP = LF,LL
       L = LSED(LP)
       HPCM(L) = 100.0*HP(L)
@@ -99,7 +99,7 @@ SUBROUTINE SEDZLJ_MAIN
             L = LKWET(LP,KC,ND) 
             WVEL = DTSEDJ*HPKI(L,KC)
             CLEFT = 1.0 + WSETA(L,KC-1,NS)*WVEL
-            CRIGHT = MAX(SED(L,KC,NS),0.0)
+            CRIGHT = max(SED(L,KC,NS),0.0)
             SED(L,KC,NS) = CRIGHT/CLEFT
             SEDF(L,KC-1,NS) = -WSETA(L,KC-1,NS)*SED(L,KC,NS)
           enddo
@@ -110,7 +110,7 @@ SUBROUTINE SEDZLJ_MAIN
                 L = LKWET(LP,K-1,ND) 
                 WVEL = DTSEDJ*HPKI(L,K)
                 CLEFT = 1.0+WSETA(L,K-1,NS)*WVEL
-                CRIGHT = MAX(SED(L,K,NS),0.0)-SEDF(L,K,NS)*WVEL
+                CRIGHT = max(SED(L,K,NS),0.0)-SEDF(L,K,NS)*WVEL
                 SED(L,K,NS) = CRIGHT/CLEFT
                 SEDF(L,K-1,NS) = -WSETA(L,K-1,NS)*SED(L,K,NS)
               enddo
@@ -127,7 +127,7 @@ SUBROUTINE SEDZLJ_MAIN
               K = KSZ(L)
               WVEL = DTSEDJ*HPKI(L,K)  
               do NS = 1,NSEDS2
-                SED(L,K,NS) = MAX(SED(L,K,NS),0.) - SEDF(L,K,NS)*WVEL 
+                SED(L,K,NS) = max(SED(L,K,NS),0.) - SEDF(L,K,NS)*WVEL 
               enddo
             endif
           enddo
@@ -142,7 +142,7 @@ SUBROUTINE SEDZLJ_MAIN
     !$OMP DO PRIVATE(ND,LF,LL,LP,L)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
       do LP = LF,LL
         L = LSED(LP)
         ! *** Calculate total flux from bed and determine if there is enough sediment 
@@ -176,11 +176,11 @@ SUBROUTINE SEDZLJ_MAIN
         ! *** UPDATE PERSED WITH MACHINE PRECISION A CONSIDERATION: UPSTREAM
         SMASS = 0.0
         do NS = 1,NSEDS
-          SMASS = SMASS + MAX(PERSED(NS,1,LUTMP)*SMASSU - BLFLUXU(NS),0.0)
+          SMASS = SMASS + max(PERSED(NS,1,LUTMP)*SMASSU - BLFLUXU(NS),0.0)
         enddo
         if( SMASS > 0.0 )then 
           do NS = 1,NSEDS
-            PERSED(NS,1,LUTMP) = MAX(PERSED(NS,1,LUTMP)*SMASSU - BLFLUXU(NS),0.0)/SMASS
+            PERSED(NS,1,LUTMP) = max(PERSED(NS,1,LUTMP)*SMASSU - BLFLUXU(NS),0.0)/SMASS
           enddo
           TSED(1,LUTMP) = SMASS
         else
@@ -206,11 +206,11 @@ SUBROUTINE SEDZLJ_MAIN
           ! *** UPDATE PERSED WITH MACHINE PRECISION A CONSIDERATION: DOWNSTREAM
           SMASS = 0.0
           do NS = 1,NSEDS
-            SMASS = SMASS + MAX(PERSED(NS,1,LDTMP)*SMASSD + BLFLUXD(NS),0.0)
+            SMASS = SMASS + max(PERSED(NS,1,LDTMP)*SMASSD + BLFLUXD(NS),0.0)
           enddo
           if( SMASS > 0.0 )then 
             do NS = 1,NSEDS
-              PERSED(NS,1,LDTMP) = MAX(PERSED(NS,1,LDTMP)*SMASSD + BLFLUXD(NS),0.0)/SMASS
+              PERSED(NS,1,LDTMP) = max(PERSED(NS,1,LDTMP)*SMASSD + BLFLUXD(NS),0.0)/SMASS
             enddo
             TSED(1,LDTMP) = SMASS
           else
@@ -235,7 +235,7 @@ SUBROUTINE SEDZLJ_MAIN
       !$OMP DO PRIVATE(ND,LF,LL,NS,K,LP,L,CRNUM,GRADSED,SEDAVG)
       do ND = 1,NDM  
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
       
         do NS = 1,NSEDS2
           ! ***  ANTI-DIFFUSION OF SEDIMENT FOR KC > 1
@@ -257,7 +257,7 @@ SUBROUTINE SEDZLJ_MAIN
           do K = 2,KC
             do LP = 1,LLWET(K,ND)
               L = LKWET(LP,K,ND)  
-              TVAR1S(L,K) = MIN(WSETA(L,K-1,NS),0.)
+              TVAR1S(L,K) = min(WSETA(L,K-1,NS),0.)
             enddo
           enddo
 
@@ -276,8 +276,8 @@ SUBROUTINE SEDZLJ_MAIN
           ! *** TVAR1W = MAIN DIAGONAL
           do LP = LF,LL
             L = LWET(LP)  
-            TVAR1W(L,KSZ(L)) = DELTI*HPK(L,KSZ(L)) - MIN(WSETA(L,1,NS),0.)
-            TVAR1W(L,KC)     = DELTI*HPK(L,KC)     + MAX(WSETA(L,KC-1,NS),0.)
+            TVAR1W(L,KSZ(L)) = DELTI*HPK(L,KSZ(L)) - min(WSETA(L,1,NS),0.)
+            TVAR1W(L,KC)     = DELTI*HPK(L,KC)     + max(WSETA(L,KC-1,NS),0.)
           enddo
           do K = 2,KS
             do LP = 1,LLWET(K-1,ND)

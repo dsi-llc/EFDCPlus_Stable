@@ -313,7 +313,7 @@ SUBROUTINE ALGAECONTROL
       Do L = 2,LA
         DIAMETER_MAC(L,NAL) = ALGAES(NAL).MINDIAMETER
         BDLTMP = DIAMETER_MAC(L,NAL)*DIAMETER_MAC(L,NAL)*ALGAES(NAL).STEMDENSITY  !Normalized area of MACROALGAE in this cell (-)   
-        MVEGZ(L,NAL) = MAX(1.E-18,(1. - ALGAES(NAL).ALPMAC*BDLTMP))               !Blockage ratio in Z (-)
+        MVEGZ(L,NAL) = max(1.E-18,(1. - ALGAES(NAL).ALPMAC*BDLTMP))               !Blockage ratio in Z (-)
         MVEGZ(1,NAL) = 1.
         MVEGZ(LC,NAL)= 1.
         MACAD(L,NAL) = ALGAES(NAL).STEMDENSITY*DIAMETER_MAC(L,NAL)  !a*d (m) used to calculate drag, see papers written on this James and O'Donncha EFM 2019 BDLPSQ
@@ -556,7 +556,7 @@ SUBROUTINE ALGAE_SETTLING(NAL, L)
   elseif( ALGAES(NAL).ISVARSETTLE == 3 )then
     ! ***Variable settling using cell density (Visser, etal 1997)
     do K = KSZ(L), KC  
-      !RADLAYER = MIN(0.5*(RADTOP(L,K) + RADBOT(L,K)),350.4)            ! *** Solar radiation (W/m2) at layer midpoint with a max of 1600 umol/m2/s 
+      !RADLAYER = min(0.5*(RADTOP(L,K) + RADBOT(L,K)),350.4)            ! *** Solar radiation (W/m2) at layer midpoint with a max of 1600 umol/m2/s 
       RADLAYER = 0.5*(RADTOP(L,K) + RADBOT(L,K))                        ! *** Solar radiation (W/m2) at layer midpoint
       if( RADLAYER >= ALGAES(NAL).LIGHTMIN )then
         DENDELTA = (ALGAES(NAL).C1*RADLAYER*EXP(-RADLAYER/ALGAES(NAL).LIGHTSAT) + ALGAES(NAL).C2)*DTWQ*86400.
@@ -566,8 +566,8 @@ SUBROUTINE ALGAE_SETTLING(NAL, L)
       endif
       
       CELLDENS(L,K,NAL) = CELLDENS(L,K,NAL) + DENDELTA
-      CELLDENS(L,K,NAL) = MIN(CELLDENS(L,K,NAL), ALGAES(NAL).DENSITYMAX)
-      CELLDENS(L,K,NAL) = MAX(CELLDENS(L,K,NAL), ALGAES(NAL).DENSITYMIN)
+      CELLDENS(L,K,NAL) = min(CELLDENS(L,K,NAL), ALGAES(NAL).DENSITYMAX)
+      CELLDENS(L,K,NAL) = max(CELLDENS(L,K,NAL), ALGAES(NAL).DENSITYMIN)
       
       ! *** Compute settling velocity using Stokes
       VISCW = ViscosityW(TEM(L,KC))                                    ! *** Dynamic viscosity of water (kg/m/s)
@@ -624,7 +624,7 @@ SUBROUTINE Macro_Veg(NAL)
     do K = KSZ(L),KC
       if( HP(L)*Z(L,K-1) >= (HP(L)-ALGAES(NAL).BASEDEPTH+HEIGHT_MAC(L,NAL)) )then
         LAYERTOP(NAL,L) = K                                                    ! *** Top active layer
-        EXIT                                                                   ! *** Jump out of the layer loop
+        exit                                                                   ! *** Jump out of the layer loop
       endif
     enddo
     
@@ -635,7 +635,7 @@ SUBROUTINE Macro_Veg(NAL)
     DIAMETER_MAC(L,NAL) = ALGAES(NAL).MINDIAMETER
     
     KTOP = 0
-    K2 = MIN(LAYERTOP(NAL,L)+1,KC)
+    K2 = min(LAYERTOP(NAL,L)+1,KC)
     ! *** Loop over layers to redistribute vegetation mass
     do K = LAYERBOT(NAL,L), K2
       if( WQV(L,K,19+NAL) < 1E-8 ) CYCLE
@@ -670,9 +670,9 @@ SUBROUTINE Macro_Veg(NAL)
           !  !IF( DIAMETER_MAC(L,NAL) < ALGAES(NAL).MINDIAMETER )then
           !  !  PRINT '(I6,2I5,F8.3,4F10.3)', NITER, NAL, L, HP(L), ALGAES(NAL).THRESHOLD, LAYER_THRESHOLD, DIAMETER_MAC(L,NAL), ALGAES(NAL).MINDIAMETER  ! DELME
           !  !ENDIF
-          !  DIAMETER_MAC(L,NAL) = MAX(DIAMETER_MAC(L,NAL),ALGAES(NAL).MINDIAMETER)
+          !  DIAMETER_MAC(L,NAL) = max(DIAMETER_MAC(L,NAL),ALGAES(NAL).MINDIAMETER)
           !ENDDO
-          !EXIT
+          !exit
         !ENDIF
       endif
       KTOP = K
@@ -687,24 +687,24 @@ SUBROUTINE Macro_Veg(NAL)
           if( WQV(L,K-1,19+NAL) < ALGAES(NAL).THRESHOLD )then
             ! *** Move mass to layer below
             TVAL1 = ALGAES(NAL).THRESHOLD - WQV(L,K-1,19+NAL)
-            TVAL1 = MAX(TVAL1,0.0)
+            TVAL1 = max(TVAL1,0.0)
             TVAL1 = TVAL1*HPK(L,K-1)                                           ! *** Convert to mass of macrophyte carbon to move/grow from layer
             TVAL1 = TVAL1*HPKI(L,K)                                            ! *** Convert back to concentration based on layer thickness above.
             WQV(L,K-1,19+NAL) = ALGAES(NAL).THRESHOLD
             WQV(L,K,19+NAL)   = WQV(L,K,19+NAL) - TVAL1
             if( WQV(L,K,19+NAL) < 1E-8 )then
               WQV(L,K,19+NAL) = 0.0
-              KTOP = MAX(KTOP-1, LAYERBOT(NAL,L))
+              KTOP = max(KTOP-1, LAYERBOT(NAL,L))
             endif
             
             WQVO(L,K-1,19+NAL) = ALGAES(NAL).THRESHOLD
             WQVO(L,K,19+NAL)   = WQVO(L,K,19+NAL) - TVAL1
-            WQVO(L,K,19+NAL)   = MAX(WQVO(L,K,19+NAL), 0.0)
+            WQVO(L,K,19+NAL)   = max(WQVO(L,K,19+NAL), 0.0)
           endif
         endif
         
         ! *** Complete or partial penetration of current layer
-        TVALHEI = MIN(WQV(L,K,19+NAL)/ALGAES(NAL).THRESHOLD, 1.0)              ! *** Height of macrophyte in current layer   DELME - /ALGAES(NAL).STEMDENSITY HERE AND EVERYWHERE ?
+        TVALHEI = min(WQV(L,K,19+NAL)/ALGAES(NAL).THRESHOLD, 1.0)              ! *** Height of macrophyte in current layer   DELME - /ALGAES(NAL).STEMDENSITY HERE AND EVERYWHERE ?
         HEIGHT_MAC(L,NAL) = HEIGHT_MAC(L,NAL) + TVALHEI*HPK(L,K)               ! *** Total height of macrophyte
         LayerRatio_MAC(L,K,NAL) = TVALHEI                                      ! *** Fraction of layer containing vegetation  
         if( LayerRatio_MAC(L,K,NAL) < 0.01 ) LayerRatio_MAC(L,K,NAL) = 0.0     ! *** Ignore very small heights for hydrodynamics
@@ -719,7 +719,7 @@ SUBROUTINE Macro_Veg(NAL)
       !LAYER_THRESHOLD = ALGAES(NAL).THRESHOLD/MAX(HPK(L,K), 0.1)               ! *** Handle thin layers (g C/m3)
       
       ! *** Partial penetration of current layer
-      TVALHEI = MIN(WQV(L,K,19+NAL)/ALGAES(NAL).THRESHOLD, 1.0)                ! *** Height of macrophyte in current layer   DELME - /ALGAES(NAL).STEMDENSITY HERE AND EVERYWHERE ?
+      TVALHEI = min(WQV(L,K,19+NAL)/ALGAES(NAL).THRESHOLD, 1.0)                ! *** Height of macrophyte in current layer   DELME - /ALGAES(NAL).STEMDENSITY HERE AND EVERYWHERE ?
       HEIGHT_MAC(L,NAL) = HEIGHT_MAC(L,NAL) + TVALHEI*HPK(L,K)                 ! *** Total height of macrophyte
       LayerRatio_MAC(L,K,NAL) = TVALHEI                                        ! *** Fraction of layer containing vegetation  
       if( LayerRatio_MAC(L,K,NAL) < 0.01 ) LayerRatio_MAC(L,K,NAL) = 0.0       ! *** Ignore very small heights for hydrodynamics

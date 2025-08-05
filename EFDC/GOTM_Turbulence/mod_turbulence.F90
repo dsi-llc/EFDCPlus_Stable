@@ -572,7 +572,6 @@
 !EOP
 !-----------------------------------------------------------------------
 !BOC
-#ifdef USE_YAML      
    LEVEL1 'init_turbulence_yaml'
 
    call branch%get(turb_method, 'turb_method', 'turbulence closure', &
@@ -741,8 +740,8 @@
    call twig%get(nuhiw, 'nuh', 'background diffusivity for internal wave breaking', 'm^2/s', &
                    default = 1.e-5_rk)
    LEVEL2 'done.'
-#endif      
    return
+
  end subroutine init_turbulence_yaml
 !EOC
  Subroutine init_turbulence_DSI(nlev)

@@ -187,10 +187,10 @@ SUBROUTINE WAVESXY
   !$OMP DO PRIVATE(ND,L,LF,LL,WDEP1,WPRD,RRLS,WK,WE,WG,WN,SXXTMP,SXYTMP,SYYTMP)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     
     do L = LF,LL
-      WV(L).HEIGHT = MIN(0.75*HP(L),WV(L).HEISIG)            ! *** INCLUDING BREAKING WAVE
+      WV(L).HEIGHT = min(0.75*HP(L),WV(L).HEISIG)            ! *** INCLUDING BREAKING WAVE
       if( WV(L).HEIGHT >= WHMI .and. HP(L) > HDRYWAV )then
         WDEP1 = HP(L)
         WPRD  = 2.*PI/WV(L).FREQ
@@ -198,8 +198,8 @@ SUBROUTINE WAVESXY
           call BISEC(DISRELATION,WLMIN,WLMAX,EPS,WPRD,WDEP1,0._8,0._8,RRLS)
           WV(L).LENGTH = RRLS
         endif
-        WV(L).K   = MAX( 2.*PI/WV(L).LENGTH, 0.01 ) 
-        WV(L).KHP = MIN(WV(L).K*HP(L),SHLIM)
+        WV(L).K   = max( 2.*PI/WV(L).LENGTH, 0.01 ) 
+        WV(L).KHP = min(WV(L).K*HP(L),SHLIM)
         WK = 2.0*WV(L).KHP                             ! *** 4*PI/WV(L).LENGTH*HP(L) = 2KH
         WE = 9.81*1000.*WV(L).HEIGHT**2 /16.           ! *** TOTAL WAVE ENERGY : KG/S2  
         WVENEP(L) = WE/1000.                           ! *** WAVE ENERGY/RHO: M3/S2
@@ -225,7 +225,7 @@ SUBROUTINE WAVESXY
   !$OMP    PRIVATE(SINHTOP,SINHBOT,COSHTOP,COSHBOT,TMPVAL3,TMPP1,TMP3,TMPP2)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do L = LF,LL 
       if( WV(L).HEIGHT >= WHMI .and. HP(L) > HDRYWAV )then
         RKHM1 = WV(L).KHP
@@ -280,14 +280,14 @@ SUBROUTINE WAVESXY
   !$OMP    PRIVATE(TMPVAL3,TAUTMP,CORZBR,CDRGTMP)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     
     do L = LF,LL
       ! *** SET ZBRE AS GRAIN/SKIN ROUGHNESS (M)
       if( ISTRAN(7) > 0 )then
         ! *** BASE ON NIKURADSE ROUGHNESS (APPROXIMATE 2.5*D50)
         !ZBRE(L) = SEDDIA50(L,KBT(L)) !*2.5/30.
-        ZBRE(L) = MAX(SEDDIA50(L,KBT(L)),1E-6)*2.5
+        ZBRE(L) = max(SEDDIA50(L,KBT(L)),1E-6)*2.5
       else
         ZBRE(L) = KSW
       endif
@@ -313,9 +313,9 @@ SUBROUTINE WAVESXY
           CDRGTMP = (30.*ZBRE(L)/AEXTMP)**0.2
           CDRGTMP = 5.57*CDRGTMP-6.13
           CDRGTMP = EXP(CDRGTMP)
-          CDRGTMP = MIN(CDRGTMP,0.22)
+          CDRGTMP = min(CDRGTMP,0.22)
           TMPVAL3 = 0.5*CDRGTMP*UWVSQ(L)
-          QQWV2(L) = MIN(CTURB2*TMPVAL3,QQMAX)
+          QQWV2(L) = min(CTURB2*TMPVAL3,QQMAX)
         else
           QQWV2(L) = QQLMIN
         endif
@@ -332,10 +332,10 @@ SUBROUTINE WAVESXY
   !$OMP DO PRIVATE(ND,L,LF,LL)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do L = LF,LL
-      if( WV(L).HEIGHT >= WHMI ) WVKHU(L)= MIN(HMUW(L)*WV(L).K,SHLIM)     !VALKH(HFFDG)
-      if( WV(L).HEIGHT >= WHMI ) WVKHV(L)= MIN(HMVW(L)*WV(L).K,SHLIM)     !VALKH(HFFDG)
+      if( WV(L).HEIGHT >= WHMI ) WVKHU(L)= min(HMUW(L)*WV(L).K,SHLIM)     !VALKH(HFFDG)
+      if( WV(L).HEIGHT >= WHMI ) WVKHV(L)= min(HMVW(L)*WV(L).K,SHLIM)     !VALKH(HFFDG)
     enddo
   enddo
   !$OMP END DO
@@ -343,15 +343,15 @@ SUBROUTINE WAVESXY
   !$OMP DO PRIVATE(ND,L,LF,LL,LS,TMPVAL3,WVWHAUT,WVWHAVT)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do L = LF,LL
       LS = LSC(L)
       TMPVAL3   = 0.5*WV(L).FREQ*WV(L).FREQ     !WVFRQ*WVFRQ
-      WVTMP1(L) = MAX(SINH(WVKHU(L)),1D-6)
+      WVTMP1(L) = max(SINH(WVKHU(L)),1D-6)
       WVWHAUT   = (WV(L).HEIGHT + SUB(L)*WV(LWC(L)).HEIGHT)/(1.+SUB(L))
       WVTMP2(L) = TMPVAL3*WVWHAUT*WVWHAUT /(WVTMP1(L)*WVTMP1(L))
       WVWHAVT   = (WV(L).HEIGHT + SVB(L)*WV(LSC(L)).HEIGHT)/(1.+SVB(L))
-      WVTMP3(L) = MAX(SINH(WVKHV(L)),1D-6)
+      WVTMP3(L) = max(SINH(WVKHV(L)),1D-6)
       WVTMP4(L) = TMPVAL3*WVWHAVT*WVWHAVT /(WVTMP3(L)*WVTMP3(L))
     enddo
   enddo
@@ -360,7 +360,7 @@ SUBROUTINE WAVESXY
   !$OMP DO PRIVATE(ND,LF,LL,K,L,ZTOP,ZBOT,SNHTOPU,SNHBOTU,SNHTOPV,SNHBOTV,TMPPU,TMPPV)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do K = 1,KC
       do L = LF,LL
         ZTOP = Z(L,K)
@@ -382,7 +382,7 @@ SUBROUTINE WAVESXY
   !$OMP DO PRIVATE(ND,LF,LL,K,L,LS,LN,LW,LE,LNW,LSE,DZITMP)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
 
     do K = 1,KC
       do L = LF,LL
@@ -498,7 +498,7 @@ SUBROUTINE GETWAVEINP
           WV_Global(LG).LENGTH = WVLEN     
           WV_Global(LG).FREQ   = 2.*PI/WVPRD
           WVDISSIPA(LG) = DISPTMP                        ! *** ENERGY DISSIPATION DUE TO BREAKING WAVE (M3/S3)
-          WV_Global(LG).K = MAX( 2.*PI/WV_Global(LG).LENGTH, 0.01 )          ! *** ANGULAR WAVE NUMBER (RAD/M)
+          WV_Global(LG).K = max( 2.*PI/WV_Global(LG).LENGTH, 0.01 )          ! *** ANGULAR WAVE NUMBER (RAD/M)
         else
           WV_Global(LG).DIR    = 0.
           WV_Global(LG).LENGTH = 0.

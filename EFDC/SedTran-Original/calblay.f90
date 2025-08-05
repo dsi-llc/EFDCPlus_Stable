@@ -33,7 +33,7 @@ SUBROUTINE CALBLAY
   ! *** FOR TRANSPORT OF COHESIVE SEDIMENT ONLY SET HBEDMIN TO FRACTION
   ! *** OF HBEDMAX
   if( ISTRAN(7) == 0 )then
-    HBEDMIN = MAX(0.01,0.01*HBEDMAX)
+    HBEDMIN = max(0.01,0.01*HBEDMAX)
   else
     HBEDMIN = 1.0*MAXVAL(SEDDIA(:))
   endif
@@ -45,13 +45,13 @@ SUBROUTINE CALBLAY
     ! *** TMPVAL = 2.*SNDDMX
     ! *** TO
     TMPVAL  = SNDDMX
-    HBEDMIN = MAX(HBEDMIN,TMPVAL)
+    HBEDMIN = max(HBEDMIN,TMPVAL)
   endif
 
   ! *** WHEN NONCOHESIVE TRANSPORT IS ACTIVE, WITH ACTIVE-PARENT LAYER
   ! *** FORMULATION, SET HBEDMIN PROPORTIONAL ACTIVE LAYER THICKNESS
   if( ISNDAL == 2 )then
-    HBEDMIN = MAX(HBEDMIN,0.1*HBEDAL)
+    HBEDMIN = max(HBEDMIN,0.1*HBEDAL)
     HBEDMAX1 = 1.1*HBEDAL
   endif
 
@@ -64,7 +64,7 @@ SUBROUTINE CALBLAY
     !$OMP             PRIVATE(SEDBOLD,SNDBOLD,TOXBOLD,FKBT,FKBTP,HTMP1,HTMP2)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED + 1  
-      LL = MIN(LF + LDMSED-1,LASED)
+      LL = min(LF + LDMSED-1,LASED)
 
       ! *** ADD NEW TOP LAYER  
       do LP = LF,LL  
@@ -74,8 +74,8 @@ SUBROUTINE CALBLAY
             HOLDTOP = HBED(L,KBT(L))
             HTMP1 = HOLDTOP-HBEDMAX
             HTMP2 = HBEDMAX
-            HBED(L,KBT(L)+1) = MIN(HTMP1,HTMP2)   ! *** Thinner layer on top
-            HBED(L,KBT(L)) = MAX(HTMP1,HTMP2)
+            HBED(L,KBT(L)+1) = min(HTMP1,HTMP2)   ! *** Thinner layer on top
+            HBED(L,KBT(L)) = max(HTMP1,HTMP2)
             if( IBMECH == 1 .and. SEDVRDT < 0.0 )then     ! *** These control maintianing initial void ratio k profile
               VDRBED0(L,KBT(L)+1) = VDRBED0(L,KBT(L))     ! *** Reset void ratio profile
               SDENAVG(L,KBT(L)+1) = SDENAVG(L,KBT(L))     ! *** Reset avg sediment solids density
@@ -327,7 +327,7 @@ SUBROUTINE CALBLAY
     !  $OMP             PRIVATE(SEDBOLD,TOXBOLD,FKBT,FKBTP,SNDBOLD,HTMP1,HTMP2,  k1)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED + 1  
-      LL = MIN(LF + LDMSED-1,LASED)
+      LL = min(LF + LDMSED-1,LASED)
 
       ! *** CHECK TO SEE IF NEED TO ADD NEW LAYER BELOW THE ACTIVE LAYER 
       do LP = LF,LL

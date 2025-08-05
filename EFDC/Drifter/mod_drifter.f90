@@ -27,6 +27,7 @@ MODULE DRIFTER
 #ifndef GNU  
   USE IFPORT
 #endif
+
   use MPI
   use Variables_MPI_Drifter
   use Variables_MPI
@@ -134,7 +135,7 @@ SUBROUTINE DRIFTER_CALC
     enddo
 
     ! *** Find the min cell dimension for the x and y directions.  Used for EE linkage scaling.
-    DXYMIN = MIN(MINVAL(DXP_Global(2:LA_Global)), MINVAL(DYP_Global(2:LA_Global))) ! *** DXP cell dimension in x direction @ center
+    DXYMIN = min(MINVAL(DXP_Global(2:LA_Global)), MINVAL(DYP_Global(2:LA_Global))) ! *** DXP cell dimension in x direction @ center
     if( DXYMIN < 0.2 )then
       XYZSCL = 1000
     else
@@ -144,10 +145,11 @@ SUBROUTINE DRIFTER_CALC
     ! *** MAKE SURE THE FILE IS NEW - this is the binary file read by EE to visualize drifters
     if(process_id == master_id )then ! *** Only make the master process look at the file
       call create_nc_lpt()
-      
+
       open(ULGR,FILE = OUTDIR//'EE_DRIFTER.OUT',STATUS = 'UNKNOWN',FORM = FMT_BINARY)
       close(ULGR,STATUS = 'DELETE')
       open(ULGR,FILE = OUTDIR//'EE_DRIFTER.OUT',ACTION = 'WRITE',FORM = FMT_BINARY)
+
       ISOIL = 0
       if( ANY(ISOILSPI == 1) ) ISOIL = 1
       VER = 8400
@@ -228,7 +230,7 @@ SUBROUTINE DRIFTER_CALC
       if( NSTOPPED(7) > 0 ) PRINT '(A,I8,A,I8)','# DRIFTERS STOPPED DUE TO CELL DRYING:         ',NSTOPPED(7), ' ON PROCESS: ', process_id
       NSTOPPED = 0
     endif
-    call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(DSIcomm, ierr)
 
     TODAY = DBLE(INT(TIMEDAY))
     DAYNEXT = TODAY + 1.
@@ -262,7 +264,7 @@ SUBROUTINE DRIFTER_CALC
     enddo
     PRINT '(A,I8,A,I8)','# DRIFTERS ACTIVE FOR THE NEXT PERIOD:         ',NPDAY, ' ON PROCESS: ', process_id
 
-    call MPI_Allreduce(NPDAY, NPDAY_MAX, 1, MPI_Integer, MPI_Max, comm_2d, ierr)
+    call MPI_Allreduce(NPDAY, NPDAY_MAX, 1, MPI_Integer, MPI_Max, DSIcomm, ierr)
     
   endif
 
@@ -496,11 +498,11 @@ SUBROUTINE DRIFTER_CALC
   local_tot_drifters_send = num_drifters_send_west + num_drifters_send_east + num_drifters_send_north + num_drifters_send_south
   
   ! *** Get global max number of drifters to communicate amongst all processes
-  call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(DSIcomm, ierr)
   
   TTDS = DSTIME(0)
   global_max_drifters_to_comm = 0
-  call MPI_Allreduce(local_tot_drifters_send, global_max_drifters_to_comm, 1, MPI_Integer, MPI_Max, comm_2d, ierr)
+  call MPI_Allreduce(local_tot_drifters_send, global_max_drifters_to_comm, 1, MPI_Integer, MPI_Max, DSIcomm, ierr)
   DSITIMING(11) = DSITIMING(11) + (DSTIME(0)-TTDS)
 
   ! *** Only need to communicate if there are drifters in any of the ghost cells of any subdomain
@@ -581,22 +583,22 @@ Subroutine Notify_Receiving_Domains
   ! *** West/East send/recv
   call MPI_Sendrecv(drifter_ids_send_west, global_max_drifters_to_comm, MPI_Integer, nbr_west, 0, &
                     drifter_ids_recv_east, global_max_drifters_to_comm, MPI_Integer, nbr_east, 0, &
-                    comm_2d, status_msg, ierr)
+                    DSIcomm, status_msg, ierr)
      
   ! *** East/West send/recv
   call MPI_Sendrecv(drifter_ids_send_east, global_max_drifters_to_comm, MPI_Integer, nbr_east, 0, &
                     drifter_ids_recv_west, global_max_drifters_to_comm, MPI_Integer, nbr_west, 0, &
-                    comm_2d, status_msg, ierr)
+                    DSIcomm, status_msg, ierr)
 
   ! ***
   call MPI_Sendrecv(drifter_ids_send_north, global_max_drifters_to_comm, MPI_Integer, nbr_north, 0, &
                     drifter_ids_recv_south, global_max_drifters_to_comm, MPI_Integer, nbr_south, 0, &
-                    comm_2d, status_msg, ierr)     
+                    DSIcomm, status_msg, ierr)     
 
   ! ***
   call MPI_Sendrecv(drifter_ids_send_south, global_max_drifters_to_comm, MPI_Integer, nbr_south, 0, &
                     drifter_ids_recv_north, global_max_drifters_to_comm, MPI_Integer, nbr_north, 0, &
-                    comm_2d, status_msg, ierr)
+                    DSIcomm, status_msg, ierr)
      
   recv_east  = minloc(drifter_ids_recv_east,1)  - 1
   recv_west  = minloc(drifter_ids_recv_west,1)  - 1
@@ -971,7 +973,7 @@ SUBROUTINE DRIFTER_INP
       do NP = 1,NPD
         ! *** Read Depths
         read(ULOC,*,err = 999) XLA(NP), YLA(NP), DLA(NP), LA_BEGTI(NP), LA_ENDTI(NP), LA_GRP(NP)
-        DLA(NP) = MAX(DLA(NP),0.0_RKD)
+        DLA(NP) = max(DLA(NP),0.0_RKD)
         if( LA_GRP(NP) < 1 ) LA_GRP(NP) = 1
       enddo
     else
@@ -1202,7 +1204,7 @@ SUBROUTINE CONTAINER(BEDGEMOVE, XLA2, YLA2, ZLA2, NI)
     if( DEPOP == 1 )then
       ZLA(NI) = HPLA(NI) + BELVLA(NI)-DLA(NI)
     else
-      DLA(NI) = MAX(HPLA(NI)+BELVLA(NI)-ZLA(NI),0._8)
+      DLA(NI) = max(HPLA(NI)+BELVLA(NI)-ZLA(NI),0._8)
     endif
       
     ! *** Settings based on if oil spill calculations are being considers
@@ -1612,7 +1614,7 @@ SUBROUTINE CHECK_BCS
   
   ! *** Check if drifter in outflow boundary condition
   if( NQSIJ > 0 )then
-    if( ANY(BCFL(:).L == LLA(NI)) .and. QSUM(LLA(NI),KLA(NI)) < 0. )then
+    if( ANY(BCPS(:).L == LLA(NI)) .and. QSUM(LLA(NI),KLA(NI)) < 0. )then
       ! *** If inside a cell then use cell dimensions to determine if should remove
       if( NPSTAT == 1 )then
         ! *** INSIDE CELL
@@ -1621,7 +1623,7 @@ SUBROUTINE CHECK_BCS
         RAD = 0.
       endif
             
-      if( RAD < MIN(DXP(LLA2),DYP(LLA2))*0.25 )then
+      if( RAD < min(DXP(LLA2),DYP(LLA2))*0.25 )then
         call SET_DRIFTER_OUT(XLA2,YLA2,ZLA2)
 
         if( NPD < 10000 .or. DEBUG )then
@@ -1654,7 +1656,7 @@ SUBROUTINE CHECK_BCS
               RAD = 0.
             endif
             
-            if( RAD < MIN(DXP(LLA2),DYP(LLA2))*0.25 )then
+            if( RAD < min(DXP(LLA2),DYP(LLA2))*0.25 )then
               ! ***  RETURN DRIFTER
               LLA(NI)   = LIJ(WITH_RET(NWR).IQWRD,WITH_RET(NWR).JQWRD)
               LLA2      = LLA(NI)
@@ -1677,7 +1679,7 @@ SUBROUTINE CHECK_BCS
               RAD = 0.
             endif
             
-            if( RAD < MIN(DXP(LLA2),DYP(LLA2))*0.25 )then
+            if( RAD < min(DXP(LLA2),DYP(LLA2))*0.25 )then
               ! ***  RETURN DRIFTER
               LLA(NI)   = LIJ(WITH_RET(NWR).IQWRU,WITH_RET(NWR).JQWRU)
               LLA2      = LLA(NI)
@@ -1721,8 +1723,8 @@ SUBROUTINE CHECK_BCS
             RAD = 0.
           endif
             
-          if( RAD < MIN(DXP(LLA2),DYP(LLA2))*0.25 )then
-            LD = LIJ(MAX(HYD_STR(NCTL).IQCTLD,1), MAX(HYD_STR(NCTL).JQCTLD,1))
+          if( RAD < min(DXP(LLA2),DYP(LLA2))*0.25 )then
+            LD = LIJ(MAX(HYD_STR(NCTL).IQCTLD,1), max(HYD_STR(NCTL).JQCTLD,1))
             if( LD >= 2 )then
               LLA(NI) = LD
               XLA(NI) = XCOR(LLA(NI),5)
@@ -1882,17 +1884,17 @@ SUBROUTINE DRF_VELOCITY(LNI,KNI,NI,U2NI,V2NI,W2NI)
 
   ! *** UPDATE VERTICAL POSITION FOR TOP/BOTTOM LAYERS
   ZSIG = (ZLA(NI)-BELVLA(NI))/HPLA(NI)
-  ZSIG = MAX(Z(LNI,0),MIN(Z(LNI,KC),ZSIG))
+  ZSIG = max(Z(LNI,0),MIN(Z(LNI,KC),ZSIG))
   ZLA(NI) = ZSIG*HPLA(NI)+BELVLA(NI)
   if( ZSIG >= ZZ(LNI,KNI) )then
     ! *** DRIFTER IS ABOVE THE LAYER MID DEPTH
     K1 = KNI
-    K2 = MIN(KNI+1,KC)
+    K2 = min(KNI+1,KC)
     KZ1= KNI
     KZ2= KNI+1
   else
     ! *** DRIFTER IS BELOW THE LAYER MID DEPTH
-    K1 = MAX(KSZ(LNI),KNI-1)
+    K1 = max(KSZ(LNI),KNI-1)
     K2 = KNI
     KZ1= KNI-1
     KZ2= KNI
@@ -1914,7 +1916,7 @@ SUBROUTINE DRF_VELOCITY(LNI,KNI,NI,U2NI,V2NI,W2NI)
 
       ! *** CALCULATING HORIZONTAL VELOCITY COMPONENTS AT CENTROID-TOP
       if( K2 < KSZ(L) )then
-        K3 = MIN(K2+1,KSZ(L))      ! *** Use BOTTOM ACTIVE LAYER IF ONE LAYER HIGHER
+        K3 = min(K2+1,KSZ(L))      ! *** Use BOTTOM ACTIVE LAYER IF ONE LAYER HIGHER
       else
         K3 = K2
       endif
@@ -1922,7 +1924,7 @@ SUBROUTINE DRF_VELOCITY(LNI,KNI,NI,U2NI,V2NI,W2NI)
       VKT  = 0.5*STCUV(L)*( RSSBCN(L)*V2(LN,K3) + RSSBCS(L)*V2(L,K3) )
 
       ! *** DISTANCE FROM CENTROID SQUARED
-      RAD2 = MAX((XLA(NI)-XCOR(L,5))**2 + (YLA(NI)-YCOR(L,5))**2,1D-8)
+      RAD2 = max((XLA(NI)-XCOR(L,5))**2 + (YLA(NI)-YCOR(L,5))**2,1D-8)
 
       DZCTR = ZCTR(L,KZ2)-ZCTR(L,KZ1)
       if( DZCTR > 1D-8 )then
@@ -1959,48 +1961,48 @@ SUBROUTINE DRF_VELOCITY(LNI,KNI,NI,U2NI,V2NI,W2NI)
         ! *** NORTHWEST
         XOUT = XCOR(LNI,5) + ( DYP(LNI)*CVE(LNI) - DXP(LNI)*CUE(LNI) )
         YOUT = YCOR(LNI,5) + ( DYP(LNI)*CVN(LNI) - DXP(LNI)*CUN(LNI) )
-        RAD2 = MAX((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
+        RAD2 = max((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
       elseif( LL == 2 )then
         ! *** NORTH FACE (MOVE WITH DRIFTER)
         XOUT = XLA(NI) + 0.5*( DYP(LNI)*CVE(LNI) )
         YOUT = YLA(NI) + 0.5*( DYP(LNI)*CVN(LNI) )
-        RAD2 = MAX( (XLA(NI)-XOUT)**2 + (YLA(NI)-YOUT)**2, 1D-8)
+        RAD2 = max( (XLA(NI)-XOUT)**2 + (YLA(NI)-YOUT)**2, 1D-8)
         VTMPB = -VFACTOR*MAX(V2(LNI,KNI),0.0)
       elseif( LL == 3 )then
         ! *** NORTHEAST
         XOUT = XCOR(LNI,5) + ( DYP(LNI)*CVE(LNI) + DXP(LNI)*CUE(LNI) )
         YOUT = YCOR(LNI,5) + ( DYP(LNI)*CVN(LNI) + DXP(LNI)*CUN(LNI) )
-        RAD2 = MAX((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
+        RAD2 = max((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
       elseif( LL == 4 )then
         ! *** WEST FACE (MOVE WITH DRIFTER)
         XOUT = XLA(NI) - 0.5*( DXP(LNI)*CUE(LNI) )
         YOUT = YLA(NI) - 0.5*( DXP(LNI)*CUN(LNI) )
-        RAD2 = MAX( (XLA(NI)-XOUT)**2 + (YLA(NI)-YOUT)**2, 1D-8)
+        RAD2 = max( (XLA(NI)-XOUT)**2 + (YLA(NI)-YOUT)**2, 1D-8)
         UTMPB = -VFACTOR*MIN(U2(LEC(LNI),KNI),0.0)
       elseif( LL == 6 )then
         ! *** EAST FACE (MOVE WITH DRIFTER)
         XOUT = XLA(NI) + 0.5*( DXP(LNI)*CUE(LNI) )
         YOUT = YLA(NI) + 0.5*( DXP(LNI)*CUN(LNI) )
-        RAD2 = MAX( (XLA(NI)-XOUT)**2 + (YLA(NI)-YOUT)**2, 1D-8)
+        RAD2 = max( (XLA(NI)-XOUT)**2 + (YLA(NI)-YOUT)**2, 1D-8)
         UTMPB = -VFACTOR*MAX(U2(LNI,KNI),0.0)
       elseif( LL == 7 )then
         ! *** SOUTHWEST
         XOUT = XCOR(LNI,5) - ( DYP(LNI)*CVE(LNI) + DXP(LNI)*CUE(LNI) )
         YOUT = YCOR(LNI,5) - ( DYP(LNI)*CVN(LNI) + DXP(LNI)*CUN(LNI) )
-        RAD2 = MAX((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
+        RAD2 = max((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
       elseif( LL == 8 )then
         ! *** SOUTH  (MOVE WITH DRIFTER)
         !XOUT = XCOR(LNI,5) - ( DYP(LNI)*CVE(LNI) )
         !YOUT = YCOR(LNI,5) - ( DYP(LNI)*CVN(LNI) )
         XOUT = XLA(NI) - 0.5*( DYP(LNI)*CVE(LNI) )
         YOUT = YLA(NI) - 0.5*( DYP(LNI)*CVN(LNI) )
-        RAD2 = MAX((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
+        RAD2 = max((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
         VTMPB  = -VFACTOR*MIN(V2(LNC(LNI),KNI),0.0)
       elseif( LL == 9 )then
         ! *** SOUTHEAST
         XOUT = XCOR(LNI,5) - ( DYP(LNI)*CVE(LNI) - DXP(LNI)*CUE(LNI) )
         YOUT = YCOR(LNI,5) - ( DYP(LNI)*CVN(LNI) - DXP(LNI)*CUN(LNI) )
-        RAD2 = MAX((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
+        RAD2 = max((XLA(NI)-XOUT)**2+(YLA(NI)-YOUT)**2,1D-8)
       endif
       L = LNI
     endif
@@ -2043,7 +2045,7 @@ SUBROUTINE RANDCAL(L,K,NP)
 #else
     XLA(NP) = XLA(NP) + (2.*DRAND(0)-1.)*COEF
     YLA(NP) = YLA(NP) + (2.*DRAND(0)-1.)*COEF
-#endif    
+#endif
   endif
 
   ! *** VERTICAL (IF LA_ZCAL = 1 THEN FULLY 3D)
@@ -2057,7 +2059,7 @@ SUBROUTINE RANDCAL(L,K,NP)
     ZLA(NP) = ZLA(NP) + (2*RAND(0)-1)*COEF
 #else
     ZLA(NP) = ZLA(NP) + (2*DRAND(0)-1)*COEF
-#endif 
+#endif
   endif
   
 END SUBROUTINE
@@ -2115,7 +2117,7 @@ SUBROUTINE DRF_DEPTH(LNI, NI, BELVNI, HPNI)
   do LL = 1,9
     L = LADJ(LL,LNI)
     if( L >= 2 .and. L <= LA )then
-      RAD2 = MAX((XLA(NI)-XCOR(L,5))**2 + (YLA(NI)-YCOR(L,5))**2,1D-8)         ! *** INVERSE DISTANCE SQUARED
+      RAD2 = max((XLA(NI)-XCOR(L,5))**2 + (YLA(NI)-YCOR(L,5))**2,1D-8)         ! *** INVERSE DISTANCE SQUARED
       !RAD2 = SQRT(MAX((XLA(NI)-XCOR(L,5))**2 + (YLA(NI)-YCOR(L,5))**2,1D-8))  ! *** LINEAR INTERPOLATION
       BELVNI1 = BELVNI1 + BELV(L)/RAD2
       BELVNI2 = BELVNI2 + 1._8/RAD2
@@ -2124,7 +2126,7 @@ SUBROUTINE DRF_DEPTH(LNI, NI, BELVNI, HPNI)
   enddo
   BELVNI = BELVNI1/BELVNI2        ! *** INTERPOLATED BELV
   ZETA = ZETA/BELVNI2             ! *** INTERPOLATED WSEL
-  HPNI = MAX(ZETA - BELVNI,HDRY)
+  HPNI = max(ZETA - BELVNI,HDRY)
 
 END SUBROUTINE DRF_DEPTH
 
@@ -2156,11 +2158,11 @@ SUBROUTINE DRF_LAYER(LNI,BELVNI,HPNI,KLN,ZLN)
   if( KSZ(LNI) == KC )then  ! *** Alberta
     KLN = KC
     ZSIG = (ZLN-BELVNI)/HPNI
-    ZSIG = MAX(Z(LNI,0),MIN(Z(LNI,KC),ZSIG))
+    ZSIG = max(Z(LNI,0),MIN(Z(LNI,KC),ZSIG))
     ZLN  = ZSIG*HPNI + BELVNI
   elseif( LNI >= 2 .and. KC > 1 )then
     ZSIG = (ZLN - BELVNI)/HPNI
-    ZSIG = MAX( Z(LNI,0), MIN(Z(LNI,KC),ZSIG) )
+    ZSIG = max( Z(LNI,0), min(Z(LNI,KC),ZSIG) )
     ZLN = ZSIG*HPNI + BELVNI
     ! *** From the current active layer for cell the drifter belongs to the top layer
     do K = KSZ(LNI),KC
@@ -2216,7 +2218,7 @@ SUBROUTINE DIFGRAD(LNI, KNI, NI, DAHX, DAHY, DAVZ)   ! *************************
     ! *** AV IS THE VERTICAL DIFFUSION COEFFICIENT AT THE TOP OF THE LAYER
     ! *** AV(L,KC) = 0 AND AV(L,0) = 0
     ZSIG = (ZLA(NI)-BELVLA(NI))/HPLA(NI)
-    ZSIG = MAX(Z(LNI,0),MIN(Z(LNI,KC),ZSIG))
+    ZSIG = max(Z(LNI,0),MIN(Z(LNI,KC),ZSIG))
     ZLA(NI) = ZSIG*HPLA(NI)+BELVLA(NI)
     WEIC = Z(LNI,KC)-(Z(LNI,KNI)-ZSIG)*DZIC(LNI,KNI)  !WEIGHTING COEFFICIENT
 
@@ -2267,7 +2269,7 @@ SUBROUTINE OIL_PROC(NP)
       VWIND = 0.001
     else
       VWIND  = WINDST(LNP)
-      VWIND = MAX(VWIND,0.001)
+      VWIND = max(VWIND,0.001)
     endif
     RKA = 0.00125_8*VWIND                ! *** MODIFIED MASS TRANSFER COEFFICENT: RKA = 0.00125_8*VWIND [M/S]
     DTHE = RKA*DARE(NG)*DELTD/DVOL0(NG)  ! *** EVAPORATIVE EXPOSURE FOR A DRIFTER (DIMENSIONLESS)
@@ -2317,7 +2319,7 @@ SUBROUTINE INIT_OIL
     XMAXG = MAXVAL(XLA,LA_GRP == NG)
     YMING = MINVAL(YLA,LA_GRP == NG)
     YMAXG = MAXVAL(YLA,LA_GRP == NG)
-    RAD   = MAX(0.25*(XMAXG-XMING+YMAXG-YMING),1.0)
+    RAD   = max(0.25*(XMAXG-XMING+YMAXG-YMING),1.0)
     NUMD(NG) = SUM(LA_GRP,LA_GRP == NG)/NG
     GARE(NG) = PI*RAD**2
     DARE(NG) = GARE(NG)/NUMD(NG)

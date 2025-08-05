@@ -18,7 +18,7 @@ module yaml_types
 
    implicit none
 
-    private
+   private
 
    public type_node,type_scalar,type_null,type_error,real_kind
    public type_dictionary,type_key_value_pair
@@ -29,12 +29,10 @@ module yaml_types
 
    type,abstract :: type_node
       character(len = string_length) :: path = ''
-#ifdef USE_YAML      
    contains
       procedure (node_dump),deferred :: dump
       procedure                      :: set_path => node_set_path
       procedure                      :: finalize => node_finalize
-#endif      
    end type
 
    abstract interface
@@ -47,20 +45,16 @@ module yaml_types
 
    type,extends(type_node) :: type_scalar
       character(len = string_length) :: string = ''
-#ifdef USE_YAML      
    contains
       procedure :: dump       => value_dump
       procedure :: to_logical => scalar_to_logical
       procedure :: to_integer => scalar_to_integer
       procedure :: to_real    => scalar_to_real
-#endif      
    end type
 
    type,extends(type_node) :: type_null
-#ifdef USE_YAML      
    contains
       procedure :: dump => null_dump
-#endif      
    end type
 
    type type_key_value_pair
@@ -72,7 +66,6 @@ module yaml_types
 
    type,extends(type_node) :: type_dictionary
       type(type_key_value_pair),pointer :: first => null()
-#ifdef USE_YAML      
    contains
       procedure :: get            => dictionary_get
       procedure :: get_scalar     => dictionary_get_scalar
@@ -89,7 +82,6 @@ module yaml_types
       procedure :: reset_accessed => dictionary_reset_accessed
       procedure :: set_path       => dictionary_set_path
       procedure :: finalize       => dictionary_finalize
-#endif      
    end type
 
    type type_list_item
@@ -99,26 +91,23 @@ module yaml_types
 
    type,extends(type_node) :: type_list
       type(type_list_item),pointer :: first => null()
-#ifdef USE_YAML      
    contains
       procedure :: append   => list_append
       procedure :: dump     => list_dump
       procedure :: set_path => list_set_path
       procedure :: finalize => list_finalize
-#endif      
    end type
 
    type type_error
       character(len = string_length) :: message
    end type
 
-#ifdef USE_YAML
 contains
 
    recursive subroutine node_finalize(self)
       class (type_node),intent(inout) :: self
    end subroutine
-   
+
    subroutine dictionary_reset_accessed(self)
       class (type_dictionary),intent(in) :: self
       type(type_key_value_pair),pointer :: pair
@@ -210,6 +199,7 @@ contains
       class (type_dictionary),intent(in) :: self
       integer,                intent(in) :: unit,indent
       type(type_key_value_pair),pointer :: pair
+
       logical :: first
 
       first = .true.
@@ -305,6 +295,7 @@ contains
    recursive subroutine dictionary_set_path(self,path)
       class (type_dictionary),intent(inout) :: self
       character(len = *),       intent(in)    :: path
+
       type(type_key_value_pair),pointer :: pair
 
       self%path = path
@@ -487,6 +478,7 @@ contains
 
    recursive subroutine dictionary_finalize(self)
       class (type_dictionary),intent(inout) :: self
+
       type(type_key_value_pair),pointer :: pair, next
 
       pair => self%first
@@ -524,6 +516,7 @@ contains
    recursive subroutine list_dump(self,unit,indent)
       class (type_list),intent(in) :: self
       integer,          intent(in) :: unit,indent
+
       type(type_list_item),pointer :: item
       logical :: first
 
@@ -544,6 +537,7 @@ contains
    recursive subroutine list_set_path(self,path)
       class (type_list),intent(inout) :: self
       character(len = *), intent(in)    :: path
+
       type(type_list_item),pointer :: item
       integer :: inode
       character(len = 6) :: strindex
@@ -561,6 +555,7 @@ contains
 
    recursive subroutine list_finalize(self)
       class (type_list),intent(inout) :: self
+
       type(type_list_item),pointer :: item, next
 
       item => self%first
@@ -573,6 +568,5 @@ contains
       enddo
       nullify(self%first)
    end subroutine list_finalize
-#endif      
 
 end module yaml_types

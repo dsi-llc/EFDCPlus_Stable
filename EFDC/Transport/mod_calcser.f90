@@ -195,13 +195,13 @@ contains
       TIME = TIMESEC2/TCSFSER
       
       M1 = MSFTLST
-      do while (.true.)
+      do while(.TRUE.)
         M2 = M1+1
         if( TIME > TSFSER(M2) )then
           M1 = M2
         else
           MSFTLST = M1
-          EXIT
+          exit
         endif
       enddo
     
@@ -224,13 +224,13 @@ contains
           TIME = TIMESEC2/TCBESER(NS)
 
           M1 = MBETLAST(NS)
-          do while (.true.)
+          do while(.TRUE.)
             M2 = M1+1
             if( TIME > TBESER(M2,NS) )then
               M1 = M2
             else
               MBETLAST(NS) = M1
-              EXIT
+              exit
             endif
           enddo
         
@@ -257,7 +257,7 @@ contains
       M2 = M2+1
       if( M2 > MCSER(NS,NC) )then
         M2 = MCSER(NS,NC)
-        EXIT
+        exit
       endif    
     enddo
     MTSCLAST(NS,NC) = M2  
@@ -288,7 +288,7 @@ contains
       M2 = M2 + 1
       if( M2 > NPTS )then
         M2 = NPTS
-        EXIT
+        exit
       endif    
     enddo
     if( ITYPE == 0 )then

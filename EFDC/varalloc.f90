@@ -23,7 +23,7 @@ SUBROUTINE VARALLOC
   use Variables_MPI
   use Broadcast_Routines
 #ifndef GNU  
-  use IFPORT
+  USE IFPORT
 #endif
 
   implicit none
@@ -45,7 +45,7 @@ SUBROUTINE VARALLOC
 
   ! *** Write arrays sizes to file
   call Write_Array_Sizes
-  call MPI_Barrier(comm_2d, ierr)
+  call MPI_Barrier(DSIcomm, ierr)
 
   ! *** Calculates max size of some arrays
   NMAXBC = MDCHH*2 + NQSIJ + NQCTL*2 + NQWR*2 + NPBS + NPBW + NPBE + NPBN + NQJPIJ*2
@@ -78,18 +78,18 @@ SUBROUTINE VARALLOC
   endif
   allocate(WV(LCM))
 
-  allocate(BCFL(NQSIJM))             ! *** Flow BC
-  allocate(BCFL_GL(NQSIJM))          ! *** Flow BC
+  allocate(BCPS(NQSIJM))             ! *** Flow BC
+  allocate(BCPS_GL(NQSIJM))          ! *** Flow BC
   do NS = 1, NQSIJM
-    allocate(BCFL(NS).NCSERQ(NSTVM2))
-    allocate(BCFL_GL(NS).NCSERQ(NSTVM2))
-    BCFL(NS).NCSERQ    = 0
-    BCFL_GL(NS).NCSERQ = 0
+    allocate(BCPS(NS).NCSERQ(NSTVM2))
+    allocate(BCPS_GL(NS).NCSERQ(NSTVM2))
+    BCPS(NS).NCSERQ    = 0
+    BCPS_GL(NS).NCSERQ = 0
 
-    allocate(BCFL(NS).CQSE(NSTVM2))
-    allocate(BCFL_GL(NS).CQSE(NSTVM2))
-    BCFL(NS).CQSE    = 0.0
-    BCFL_GL(NS).QSSE = 0.0
+    allocate(BCPS(NS).CQSE(NSTVM2))
+    allocate(BCPS_GL(NS).CQSE(NSTVM2))
+    BCPS(NS).CQSE    = 0.0
+    BCPS_GL(NS).QSSE = 0.0
   enddo
   
   allocate(HYD_STR_GL(NQCTLM))       ! *** Hydraulic structure configuration
@@ -124,8 +124,6 @@ SUBROUTINE VARALLOC
   call AllocateDSI( AVUI,       LCM,        KCM,     0.0)
   call AllocateDSI( AVVI,       LCM,        KCM,     0.0)
   call AllocateDSI( B,          LCM,        KCM,     0.0)
-  call AllocateDSI( NNTEM,      LCM,        KCM,     0.0)
-  call AllocateDSI( NNSAL,      LCM,        KCM,     0.0)
   call AllocateDSI( B1,         LCM,        KCM,     0.0)
   call AllocateDSI( BELAGW,     LCM,        0.0)     
   call AllocateDSI( BELV,       LCM,        0.0)     
@@ -379,8 +377,8 @@ SUBROUTINE VARALLOC
   call AllocateDSI( LPBW,       NPBWM,        0)
   
   call AllocateDSI( LQSPATH,    NQSIJM,     100,      0)
-  call AllocateDSI( LQSSAVE,    NQSIJM,       0)
-  call AllocateDSI( LQSSAVE0,    NQSIJM,       0)
+  call AllocateDSI( LQSSAVED,    NQSIJM,       0)
+  call AllocateDSI( LQSMOVED,    NQSIJM,       0)
   call AllocateDSI( LSBLBCD,    LCM,          0)
   call AllocateDSI( LSBLBCU,    LCM,          0)
   call AllocateDSI( MFDCHZ,     LCM,          0)
@@ -570,10 +568,12 @@ SUBROUTINE VARALLOC
   call AllocateDSI( STCUV,     LCM,        0.0)
   call AllocateDSI( SUB,       LCM,        0.0)
   call AllocateDSI( SUBO,      LCM,        0.0)
+  call AllocateDSI( SUBD,      LCM,        1.0)
   call AllocateDSI( UMASK,    -LCM,          0)
   call AllocateDSI( VMASK,    -LCM,          0)
   call AllocateDSI( SVB,       LCM,        0.0)
   call AllocateDSI( SVBO,      LCM,        0.0)
+  call AllocateDSI( SVBD,      LCM,        1.0)
   call AllocateDSI( SVPAT,     LCM,        0.0)
   call AllocateDSI( SVPW,      LCM,        0.0)
   call AllocateDSI( SWB,       LCM,        0.0)
@@ -604,8 +604,9 @@ SUBROUTINE VARALLOC
   call AllocateDSI( TSY,       LCM,        0.0)
   call AllocateDSI( TSY1,      LCM,        0.0)
   call AllocateDSI( CDCOARE,   LCM,        0.0)
-  call AllocateDSI( HSCOARE,   LCM,        0.0)
-  call AllocateDSI( HLCOARE,   LCM,        0.0)
+  call AllocateDSI( HS_OUT,    LCM,        0.0)
+  call AllocateDSI( HL_OUT,    LCM,        0.0)
+  call AllocateDSI( HW_OUT,    LCM,        0.0)
   call AllocateDSI( TVAR1E,    LCM,        KCM,       0.0)
   call AllocateDSI( TVAR1N,    LCM,        KCM,       0.0)
   call AllocateDSI( TVAR1S,    LCM,        KCM,       0.0)
@@ -937,9 +938,9 @@ SUBROUTINE VARALLOC
     call AllocateDSI( PEXP,        LCM,       NSNM,             0.0)
     call AllocateDSI( PHID,        LCM,       NSNM,             0.0)
     call AllocateDSI( QSBDLDIN,    LCM,       NSNM,             0.0)                ! *** BEDLOAD FLUX IN  DUE TO FIXING BOUNDARY CONDITION CELLS TO ZERO BEDLOAD DELTA  (G/S)
-    call AllocateDSI( QSBDLDOT,    LCM,       MAX(NSNM, NSEDS2), 0.0)    ! *** BEDLOAD FLUX OUT DUE TO FIXING BOUNDARY CONDITION CELLS TO ZERO BEDLOAD DELTA  (G/S)
-    call AllocateDSI( QSBDLDX,     LCM,       MAX(NSNM, NSEDS2), 0.0)    ! *** U FACE SND FLUX DUE TO BEDLOAD (G/S)
-    call AllocateDSI( QSBDLDY,     LCM,       MAX(NSNM, NSEDS2), 0.0)    ! *** V FACE SND FLUX DUE TO BEDLOAD (G/S)
+    call AllocateDSI( QSBDLDOT,    LCM,       max(NSNM, NSEDS2), 0.0)    ! *** BEDLOAD FLUX OUT DUE TO FIXING BOUNDARY CONDITION CELLS TO ZERO BEDLOAD DELTA  (G/S)
+    call AllocateDSI( QSBDLDX,     LCM,       max(NSNM, NSEDS2), 0.0)    ! *** U FACE SND FLUX DUE TO BEDLOAD (G/S)
+    call AllocateDSI( QSBDLDY,     LCM,       max(NSNM, NSEDS2), 0.0)    ! *** V FACE SND FLUX DUE TO BEDLOAD (G/S)
     call AllocateDSI( QSBDLDP,     LCM,       0.0)                      ! *** CELL CENTER BED LOAD TRANSPORT RATE (G/S)
     call AllocateDSI( QSBDTOP,     LCM,       0.0)                      ! *** VOLUME OF SEDIMENT BED EXCHANGE (M/S)
     call AllocateDSI( QSEDBED,     LCM,       KBM,              NSTM2,  0.0)
@@ -1245,7 +1246,7 @@ SUBROUTINE VARALLOC
   call AllocateDSI( SAVESVB,        2,         NQCTL,    0.0)
 
   ! *** HYDRAULIC STRUCTURE EQUATIONS
-  NS = MAX(NHYDST,1)
+  NS = max(NHYDST,1)
   call AllocateDSI( HS_LENGTH,    -NS,         0.0)
   call AllocateDSI( HS_XSTYPE,    -NS,           0)
   call AllocateDSI( HS_REVERSE,   -NS,           0)

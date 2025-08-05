@@ -55,15 +55,15 @@ SUBROUTINE DSI_All_Reduce_Integer(ValIn, ValOut, iOp, ElapsedTime, iWait, WaitTi
   if( num_Processors > 1 )then
     if( iWait > 0 )then
       TTDS = DSTIME(0)
-      call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(DSIcomm, ierr)
       WaitTime = DSTIME(0) - TTDS
     elseif( iWait < 0 )then
       WaitTime = 0.
-      call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(DSIcomm, ierr)
     endif
     TTDS = DSTIME(0)
     
-    call MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Integer, iOp, comm_2d, IERR)
+    call MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Integer, iOp, DSIcomm, IERR)
 
     ElapsedTime = DSTIME(0) - TTDS
   else
@@ -89,15 +89,15 @@ SUBROUTINE DSI_All_Reduce_Real4(ValIn, ValOut, iOp, ElapsedTime, iWait, WaitTime
   if( num_Processors > 1 )then
     if( iWait > 0 )then
       TTDS = DSTIME(0)
-      call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(DSIcomm, ierr)
       WaitTime = DSTIME(0) - TTDS
     elseif( iWait < 0 )then
       WaitTime = 0.
-      call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(DSIcomm, ierr)
     endif
     TTDS = DSTIME(0)
   
-    call MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Real4, iOp, comm_2d, IERR)
+    call MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Real4, iOp, DSIcomm, IERR)
 
     ElapsedTime = DSTIME(0) - TTDS
   else
@@ -122,15 +122,15 @@ SUBROUTINE DSI_All_Reduce_Real8(ValIn, ValOut, iOp, ElapsedTime, iWait, WaitTime
   if( num_Processors > 1 )then
     if( iWait > 0 )then
       TTDS = DSTIME(0)
-      call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(DSIcomm, ierr)
       WaitTime = DSTIME(0) - TTDS
     elseif( iWait < 0 )then
       WaitTime = 0.
-      call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(DSIcomm, ierr)
     endif
     TTDS = DSTIME(0)
   
-    call MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Real8, iOp, comm_2d, IERR)
+    call MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Real8, iOp, DSIcomm, IERR)
 
     ElapsedTime = DSTIME(0) - TTDS
   else
@@ -156,16 +156,16 @@ SUBROUTINE DSI_All_Reduce_Real48(ValIn, ValOut, iOp, ElapsedTime, iWait, WaitTim
   if( num_Processors > 1 )then
     if( iWait > 0 )then
       TTDS = DSTIME(0)
-      call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(DSIcomm, ierr)
       WaitTime = DSTIME(0) - TTDS
     elseif( iWait < 0 )then
       WaitTime = 0.
-      call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(DSIcomm, ierr)
     endif
     TTDS = DSTIME(0)
   
     VAL8 = DBLE(ValIn)
-    call MPI_ALLREDUCE(VAL8, ValOut, 1, MPI_Real8, iOp, comm_2d, IERR)
+    call MPI_ALLREDUCE(VAL8, ValOut, 1, MPI_Real8, iOp, DSIcomm, IERR)
 
     ElapsedTime = DSTIME(0) - TTDS
   else
@@ -205,11 +205,11 @@ subroutine DSI_All_Reduce2(VarIn1, VarIn2, VarOut1, VarOut2, iOp, ElapsedTime, i
   if( num_Processors > 1 )then
     if( iWait > 0 )then
       TTDS = DSTIME(0)
-      call MPI_barrier(comm_2d, ierr)
+      call MPI_barrier(DSIcomm, ierr)
       WaitTime = DSTIME(0) - TTDS
     elseif( iWait < 0 )then
       WaitTime = 0.
-      call MPI_barrier(comm_2d, ierr)
+      call MPI_barrier(DSIcomm, ierr)
     endif
     TTDS = DSTIME(0)
   
@@ -222,7 +222,7 @@ subroutine DSI_All_Reduce2(VarIn1, VarIn2, VarOut1, VarOut2, iOp, ElapsedTime, i
     VarSend(1) = VarIn1
     VarSend(2) = REAL(VarIn2)
     IRECV = 2
-    call MPI_GatherV(VarSend, 2, MPI_Real4, VarRec, IRECV, displ, MPI_Real4, master_id, comm_2d, ierr)
+    call MPI_GatherV(VarSend, 2, MPI_Real4, VarRec, IRECV, displ, MPI_Real4, master_id, DSIcomm, ierr)
   
     VarOut2 = 0
     if( process_id == master_id )then
@@ -315,11 +315,11 @@ subroutine DSI_All_Reduce2_8(VarIn1, VarIn2, VarOut1, VarOut2, iOp, ElapsedTime,
   if( num_Processors > 1 )then
     if( iWait > 0 )then
       TTDS = DSTIME(0)
-      call MPI_barrier(comm_2d, ierr)
+      call MPI_barrier(DSIcomm, ierr)
       WaitTime = DSTIME(0) - TTDS
     elseif( iWait < 0 )then
       WaitTime = 0.
-      call MPI_barrier(comm_2d, ierr)
+      call MPI_barrier(DSIcomm, ierr)
     endif
     TTDS = DSTIME(0)
   
@@ -332,7 +332,7 @@ subroutine DSI_All_Reduce2_8(VarIn1, VarIn2, VarOut1, VarOut2, iOp, ElapsedTime,
     VarSend(1) = VarIn1
     VarSend(2) = REAL(VarIn2,8)
     IRECV = 2
-    call MPI_GatherV(VarSend, 2, MPI_Real8, VarRec, IRECV, displ, MPI_Real8, master_id, comm_2d, ierr)
+    call MPI_GatherV(VarSend, 2, MPI_Real8, VarRec, IRECV, displ, MPI_Real8, master_id, DSIcomm, ierr)
   
     VarOut2 = 0
     if( process_id == master_id )then

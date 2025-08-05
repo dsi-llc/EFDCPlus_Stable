@@ -92,17 +92,17 @@ Subroutine Gather_1D_Real(size_local_1d,  Soln_Local_1D, &
     recv_counts_1d(:) = 0
     
     !***make sure each process has the same recv counts array for the 1d case
-    call MPI_Allgather(send_size_1d,   1, MPI_Int, recv_counts_1d, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(send_size_1d,   1, MPI_Int, recv_counts_1d, 1, MPI_Int, DSIcomm, ierr)
     
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D,  send_size_1d,   mpi_real, &                                        ! Send buff
                      Soln_Global_1D, recv_counts_1d, displacements_L_index, mpi_real, master_id,  &     ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
     !***Gather the mapping onto a global array
     call MPI_Gatherv(Mapping_Local,  send_size_1d,   MPI_Integer, &                                     ! Send buff
                      Mapping_Global, recv_counts_1d, displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
 End Subroutine Gather_1D_Real
 
@@ -153,17 +153,17 @@ Subroutine Gather_1D_Real_RK8(size_local_1d,  Soln_Local_1D, &
     recv_counts_1d(:) = 0
     
     !***make sure each process has the same recv counts array for the 1d case
-    call MPI_Allgather(send_size_1d,   1, MPI_Int, recv_counts_1d, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(send_size_1d,   1, MPI_Int, recv_counts_1d, 1, MPI_Int, DSIcomm, ierr)
     
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D,  send_size_1d,   mpi_real8, &                                       ! Send buff
                      Soln_Global_1D, recv_counts_1d, displacements_L_index, mpi_real8, master_id,  &    ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
     !***Gather the mapping onto a global array
     call MPI_Gatherv(Mapping_Local,  send_size_1d,   MPI_Integer, &                                     ! Send buff
                      Mapping_Global, recv_counts_1d, displacements_l_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
         
  End Subroutine Gather_1D_Real_RK8
 !---------------------------------------------------------------------------!
@@ -210,17 +210,17 @@ Subroutine Gather_1D_int(size_local_1d,  Soln_Local_1D, &
     recv_counts_1d(:) = 0
     
     !***make sure each process has the same recv counts array for the 1d case
-    call MPI_Allgather(send_size_1d,   1, MPI_Int, recv_counts_1d, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(send_size_1d,   1, MPI_Int, recv_counts_1d, 1, MPI_Int, DSIcomm, ierr)
     
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D,  send_size_1d,   MPI_Integer, &                                     ! Send buff
                      Soln_Global_1D, recv_counts_1d, displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
     !***Gather the mapping onto a global array
     call MPI_Gatherv(Mapping_Local,  send_size_1d,   MPI_Integer, &                                     ! Send buff
                      Mapping_Global, recv_counts_1d, displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
 End Subroutine Gather_1D_int
                          
@@ -275,17 +275,17 @@ End Subroutine Gather_1D_int
     recv_counts_3d(:) = 0
 
     !***make sure each process has the same recv counts array for the 3D case
-    call MPI_Allgather(send_size_3d,   1, MPI_Int, recv_counts_3d, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(send_size_3d,   1, MPI_Int, recv_counts_3d, 1, MPI_Int, DSIcomm, ierr)
     
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D, send_size_3d, mpi_real, &                                            ! Send buff
                      Soln_Global_1D, recv_counts_3d , displacements_L_index, mpi_real, master_id,  &     ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
     !***Gather the mapping onto a global array
     call MPI_Gatherv(Mapping_Local, send_size_3d, MPI_Integer, &                                         ! Send buff
                      Mapping_Global, recv_counts_3d , displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
 End Subroutine Gather_2D_Real
 
@@ -341,17 +341,17 @@ End Subroutine Gather_2D_Real
 
     !***make sure each process has the same recv counts array for the 3D case
     call MPI_Allgather(send_size_3d,   1, MPI_Int, &
-                       recv_counts_3d, 1, MPI_Int, comm_2d, ierr)
+                       recv_counts_3d, 1, MPI_Int, DSIcomm, ierr)
     
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D, send_size_3d, mpi_real8, &                                           ! Send buff
                      Soln_Global_1D, recv_counts_3d , displacements_L_index, mpi_real8, master_id,  &    ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
     !***Gather the mapping onto a global array
     call MPI_Gatherv(Mapping_Local, send_size_3d, MPI_Integer, &                                         ! Send buff
                      Mapping_Global, recv_counts_3d , displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
 End Subroutine Gather_2D_Real_RK8
     
@@ -406,17 +406,17 @@ End Subroutine Gather_2D_Real_RK8
     recv_counts_3d(:) = 0
 
     !***make sure each process has the same recv counts array for the 3D case
-    call MPI_Allgather(send_size_3d, 1, MPI_Int, recv_counts_3d, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(send_size_3d, 1, MPI_Int, recv_counts_3d, 1, MPI_Int, DSIcomm, ierr)
     
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D,  send_size_3d, MPI_Integer, &                                        ! Send buff
                      Soln_Global_1D, recv_counts_3d , displacements_L_index, MPI_Integer, master_id, &   ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
                      
     !***Gather the mapping onto a global array
     call MPI_Gatherv(Mapping_Local,  send_size_3d, MPI_Integer, &                                        ! Send buff
                      Mapping_Global, recv_counts_3d , displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
     
     End Subroutine Gather_2D_Int
 !---------------------------------------------------------------------------!  
@@ -474,18 +474,18 @@ Subroutine Gather_3D_Real(first_dim_size,    second_dim_size,    third_dim_size,
 
     !***make sure each process has the same recv counts array for the 3D case
     call MPI_Allgather(send_size_4d,   1, MPI_Int, &
-                       recv_counts_4d, 1, MPI_Int, comm_2d, ierr)
+                       recv_counts_4d, 1, MPI_Int, DSIcomm, ierr)
                        
                         
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D,  send_size_4d, mpi_real, &                                           ! Send buff
                      Soln_Global_1D, recv_counts_4d , displacements_L_index, mpi_real, master_id,  &     ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
                      
     !***Gather the mapping onto a global array                   
     call MPI_Gatherv(Mapping_Local,  send_size_4d, MPI_Integer, &                                        ! Send buff
                      Mapping_Global, recv_counts_4d , displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)                  
+                     DSIcomm, ierr)                  
                      
 End Subroutine Gather_3D_Real
                           
@@ -544,18 +544,18 @@ Subroutine Gather_3D_Real_RK8(first_dim_size,    second_dim_size,    third_dim_s
 
     !***make sure each process has the same recv counts array for the 3D case
     call MPI_Allgather(send_size_4d,   1, MPI_Int, &
-                       recv_counts_4d, 1, MPI_Int, comm_2d, ierr)
+                       recv_counts_4d, 1, MPI_Int, DSIcomm, ierr)
                        
                         
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D,  send_size_4d, mpi_real8, &                                          ! Send buff
                      Soln_Global_1D, recv_counts_4d , displacements_L_index, mpi_real8, master_id,  &    ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
                      
     !***Gather the mapping onto a global array                   
     call MPI_Gatherv(Mapping_Local,  send_size_4d, MPI_Integer, &                                        ! Send buff
                      Mapping_Global, recv_counts_4d , displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)                  
+                     DSIcomm, ierr)                  
                      
 End Subroutine Gather_3D_Real_RK8
                               
@@ -613,17 +613,17 @@ Subroutine Gather_3D_Int(first_dim_size,    second_dim_size,    third_dim_size, 
     send_size_4d    = num_active_l_local ! we do not want to send the ghost cells.. so ommit them.
 
     !***make sure each process has the same recv counts array for the 3D case
-    call MPI_Allgather(send_size_4d,   1, MPI_Int, recv_counts_4d, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(send_size_4d,   1, MPI_Int, recv_counts_4d, 1, MPI_Int, DSIcomm, ierr)
                         
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D,  send_size_4d, MPI_Integer, &                                        ! Send buff
                      Soln_Global_1D, recv_counts_4d , displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)
+                     DSIcomm, ierr)
                      
     !***Gather the mapping onto a global array                   
     call MPI_Gatherv(Mapping_Local,  send_size_4d, MPI_Integer, &                                        ! Send buff
                      Mapping_Global, recv_counts_4d , displacements_L_index, MPI_Integer, master_id,  &  ! Recv buff
-                     comm_2d, ierr)                  
+                     DSIcomm, ierr)                  
                      
 End Subroutine Gather_3D_Int
 

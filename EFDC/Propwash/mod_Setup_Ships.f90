@@ -36,8 +36,9 @@ subroutine Setup_Ships(test_on)
   type(position_cell) :: start_position
   type(position_cell) :: new_position
   type(ship_type)     :: inp_ship
-  type(active_ship)   :: new_ship
+  type(active_ship),target :: new_ship
   real(rkd)           :: diam, dtime, dxx, dyy, distance, sternx, sterny
+  type(ship_type), pointer :: shp
 
   allocate(all_ships(total_ships))
     
@@ -46,15 +47,15 @@ subroutine Setup_Ships(test_on)
   NSEDS2 = NSEDS
   if( fraction_fast > 0 .and. fast_multiplier > 0. )then
     do NS = 1,NSEDS
+      IBED2WC(NS) = NS                               ! *** Map bed class to WC class
+      IWC2BED(NS) = NS                               ! *** Map WC class to Bed class
       if( WSEDO(NS) > 0.0 .and. SEDDIA(NS) < 65./1e6 )then   ! *** "Fast" settling classes due to mass erosion of cohesives.  Ignore washload.
         NSEDS2 = NSEDS2 + 1
+        IWC2BED(NSEDS2) = NS                         ! *** Map WC class to Bed class
         IWC2BED(NSEDS2) = NS                         ! *** Map WC class to Bed class
         IBED2WC(NS) = NSEDS2                         ! *** Map bed class to WC class
         WSEDO(NSEDS2) = WSEDO(NS)*fast_multiplier
         if( LSEDZLJ ) DWS(NSEDS2) = DWS(NS)*fast_multiplier
-      else
-        IWC2BED(NS) = NS                            ! *** Map WC class to Bed class
-        IBED2WC(NS) = NS                            ! *** Map bed class to WC class
       endif
     enddo
       
@@ -119,6 +120,8 @@ subroutine Setup_Ships(test_on)
                            inp_ship,                           &
                            all_read_tracks(i).all_ship_tracks, &
                            all_read_tracks(i).num_tracks)
+    
+    shp => new_ship.ship
 
     ! *** Loop over the number of tracks for the ship
     do m = 1,new_ship.num_tracks
@@ -165,7 +168,7 @@ subroutine Setup_Ships(test_on)
         
         if( new_position.draft == -999 .and. ip > 1 )then
           ! *** Compute draft from ship data 
-          new_position.draft = new_ship.ship.prop_diam + 1.0                             ! *** Keep propeller submerged
+          new_position.draft = shp.prop_diam + 1.0                             ! *** Keep propeller submerged
         endif
         if( ip == 2 )then
           if( new_ship.tracks(m).track_pos(ip-1).draft == -999. ) new_ship.tracks(m).track_pos(ip-1).draft = new_position.draft
@@ -174,10 +177,10 @@ subroutine Setup_Ships(test_on)
         !if( new_position.power == -999 .and. ip > 1 )then     *** Missing power should never be used in EFDC+.
         !  ! *** Test if RPS provided instead                  *** This need to be handled before running EFDC+
         !  if( new_position.rps > 0.0 )then
-        !      if( new_ship.ship.max_rps > 1. )then
-        !        new_ship.ship.max_rps = new_position.rps
+        !      if( shp.max_rps > 1. )then
+        !        shp.max_rps = new_position.rps
         !      endif
-        !      new_position.power = -new_position.rps/new_ship.ship.max_rps
+        !      new_position.power = -new_position.rps/shp.max_rps
         !  else
         !    ! *** Missing power and rps
         !    if( new_position.speed < 1. )then
@@ -186,7 +189,7 @@ subroutine Setup_Ships(test_on)
         !    else
         !      ! *** Compute applied power from ship data     
         !      new_position.power = -0.35       ! *** For now, just use 35% of max RPS if underway
-        !      new_position.rps = new_position.power*new_ship.ship.max_rps
+        !      new_position.rps = new_position.power*shp.max_rps
         !    endif
         !    ! Note - Add approach here...   delme
         !  endif
@@ -198,31 +201,31 @@ subroutine Setup_Ships(test_on)
                 
         ! *** Apply offsets and conversions
         if( new_position.heading /= -999. )then
-          sternx = new_position.x_pos - sin(new_position.heading)*new_ship.ship.ais_to_stern         ! *** Adjust for AIS antenna position relative to stern
-          sterny = new_position.y_pos - cos(new_position.heading)*new_ship.ship.ais_to_stern         ! *** Adjust for AIS antenna position relative to stern
+          sternx = new_position.x_pos - sin(new_position.heading)*shp.ais_to_stern         ! *** Adjust for AIS antenna position relative to stern
+          sterny = new_position.y_pos - cos(new_position.heading)*shp.ais_to_stern         ! *** Adjust for AIS antenna position relative to stern
 
-          new_position.x_pos = sternx + sin(new_position.heading)*new_ship.ship.dist_from_stern      ! *** Adjust from stern to center of propeller location
-          new_position.y_pos = sterny + cos(new_position.heading)*new_ship.ship.dist_from_stern      ! *** Adjust from stern to center of propeller location
+          new_position.x_pos = sternx + sin(new_position.heading)*shp.dist_from_stern      ! *** Adjust from stern to center of propeller location
+          new_position.y_pos = sterny + cos(new_position.heading)*shp.dist_from_stern      ! *** Adjust from stern to center of propeller location
 
           new_position.heading = new_position.heading - pi/2.                                        ! *** Reverse direction from "to" to "from" (use compass orientation)
         endif
 
-        new_position.draft = new_position.draft + new_ship.ship.prop_offset                          ! *** Depth of the propeller shaft (meters)
-        new_position.draft = max(new_position.draft, 0.5*(0.0 + new_ship.ship.prop_diam))
+        new_position.draft = new_position.draft + shp.prop_offset                          ! *** Depth of the propeller shaft (meters)
+        new_position.draft = max(new_position.draft, 0.5*(0.0 + shp.prop_diam))
   
         new_ship.tracks(m).track_pos(ip) = new_position                                              ! *** Position now reflects propeller position
       enddo  ! *** End of number of points in track
     enddo    ! *** End of number of tracks
     
     ! *** Derived contant parameters
-    new_ship.prop_radius = new_ship.ship.prop_diam / 2.
-    if( new_ship.ship.ducted > 0 )then
-      diam = new_ship.ship.prop_diam
+    new_ship.prop_radius = shp.prop_diam / 2.
+    if( shp.ducted > 0 )then
+      diam = shp.prop_diam
     else
-      diam = new_ship.ship.prop_diam*0.71                                                            ! *** Account for the jet contraction of an unducted propeller
+      diam = shp.prop_diam*0.71                                                            ! *** Account for the jet contraction of an unducted propeller
     endif
     new_ship.prop_area   = PI*(0.5*diam)**2                                                          ! *** Single propeller area of effective diameter
-    new_ship.prop_area   = new_ship.prop_area * new_ship.ship.num_props                              ! *** Total propeller area
+    new_ship.prop_area   = new_ship.prop_area * shp.num_props                              ! *** Total propeller area
     
     allocate(new_ship.mesh_count(0:LCM))
     new_ship.mesh_count = 0

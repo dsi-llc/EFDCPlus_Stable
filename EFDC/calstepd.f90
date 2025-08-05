@@ -26,10 +26,11 @@
   use MPI
   use Variables_MPI_Mapping
   use MPI_All_Reduce
+  use Broadcast_Routines
 
   implicit none
 
-  integer :: ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX
+  integer :: IERR, ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX
   integer :: NMD, LMDCHHT, LMDCHUT, LMDCHVT, ITMPR, LLOCOLD,  MINTYPE
   integer,save :: NUP
   !INTEGER,save,allocatable,dimension(:) :: LDYN
@@ -101,12 +102,12 @@
           QUKTMP = QCHANU(NMD)*DZC(LMDCHUT,K)
           QVKTMP = QCHANV(NMD)*DZC(LMDCHVT,K)
         endif
-        QSUBOUT(LMDCHHT,K) = QSUBOUT(LMDCHHT,K) + MIN(QUKTMP,0.) + MIN(QVKTMP,0.)
-        QSUBINN(LMDCHHT,K) = QSUBINN(LMDCHHT,K) + MAX(QUKTMP,0.) + MAX(QVKTMP,0.)
-        QSUBOUT(LMDCHUT,K) = QSUBOUT(LMDCHUT,K) - MAX(QUKTMP,0.)
-        QSUBINN(LMDCHUT,K) = QSUBINN(LMDCHUT,K) - MIN(QUKTMP,0.)
-        QSUBOUT(LMDCHVT,K) = QSUBOUT(LMDCHVT,K) - MAX(QVKTMP,0.)
-        QSUBINN(LMDCHVT,K) = QSUBINN(LMDCHVT,K) - MIN(QVKTMP,0.)
+        QSUBOUT(LMDCHHT,K) = QSUBOUT(LMDCHHT,K) + min(QUKTMP,0.) + min(QVKTMP,0.)
+        QSUBINN(LMDCHHT,K) = QSUBINN(LMDCHHT,K) + max(QUKTMP,0.) + max(QVKTMP,0.)
+        QSUBOUT(LMDCHUT,K) = QSUBOUT(LMDCHUT,K) - max(QUKTMP,0.)
+        QSUBINN(LMDCHUT,K) = QSUBINN(LMDCHUT,K) - min(QUKTMP,0.)
+        QSUBOUT(LMDCHVT,K) = QSUBOUT(LMDCHVT,K) - max(QVKTMP,0.)
+        QSUBINN(LMDCHVT,K) = QSUBINN(LMDCHVT,K) - min(QVKTMP,0.)
       enddo
     enddo
   endif
@@ -125,7 +126,7 @@
   !$OMP  PRIVATE(QXMINS, QYMINS, QZMINS, QTOTAL, QSRC, BOT, THP1, THP2)
   do ND = 1,NDM
     LF = 2+(ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
 
     ! *** METHOD 1: COURANT–FRIEDRICHS–LEWY
     do LP = 1,LAWET
@@ -153,11 +154,11 @@
           
           ! *** Positive Fluxes
           QXPLUS = UHDY2(LE,K)
-          QXPLUS = MAX(QXPLUS,0.0)
+          QXPLUS = max(QXPLUS,0.0)
           QYPLUS = VHDX2(LN,K)
-          QYPLUS = MAX(QYPLUS,0.0)
+          QYPLUS = max(QYPLUS,0.0)
           QZPLUS = W2(L,K)*DXYP(L)
-          QZPLUS = MAX(QZPLUS,0.0)
+          QZPLUS = max(QZPLUS,0.0)
           
           ! *** Negative fluxes
           QXMINS = UHDY2(L,K)
@@ -173,7 +174,7 @@
           
           if( BOT > 1.E-12 )then
             DTTMP = TOP/BOT
-            DTL2(L) = MIN(DTL2(L),DTTMP)
+            DTL2(L) = min(DTL2(L),DTTMP)
           endif
         enddo
       enddo
@@ -195,7 +196,7 @@
     !        ACACTMP = (CAC(L,KC)*HPI(L)*DXYIP(L))**2
     !        if( ACACTMP > FRIFRE2 )then
     !          DTTMP = 2.*FRIFRE/(ACACTMP-FRIFRE2)
-    !          DTL3(L) = MIN(DTL3(L),DTTMP)
+    !          DTL3(L) = min(DTL3(L),DTTMP)
     !        endif
     !      endif
     !    endif
@@ -212,7 +213,7 @@
         if( THP1 < HDRY/10.) THP1 = HDRY/10.
         THP2 = H1P(L) 
         if( THP2 < HDRY/10.) THP2 = HDRY/10.
-        TESTTEMP = MAX(ABS(THP1-THP2),1.E-06)
+        TESTTEMP = max(ABS(THP1-THP2),1.E-06)
         TMPVAL   = DTDYN*HP(L)/TESTTEMP
         DTL4(L)  = DTSSDHDT*TMPVAL
       enddo
@@ -277,11 +278,17 @@
   LLOCOLD = LMINSTEP              ! *** Global Old LMINSTEP
 
   ! *** Synchronize all processes with minimum timestep and corresponding global LMINSTEP
-  TMPVAL = MIN(DTTMP,DTMAX)
+  TMPVAL = min(DTTMP,DTMAX)
   LL = MAP2GLOBAL(LLOC).LG        ! *** Global LMINSTEP for current process
 
+  call MPI_barrier(DSIcomm, IERR)
   call DSI_All_Reduce(TMPVAL, LL, DTTMP, LMINSTEP, MPI_MIN, TTDS, 1, TWAIT)
+
+  call Broadcast_Scalar(DTTMP, master_id)        ! *** Forcing communication due to MPI bug (2025-05-01)
+  call Broadcast_Scalar(LMINSTEP, master_id)     ! *** Forcing communication due to MPI bug (2025-05-01)
+
   DSITIMING(11) = DSITIMING(11) + TTDS
+
 
   DTCOMP = DTTMP*DTCOMP           ! *** Minimum delta T without any safety factors
   if( DTCOMP < DTMIN )then
@@ -296,8 +303,7 @@
     write(mpi_log_unit,800) TIMEDAY, DTTMP, DTMIN, Map2Global(LLOC).IG, Map2Global(LLOC).JG, HP(LLOC)
     write(mpi_log_unit,801) Map2Global(L1LOC).IG, Map2Global(L1LOC).JG, DTL1MN, HP(L1LOC)
     write(mpi_log_unit,802) Map2Global(L2LOC).IG, Map2Global(L2LOC).JG, DTL2MN, HP(L2LOC)
-    !WRITE(mpi_log_unit,803)IL(L3LOC),JL(L3LOC),DTL3MN,HP(L3LOC)
-    !WRITE(6,803)IL(L3LOC),JL(L3LOC),DTL3MN,HP(L3LOC)
+
     if( DTSSDHDT > 0. )then
       write(mpi_log_unit,804) Map2Global(L4LOC).IG, Map2Global(L4LOC).JG, DTL4MN
     endif
@@ -350,13 +356,13 @@
   else
     DTTMP = DTDYN
   endif
-  DTDYN = MIN(DTTMP,DTMAX)
+  DTDYN = min(DTTMP,DTMAX)
 
   ! *** SET INCREMENTAL INCREASE IN OUTPUT COUNTER
   NINCRMT = NINT(DTDYN/DTMIN)
   DTDYN   = FLOAT(NINCRMT)*DTMIN
 
-  !IF( ITRNTMP == 0 ) DTL2MN = DTDYN
+  call MPI_barrier(DSIcomm, IERR)
 
 100 FORMAT(5I5,5F12.5,E13.5)
 101 FORMAT(3I5,E13.5)

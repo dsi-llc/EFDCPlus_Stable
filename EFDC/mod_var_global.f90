@@ -306,6 +306,8 @@ MODULE GLOBAL
   real,allocatable,dimension(:)     :: SUBO          !< Flag to turn on/off cell boundary flows: U face - initial condition
   real,allocatable,dimension(:)     :: SVB           !< Flag to turn on/off cell boundary flows: V face
   real,allocatable,dimension(:)     :: SVBO          !< Flag to turn on/off cell boundary flows: V face - initial condition
+  real,allocatable,dimension(:)     :: SVBD          !< Flag to turn off external density gradient: V face - Northernmost cell
+  real,allocatable,dimension(:)     :: SUBD          !< Flag to turn off external density gradient: U face - Easternmost cell
 
   integer :: ISCONNECT   !< Flag to enable user specified cell face connections
   integer :: NPEWBP      !< Number of E-W connectors
@@ -973,8 +975,8 @@ MODULE GLOBAL
   integer,allocatable,dimension(:)     :: LBWRC      !< List of edge cells for inflow momentum adjustments
   
   integer,allocatable,dimension(:,:)   :: LQSPATH    ! *** List if cells followed from original L to final L.  Only used if HDRYMOVE > 0.0
-  integer,allocatable,dimension(:)     :: LQSSAVE    ! *** Point source flow boundary cell list - Original cell list.  Only used if HDRYMOVE > 0.0
-  integer,allocatable,dimension(:)     :: LQSSAVE0   ! *** Point source flow boundary cell list - Original cell list.  Only used if HDRYMOVE > 0.0
+  integer,allocatable,dimension(:)     :: LQSSAVED   ! *** Point source flow boundary cell list - Saved original cell list.   Only used if HDRYMOVE > 0.0
+  integer,allocatable,dimension(:)     :: LQSMOVED   ! *** Point source flow boundary cell list - Saved last used cell list.  Only used if HDRYMOVE > 0.0
   
   integer,allocatable,dimension(:,:)   :: LUPU       !< L index of cell upwind (upstream) in the U direction
   integer,allocatable,dimension(:,:)   :: LUPV       !< L index of cell upwind (upstream) in the V direction
@@ -1093,8 +1095,8 @@ MODULE GLOBAL
   real,allocatable,dimension(:)     :: AGWELV2       !< Groundwater elevation - 2nd previous (m)
   real,allocatable,dimension(:,:)   :: AH            !< Horizontal Turbulent Viscosity, depth normalized (m/s)
   real,allocatable,dimension(:,:)   :: AHC           !< Corner value of AH for 3TL otherwize not used
-  real,allocatable,dimension(:)     :: AHDXY         !< AHD * DX * DY
-  real,allocatable,dimension(:)     :: AHOXY         !< AHO * DX * DY
+  real,allocatable,dimension(:)     :: AHDXY         !< Sptatially variable AHD
+  real,allocatable,dimension(:)     :: AHOXY         !< Sptatially variable AHO
   real,allocatable,dimension(:,:,:) :: ALOW          !< Lower diagonal of tridiagonal matrix
   
   real,allocatable,dimension(:)     :: APCG          !< Conjugate gradient          
@@ -1108,8 +1110,6 @@ MODULE GLOBAL
 
   real,allocatable,dimension(:,:)   :: B             !< Buoyancy (dimensionless)
   real,allocatable,dimension(:,:)   :: B1            !< Buoyancy one time step back
-  real,allocatable,dimension(:,:)   :: NNTEM         !< Buoyancy (dimensionless) - temperature 
-  real,allocatable,dimension(:,:)   :: NNSAL         !< Buoyancy (dimensionless) - salinity
 
   real,allocatable,dimension(:,:)   :: CAC           !< Coriolis and curvature parameter l*l/t
   real,allocatable,dimension(:)     :: CCC           !< External mode linear equation coeff
@@ -1577,7 +1577,7 @@ MODULE GLOBAL
   real,allocatable,dimension(:,:,:)  :: CQS           !< Concentration associated in volume sources
   real,allocatable,dimension(:,:)    :: QSS           !< Constant flows by layer
 
-  type FLOWBC
+  type POINT_SOURCE
     integer :: GRPID                 !< Boundary group number
     integer :: I       = 0           !< Cell - I index
     integer :: J       = 0           !< Cell - J index
@@ -1591,7 +1591,7 @@ MODULE GLOBAL
     real    :: RQSMUL  = 1.0         !< Flow factor multilier to convert input values to m3/s
     integer,allocatable :: NCSERQ(:) !< Index of the constituent time series
     real,allocatable    :: CQSE(:)   !< Concentration associated in volume sources
-  end type FLOWBC
+  end type POINT_SOURCE
   
   type HYDRAULIC_STRUCTURES
     integer :: IQCTLU                !< Upstream cell - I index
@@ -1682,8 +1682,8 @@ MODULE GLOBAL
     real,allocatable    :: CWRCJP(:)    !< Constant rise/fall for each constituent (W/R Flow)
   end type JETPLUME
   
-  type(FlowBC),save,allocatable,dimension(:) :: BCFL                      !< Flow boundary cell (Local)
-  type(FlowBC),save,allocatable,dimension(:) :: BCFL_GL                   !< Flow boundary cell (Global)
+  type(POINT_SOURCE),save,allocatable,dimension(:) :: BCPS                      !< Flow boundary cell (Local)
+  type(POINT_SOURCE),save,allocatable,dimension(:) :: BCPS_GL                   !< Flow boundary cell (Global)
 
   type(HYDRAULIC_STRUCTURES),save,allocatable,dimension(:) :: HYD_STR     !< Hydraulic Structures (Local)
   type(HYDRAULIC_STRUCTURES),save,allocatable,dimension(:) :: HYD_STR_GL  !< Hydraulic Structures (Global)
@@ -2472,6 +2472,7 @@ MODULE GLOBAL
   integer(IK4) :: ROTA
   integer(IK4) :: ISSGLFIL
   integer(4)   :: IS_NC_OUT(50)           ! *** Options for NetCDF output: 0 = NO, 1 = YES
+  integer(4)   :: IS_ARRAY_OUT(10)        ! *** Options for NetCDF output: 0 = NO, 1 = YES
   
   real      :: HREST
   real(RKD) :: TBEGINC
@@ -2554,8 +2555,11 @@ MODULE GLOBAL
   real :: COARE_NITS                                 !< Number of iterations of COARE algorithm
   real :: TCTMSR                                     !< Time conversion from seconds to user units 
   real,allocatable,dimension(:) :: CDCOARE           !< COARE 3.6 Wind drag coefficient
-  real,allocatable,dimension(:) :: HSCOARE           !< Sensible heat flux
-  real,allocatable,dimension(:) :: HLCOARE           !< Latent heat flux
+  
+  ! *** Heat fluxes variables for writing array out
+  real,allocatable,dimension(:) :: HS_OUT            !< Sensible heat flux
+  real,allocatable,dimension(:) :: HL_OUT            !< Latent heat flux
+  real,allocatable,dimension(:) :: HW_OUT            !< Long wave solar radiation heat flux
   
   ! *** Legacy Output - Time Series
   integer :: ISTMSR          !< Activate flag
@@ -2724,11 +2728,10 @@ MODULE GLOBAL
   real,allocatable,dimension(:,:)   :: WLPF          !< 
   
   real(rkd),allocatable,dimension(:) :: WASPTIME     !< 
-  
+
 #ifdef GNU  
   character(11) :: FMT_BINARY                        !< 'UNFORMATTED' file format
 #else
   character(6) :: FMT_BINARY                         !< 'BINARY' file format
-#endif
-
-  END MODULE
+#endif 
+END MODULE

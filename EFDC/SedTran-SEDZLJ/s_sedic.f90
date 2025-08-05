@@ -544,7 +544,7 @@ SUBROUTINE SEDIC
   
   ! *** ***********************************************************************
   
-  ! Read in Wave Fetch or STWAVE Data if Used (DELME - TODO FOR MPI)
+  ! Read in Wave Fetch or STWAVE Data if Used
   if( ISWNWAVE == 1 )then
     write(*,'(A)')'READING SEDZLJ: FETCH.INP'
     open(UNIT = 50,FILE = 'fetch.inp')
@@ -665,7 +665,7 @@ SUBROUTINE SEDIC
           EXIT
         endif
       enddo
-      D50AVG(L) = MAX(D50AVG(L),D50(1))
+      D50AVG(L) = max(D50AVG(L),D50(1))
     endif
   enddo
 
@@ -726,7 +726,7 @@ SUBROUTINE SEDIC
         endif
     
         ! *** Zero any layers above KBT
-        KT = MAX(KBT(L)-1,1)
+        KT = max(KBT(L)-1,1)
         do K = KT,1,-1
           HBED(L,K)          = 0.
           SEDB(L,K,1:NSEDS)  = 0.

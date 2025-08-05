@@ -19,7 +19,7 @@ Use Allocate_Initialize
 USE Variables_WQ, only:WQCONSTIT
 USE JULIANMOD
 #ifndef GNU  
-use IFPORT
+  USE IFPORT
 #endif
 USE INFOMOD,only:NUMCOL,SKIPCOM,READSTR
 Use MPI
@@ -193,33 +193,33 @@ SUBROUTINE Restart_Out(TIME_RESTART, IRSTYP)
 
       do LL = 1,NPBS_GL
         do K = 1,KC
-          NLOS_Global(LL,K,M) = MAX( NLOS_Global(LL,K,M)-NITER, -NTSCRS_GL(LL) )
+          NLOS_Global(LL,K,M) = max( NLOS_Global(LL,K,M)-NITER, -NTSCRS_GL(LL) )
         enddo
         write(99,908) (NLOS_Global(LL,K,M),K = 1,KC)
         write(99,906) (CLOS_Global(LL,K,M),K = 1,KC)
       enddo
       do LL = 1,NPBW_GL
         do K = 1,KC
-          NLOW_Global(LL,K,M) = MAX( NLOW_Global(LL,K,M)-NITER, -NTSCRW_GL(LL) )
+          NLOW_Global(LL,K,M) = max( NLOW_Global(LL,K,M)-NITER, -NTSCRW_GL(LL) )
         enddo
         write(99,908) (NLOW_Global(LL,K,M),K = 1,KC)
         write(99,906) (CLOW_Global(LL,K,M),K = 1,KC)
       enddo
       do LL = 1,NPBE_GL
         do K = 1,KC
-          NLOE_Global(LL,K,M) = MAX( NLOE_Global(LL,K,M)-NITER, -NTSCRE_GL(LL) )
+          NLOE_Global(LL,K,M) = max( NLOE_Global(LL,K,M)-NITER, -NTSCRE_GL(LL) )
         enddo
         write(99,908) (NLOE_Global(LL,K,M),K = 1,KC)
         write(99,906) (CLOE_Global(LL,K,M),K = 1,KC)
       enddo
       do LL = 1,NPBN_GL
         do K = 1,KC
-          NLON_Global(LL,K,M) = MAX( NLON_Global(LL,K,M)-NITER, -NTSCRN_GL(LL) )
+          NLON_Global(LL,K,M) = max( NLON_Global(LL,K,M)-NITER, -NTSCRN_GL(LL) )
         enddo
         write(99,908) (NLON_Global(LL,K,M),K = 1,KC)
         write(99,906) (CLON_Global(LL,K,M),K = 1,KC)
       enddo
-      NSCM0 = MAX(1,NSED)                        ! *** Temporary variable since propwash also uses NSCM
+      NSCM0 = max(1,NSED)                        ! *** Temporary variable since propwash also uses NSCM
       if( I == 3 .and. MD < NDYE ) GOTO 100      ! *** LOOP BACK AND WRITE NEXT DYE CLASS
       if( I == 5 .and. NT < NTXM ) GOTO 100      ! *** LOOP BACK AND WRITE NEXT TOX CLASS
       if( I == 6 .and. NS < NMAX ) GOTO 100      ! *** LOOP BACK AND WRITE NEXT SED CLASS
@@ -908,22 +908,22 @@ SUBROUTINE Restart_In(OPT)
       ! *** Check minimums
       if( Restart_In_Ver >= 1200 .and. ISGOTM > 0 )then
         do K = 0,KC
-          TKE3D(LL,K)  = MAX(TKE3D_GLOBAL(LG,K), K_MIN)
+          TKE3D(LL,K)  = max(TKE3D_GLOBAL(LG,K), K_MIN)
           TKE3D1(LL,K) = TKE3D(LL,K)
-          EPS3D(LL,K)  = MAX(EPS3D_GLOBAL(LG,K), EPS_MIN)
+          EPS3D(LL,K)  = max(EPS3D_GLOBAL(LG,K), EPS_MIN)
           EPS3D1(LL,K) = EPS3D(LL,K) 
-          GL3D(LL,K)   = MAX(GL3D_GLOBAL(LG,K), EPS_MIN)
+          GL3D(LL,K)   = max(GL3D_GLOBAL(LG,K), EPS_MIN)
           QQ(LL,K)     = 2.*TKE3D(LL,K)
           QQ1(LL,K)    = QQ(LL,K)
           DML(LL,K)    = GL3D(LL,K)/HP(LL)
         enddo
       else
         do K = 0,KC
-          QQ(LL,K)   = MAX(QQ_Global(LG,K), QQMIN)
-          QQ1(LL,K)  = MAX(QQ1_Global(LG,K), QQMIN)
-          QQL(LL,K)  = MAX(QQL_Global(LG,K), QQLMIN)
-          QQL1(LL,K) = MAX(QQL1_Global(LG,K), QQLMIN)
-          DML(LL,K)  = MAX(DML_Global(LG,K), DMLMIN)
+          QQ(LL,K)   = max(QQ_Global(LG,K), QQMIN)
+          QQ1(LL,K)  = max(QQ1_Global(LG,K), QQMIN)
+          QQL(LL,K)  = max(QQL_Global(LG,K), QQLMIN)
+          QQL1(LL,K) = max(QQL1_Global(LG,K), QQLMIN)
+          DML(LL,K)  = max(DML_Global(LG,K), DMLMIN)
         enddo
       endif
       QQSQR(LL,0)  = SQRT(QQ(LL,0))
@@ -957,16 +957,16 @@ SUBROUTINE Restart_In(OPT)
           TF = 0.0
         endif
         do K = 1,KC
-          TEM(LL,K) = MIN(TEM(LL,K), 70.)
+          TEM(LL,K) = min(TEM(LL,K), 70.)
           if( TEM(LL,K) < TF )then
             TEM(LL,1:KC)  = TF
           endif
-          TEM1(LL,K) = MIN(TEM1(LL,K), 70.)
+          TEM1(LL,K) = min(TEM1(LL,K), 70.)
           if( TEM1(LL,K) < TF )then
             TEM1(LL,1:KC)  = TF
           endif
         enddo
-        TEMB(LL) = MAX(MIN(TEMB(LL), 50.), 0.0)
+        TEMB(LL) = max(MIN(TEMB(LL), 50.), 0.0)
       endif
 
       if( ISTRAN(3) > 0 .and. ISCI(3) > 0 .and. ISCOCHK(3) == 1 )then
@@ -1391,11 +1391,11 @@ SUBROUTINE Restart_In(OPT)
   
     LW = LWC(L)
     if( KSZ(LW) > KSZ(L) )then
-      HU(L)  = MAX( 0.5*HP(L)*DZC(L,KSZ(LW)),  HP(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
-      H1U(L) = MAX( 0.5*H1P(L)*DZC(L,KSZ(LW)), H1P(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
+      HU(L)  = max( 0.5*HP(L)*DZC(L,KSZ(LW)),  HP(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
+      H1U(L) = max( 0.5*H1P(L)*DZC(L,KSZ(LW)), H1P(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
     elseif( KSZ(LW) < KSZ(L) )then
-      HU(L)  = MAX( 0.5*HP(L)*DZC(LW,KSZ(L)),  HP(L)*(1.+DZC(LW,KSZ(L))*0.1) )
-      H1U(L) = MAX( 0.5*H1P(L)*DZC(LW,KSZ(L)), H1P(L)*(1.+DZC(LW,KSZ(L))*0.1) )
+      HU(L)  = max( 0.5*HP(L)*DZC(LW,KSZ(L)),  HP(L)*(1.+DZC(LW,KSZ(L))*0.1) )
+      H1U(L) = max( 0.5*H1P(L)*DZC(LW,KSZ(L)), H1P(L)*(1.+DZC(LW,KSZ(L))*0.1) )
     else
       HU(L)  = 0.5*( DXYP(L)*HP(L)  + DXYP(LW)*HP(LW) ) / DXU(L) / DYU(L)
       H1U(L) = 0.5*( DXYP(L)*H1P(L) + DXYP(LW)*H1P(LW) ) / DXU(L) / DYU(L)
@@ -1405,11 +1405,11 @@ SUBROUTINE Restart_In(OPT)
         
     LS = LSC(L)
     if( KSZ(LS) > KSZ(L) )then
-      HV(L)  = MAX( 0.5*HP(L)*DZC(L,KSZ(LS)),  HP(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
-      H1V(L) = MAX( 0.5*H1P(L)*DZC(L,KSZ(LS)), H1P(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
+      HV(L)  = max( 0.5*HP(L)*DZC(L,KSZ(LS)),  HP(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
+      H1V(L) = max( 0.5*H1P(L)*DZC(L,KSZ(LS)), H1P(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
     elseif( KSZ(LS) < KSZ(L) )then
-      HV(L)  = MAX( 0.5*HP(L)*DZC(LS,KSZ(L)),  HP(L)*(1.+DZC(LS,KSZ(L))*0.1) )
-      H1V(L) = MAX( 0.5*H1P(L)*DZC(LS,KSZ(L)), H1P(L)*(1.+DZC(LS,KSZ(L))*0.1) )
+      HV(L)  = max( 0.5*HP(L)*DZC(LS,KSZ(L)),  HP(L)*(1.+DZC(LS,KSZ(L))*0.1) )
+      H1V(L) = max( 0.5*H1P(L)*DZC(LS,KSZ(L)), H1P(L)*(1.+DZC(LS,KSZ(L))*0.1) )
     else
       HV(L)  = 0.5*( DXYP(L)*HP(L)  + DXYP(LS)*HP(LS) ) / DXV(L) / DYV(L)
       H1V(L) = 0.5*( DXYP(L)*H1P(L) + DXYP(LS)*H1P(LS) ) / DXV(L) / DYV(L)
@@ -1460,30 +1460,30 @@ SUBROUTINE Restart_In(OPT)
       UHDY(L,K)   = UHDYF(L,K)*DZC(L,K)
       VHDX(L,K)   = VHDXF(L,K)*DZC(L,K)
 
-      SAL(L,K)  = MAX(SAL(L,K),0.)
-      SAL1(L,K) = MAX(SAL1(L,K),0.)
+      SAL(L,K)  = max(SAL(L,K),0.)
+      SAL1(L,K) = max(SAL1(L,K),0.)
 
-      TEM(L,K)  = MAX(TEM(L,K),0.)
-      TEM1(L,K) = MAX(TEM1(L,K),0.)
+      TEM(L,K)  = max(TEM(L,K),0.)
+      TEM1(L,K) = max(TEM1(L,K),0.)
 
       do MD = 1,NDYE
-        DYE(L,K,MD)  = MAX(DYE(L,K,MD),0.)
-        DYE1(L,K,MD) = MAX(DYE1(L,K,MD),0.)
+        DYE(L,K,MD)  = max(DYE(L,K,MD),0.)
+        DYE1(L,K,MD) = max(DYE1(L,K,MD),0.)
       enddo
 
       do NT = 1,NTOX
-        TOX(L,K,NT)  = MAX(TOX(L,K,NT),0.)
-        TOX1(L,K,NT) = MAX(TOX1(L,K,NT),0.)
+        TOX(L,K,NT)  = max(TOX(L,K,NT),0.)
+        TOX1(L,K,NT) = max(TOX1(L,K,NT),0.)
       enddo
 
       do NS = 1,NSED
-        SED(L,K,NS)  = MAX(SED(L,K,NS),0.)
-        SED1(L,K,NS) = MAX(SED1(L,K,NS),0.)
+        SED(L,K,NS)  = max(SED(L,K,NS),0.)
+        SED1(L,K,NS) = max(SED1(L,K,NS),0.)
       enddo
 
       do NX = 1,NSND
-        SND(L,K,NX)  = MAX(SND(L,K,NX),0.)
-        SND1(L,K,NX) = MAX(SND1(L,K,NX),0.)
+        SND(L,K,NX)  = max(SND(L,K,NX),0.)
+        SND1(L,K,NX) = max(SND1(L,K,NX),0.)
       enddo
 
     enddo
@@ -2024,7 +2024,7 @@ SUBROUTINE Setup_Continuation_Files(RESTARTF)
   Character(6) :: copy_command
   character*3  FLABEL*12
   character(40) :: STR*200,RSTFILE1,RSTFILE2,RSTFILE3,RSTFILE4,RSTFILE5
-#ifdef LINUX
+#if defined(LINUX) || defined(GNU)
   copy_command = 'cp'
 #else
   copy_command = 'copy'
@@ -2034,14 +2034,14 @@ SUBROUTINE Setup_Continuation_Files(RESTARTF)
     RESTARTF = ADJUSTL(RESTARTF)
     SLEN = LEN_TRIM(RESTARTF)
     do L = 1,SLEN
-      if( RESTARTF(L:L) == '_') EXIT
+      if( RESTARTF(L:L) == '_') exit
     enddo
     FLABEL = RESTARTF(L:SLEN)
   else
     FLABEL = ''
   endif
 
-#ifdef LINUX
+#if defined(LINUX) || defined(GNU)
   RSTFILE1 = './'//OUTDIR//'RESTART'//TRIM(FLABEL)//'.OUT'
   RSTFILE2 = './'//OUTDIR//'RSTWD'//TRIM(FLABEL)//'.OUT'
   RSTFILE3 = './'//OUTDIR//'WQSDRST'//TRIM(FLABEL)//'.OUT'
@@ -2061,7 +2061,7 @@ SUBROUTINE Setup_Continuation_Files(RESTARTF)
   RESLOG = SYSTEM(TRIM(STR))
 #else
   RESLOG = SYSTEMQQ(TRIM(STR))
-#endif  
+#endif
 
   if( ISDRY > 0 .and. Restart_In_Ver < 1000 )then
     write(*,'(A)')'COPYING CONTINUATION FILE TO: RSTWD.INP'
@@ -2070,7 +2070,7 @@ SUBROUTINE Setup_Continuation_Files(RESTARTF)
     RESLOG = SYSTEM(TRIM(STR))
 #else
     RESLOG = SYSTEMQQ(TRIM(STR))
-#endif  
+#endif
   endif
 
   if( LSEDZLJ )then
@@ -2080,7 +2080,7 @@ SUBROUTINE Setup_Continuation_Files(RESTARTF)
     RESLOG = SYSTEM(TRIM(STR))
 #else
     RESLOG = SYSTEMQQ(TRIM(STR))
-#endif  
+#endif
   endif
 
   ! *** WQ: THIS MUST COME AFTER READING EFDC.INP **
@@ -2092,8 +2092,7 @@ SUBROUTINE Setup_Continuation_Files(RESTARTF)
     RESLOG = SYSTEM(TRIM(STR))
 #else
     RESLOG = SYSTEMQQ(TRIM(STR))
-#endif  
-
+#endif
     if( IWQBEN == 1 .and. ISMICI == 2 )then
       ! *** wq_3dsd.jnp
       write(*,'(A)')'COPYING CONTINUATION FILE TO: WQSDRST.INP'
@@ -2102,7 +2101,7 @@ SUBROUTINE Setup_Continuation_Files(RESTARTF)
       RESLOG = SYSTEM(TRIM(STR))
 #else
       RESLOG = SYSTEMQQ(TRIM(STR))
-#endif  
+#endif
     endif
 
   endif

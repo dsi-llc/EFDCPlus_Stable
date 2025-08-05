@@ -41,14 +41,13 @@ Module Variables_WQ
   integer :: ISSDBIN         !< 
   integer :: ISWQLVL         !< Global flag to active macrophyte and/or priphyton velocity limitation
   integer :: ITNWQ           !< Water quality kinetics counter
-  integer :: IWQICI
+  integer :: IWQICI          !< Eutrophication initial condition option: 0 - Constant, 1 - spatially varying depth averaged (WQICI), 2 - Horizontal and vertical varying (WQ_WCRST)
   integer :: IWQM
   integer :: IWQNC
   integer :: IWQNPL
   integer :: IWQONC
   integer :: IWQORST
   integer :: IWQPSL
-  integer :: IWQRST
   integer :: IWQSI
   integer :: IWQSRP
   integer :: IWQSTOX

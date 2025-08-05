@@ -77,7 +77,7 @@ Subroutine Gather_Int_Drifter(size_local_1d, Soln_Local_1D, size_global_1d, Soln
     recv_counts(:) = 0
     
     !***make sure each process has the same recv counts array for the 1d case
-    call MPI_Allgather(send_size_1d,   1, MPI_Int, recv_counts, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(send_size_1d,   1, MPI_Int, recv_counts, 1, MPI_Int, DSIcomm, ierr)
     
     ! *** setup the array that keeps track of where data from all processes will be places
     displacements_index(1) = 0 ! 
@@ -90,7 +90,7 @@ Subroutine Gather_Int_Drifter(size_local_1d, Soln_Local_1D, size_global_1d, Soln
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D,  send_size_1d, MPI_Integer, &                         ! *** Send buff
                      Soln_Global_1D, recv_counts,  displacements_index, MPI_Integer,   &  ! *** Recv buff
-                     master_id, comm_2d, ierr)
+                     master_id, DSIcomm, ierr)
 
     if(MPI_DEBUG_FLAG )then
         write(mpi_log_unit,'(a,20i5)') 'active_domains: ',active_domains
@@ -141,7 +141,7 @@ Subroutine Gather_Real_Drifter_RK8(size_local_1d,  Soln_Local_1D, size_global_1d
     displacements_index(:) = 0
     
     !***make sure each process has the same recv counts array for the 1d case
-    call MPI_Allgather(send_size_1d, 1, MPI_Int, recv_counts, 1, MPI_Int, comm_2d, ierr)
+    call MPI_Allgather(send_size_1d, 1, MPI_Int, recv_counts, 1, MPI_Int, DSIcomm, ierr)
 
     ! *** setup the array that keeps track of where data from all processes will be places
     displacements_index(1) = 0 ! 
@@ -150,14 +150,14 @@ Subroutine Gather_Real_Drifter_RK8(size_local_1d,  Soln_Local_1D, size_global_1d
         displacements_index(i) = displacements_index(i-1) + recv_counts(i-1)
     enddo 
     
-    if(MPI_DEBUG_FLAG )then
+    if( MPI_DEBUG_FLAG )then
         write(mpi_log_unit,'(a,3010i5)') 'displacements_index: ',displacements_index
     endif
     
     !***Gather solution onto global 1D array
     call MPI_Gatherv(Soln_Local_1D,  send_size_1d, mpi_real8, &                         ! *** Send buff
                      Soln_Global_1D, recv_counts,  displacements_index, mpi_real8,   &  ! *** Recv buff
-                     master_id, comm_2d, ierr)
+                     master_id, DSIcomm, ierr)
     
 End Subroutine Gather_Real_Drifter_RK8
     

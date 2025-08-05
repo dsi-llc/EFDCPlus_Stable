@@ -133,6 +133,7 @@ SUBROUTINE CALHEAT
 
   real,save,allocatable,dimension(:) :: TBEDTHK                ! *** Thermal Thickness of the bed (m)
   real,save,allocatable,dimension(:) :: FLUXTB                 ! *** Accumulator for conductive and convective heat exchange with the bed  (C*m)
+  real,save,allocatable,dimension(:) :: FLUXQB                 ! *** Accumulator for conductive and convective heat exchange with the bed  (C*m)
   real,save,allocatable,dimension(:) :: RADBOTT                ! *** Accumulator for solar radiation at the bed surface                    (W/m2)
   real,save,allocatable,dimension(:) :: PSHADE_OLD
   real,save,allocatable,dimension(:) :: WSHLTR_OLD
@@ -145,12 +146,13 @@ SUBROUTINE CALHEAT
   real,save :: ztt   !< height of temperature sensor [m]
   real,save :: zqq   !< height of RH sensor [m]
   real,save :: zii   !< PBL height [m]
-  real :: tau_, hsb, hlb, Le, sw_net, lw_dn_abs, lw_up, rainn, rhh
+  real :: tau_, hsb, hlb, Le_, sw_net, lw_dn_abs, lw_up, rainn, rhh
   real :: zoo, Ss, vcp, sigH,dz_skin, cd_
 
   if( .not. allocated(TBEDTHK) )then
     call AllocateDSI(TBEDTHK,    LCM, 0.0)
     call AllocateDSI(FLUXTB,     LCM, 0.0)
+    call AllocateDSI(FLUXQB,     LCM, 0.0)
     call AllocateDSI(RADBOTT,    LCM, 0.0)
 
     call AllocateDSI(PSHADE_OLD, NDM, 0.0)
@@ -195,9 +197,9 @@ SUBROUTINE CALHEAT
         do L1 = 2,LA_Global
           read(1001,*,END = 1000) I, J, T1, T2
           LG = LIJ_Global(I,J)
-          T1 = MAX(MIN(T1,50.),0.)                    ! *** Bed emperature, Prevent bad IC settings (EE should catch this)
+          T1 = max(MIN(T1,50.),0.)                    ! *** Bed emperature, Prevent bad IC settings (EE should catch this)
           TEMB_Global(LG) = T1
-          T2 = MAX(T2,0.1)                            ! *** Thermal thickness, Prevent bad IC settings (EE should catch this)
+          T2 = max(T2,0.1)                            ! *** Thermal thickness, Prevent bad IC settings (EE should catch this)
           R1D_Global(LG)  = T2
         enddo
 1000    close(1001)
@@ -344,7 +346,7 @@ SUBROUTINE CALHEAT
   !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND, LF, LL, LP, L, K, NAL)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
-    LL = MIN(LF+LDMWET-1,LAWET)
+    LL = min(LF+LDMWET-1,LAWET)
 
     if( COMPUTESOLRAD )then
       ! *** OVERWRITE THE INPUT SOLAR RAD WITH A COMPUTED ONE
@@ -466,7 +468,7 @@ SUBROUTINE CALHEAT
       !$OMP DO PRIVATE(ND,LF,LL,LP,L,C1,RSN)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
           do LP = LF,LL
             L = LWET(LP)
             C1 = DELT*DZIC(L,KC)*RHOWCPI
@@ -484,7 +486,7 @@ SUBROUTINE CALHEAT
       !$OMP DO PRIVATE(ND,LF,LL,LP,L,TFAST,TFAST1,TSLOW,TSLOW1,C1,RSN)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
 
         ! *** SURFACE LAYER
         do LP = LF,LL
@@ -535,7 +537,7 @@ SUBROUTINE CALHEAT
       !$OMP DO PRIVATE(ND,K,LF,LL,LP,L,WCKESS,BOT,FRACLAYER,RSN,C1)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
 
         ! *** SURFACE LAYER
         K = KC
@@ -546,9 +548,9 @@ SUBROUTINE CALHEAT
           WCKESS = GET_EXT_COEFF(L,K)
 
           ! *** FRACTION OF LIGHT AT THE BOTTOM OF THE CURRENT LAYER
-          BOT = MAX(-WCKESS*HPK(L,K),-40.0)
+          BOT = max(-WCKESS*HPK(L,K),-40.0)
           FRACLAYER = EXP(BOT)
-          FRACLAYER = MAX(FRACLAYER, FSOLRADMIN)
+          FRACLAYER = max(FRACLAYER, FSOLRADMIN)
             
           RADBOT(L,K) = RADTOP(L,K)*FRACLAYER
 
@@ -570,7 +572,7 @@ SUBROUTINE CALHEAT
               WCKESS = GET_EXT_COEFF(L,K)
 
               ! *** FRACTION OF LIGHT AT THE BOTTOM OF THE CURRENT LAYER
-              BOT = MAX(-WCKESS*HPK(L,K),-40.0)
+              BOT = max(-WCKESS*HPK(L,K),-40.0)
               FRACLAYER = EXP(BOT)
 
               RADBOT(L,K) = RADTOP(L,K)*FRACLAYER
@@ -604,10 +606,10 @@ SUBROUTINE CALHEAT
   elseif( ISTOPT(2) == 1 )then                       ! *** Full heat balance
   
     !$OMP PARALLEL DEFAULT(SHARED)
-    !$OMP DO PRIVATE(ND,LF,LL,LP,L,C2,SVPW1,TEMP)
+    !$OMP DO PRIVATE(ND,LF,LL,LP,L,C2,SVPW1,HBLW,HBCV,HBEV,TEMP)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       ! *** SURFACE HEAT FLUX WITHOUT SOLAR RADIATION (m * degC)
       do LP = LF,LL
@@ -616,10 +618,19 @@ SUBROUTINE CALHEAT
         if( .not. ICECELL(L) )then
           ! *** CELL WITHOUT ICE
           SVPW1 = SVPW(L)
-          RADNET(L,KC) = RADNET(L,KC) + C2*( 1.312E-14*((TEM(L,KC)+273.)**4)*(0.39-0.05*SQRT(VPAT(L)))*(1.-.8*CLOUDT(L))  &
-            + 5.248E-14*((TEM(L,KC)+273.)**3)*(TEM(L,KC)-TATMT(L))                        &
-            + CCNHTT(L)*0.288E-3*WINDST(L)*(TEM(L,KC)-TATMT(L))                           &
-            + CLEVAP(L)*0.445*WINDST(L)*(SVPW1-VPAT(L))/PATMT(L) )
+          HBLW = 1.312E-14*((TEM(L,KC)+273.)**4)*(0.39-0.05*SQRT(VPAT(L)))*(1.-.8*CLOUDT(L)) + &
+            5.248E-14*((TEM(L,KC)+273.)**3)*(TEM(L,KC)-TATMT(L))
+          HBCV = CCNHTT(L)*0.288E-3*WINDST(L)*(TEM(L,KC)-TATMT(L)) 
+          HBEV = CLEVAP(L)*0.445*WINDST(L)*(SVPW1-VPAT(L))/PATMT(L)
+          
+          RADNET(L,KC) = RADNET(L,KC) + C2*(HBLW + HBCV + HBEV)
+                    
+          ! *** Writing in array out for diagnostic
+          if( ISINWV == 2 )then
+            HS_OUT(L) = HBCV    ! *** m*degC/s
+            HL_OUT(L) = HBEV    ! *** m*degC/s
+            HW_OUT(L) = HBLW    ! *** m*degC/s
+          endif
                   
           ! *** FINALIZE TEMPERATURE
           TEMP = TEM(L,KC) + HPI(L)*RADNET(L,KC)
@@ -654,10 +665,10 @@ SUBROUTINE CALHEAT
   
     !$OMP PARALLEL DEFAULT(SHARED)
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,C2,HBLW,HBLWW,rainn,rhh,Ss,vcp,sigH,HBCV,HBEV, TEMP) &
-    !$OMP    PRIVATE(tau_,hsb,hlb,Le,sw_net,lw_dn_abs,lw_up,zoo,cd_,dz_skin)
+    !$OMP    PRIVATE(tau_,hsb,hlb,Le_,sw_net,lw_dn_abs,lw_up,zoo,cd_,dz_skin)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       ! *** SURFACE HEAT FLUX WITHOUT SOLAR RADIATION (m * degC)
       do LP = LF,LL
         L = LWET(LP)
@@ -688,7 +699,7 @@ SUBROUTINE CALHEAT
 
           ! *** call subroutine coare 36
           call coare36flux_coolskin(WINDST(L),zuu,TATMT(L),ztt,rhh,zqq,PATMT(L),TEM(L,KC),SOLSWRT(L),HBLWW,G,zii, &
-            rainn,Ss,vcp,sigH,tau_,hsb,hlb,Le,sw_net,lw_dn_abs,lw_up,zoo,cd_,dz_skin)
+            rainn,Ss,vcp,sigH,tau_,hsb,hlb,Le_,sw_net,lw_dn_abs,lw_up,zoo,cd_,dz_skin)
 
           ! *** convert back to EFDC unit
           HBCV = RHOWCPI*hsb    ! *** m*degC/s
@@ -696,11 +707,14 @@ SUBROUTINE CALHEAT
           RADNET(L,KC) = RADNET(L,KC) + C2*(HBLW + HBCV + HBEV)
           CDCOARE(L)  = cd_
           ZSRE(L)     = zoo
-          EVACOARE(L) = hlb/Le/1000. !*** evap rate m/s
+          EVACOARE(L) = hlb/Le_/1000. !*** evap rate m/s
 
           ! *** Writing in array out for diagnostic
-          HSCOARE(L) = hsb     ! *** W/m^2
-          HSCOARE(L) = hlb     ! *** W/m^2
+          if( ISINWV == 2 )then
+            HS_OUT(L) = HBCV    ! *** m*degC/s
+            HL_OUT(L) = HBEV    ! *** m*degC/s
+            HW_OUT(L) = HBLW    ! *** m*degC/s
+          endif
           
           ! *** FINALIZE TEMPERATURE
           TEMP = TEM(L,KC) + HPI(L)*RADNET(L,KC)
@@ -742,7 +756,7 @@ SUBROUTINE CALHEAT
     !$OMP                             PRIVATE(ET,CSHE,THICK,TFLUX,TEMP,ET0,CSHE0,WSHLTR0,PSHADE0)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
 
       ! *** INITIALIZE DOMAIN EVAPOTRANSPIRATION (ET)
       L = LWET(LF)
@@ -811,7 +825,7 @@ SUBROUTINE CALHEAT
     ! *** This option uses "cloudt" in a specialized manor to contain the surface exchange coefficient
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
-      LL = MIN(LF+LDMWET-1,LAWET)
+      LL = min(LF+LDMWET-1,LAWET)
       do LP = LF,LL
         L = LWET(LP)
         TMPKC     = DELT*DZIC(L,KC)
@@ -853,7 +867,7 @@ SUBROUTINE CALHEAT
         if( .not. LMASKDRY(L) .or. HP(L) < HDRY )then
           if( ICETHICK(L) == 0.0 )then
             if( TEM(L,KC) < -5 .or. TEM(L,KC) > 30. )then
-              TEM(L,:) = MAX(TATMT(L),0.0)
+              TEM(L,:) = max(TATMT(L),0.0)
             endif
           endif
         endif
@@ -873,27 +887,31 @@ SUBROUTINE CALHEAT
       !$OMP DO PRIVATE(ND,LF,LL,LP,L,UBED,VBED,USPD,TFLUX,THICK,TEMP)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
         do LP = LF,LL
           L = LWET(LP)
           UBED = 0.5*( U(L,KSZU(L)) + U(LEC(L),KSZU(LEC(L))) )
           VBED = 0.5*( V(L,KSZV(L)) + V(LNC(L),KSZV(LNC(L))) )
           USPD = SQRT( UBED*UBED + VBED*VBED )
-          TEMP = MAX(TEM(L,KSZ(L)), 0.1 )
+          TEMP = max(TEM(L,KSZ(L)), 0.1 )
 
           !        (nodim) (m/s)   (m/s)      (C)       (C)    (s)
           TFLUX = ( HTBED1*USPD + HTBED2 )*( TEMB(L) - TEMP )*DELT   ! *** C*m
+                    
+          ! *** Calculate longwave heat emission from the bed
+          ! *** 4.43E-14 = 1/rhob * 1/cpb * 5.67e-8, where rhob = 1600 kg/m3 and cpb = 800 J/kg/C
+          FLUXQB(L) = 4.43E-14*((TEMB(L) + 273.)**4 - (TEMP + 273.)**4)*DELT
 
-          ! *** Accumulate bottom heat FLUXTB (to avoid truncation error, apply minimum FLUXTB)
+          ! *** Accumulate bottom heat FLUXTB and FLUXQB (to avoid truncation error, apply minimum FLUXTB)
           FLUXTB(L) = FLUXTB(L) + TFLUX
           THICK = HPK(L,KSZ(L))
 
           if( ABS(FLUXTB(L))/THICK > 0.001 )then
             TEM(L,KSZ(L)) = TEM(L,KSZ(L)) + FLUXTB(L)/THICK       ! *** Update water column for bed heat exchange
             if( FLUXTB(L) < 0.0 )then
-              TEM(L,KSZ(L)) = MAX(TEM(L,KSZ(L)),TEMB(L))
+              TEM(L,KSZ(L)) = max(TEM(L,KSZ(L)),TEMB(L))
             else
-              TEM(L,KSZ(L)) = MIN(TEM(L,KSZ(L)),TEMB(L))
+              TEM(L,KSZ(L)) = min(TEM(L,KSZ(L)),TEMB(L))
             endif
             if( TEMBO <= 0.0 ) FLUXTB(L) = 0.0                    ! *** Zero accumulator here, if not updating the bed T's
           endif
@@ -907,7 +925,7 @@ SUBROUTINE CALHEAT
       !$OMP DO PRIVATE(ND,LF,LL,LP,L,THICK)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
-        LL = MIN(LF+LDMWET-1,LAWET)
+        LL = min(LF+LDMWET-1,LAWET)
 
         ! *** Accumulate solar radiation on sediment surface
         if( LDAYLIGHT )then
@@ -922,16 +940,34 @@ SUBROUTINE CALHEAT
           L = LWET(LP)
 
           THICK = HPK(L,KSZ(L))
+          
+          ! *** Update bed temperature
+          TEMB(L) = TEMB(L) - FLUXQB(L)/TBEDTHK(L)
+          FLUXQB(L) = 0.
           if( ABS(FLUXTB(L))/THICK > 0.001 )then
             ! ***       C         (     C*m        )     C*m          1/m
             TEMB(L) = TEMB(L) + ( RHOWCPI*RADBOTT(L) - FLUXTB(L) )/TBEDTHK(L)        ! *** Update bed temperature
             FLUXTB(L)  = 0.0
             RADBOTT(L) = 0.0
-            TEMB(L) = MAX(MIN(TEMB(L), TATMT(1)+20.), 0.)                            ! *** Prevent shallow cells from excessive heat
+            TEMB(L) = max(MIN(TEMB(L), TATMT(1)+20.), 0.)                            ! *** Prevent shallow cells from excessive heat
           endif
         enddo
       enddo   ! *** END OF DOMAIN
       !$OMP END DO
+            
+      ! *** Update bed temperature for dried cells to get reasonable value when they are wet again
+      ! *** Here we only account for the conductive heat loss and longwave heat emission to the air
+      ! *** Heat conductivity of sediment and air is taken as a half of heat conductivity of sediment and water
+      ! *** 4.43E-14 = 1/rhob * 1/cpb * 5.67e-8, where rhob = 1600 kg/m3 and cpb = 800 J/kg/C
+      !$OMP SINGLE
+      do L = 2,LA
+        if( HP(L) < HDRY )then
+          TEMB(L) = TEMB(L) - 0.5*HTBED2*( TEMB(L) - TATMT(L))*DELT/TBEDTHK(L)  &
+                   - 4.43E-14*((TEMB(L) + 273.)**4 - (TATMT(L) + 273.)**4)*DELT
+          TEMB(L) = max(MIN(TEMB(L), TATMT(1)+20.), 0.) 
+        endif
+      enddo
+      !$OMP END SINGLE
     endif
   endif
 
@@ -943,7 +979,7 @@ SUBROUTINE CALHEAT
     do ND = 1,NDM
       do LP = 1,LLWET(KC,ND)
         L = LKWET(LP,KC,ND)
-        TMIND(ND) = MIN(TEM(L,KC),TMIND(ND))
+        TMIND(ND) = min(TEM(L,KC),TMIND(ND))
       enddo
     enddo   ! *** END OF DOMAIN
     !$OMP END DO
@@ -964,7 +1000,7 @@ SUBROUTINE CALHEAT
         !$OMP DO PRIVATE(ND,LF,LL,LP,L)
         do ND = 1,NDM
           LF = (ND-1)*LDMWET+1
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
 
           do LP = LF,LL
             L = LWET(LP)
@@ -989,7 +1025,7 @@ SUBROUTINE CALHEAT
         !$OMP DO PRIVATE(ND,LF,LL,LP,L)
         do ND = 1,NDM
           LF = (ND-1)*LDMWET+1
-          LL = MIN(LF+LDMWET-1,LAWET)
+          LL = min(LF+LDMWET-1,LAWET)
 
           do LP = LF,LL
             L = LWET(LP)
@@ -1014,8 +1050,8 @@ SUBROUTINE CALHEAT
     if( TEMBO  > 0.0 )then
       do L = 2,LA
         if( .not. LMASKDRY(L) .or. HP(L) < HDRY )then
-          TEMB(L) = MAX(MIN(TEMB(L), TATMT(1)+20.), 0.)                            ! *** Prevent shallow cells from excessive heat
-          !TEMB(L) =  MAX(TATMT(L),0.0)   ! *** Limit bed temperature to air temp for dry cells
+          TEMB(L) = max(MIN(TEMB(L), TATMT(1)+20.), 0.)                            ! *** Prevent shallow cells from excessive heat
+          !TEMB(L) =  max(TATMT(L),0.0)   ! *** Limit bed temperature to air temp for dry cells
         endif
       enddo
     endif
@@ -1096,7 +1132,7 @@ SUBROUTINE ICECOMP(DELTD2, ICESTEP)
   !$OMP                             PRIVATE(RANLW, RT, RB, RC, RE, RN, DEL, HICE)
   do ND = 1,NDM
     LF = 2+(ND-1)*LDM
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
     do L = LF,LL
       DICETHW   = 0.0   ! *** CHANGE IN ICE THICKNESS DUE TO WATER TEMPERATURES FOR OPEN WATER (NO ICE)/ICE WATER INTERFACE (WITH ICE COVER)  (M)
       DICETHI   = 0.0   ! *** CHANGE IN ICE THICKNESS DUE TO ICE TEMPERATURES, I.E. BOTTOM GROWTH (M)
@@ -1158,7 +1194,7 @@ SUBROUTINE ICECOMP(DELTD2, ICESTEP)
             if( FRAZILICE(L,K)  > 0.0 )then
               TMPVAL     = -DELTICE*HWI*(TEM(L,K)-TF)*RHOILHFI
               FRAZILICE(L,K) = FRAZILICE(L,K) + TMPVAL
-              FRAZILICE(L,K) = MAX(FRAZILICE(L,K),0.)
+              FRAZILICE(L,K) = max(FRAZILICE(L,K),0.)
               if( FRAZILICE(L,K)  > 0.0 )LFRAZIL = .TRUE.
 
               ! *** ICE MELT ADDS WATER AT T = 0.0 DEGC
@@ -1169,7 +1205,7 @@ SUBROUTINE ICECOMP(DELTD2, ICESTEP)
             if( ICETHICK(L)  > 0.0 .and. K == KC )then
               TMPVAL     = -DELTICE*HWI*(TEM(L,K)-TF)*RHOILHFI
               ICETHICK(L) = ICETHICK(L) + TMPVAL
-              ICETHICK(L) = MAX(ICETHICK(L),0.)
+              ICETHICK(L) = max(ICETHICK(L),0.)
               if( ICETHICK(L)  > 0.0 )LFRAZIL = .TRUE.
 
               ! *** ICE MELT ADDS WATER AT T = 0.0 DEGC
@@ -1293,7 +1329,7 @@ SUBROUTINE ICECOMP(DELTD2, ICESTEP)
               write(mpi_error_unit,"(A,2I5,2F8.3,F10.4)")'ERROR: ICE TEMPERATURE ITERATIONS EXCEEDED MAX  ALLOWABLE: (MAX L ICETHK ICET TIME): ',ICEITER,L,ICETHICK(L),ICETEMP(L),TIMEDAY
 
               if( ICETEM_OLD(L) == -9999. )then
-                ICETEMP(L) = MIN(0.5*TATMT(L),0.0)
+                ICETEMP(L) = min(0.5*TATMT(L),0.0)
               else
                 ICETEMP(L) = ICETEM_OLD(L)  ! *** Use LAST GOOD ICE TEMPERATURE
               endif
@@ -1307,7 +1343,7 @@ SUBROUTINE ICECOMP(DELTD2, ICESTEP)
           ! *** GET INTERACTION AT THE ICE INTERFACE DUE TO ICE TEMPERATURE
           if( ICETEMP(L) > 0.0 )then
             ! *** ICE MELT DUE TO ICE WARMING FROM AIR/ICE INTERFACE.  ICE IS PURE WATER SO, TF = 0.0
-            ICETEMP(L) = MIN(ICETEMP(L),0.001/ICETHICK(L))
+            ICETEMP(L) = min(ICETEMP(L),0.001/ICETHICK(L))
             DICETHI = -CP*ICETEMP(L)*ICETHICK(L)*MELTFACTOR/LHF*ICESTEP/DELTICE
 
             ! *** ICE MELT ADDS WATER AT T = 0.0 DEGC
@@ -1318,7 +1354,7 @@ SUBROUTINE ICECOMP(DELTD2, ICESTEP)
         if( ICETEMP(L) <= 0.0 )then
           ! *** ICE GROWTH AT ICE/WATER INTERFACE (ICE BOTTOM)
           if( LMASKDRY(L) .and. ICETHICK(L) <= ICETHMX )then
-            TICEBOT = MIN(ICETEMP(L) + TEM(L,KC),0.0)       ! *** ADJUST ICE TEMPERATURE FOR WATER CONTACT
+            TICEBOT = min(ICETEMP(L) + TEM(L,KC),0.0)       ! *** ADJUST ICE TEMPERATURE FOR WATER CONTACT
             HICE    = ICEK*(TF-TICEBOT)/ICETHICK(L)         ! *** W/M2
             DICETHI = DELTICE*HICE*RHOILHFI
 
@@ -1374,15 +1410,15 @@ SUBROUTINE ICECOMP(DELTD2, ICESTEP)
           if( ICETHICK(L)  >  0.0 .and. ICETHICK(L) < 1.E-6 )then
             call EQUILIBRIUM_TEMPERATURE(WINDST(L), TDEWT(L), TATMT(L), SOLSWRT(L), ET, CSHE)
             if( ET  >  1.0 )then
-              if( DICETHW  > 0.0 ) ICETHICK(L) = MAX(ICETHICK(L) - DICETHW,0.0)      ! *** PREVENT A FREEZE AND A THAW IN THE SAME TIME STEP FOR THE SAME CELL
+              if( DICETHW  > 0.0 ) ICETHICK(L) = max(ICETHICK(L) - DICETHW,0.0)      ! *** PREVENT A FREEZE AND A THAW IN THE SAME TIME STEP FOR THE SAME CELL
               ! *** COMPLETE MELT
               TMPVAL = ICETHICK(L)*RATIODENS*DXYP(L)
-              
               ICEVOL(L) = ICEVOL(L) + TMPVAL
               ICETHICK(L) = 0.
-              ICECOVER(L) = 0.
             endif
           endif
+              
+          ICECOVER(L) = 0.
           ! *** ACCUMULATE ANY REMAINING ICE VOLUME AND ADD IT BACK TO THE WATER COLUMN
           if( ICEVOL(L)  /= 0.0 ) LFRAZIL = .TRUE.   ! ACCOUNT FOR FINAL "MELT"
         else   ! *** ISICE = 4
@@ -1396,7 +1432,7 @@ SUBROUTINE ICECOMP(DELTD2, ICESTEP)
           if( ISDRY > 0 .and. HP(L) < 3.*HDRY )then
             ! *** COMPUTE EQUILIBRIUM TEMPERATURE
             call EQUILIBRIUM_TEMPERATURE(WINDST(L), TDEWT(L), TATMT(L), SOLSWRT(L), ET, CSHE)
-            ET = MAX(ET,0.1)
+            ET = max(ET,0.1)
             if( ET+2. < TEM(L,KC) )then
               do K = KSZ(L),KC
                 TEM(L,K) = ET
@@ -1503,7 +1539,7 @@ SUBROUTINE EQUILIBRIUM_TEMPERATURE(WSPD, TD, TAIR, SRON, ET, CSHE)
   TAIR_F   = TAIR*1.8+32.0
   WIND_MPH = WSPD*MPS_TO_MPH
   WIND_2M  = WIND_MPH         ! *** EE7.3 AND LATER APPLY CORRECTION TO ALL WINDS
-  WIND_2M = MAX(WIND_2M, 1.)  ! PMC - APPLY A MINUMUM TO ALLOW SURFACE HEAT EXCHANGE EVEN WITH CALM CONDITIONS
+  WIND_2M = max(WIND_2M, 1.)  ! PMC - APPLY A MINUMUM TO ALLOW SURFACE HEAT EXCHANGE EVEN WITH CALM CONDITIONS
 
   ! *** SRON Should already be adjusted for Shading & Reflection
   SRO_BR   = SRON*W_M2_TO_BTU_FT2_DAY

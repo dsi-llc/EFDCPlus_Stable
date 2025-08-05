@@ -54,7 +54,7 @@ SUBROUTINE BEDLOAD(NX,NS)
   !$OMP DO PRIVATE(ND,LF,LL,L)
   do ND = 1,NDM  
     LF = 2+(ND-1)*LDM  
-    LL = MIN(LF+LDM-1,LA)
+    LL = min(LF+LDM-1,LA)
 
     ! *** ZERO BED LOAD TRANSPORTS                                                                                    
     do L = LF,LL
@@ -76,7 +76,7 @@ SUBROUTINE BEDLOAD(NX,NS)
     !$OMP    PRIVATE(CSHIELDS,TMPVAL,BDLDTMPP,BDLDTMP,SHIELDS,BDLDTMPA,BDLDTMPB) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do LP = LF,LL
         L = LSED(LP)  
@@ -122,7 +122,7 @@ SUBROUTINE BEDLOAD(NX,NS)
     !$OMP    PRIVATE(CSHIELDS,TMPVAL,CSHIELDSC,BDLDTMPP,BDLDTMP,SHIELDS,BDLDTMPA) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do LP = LF,LL
         L = LSED(LP)  
@@ -170,7 +170,7 @@ SUBROUTINE BEDLOAD(NX,NS)
     !$OMP    PRIVATE(CSHIELDS,TMPVAL,BDLDTMPP,BDLDTMP,SHIELDS,BDLDTMPA) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       CSHIELDS = 0.
       if( IBLTAUC(NS) == 1 ) CSHIELDS = TCSHIELDS(NS)
@@ -207,7 +207,7 @@ SUBROUTINE BEDLOAD(NX,NS)
     !$OMP    PRIVATE(CSHIELDS,TMPVAL,BDLDTMPP,BDLDTMP,SHIELDS,BDLDTMPA) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do LP = LF,LL
         L = LSED(LP)  
@@ -241,7 +241,7 @@ SUBROUTINE BEDLOAD(NX,NS)
     !$OMP DO PRIVATE(ND,LF,LL,LP,L)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do LP = LF,LL
         L = LSED(LP)
@@ -263,7 +263,7 @@ SUBROUTINE BEDLOAD(NX,NS)
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,LW,LS)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do LP = LF,LL
         L = LSED(LP)  
@@ -292,7 +292,7 @@ SUBROUTINE BEDLOAD(NX,NS)
     !$OMP    PRIVATE(UCELLCTRM,VCELLCTRM)
     do ND = 1,NDM  
       LF = 2+(ND-1)*LDM  
-      LL = MIN(LF+LDM-1,LA)
+      LL = min(LF+LDM-1,LA)
       
       do L = LF,LL
         if( LMASKDRY(L) )then
@@ -357,7 +357,7 @@ SUBROUTINE BEDLOAD(NX,NS)
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,LS,LW)   
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do LP = LF,LL
         L = LSED(LP)  
@@ -378,7 +378,7 @@ SUBROUTINE BEDLOAD(NX,NS)
   !$OMP DO PRIVATE(ND,LF,LL,LP,L)   
   do ND = 1,NDM  
     LF = (ND-1)*LDMSED+1  
-    LL = MIN(LF+LDMSED-1,LASED)
+    LL = min(LF+LDMSED-1,LASED)
 
     do LP = LF,LL
       L = LSED(LP)
@@ -396,7 +396,7 @@ SUBROUTINE BEDLOAD(NX,NS)
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,SLOPE)
     do ND = 1,NDM  
       LF = (ND-1)*LDMSED+1  
-      LL = MIN(LF+LDMSED-1,LASED)
+      LL = min(LF+LDMSED-1,LASED)
 
       do LP = LF,LL
         L = LSED(LP)  
@@ -431,7 +431,7 @@ SUBROUTINE BEDLOAD(NX,NS)
       !$OMP DO PRIVATE(ND,LF,LL,LP,L)   
       do ND = 1,NDM  
         LF = (ND-1)*LDMSED+1  
-        LL = MIN(LF+LDMSED-1,LASED)
+        LL = min(LF+LDMSED-1,LASED)
   
         do LP = LF,LL
           L = LSED(LP)
