@@ -8,12 +8,15 @@
 *.user
 *.obj
 *.o
+*.vfproj
+*.vfproj.*
 
 # testing & debug
 \EFDC_Test_Harness\SimpleTestHarness\SimpleTestHarness
 /x64_Runtimes.txt
 
 # build directories
+bin
 DebugSP
 ReleaseSP
 ReleaseDP
@@ -27,7 +30,6 @@ MPI_SP_64
 64SP_Rel_OneApi_MPI
 
 # build files
-*.mod
 *.o
 
 # executables & archives
@@ -46,3 +48,14 @@ Backups
 EFDC/#output
 .vs
 enc_temp_folder
+*.LOG
+*.TXT
+*.zip
+EFDC/map
+EFDC/calpuv9c - Copy.f90
+EFDC/Intel® VTune™ Profiler Results
+GPUCache
+*.yaml
+NetCDFLib/x86
+
+build/
