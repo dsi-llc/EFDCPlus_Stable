@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!
@@ -23,9 +23,9 @@
 
 Module Variables_MPI_Write_Out
 
-  Use Global
+  use GLOBAL
 
-  Implicit none
+  implicit none
 
   Real, Allocatable, Dimension(:,:,:) :: RICEWHT_global
 
@@ -45,36 +45,44 @@ Module Variables_MPI_Write_Out
   Integer(IK4) :: JMN_Global, JMX_Global !> J min/max for the global grid
   Integer(IK4) :: IMN_Global, IMX_Global !> I min/max for the global grid
   
-  Integer, target, allocatable,dimension(:) :: LBCS_Global
+  integer, target, allocatable,dimension(:) :: LBCS_Global
   
-  REAL(RK4),ALLOCATABLE :: Values_Temp_Binary(:,:,:,:)
+  real(RK4),allocatable :: Values_Temp_Binary(:,:,:,:)
   
   Character*9 :: MPI_Outdir !< Directory within output that contains optional output logs for MPI run
 
-  Integer, Allocatable, Dimension(:) :: LWVCELL_Global
-  LOGICAL, ALLOCATABLE,DIMENSION(:) :: LWVMASK_Global          !< MASK TO DETERMINE IF WAVE CALCUATIONS ARE ON/OFF FOR EACH CELL
+  integer, Allocatable, Dimension(:) :: LWVCELL_Global
+  logical, allocatable,dimension(:) :: LWVMASK_Global          !< MASK TO DETERMINE IF WAVE CALCUATIONS ARE ON/OFF FOR EACH CELL
 
   Real,Target, Allocatable, Dimension(:) :: TBY_Global
   Real,Target, Allocatable, Dimension(:) :: TBX_Global
+  Real,Target, Allocatable, Dimension(:) :: TSY_Global
+  Real,Target, Allocatable, Dimension(:) :: TSX_Global
   
-  Integer,Target, Allocatable, Dimension(:) :: LWC_Global
-  Integer,Target, Allocatable, Dimension(:) :: LEC_Global
-  Integer,Target, Allocatable, Dimension(:) :: LSC_Global
-  Integer,Target, Allocatable, Dimension(:) :: LNC_Global
+  Real,Target, Allocatable, Dimension(:) :: TBY1_Global
+  Real,Target, Allocatable, Dimension(:) :: TBX1_Global
+  Real,Target, Allocatable, Dimension(:) :: TSY1_Global
+  Real,Target, Allocatable, Dimension(:) :: TSX1_Global
+
+  integer,Target, Allocatable, Dimension(:) :: LWC_Global
+  integer,Target, Allocatable, Dimension(:) :: LEC_Global
+  integer,Target, Allocatable, Dimension(:) :: LSC_Global
+  integer,Target, Allocatable, Dimension(:) :: LNC_Global
 
   ! *** Hydrodynamics and other modules
-  Integer, Allocatable, Dimension(:)  :: KSZ_Global
+  integer, Allocatable, Dimension(:)  :: KSZ_Global
 
-  Integer,Target, Allocatable, Dimension(:)  :: ISCDRY_Global
-  Integer,Target, Allocatable, Dimension(:)  :: NATDRY_Global
-  Integer,Target, Allocatable, Dimension(:)  :: IDRY_Global
-  Integer,Target, Allocatable, Dimension(:)  :: MVEG_Global
+  integer,Target, Allocatable, Dimension(:)  :: ISCDRY_Global
+  integer,Target, Allocatable, Dimension(:)  :: NATDRY_Global
+  integer,Target, Allocatable, Dimension(:)  :: IDRY_Global
+  integer,Target, Allocatable, Dimension(:)  :: MVEG_Global
 
   Real,Target, Allocatable, Dimension(:)     :: BELV_Global
   Real,Target, Allocatable, Dimension(:)     :: DXP_Global
   Real,Target, Allocatable, Dimension(:)     :: DYP_Global
   Real,Target, Allocatable, Dimension(:)     :: HP_Global
   Real,Target, Allocatable, Dimension(:)     :: H1P_Global
+  Real,Target, Allocatable, Dimension(:)     :: H2P_Global
   Real,Target, Allocatable, Dimension(:)     :: HWQ_Global
   Real,Target, Allocatable, Dimension(:)     :: H2WQ_Global
   Real,Target, Allocatable, Dimension(:)     :: ZBR_Global
@@ -116,6 +124,10 @@ Module Variables_MPI_Write_Out
   Real,Target, Allocatable, Dimension(:,:)   :: QQL1_Global
   Real,Target, Allocatable, Dimension(:,:)   :: DML_Global
 
+  Real,Target, Allocatable, Dimension(:,:)   :: TKE3D_Global
+  Real,Target, Allocatable, Dimension(:,:)   :: EPS3D_Global
+  Real,Target, Allocatable, Dimension(:,:)   :: GL3D_Global
+
   Real,Target, Allocatable, Dimension(:)     :: QSUME_Global
   Real,Target, Allocatable, Dimension(:,:)   :: QSUM_Global
 
@@ -143,8 +155,8 @@ Module Variables_MPI_Write_Out
   Real,Target, Allocatable, Dimension(:,:,:) :: SED1_Global
   Real,Target, Allocatable, Dimension(:,:,:) :: SND1_Global
 
-  Integer,Target, Allocatable, Dimension(:)  :: KBT_Global
-  Integer, Allocatable, Dimension(:)         :: BEDMAP_Global
+  integer,Target, Allocatable, Dimension(:)  :: KBT_Global
+  integer, Allocatable, Dimension(:)         :: BEDMAP_Global
   Real,Target, Allocatable, Dimension(:,:)   :: BDENBED_Global
   Real,Target, Allocatable, Dimension(:,:)   :: PORBED_Global
 
@@ -164,19 +176,19 @@ Module Variables_MPI_Write_Out
   Real,Target, Allocatable, Dimension(:,:)   :: QSBDLDY_Global
 
   ! *** SEDZLJ
-  Integer,  Target, Allocatable, Dimension(:,:)   :: LAYERACTIVE_Global
-  Real(rkd),Target, Allocatable, Dimension(:)     :: TAU_Global
-  Real(rkd),Target, Allocatable, Dimension(:)     :: D50AVG_Global
-  Real(rkd),Target, Allocatable, Dimension(:,:)   :: BULKDENS_Global
-  Real(rkd),Target, Allocatable, Dimension(:,:)   :: TSED_Global
-  Real(rkd),Target, Allocatable, Dimension(:,:,:) :: PERSED_Global
-  Real(rkd),Target, Allocatable, Dimension(:)     :: ETOTO_Global
-  Real(rkd),Target, Allocatable, Dimension(:)     :: DEPO_Global
-  Real(rkd),Target, Allocatable, Dimension(:,:)   :: CBL_Global
-  Real(rkd),Target, Allocatable, Dimension(:,:)   :: CBLTOX_Global
+  integer,  Target, Allocatable, Dimension(:,:)   :: LAYERACTIVE_Global
+  real(rkd),Target, Allocatable, Dimension(:)     :: TAU_Global
+  real(rkd),Target, Allocatable, Dimension(:)     :: D50AVG_Global
+  real(rkd),Target, Allocatable, Dimension(:,:)   :: BULKDENS_Global
+  real(rkd),Target, Allocatable, Dimension(:,:)   :: TSED_Global
+  real(rkd),Target, Allocatable, Dimension(:,:,:) :: PERSED_Global
+  real(rkd),Target, Allocatable, Dimension(:,:)   :: ERO_SED_FLX_Global
+  real(rkd),Target, Allocatable, Dimension(:,:)   :: DEP_SED_FLX_Global
+  real(rkd),Target, Allocatable, Dimension(:,:)   :: CBL_Global
+  real(rkd),Target, Allocatable, Dimension(:,:)   :: CBLTOX_Global
   
   ! *** Waves
-  Type(Wave), Target, Allocatable, Dimension(:) :: WV_Global
+  type(Wave), Target, Allocatable, Dimension(:) :: WV_Global
   Real,Target, Allocatable, Dimension(:) :: WV_HEIGHT_Global
   Real,Target, Allocatable, Dimension(:) :: WV_PERIOD_Global
   Real,Target, Allocatable, Dimension(:) :: WV_DIR_Global
@@ -194,7 +206,7 @@ Module Variables_MPI_Write_Out
   Real,Target, Allocatable, Dimension(:)   :: WQRPR_Global
   Real,Target, Allocatable, Dimension(:)   :: WQRPE_Global
   Real,Target, Allocatable, Dimension(:)   :: WQRPD_Global
-  Logical,Allocatable,Dimension(:)         :: LMASKRPEM_Global
+  logical,Allocatable,Dimension(:)         :: LMASKRPEM_Global
   
   ! *** Water Quality Variables - Sediment Diagenesis
   Real,Target, Allocatable, Dimension(:,:) :: SMPOP_Global
@@ -230,10 +242,10 @@ Module Variables_MPI_Write_Out
   Real,Target, Allocatable, Dimension(:,:,:) :: WQV_Global
 
   ! *** Boundard Conditions
-  Integer,Target, Allocatable, Dimension(:,:,:) :: NLOS_Global
-  Integer,Target, Allocatable, Dimension(:,:,:) :: NLOE_Global
-  Integer,Target, Allocatable, Dimension(:,:,:) :: NLOW_Global
-  Integer,Target, Allocatable, Dimension(:,:,:) :: NLON_Global
+  integer,Target, Allocatable, Dimension(:,:,:) :: NLOS_Global
+  integer,Target, Allocatable, Dimension(:,:,:) :: NLOE_Global
+  integer,Target, Allocatable, Dimension(:,:,:) :: NLOW_Global
+  integer,Target, Allocatable, Dimension(:,:,:) :: NLON_Global
 
   Real,Target, Allocatable, Dimension(:,:,:)    :: CLOS_Global
   Real,Target, Allocatable, Dimension(:,:,:)    :: CLOE_Global
@@ -241,14 +253,14 @@ Module Variables_MPI_Write_Out
   Real,Target, Allocatable, Dimension(:,:,:)    :: CLON_Global
 
   ! *** Temporary Arrays
-  Integer, Allocatable, Dimension(:)       :: I1D_Global           !<  Temporary variable for reading global IC fields
-  Integer, Allocatable, Dimension(:,:)     :: I2D_Global           !<  Temporary variable for reading global IC fields
-  Integer, Allocatable, Dimension(:,:,:)   :: I3D_Global           !<  Temporary variable for reading global IC fields
-  Real(RKD), Allocatable, Dimension(:)     :: R1D_Global           !<  Temporary variable for reading global IC fields
-  Real(RKD), Allocatable, Dimension(:,:)   :: R2D_Global           !<  Temporary variable for reading global IC fields
-  Real(RKD), Allocatable, Dimension(:,:,:) :: R3D_Global           !<  Temporary variable for reading global IC fields
+  integer, Allocatable, Dimension(:)       :: I1D_Global           !<  Temporary variable for reading global IC fields
+  integer, Allocatable, Dimension(:,:)     :: I2D_Global           !<  Temporary variable for reading global IC fields
+  integer, Allocatable, Dimension(:,:,:)   :: I3D_Global           !<  Temporary variable for reading global IC fields
+  real(RKD), Allocatable, Dimension(:)     :: R1D_Global           !<  Temporary variable for reading global IC fields
+  real(RKD), Allocatable, Dimension(:,:)   :: R2D_Global           !<  Temporary variable for reading global IC fields
+  real(RKD), Allocatable, Dimension(:,:,:) :: R3D_Global           !<  Temporary variable for reading global IC fields
 
   ! *** Propwash
-  !REAL,TARGET, ALLOCATABLE, DIMENSION(:,:,:) :: SDF_Global         !< Cohesive sediment concentration without fast settling classes     (g/m3), Also used for all sediments classes when NSEDFLUME > 0
+  !REAL,target, allocatable, dimension(:,:,:) :: SDF_Global         !< Cohesive sediment concentration without fast settling classes     (g/m3), Also used for all sediments classes when NSEDFLUME > 0
   
 End module Variables_MPI_Write_Out

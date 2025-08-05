@@ -3,62 +3,60 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 MODULE FIELDS
-  USE GLOBAL
-  USE INFOMOD
-  Use Variables_MPI
-  Use Variables_MPI_Write_Out
-  Use Variables_MPI_Mapping
+  use GLOBAL
+  use INFOMOD
+  use Variables_MPI
+  use Variables_MPI_Write_Out
+  use Variables_MPI_Mapping
   
-#ifdef _MPI
-  Use Broadcast_Routines
-#endif
+  use Broadcast_Routines
 
-  IMPLICIT NONE
+  implicit none
 
-  TYPE TFIELD                                ! Time and space variable field data
-    CHARACTER :: FNAME*12                    ! Filename for debugging
-    INTEGER :: IFLAG                         ! File format (0: Not used, 1: ASCII format, 2: Binary format)
-    INTEGER :: ITYPE                         ! Input type (0: value array, 1: LC,IC,JC,values, ...)
-    INTEGER :: NT                            ! Number of time steps
-    INTEGER :: NC                            ! Number of classes/components
-    INTEGER :: NK                            ! Number of layers
-    INTEGER :: ITOPT                         ! Interpolation option (0 = No interpolation, 1 = Linear interpolation)
-    INTEGER :: IUPDATE                       ! Update flag (0 = Replace, 1 = Add, 2 = Min., 3 = Max.)
-    INTEGER :: IDIST                         ! Distribution option (0 = Not multiplied with area, 1 = Multiplied with area)
-    INTEGER :: YY,MM,DD                      ! Base date
-    INTEGER :: IUNIT                         ! File unit (used with binadry format)
-    INTEGER :: NI                            ! Time index for interpolation
-    INTEGER, ALLOCATABLE :: CFLAG(:)         ! Flag for the cells using field data
-    REAL(RK4) :: NODATA                      ! No data value (binary input is fixed for REAL*4)
-    REAL(RK4) :: TSCALE                      ! Time conversion factor to seconds (should > 0, default 86400)
-    REAL(RK4) :: TSHIFT                      ! Time shift (the same units as times, default 0)
-    REAL(RK4) :: VSCALE                      ! Value conversion factor to model units (should > 0, default 1)
-    REAL(RK4) :: VSHIFT                      ! Value shift (the same units as values, default 0)
-    REAL(RKD),ALLOCATABLE :: TIMES(:)        ! Times (binary input is fixed for REAL*8)
-    REAL(RK4),ALLOCATABLE :: VALUES(:,:,:,:) ! Values (times,components,cells,layers) (binary input is fixed for REAL*4)
-  END TYPE
+  type TFIELD                                ! Time and space variable field data
+    character :: FNAME*12                    ! Filename for debugging
+    integer :: IFLAG                         ! File format (0: Not used, 1: ASCII format, 2: Binary format)
+    integer :: ITYPE                         ! Input type (0: value array, 1: LC,IC,JC,values, ...)
+    integer :: NT                            ! Number of time steps
+    integer :: NC                            ! Number of classes/components
+    integer :: NK                            ! Number of layers
+    integer :: ITOPT                         ! Interpolation option (0 = No interpolation, 1 = Linear interpolation)
+    integer :: IUPDATE                       ! Update flag (0 = Replace, 1 = Add, 2 = Min., 3 = Max.)
+    integer :: IDIST                         ! Distribution option (0 = Not multiplied with area, 1 = Multiplied with area)
+    integer :: YY,MM,DD                      ! Base date
+    integer :: IUNIT                         ! File unit (used with binadry format)
+    integer :: NI                            ! Time index for interpolation
+    integer, allocatable :: CFLAG(:)         ! Flag for the cells using field data
+    real(RK4) :: NODATA                      ! No data value (binary input is fixed for REAL*4)
+    real(RK4) :: TSCALE                      ! Time conversion factor to seconds (should > 0, default 86400)
+    real(RK4) :: TSHIFT                      ! Time shift (the same units as times, default 0)
+    real(RK4) :: VSCALE                      ! Value conversion factor to model units (should > 0, default 1)
+    real(RK4) :: VSHIFT                      ! Value shift (the same units as values, default 0)
+    real(RKD),allocatable :: TIMES(:)        ! Times (binary input is fixed for REAL*8)
+    real(RK4),allocatable :: VALUES(:,:,:,:) ! Values (times,components,cells,layers) (binary input is fixed for REAL*4)
+  end type 
 
-  TYPE(TFIELD) :: BATHY                      ! Bathymetric data (e.g., dredging/dumping, land erosion/reclamation)
-  TYPE(TFIELD) :: ROUGH                      ! Roughness (e.g., seasonal roughness)
-  TYPE(TFIELD) :: VEGE                       ! Vegetation field
-  TYPE(TFIELD) :: GWSP                       ! Seepage/groundwater flow
-  TYPE(TFIELD) :: WIND                       ! Wind field (e.g., cyclone)
-  TYPE(TFIELD) :: PRESS                      ! Barometric pressure field (e.g., cyclone)
-  TYPE(TFIELD) :: RAIN                       ! Rainfall
-  TYPE(TFIELD) :: EVAP                       ! Evaporation
-  TYPE(TFIELD) :: SHELT                      ! Wind shelter field
-  TYPE(TFIELD) :: SHADE                      ! Sun shading field
-  TYPE(TFIELD) :: SNOW                       ! Snow (snow depth, snowfall)
-  TYPE(TFIELD) :: ICETHK                     ! Ice thickness
-  TYPE(TFIELD) :: SEDZLJER                   ! SedZLJ erosion rate (NC=2 includes both multiplier and exponent)
+  type(TFIELD) :: BATHY                      ! Bathymetric data (e.g., dredging/dumping, land erosion/reclamation)
+  type(TFIELD) :: ROUGH                      ! Roughness (e.g., seasonal roughness)
+  type(TFIELD) :: VEGE                       ! Vegetation field
+  type(TFIELD) :: GWSP                       ! Seepage/groundwater flow
+  type(TFIELD) :: WIND                       ! Wind field (e.g., cyclone)
+  type(TFIELD) :: PRESS                      ! Barometric pressure field (e.g., cyclone)
+  type(TFIELD) :: RAIN                       ! Rainfall
+  type(TFIELD) :: EVAP                       ! Evaporation
+  type(TFIELD) :: SHELT                      ! Wind shelter field
+  type(TFIELD) :: SHADE                      ! Sun shading field
+  type(TFIELD) :: SNOW                       ! Snow (snow depth, snowfall)
+  type(TFIELD) :: ICETHK                     ! Ice thickness
+  type(TFIELD) :: SEDZLJER                   ! SedZLJ erosion rate (NC = 2 includes both multiplier and exponent)
 
-  Real(RK4), Allocatable, Dimension(:,:,:,:) :: VALUES_TEMP    !< Temporary variable to help with reading in and remapping to subdomains
+  real(RK4), Allocatable, Dimension(:,:,:,:) :: VALUES_TEMP    !< Temporary variable to help with reading in and remapping to subdomains
 
-CONTAINS
+contains
 
   SUBROUTINE INITFIELDS()
     BATHY.IFLAG = 0                        ! Bathymetric data (e.g., dredging/dumping, land erosion/reclamation)
@@ -78,271 +76,279 @@ CONTAINS
 
   SUBROUTINE READFIELDS()
 
-    CALL READFIELD(BATHY, "bathfld")         ! Bathymetric data (e.g., dredging/dumping, land erosion/reclamation)
-    CALL READFIELD(ROUGH, "roughfld")        ! Roughness (e.g., seasonal roughness)
-    CALL READFIELD(VEGE, "vegefld")          ! Vegetation field (this can have multiple components with NC>1)
-    CALL READFIELD(GWSP, "gwspfld")          ! Groundwater/seepage flow
-    CALL READFIELD(WIND, "windfld")          ! Wind field (e.g., cyclone)
-    CALL READFIELD(PRESS, "presfld")         ! Barometric pressure field (e.g., cyclone)
-    CALL READFIELD(RAIN, "rainfld")          ! Rainfall
-    CALL READFIELD(EVAP, "evapfld")          ! Evaporation
-    CALL READFIELD(SHELT, "shelfld")         ! Wind shelter field
-    CALL READFIELD(SHADE, "shadfld")         ! Sun shading field
-    CALL READFIELD(SNOW, "snowfld")          ! Snow depth (these two can be combined with NC=2)
-    CALL READFIELD(ICETHK, "icefld")         ! Ice thickness
-    CALL READFIELD(SEDZLJER, "sedzljfld")    ! SedZLJ erosion rate multiplier (these two can be combined with NC=2)
+    call READFIELD(BATHY, "bathfld")         ! Bathymetric data (e.g., dredging/dumping, land erosion/reclamation)
+    call READFIELD(ROUGH, "roughfld")        ! Roughness (e.g., seasonal roughness)
+    call READFIELD(VEGE, "vegefld")          ! Vegetation field (this can have multiple components with NC>1)
+    call READFIELD(GWSP, "gwspfld")          ! Groundwater/seepage flow
+    call READFIELD(WIND, "windfld")          ! Wind field (e.g., cyclone)
+    call READFIELD(PRESS, "presfld")         ! Barometric pressure field (e.g., cyclone)
+    call READFIELD(RAIN, "rainfld")          ! Rainfall
+    call READFIELD(EVAP, "evapfld")          ! Evaporation
+    call READFIELD(SHELT, "shelfld")         ! Wind shelter field
+    call READFIELD(SHADE, "shadfld")         ! Sun shading field
+    call READFIELD(SNOW, "snowfld")          ! Snow depth (these two can be combined with NC = 2)
+    call READFIELD(ICETHK, "icefld")         ! Ice thickness
+    call READFIELD(SEDZLJER, "sedzljfld")    ! SedZLJ erosion rate multiplier (these two can be combined with NC = 2)
   END SUBROUTINE
 
   SUBROUTINE FREEFIELDS()
-    CALL FREEFIELD(BATHY)                    ! Bathymetric data (e.g., dredging/dumping, land erosion/reclamation)
-    CALL FREEFIELD(ROUGH)                    ! Roughness (e.g., seasonal roughness)
-    CALL FREEFIELD(VEGE)                     ! Vegetation field
-    CALL FREEFIELD(GWSP)                     ! Seepage/groundwater flow
-    CALL FREEFIELD(WIND)                     ! Wind field (e.g., cyclone)
-    CALL FREEFIELD(PRESS)                    ! Barometric pressure field (e.g., cyclone)
-    CALL FREEFIELD(RAIN)                     ! Rainfall
-    CALL FREEFIELD(EVAP)                     ! Evaporation
-    CALL FREEFIELD(SHELT)                    ! Wind shelter field
-    CALL FREEFIELD(SHADE)                    ! Sun shading field
-    CALL FREEFIELD(SNOW)                     ! Snow depth
-    CALL FREEFIELD(ICETHK)                   ! Ice thickness
-    CALL FREEFIELD(SEDZLJER)                 ! SedZLJ erosion rate multiplier & exponent
+    call FREEFIELD(BATHY)                    ! Bathymetric data (e.g., dredging/dumping, land erosion/reclamation)
+    call FREEFIELD(ROUGH)                    ! Roughness (e.g., seasonal roughness)
+    call FREEFIELD(VEGE)                     ! Vegetation field
+    call FREEFIELD(GWSP)                     ! Seepage/groundwater flow
+    call FREEFIELD(WIND)                     ! Wind field (e.g., cyclone)
+    call FREEFIELD(PRESS)                    ! Barometric pressure field (e.g., cyclone)
+    call FREEFIELD(RAIN)                     ! Rainfall
+    call FREEFIELD(EVAP)                     ! Evaporation
+    call FREEFIELD(SHELT)                    ! Wind shelter field
+    call FREEFIELD(SHADE)                    ! Sun shading field
+    call FREEFIELD(SNOW)                     ! Snow depth
+    call FREEFIELD(ICETHK)                   ! Ice thickness
+    call FREEFIELD(SEDZLJER)                 ! SedZLJ erosion rate multiplier & exponent
   END SUBROUTINE
 
   SUBROUTINE READFIELD(DAT,FILENAME)
 
-  TYPE(TFIELD), INTENT(INOUT) :: DAT
-  CHARACTER(*), INTENT(IN) :: FILENAME
-  CHARACTER(127) :: LINE
-  INTEGER :: I,K,L,LCC,M,ISO,II,JJ,LL,NN,J
+  type(TFIELD), intent(INOUT) :: DAT
+  character(*), intent(IN) :: FILENAME
+  character(127) :: LINE
+  integer :: I,K,L,LCC,M,ISO,II,JJ,LL,NN,J
   INTEGER*4 :: SIGNATURE,L2
-  REAL(RK4) :: VALUE
-  REAL,ALLOCATABLE :: VALUES(:,:)
-  LOGICAL :: ISEXIST
-  Integer :: ierr
+  real(RK4) :: VALUE
+  real,allocatable :: VALUES(:,:)
+  logical :: ISEXIST
+  integer :: ierr
   
-  IF( DAT.IFLAG == 0 ) RETURN
+  if( DAT.IFLAG == 0 ) return
     
-  ALLOCATE(DAT.TIMES(2))
-  ALLOCATE(DAT.CFLAG(LA_Global))
+  allocate(DAT.TIMES(2))
+  allocate(DAT.CFLAG(LA_Global))
   DAT.CFLAG = 0
 
   ! *** Only read/write to screen on the master
-  if( process_id == master_id )THEN
+  if( process_id == master_id )then
 
-    WRITE(*,*) 'READING ',FILENAME,'...'
-    IF( DAT.IFLAG == 1 )THEN
+    write(*,*) 'READING ',FILENAME,'...'
+    if( DAT.IFLAG == 1 )then
       ! *** ASCII
       LINE = TRIM(FILENAME)//'.inp'
     
-      INQUIRE(FILE=LINE,EXIST=ISEXIST)
-      IF( ISEXIST )THEN
+      INQUIRE(FILE = LINE,EXIST = ISEXIST)
+      if( ISEXIST )then
         ! *** ASCII FIELD FILE
-        OPEN(NEWUNIT=DAT.IUNIT,FILE=LINE,STATUS='UNKNOWN')
+        open(NEWUNIT = DAT.IUNIT,FILE = LINE,STATUS = 'UNKNOWN')
       
         ! *** SKIP OVER HEADER COMMENTS
-        DO WHILE(.NOT. EOF(DAT.IUNIT))
-          READ(DAT.IUNIT,'(A)') LINE
-          IF(LINE(1:1)/='*' .AND. LINE(1:1)/='$' .AND. LINE(1:1)/='!' .AND. LINE(1:1)/='C') EXIT
-        ENDDO
-        READ(LINE,*,IOSTAT=ISO) DAT.ITYPE,  DAT.NT,     DAT.NC, LCC, DAT.NK,     DAT.ITOPT, DAT.IUPDATE, DAT.IDIST, &
+#ifdef GNU    
+        do while(.true.)
+          read(DAT.IUNIT,'(A)',end=100) LINE
+          if(LINE(1:1)/='*' .AND. LINE(1:1)/='$' .AND. LINE(1:1)/='!' .AND. LINE(1:1)/='C') EXIT
+        enddo
+100     continue
+#else        
+        do while(.not. EOF(DAT.IUNIT))
+          read(DAT.IUNIT,'(A)') LINE
+          if(LINE(1:1)/='*' .and. LINE(1:1)/='$' .and. LINE(1:1)/='!' .and. LINE(1:1)/='C') EXIT
+        enddo
+#endif 
+        read(LINE,*,IOSTAT = ISO) DAT.ITYPE,  DAT.NT,     DAT.NC, LCC, DAT.NK,     DAT.ITOPT, DAT.IUPDATE, DAT.IDIST, &
                                 DAT.NODATA, DAT.TSCALE, DAT.TSHIFT,  DAT.VSCALE, DAT.VSHIFT !, DAT.YY, DAT.MM, DAT.DD
 
         ! *** QC
-        IF( LCC /= LA_Global - 1 )THEN
-          WRITE(*,*) 'WRONG CELL COUNT FOR ',FILENAME,'...'
-          CLOSE(DAT.IUNIT)
-          RETURN
-        ENDIF
-        IF( DAT.TSCALE <= 0 )THEN
-          WRITE(*,*) 'INVALID FIELD TSCALE. BOTH TSCALE AND TSHIFT ARE RESET.'
+        if( LCC /= LA_Global - 1 )then
+          write(*,*) 'WRONG CELL COUNT FOR ',FILENAME,'...'
+          close(DAT.IUNIT)
+          return
+        endif
+        if( DAT.TSCALE <= 0 )then
+          write(*,*) 'INVALID FIELD TSCALE. BOTH TSCALE AND TSHIFT ARE RESET.'
           DAT.TSCALE = 86400.
           DAT.TSHIFT = 0.
-        ENDIF
-        IF( ABS(DAT.VSCALE) <= 1.0e-15 )THEN
-          WRITE(*,*) 'INVALID FIELD VSCALE. BOTH VSCALE AND VSHIFT ARE RESET.'
+        endif
+        if( ABS(DAT.VSCALE) <= 1.0e-15 )then
+          write(*,*) 'INVALID FIELD VSCALE. BOTH VSCALE AND VSHIFT ARE RESET.'
           DAT.VSCALE = 1.
           DAT.VSHIFT = 0.
-        ENDIF
+        endif
 
-        ALLOCATE(VALUES_TEMP(2,DAT.NC,LC_Global,DAT.NK))
-        ALLOCATE(VALUES(DAT.NC,DAT.NK))
+        allocate(VALUES_TEMP(2,DAT.NC,LC_Global,DAT.NK))
+        allocate(VALUES(DAT.NC,DAT.NK))
         VALUES_TEMP = DAT.NODATA
 
         ! *** READ THE FIRST TWO FIELD SNAPSHOTS
-        DO NN=1,2
-          READ(DAT.IUNIT,*,IOSTAT=ISO) DAT.TIMES(NN),LCC
+        do NN = 1,2
+          read(DAT.IUNIT,*,IOSTAT = ISO) DAT.TIMES(NN),LCC
           DAT.TIMES(NN) = (DAT.TIMES(NN) + DAT.TSHIFT)*DAT.TSCALE/86400.    ! Time in Julian days
           
-          IF( NN > 1 )THEN
-            IF( DAT.TIMES(NN) < DAT.TIMES(NN-1) )THEN
-              WRITE(*,*) 'TIME AT ',NN-1,'=',DAT.TIMES(NN-1),', AT ',NN,'=',DAT.TIMES(NN)
-            ENDIF
-          ENDIF
+          if( NN > 1 )then
+            if( DAT.TIMES(NN) < DAT.TIMES(NN-1) )then
+              write(*,*) 'TIME AT ',NN-1,' = ',DAT.TIMES(NN-1),', AT ',NN,' = ',DAT.TIMES(NN)
+            endif
+          endif
           
-          IF( DAT.ITYPE > 0 )THEN
+          if( DAT.ITYPE > 0 )then
             ! *** L,I,J,VALUE FORMAT
-            DO LL=1,LCC
-              READ(DAT.IUNIT,*,IOSTAT=ISO) L2,II,JJ,((VALUES(M,K), K=1,DAT.NK), M=1,DAT.NC)
+            do LL = 1,LCC
+              read(DAT.IUNIT,*,IOSTAT = ISO) L2,II,JJ,((VALUES(M,K), K = 1,DAT.NK), M = 1,DAT.NC)
               L = LIJ_Global(II,JJ)
               DAT.CFLAG(L) = 1
-              DO M=1,DAT.NC
-                DO K=1,DAT.NK
+              do M = 1,DAT.NC
+                do K = 1,DAT.NK
                   VALUES_TEMP(NN,M,L,K) = (VALUES(M,K) + DAT.VSHIFT)*DAT.VSCALE
-                ENDDO
-              ENDDO
-            ENDDO
-          ELSE
+                enddo
+              enddo
+            enddo
+          else
             ! *** READ ALL CELLS IN L ARRAY ORDER
-            READ(DAT.IUNIT,*,IOSTAT=ISO) (((VALUES_TEMP(NN,M,L,K),K=1,DAT.NK),L=2,LA_Global),M=1,DAT.NC)
-            DO M=1,DAT.NC
-              DO L=2,LA_Global
-                DO K=1,DAT.NK
+            read(DAT.IUNIT,*,IOSTAT = ISO) (((VALUES_TEMP(NN,M,L,K),K = 1,DAT.NK),L = 2,LA_Global),M = 1,DAT.NC)
+            do M = 1,DAT.NC
+              do L = 2,LA_Global
+                do K = 1,DAT.NK
                   VALUES_TEMP(NN,M,L,K) = (VALUES_TEMP(NN,M,L,K) + DAT.VSHIFT)*DAT.VSCALE
-                ENDDO
-              ENDDO
-            ENDDO
-          ENDIF
+                enddo
+              enddo
+            enddo
+          endif
           
-        ENDDO
-        DEALLOCATE(VALUES)
-      ELSE
-        WRITE(*,*) 'FILE NOT FOUND: ',FILENAME,'.inp'
+        enddo
+        deallocate(VALUES)
+      else
+        write(*,*) 'FILE NOT FOUND: ',FILENAME,'.inp'
         DAT.IFLAG = 0
-        RETURN
-      ENDIF
-    ELSE
+        return
+      endif
+    else
       ! *** BINARY
       LINE = TRIM(FILENAME)//'.fld'
-      INQUIRE(FILE=LINE,EXIST=ISEXIST)
-      IF(ISEXIST )THEN
-        OPEN(NEWUNIT=DAT.IUNIT,FILE=LINE,STATUS='UNKNOWN',ACCESS='SEQUENTIAL',FORM='BINARY',ACTION='READ',SHARE ='DENYNONE')
-        READ(DAT.IUNIT) SIGNATURE
-        READ(DAT.IUNIT) DAT.ITYPE
-        READ(DAT.IUNIT) DAT.NT
-        READ(DAT.IUNIT) DAT.NC
-        READ(DAT.IUNIT) LCC
-        READ(DAT.IUNIT) DAT.NK
-        READ(DAT.IUNIT) DAT.ITOPT
-        READ(DAT.IUNIT) DAT.IUPDATE
-        READ(DAT.IUNIT) DAT.IDIST
-        READ(DAT.IUNIT) DAT.NODATA
-        READ(DAT.IUNIT) DAT.TSCALE
-        READ(DAT.IUNIT) DAT.TSHIFT
-        READ(DAT.IUNIT) DAT.VSCALE
-        READ(DAT.IUNIT) DAT.VSHIFT
-        READ(DAT.IUNIT) DAT.YY
-        READ(DAT.IUNIT) DAT.MM
-        READ(DAT.IUNIT) DAT.DD
-        READ(DAT.IUNIT) L2
-        READ(DAT.IUNIT) L2
-        READ(DAT.IUNIT) L2
+      INQUIRE(FILE = LINE,EXIST = ISEXIST)
+      if(ISEXIST )then
+        open(NEWUNIT = DAT.IUNIT,FILE = LINE,STATUS = 'UNKNOWN',ACCESS = 'SEQUENTIAL',FORM = FMT_BINARY,ACTION = 'READ',SHARE  = 'DENYNONE')
+        read(DAT.IUNIT) SIGNATURE
+        read(DAT.IUNIT) DAT.ITYPE
+        read(DAT.IUNIT) DAT.NT
+        read(DAT.IUNIT) DAT.NC
+        read(DAT.IUNIT) LCC
+        read(DAT.IUNIT) DAT.NK
+        read(DAT.IUNIT) DAT.ITOPT
+        read(DAT.IUNIT) DAT.IUPDATE
+        read(DAT.IUNIT) DAT.IDIST
+        read(DAT.IUNIT) DAT.NODATA
+        read(DAT.IUNIT) DAT.TSCALE
+        read(DAT.IUNIT) DAT.TSHIFT
+        read(DAT.IUNIT) DAT.VSCALE
+        read(DAT.IUNIT) DAT.VSHIFT
+        read(DAT.IUNIT) DAT.YY
+        read(DAT.IUNIT) DAT.MM
+        read(DAT.IUNIT) DAT.DD
+        read(DAT.IUNIT) L2
+        read(DAT.IUNIT) L2
+        read(DAT.IUNIT) L2
 
         ! *** QC
-        IF( LCC /= LA_Global - 1 )THEN
-          WRITE(*,*) 'WRONG CELL COUNT FOR ',FILENAME,'...'
-          CLOSE(DAT.IUNIT)
-          RETURN
-        ENDIF
-        IF( DAT.TSCALE <= 0 )THEN
-          WRITE(*,*) 'INVALID FIELD TSCALE. BOTH TSCALE AND TSHIFT ARE RESET.'
+        if( LCC /= LA_Global - 1 )then
+          write(*,*) 'WRONG CELL COUNT FOR ',FILENAME,'...'
+          close(DAT.IUNIT)
+          return
+        endif
+        if( DAT.TSCALE <= 0 )then
+          write(*,*) 'INVALID FIELD TSCALE. BOTH TSCALE AND TSHIFT ARE RESET.'
           DAT.TSCALE = 86400.
           DAT.TSHIFT = 0.
-        ENDIF
-        IF( ABS(DAT.VSCALE) <= 1.0e-15 )THEN
-          WRITE(*,*) 'INVALID FIELD VSCALE. BOTH VSCALE AND VSHIFT ARE RESET.'
+        endif
+        if( ABS(DAT.VSCALE) <= 1.0e-15 )then
+          write(*,*) 'INVALID FIELD VSCALE. BOTH VSCALE AND VSHIFT ARE RESET.'
           DAT.VSCALE = 1.
           
           DAT.VSHIFT = 0.
-        ENDIF
+        endif
 
-        ALLOCATE(VALUES_TEMP(2,DAT.NC,LC_global,DAT.NK))
+        allocate(VALUES_TEMP(2,DAT.NC,LC_global,DAT.NK))
         VALUES_TEMP(:,:,:,:) = DAT.NODATA
 
         ! *** READ THE FIRST TWO FIELD SNAPSHOTS
-        DO NN=1,2
-          READ(DAT.IUNIT) DAT.TIMES(NN)
-          READ(DAT.IUNIT) LCC
+        do NN = 1,2
+          read(DAT.IUNIT) DAT.TIMES(NN)
+          read(DAT.IUNIT) LCC
           DAT.TIMES(NN) = (DAT.TIMES(NN) + DAT.TSHIFT)*DAT.TSCALE/86400.    ! Time in Julian days
 
-          IF( NN > 1 )THEN
-            IF( DAT.TIMES(NN) < DAT.TIMES(NN-1) )THEN
-              WRITE(*,*) 'TIME AT ',NN-1,'=',DAT.TIMES(NN-1),', AT ',NN,'=',DAT.TIMES(NN)
-            ENDIF
-          ENDIF
+          if( NN > 1 )then
+            if( DAT.TIMES(NN) < DAT.TIMES(NN-1) )then
+              write(*,*) 'TIME AT ',NN-1,' = ',DAT.TIMES(NN-1),', AT ',NN,' = ',DAT.TIMES(NN)
+            endif
+          endif
                     
-          IF( DAT.ITYPE > 0 )THEN
+          if( DAT.ITYPE > 0 )then
             ! *** READ ONLY SPECIFIC CELLS (FORMAT: L, I, J, VALUES)
-            DO LL=1,LCC
-              READ(DAT.IUNIT) L2
-              READ(DAT.IUNIT) II
-              READ(DAT.IUNIT) JJ
+            do LL = 1,LCC
+              read(DAT.IUNIT) L2
+              read(DAT.IUNIT) II
+              read(DAT.IUNIT) JJ
               L = LIJ_Global(II,JJ)
-              READ(DAT.IUNIT) ((VALUES_TEMP(NN,M,L,K), K=1,DAT.NK), M=1,DAT.NC)
-              DO M=1,DAT.NC
-                DO K=1,DAT.NK
+              read(DAT.IUNIT) ((VALUES_TEMP(NN,M,L,K), K = 1,DAT.NK), M = 1,DAT.NC)
+              do M = 1,DAT.NC
+                do K = 1,DAT.NK
                   VALUES_TEMP(NN,M,L,K) = (VALUES_TEMP(NN,M,L,K) + DAT.VSHIFT)*DAT.VSCALE
-                ENDDO
-              ENDDO
-            ENDDO
-          ELSE
+                enddo
+              enddo
+            enddo
+          else
             ! *** READ ALL CELLS
-            READ(DAT.IUNIT) (((VALUES_TEMP(NN,M,L,K), K=1,DAT.NK), L=2,LA_Global), M=1,DAT.NC)
-            DO M=1,DAT.NC
-              DO L=2,LA_Global
-                DO K=1,DAT.NK
+            read(DAT.IUNIT) (((VALUES_TEMP(NN,M,L,K), K = 1,DAT.NK), L = 2,LA_Global), M = 1,DAT.NC)
+            do M = 1,DAT.NC
+              do L = 2,LA_Global
+                do K = 1,DAT.NK
                   VALUES_TEMP(NN,M,L,K) = (VALUES_TEMP(NN,M,L,K) + DAT.VSHIFT)*DAT.VSCALE
-                ENDDO
-              ENDDO
-            ENDDO
-          ENDIF
-        ENDDO
-      ELSE
-        WRITE(*,*) 'FILE NOT FOUND: ',FILENAME,'.fld'
+                enddo
+              enddo
+            enddo
+          endif
+        enddo
+      else
+        write(*,*) 'FILE NOT FOUND: ',FILENAME,'.fld'
         DAT.IFLAG = 0
-        CALL STOPP('.')
-      ENDIF
-    ENDIF
-  ENDIF
+        call STOPP('.')
+      endif
+    endif
+  endif
   
   ! *** broadcast header info just read
-  Call Broadcast_Scalar(DAT.ITYPE,   master_id)
-  Call Broadcast_Scalar(DAT.NT,      master_id)
-  Call Broadcast_Scalar(DAT.NC,      master_id)
-  Call Broadcast_Scalar(DAT.NK,      master_id)
-  Call Broadcast_Scalar(DAT.ITOPT,   master_id)
-  Call Broadcast_Scalar(DAT.IUPDATE, master_id)
-  Call Broadcast_Scalar(DAT.IDIST,   master_id)
-  Call Broadcast_Scalar(DAT.NODATA,  master_id)
-  Call Broadcast_Scalar(DAT.TSCALE,  master_id)
-  Call Broadcast_Scalar(DAT.TSHIFT,  master_id)
-  Call Broadcast_Scalar(DAT.VSCALE,  master_id)
-  Call Broadcast_Scalar(DAT.VSHIFT,  master_id)
-  Call Broadcast_Array(DAT.TIMES,    master_id)
-  Call Broadcast_Array(DAT.CFLAG,    master_id)
+  call Broadcast_Scalar(DAT.ITYPE,   master_id)
+  call Broadcast_Scalar(DAT.NT,      master_id)
+  call Broadcast_Scalar(DAT.NC,      master_id)
+  call Broadcast_Scalar(DAT.NK,      master_id)
+  call Broadcast_Scalar(DAT.ITOPT,   master_id)
+  call Broadcast_Scalar(DAT.IUPDATE, master_id)
+  call Broadcast_Scalar(DAT.IDIST,   master_id)
+  call Broadcast_Scalar(DAT.NODATA,  master_id)
+  call Broadcast_Scalar(DAT.TSCALE,  master_id)
+  call Broadcast_Scalar(DAT.TSHIFT,  master_id)
+  call Broadcast_Scalar(DAT.VSCALE,  master_id)
+  call Broadcast_Scalar(DAT.VSHIFT,  master_id)
+  call Broadcast_Array(DAT.TIMES,    master_id)
+  call Broadcast_Array(DAT.CFLAG,    master_id)
   
-  if( process_id /= master_id )THEN
-    ALLOCATE(VALUES_TEMP(2,DAT.NC,LC_Global,DAT.NK))
+  if( process_id /= master_id )then
+    allocate(VALUES_TEMP(2,DAT.NC,LC_Global,DAT.NK))
     VALUES_TEMP = DAT.NODATA
   endif
-  Call Broadcast_Array(VALUES_TEMP, master_id)
+  call Broadcast_Array(VALUES_TEMP, master_id)
   
   ! *** NOW ALL PROCESSES HAVE ALL THE INPUTS.  ASSIGN LOCAL VALUES
-  ALLOCATE(DAT.VALUES(2,DAT.NC,LC,DAT.NK))
+  allocate(DAT.VALUES(2,DAT.NC,LC,DAT.NK))
   DAT.VALUES = DAT.NODATA
   
   ! *** Map from global --> local values
-  DO NN=1,2
-    DO M=1,DAT.NC
-      DO L=2,LA
-        DO K=1,DAT.NK
+  do NN = 1,2
+    do M = 1,DAT.NC
+      do L = 2,LA
+        do K = 1,DAT.NK
           L2 = Map2Global(L).LG     ! *** Global L that corresponds to Local L
           DAT.VALUES(NN,M,L,K) = VALUES_TEMP(NN,M,L2,K) 
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDDO  
-  DEALLOCATE(VALUES_TEMP)
+        enddo
+      enddo
+    enddo
+  enddo  
+  deallocate(VALUES_TEMP)
   
   DAT.NI = 1
 
@@ -350,10 +356,10 @@ END SUBROUTINE
 
   SUBROUTINE FREEFIELD(DAT)
 
-    TYPE(TFIELD), INTENT(INOUT) :: DAT
-    IF(DAT.IFLAG == 0) RETURN
-    DEALLOCATE(DAT.TIMES,DAT.VALUES)
-    IF(DAT.NI > 0) CLOSE(DAT.IUNIT)
+    type(TFIELD), intent(INOUT) :: DAT
+    if(DAT.IFLAG == 0) return
+    deallocate(DAT.TIMES,DAT.VALUES)
+    if(DAT.NI > 0) close(DAT.IUNIT)
 
   END SUBROUTINE
 
@@ -368,212 +374,212 @@ END SUBROUTINE
     ! *** M     - COMPONENT
     ! *** VALUE - FINAL VALUE OF ARRAY AFTER ALL FIELD OPERATIONS
 
-  TYPE(TFIELD), INTENT(INOUT) :: DAT
-  REAL(RKD), INTENT(IN) :: TIME
-  INTEGER, INTENT(IN) :: M
-  REAL, INTENT(INOUT) :: VALUE(LCM)
-  REAL :: RES(LC_Global)
-  REAL*4,ALLOCATABLE :: VALUES(:,:)
-  REAL(RKD) :: DELTF, FAC
-  INTEGER :: I,K,L,NCC,ISO,LCC,II,JJ,LL,L2
+  type(TFIELD), intent(INOUT) :: DAT
+  real(RKD), intent(IN) :: TIME
+  integer, intent(IN) :: M
+  real, intent(INOUT) :: VALUE(LCM)
+  real :: RES(LC_Global)
+  real*4,allocatable :: VALUES(:,:)
+  real(RKD) :: DELTF, FAC
+  integer :: I,K,L,NCC,ISO,LCC,II,JJ,LL,L2
 
-  IF( DAT.IFLAG == 0 ) RETURN
-  IF( TIME < DAT.TIMES(1) ) RETURN
+  if( DAT.IFLAG == 0 ) return
+  if( TIME < DAT.TIMES(1) ) return
    
   RES(:) = DAT.NODATA
    
   ! *** ENSURE THE CURRENT TIME IS BETWEEN THE TWO FIELD SNAPSHOTS
-  DO WHILE (TIME > DAT.TIMES(2) .AND. DAT.NI < DAT.NT)
+  do while (TIME > DAT.TIMES(2) .and. DAT.NI < DAT.NT)
     ! *** CURRENT TIME IS OUT OF RANGE
 
     ! *** ADVANCE THE TIME
     DAT.TIMES(1) = DAT.TIMES(2)
     DAT.VALUES(1,:,:,:) = DAT.VALUES(2,:,:,:)
 
-    ALLOCATE(VALUES_TEMP(2,DAT.NC,LC_Global,DAT.NK))
+    allocate(VALUES_TEMP(2,DAT.NC,LC_Global,DAT.NK))
     VALUES_TEMP(:,:,:,:) = DAT.NODATA
 
     if( process_id == master_id )then
       ! *** READ IN THE NEXT TIME STEP
-      IF( DAT.IFLAG == 1 )THEN
+      if( DAT.IFLAG == 1 )then
         ! *** ASCII
-        READ(DAT.IUNIT,*,IOSTAT=ISO) DAT.TIMES(2),LCC
+        read(DAT.IUNIT,*,IOSTAT = ISO) DAT.TIMES(2),LCC
         DAT.TIMES(2) = (DAT.TIMES(2) + DAT.TSHIFT)*DAT.TSCALE/86400.    ! Time in Julian days
 
-        ALLOCATE(VALUES(DAT.NC,DAT.NK))
+        allocate(VALUES(DAT.NC,DAT.NK))
 
-        IF( DAT.ITYPE > 0 )THEN
+        if( DAT.ITYPE > 0 )then
           ! *** READ ONLY SPECIFIC CELLS (FORMAT: L, I, J, VALUES)
-          !READ(DAT.IUNIT,*,IOSTAT=ISO) L,II,JJ,(((DAT.VALUES(2,NCC,L,K), K=1,DAT.NK), LL=1,LCC), NCC=1,DAT.NC)
-          DO LL=1,LCC
-            READ(DAT.IUNIT,*,IOSTAT=ISO) L2,II,JJ,((VALUES(NCC,K), K=1,DAT.NK), NCC=1,DAT.NC)
+          !READ(DAT.IUNIT,*,IOSTAT = ISO) L,II,JJ,(((DAT.VALUES(2,NCC,L,K), K = 1,DAT.NK), LL = 1,LCC), NCC = 1,DAT.NC)
+          do LL = 1,LCC
+            read(DAT.IUNIT,*,IOSTAT = ISO) L2,II,JJ,((VALUES(NCC,K), K = 1,DAT.NK), NCC = 1,DAT.NC)
             L = LIJ_Global(II,JJ)
-            DO NCC=1,DAT.NC
-              DO K=1,DAT.NK
+            do NCC = 1,DAT.NC
+              do K = 1,DAT.NK
                 VALUES_TEMP(2,NCC,L,K) = (VALUES(NCC,K) + DAT.VSHIFT)*DAT.VSCALE
-              ENDDO
-            ENDDO
-          ENDDO
-        ELSE
+              enddo
+            enddo
+          enddo
+        else
           ! *** READ ALL CELLS
-          READ(DAT.IUNIT,*,IOSTAT=ISO) (((VALUES_TEMP(2,NCC,L,K), K=1,DAT.NK), L=2,LA_Global), NCC=1,DAT.NC)
-          DO NCC=1,DAT.NC
-            DO L=2,LA_Global
-              DO K=1,DAT.NK
+          read(DAT.IUNIT,*,IOSTAT = ISO) (((VALUES_TEMP(2,NCC,L,K), K = 1,DAT.NK), L = 2,LA_Global), NCC = 1,DAT.NC)
+          do NCC = 1,DAT.NC
+            do L = 2,LA_Global
+              do K = 1,DAT.NK
                 VALUES_TEMP(2,NCC,L,K) = (VALUES_TEMP(2,NCC,L,K) + DAT.VSHIFT)*DAT.VSCALE
-              ENDDO
-            ENDDO
-          ENDDO
-        ENDIF
-        DEALLOCATE(VALUES)
-      ELSE
+              enddo
+            enddo
+          enddo
+        endif
+        deallocate(VALUES)
+      else
         ! *** BINARY
-        READ(DAT.IUNIT) DAT.TIMES(2)
-        READ(DAT.IUNIT) LCC
+        read(DAT.IUNIT) DAT.TIMES(2)
+        read(DAT.IUNIT) LCC
         DAT.TIMES(2) = (DAT.TIMES(2) + DAT.TSHIFT)*DAT.TSCALE/86400.    ! Time in Julian days
 
-        IF( DAT.ITYPE > 0 )THEN
+        if( DAT.ITYPE > 0 )then
           ! *** READ ONLY SPECIFIC CELLS (FORMAT: L, I, J, VALUES)
-          !READ(DAT.IUNIT) L,II,JJ,(((DAT.VALUES(2,NCC,L,K), K=1,DAT.NK), LL=1,LCC), NCC=1,DAT.NC)
-          DO LL=1,LCC
-            READ(DAT.IUNIT) L2
-            READ(DAT.IUNIT) II
-            READ(DAT.IUNIT) JJ
+          !READ(DAT.IUNIT) L,II,JJ,(((DAT.VALUES(2,NCC,L,K), K = 1,DAT.NK), LL = 1,LCC), NCC = 1,DAT.NC)
+          do LL = 1,LCC
+            read(DAT.IUNIT) L2
+            read(DAT.IUNIT) II
+            read(DAT.IUNIT) JJ
             L = LIJ_Global(II,JJ)
-            READ(DAT.IUNIT) ((VALUES_TEMP(2,NCC,L,K), K=1,DAT.NK), NCC=1,DAT.NC)
-            DO NCC=1,DAT.NC
-              DO K=1,DAT.NK
+            read(DAT.IUNIT) ((VALUES_TEMP(2,NCC,L,K), K = 1,DAT.NK), NCC = 1,DAT.NC)
+            do NCC = 1,DAT.NC
+              do K = 1,DAT.NK
                 VALUES_TEMP(2,NCC,L,K) = (VALUES_TEMP(2,NCC,L,K) + DAT.VSHIFT)*DAT.VSCALE
-              ENDDO
-            ENDDO
-          ENDDO
-        ELSE
+              enddo
+            enddo
+          enddo
+        else
           ! *** READ ALL CELLS
-          READ(DAT.IUNIT) (((VALUES_TEMP(2,NCC,L,K), K=1,DAT.NK), L=2,LA_Global), NCC=1,DAT.NC)
-          DO NCC=1,DAT.NC
-            DO L=2,LA_Global
-              DO K=1,DAT.NK
+          read(DAT.IUNIT) (((VALUES_TEMP(2,NCC,L,K), K = 1,DAT.NK), L = 2,LA_Global), NCC = 1,DAT.NC)
+          do NCC = 1,DAT.NC
+            do L = 2,LA_Global
+              do K = 1,DAT.NK
                 VALUES_TEMP(2,NCC,L,K) = (VALUES_TEMP(2,NCC,L,K) + DAT.VSHIFT)*DAT.VSCALE
-              ENDDO
-            ENDDO
-          ENDDO
-        ENDIF
-      ENDIF
+              enddo
+            enddo
+          enddo
+        endif
+      endif
     endif !***End on master
     
     ! *** broadcast header info just read
-    Call Broadcast_Scalar(DAT.TIMES(2), master_id)
-    Call Broadcast_Array(VALUES_TEMP,  master_id)
+    call Broadcast_Scalar(DAT.TIMES(2), master_id)
+    call Broadcast_Array(VALUES_TEMP,  master_id)
 
     ! *** NOW ALL PROCESSES HAVE ALL THE INPUTS.  ASSIGN LOCAL VALUES
-    DO NCC=1,DAT.NC
-      DO L=2,LA
-        DO K=1,DAT.NK
+    do NCC = 1,DAT.NC
+      do L = 2,LA
+        do K = 1,DAT.NK
           L2 = Map2Global(L).LG                              ! *** Global L that corresponds to Local L
           DAT.VALUES(2,NCC,L,K) = VALUES_TEMP(2,NCC,L2,K)
-        ENDDO
-      ENDDO
-    ENDDO
-    DEALLOCATE(VALUES_TEMP)
+        enddo
+      enddo
+    enddo
+    deallocate(VALUES_TEMP)
   
     DAT.NI = DAT.NI + 1
-  ENDDO
+  enddo
 
     K = 1   ! *** TODO: LAYERED DATA
 
-    IF( DAT.ITOPT == 1  )THEN
+    if( DAT.ITOPT == 1  )then
       ! *** INTERPOLATE FIELD
       I = 1
       DELTF = DAT.TIMES(I+1) - DAT.TIMES(I)
-      IF( DELTF > 1.0E-9 )THEN
+      if( DELTF > 1.0E-9 )then
         FAC = (TIME - DAT.TIMES(I))/DELTF
-      ELSE
+      else
         FAC = 0.5
-      ENDIF
+      endif
       !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(L)
-      DO L=2,LA
-        IF(DAT.VALUES(I,M,L,K) == DAT.NODATA .OR. DAT.VALUES(I+1,M,L,K) == DAT.NODATA )THEN
+      do L = 2,LA
+        if(DAT.VALUES(I,M,L,K) == DAT.NODATA .or. DAT.VALUES(I+1,M,L,K) == DAT.NODATA )then
           RES(L) = DAT.NODATA
-        ELSE
+        else
           RES(L) = DAT.VALUES(I,M,L,K) + FAC*(DAT.VALUES(I+1,M,L,K)-DAT.VALUES(I,M,L,K))
-        ENDIF
-      ENDDO
+        endif
+      enddo
       !$OMP END PARALLEL DO
-    ELSE
+    else
       ! *** NO INTERPOLATION
       RES(:) = DAT.VALUES(1,M,:,K)
-    ENDIF
+    endif
 
   ! *** ADJUST FOR AREA, IF NEEDED (DEFAULT IS FLUX: IDIST == 0)
-  IF( DAT.IDIST == 1 )THEN
+  if( DAT.IDIST == 1 )then
     ! *** INPUT DATA IS A RATE
-    DO L=2,LA
-      IF( RES(L) /= DAT.NODATA )THEN
+    do L = 2,LA
+      if( RES(L) /= DAT.NODATA )then
         RES(L) = RES(L)*DXYP(L)
-      ENDIF
-    ENDDO
-  ELSEIF( DAT.IDIST == 2 )THEN
+      endif
+    enddo
+  elseif( DAT.IDIST == 2 )then
     ! *** INPUT DATA IS A TOTAL VOLUME
-    DO L=2,LA
-      IF( RES(L) /= DAT.NODATA )THEN
+    do L = 2,LA
+      if( RES(L) /= DAT.NODATA )then
         RES(L) = RES(L)/DXYP(L)
-      ENDIF
-    ENDDO
-  ENDIF
+      endif
+    enddo
+  endif
 
     ! UPDATE FIELD
     SELECT CASE (DAT.IUPDATE)
     CASE (1)      ! *** ADD
-      DO L=1,LC
-        IF( RES(L) /= DAT.NODATA )THEN
+      do L = 1,LC
+        if( RES(L) /= DAT.NODATA )then
           VALUE(L) = VALUE(L) + RES(L)
-        ENDIF
-      ENDDO
+        endif
+      enddo
     CASE (2)      ! *** MIN
-      DO L=1,LC
-        IF( RES(L) /= DAT.NODATA .AND. RES(L) < VALUE(L) )THEN
+      do L = 1,LC
+        if( RES(L) /= DAT.NODATA .and. RES(L) < VALUE(L) )then
           VALUE(L) = RES(L)
-        ENDIF
-      ENDDO
+        endif
+      enddo
     CASE (3)      ! *** MAX
-      DO L=1,LC
-        IF( RES(L) /= DAT.NODATA .AND. RES(L) > VALUE(L) )THEN
+      do L = 1,LC
+        if( RES(L) /= DAT.NODATA .and. RES(L) > VALUE(L) )then
           VALUE(L) = RES(L)
-        ENDIF
-      ENDDO
+        endif
+      enddo
     CASE DEFAULT  ! *** REPLACE
-      DO L=1,LC
-        IF( RES(L) /= DAT.NODATA )THEN
+      do L = 1,LC
+        if( RES(L) /= DAT.NODATA )then
           VALUE(L) = RES(L)
-        ENDIF
-      ENDDO
+        endif
+      enddo
     END SELECT
 END SUBROUTINE
 
   SUBROUTINE UPDATETOPO(TIME,BELV,HP,HDRY)
-    REAL,DIMENSION(:),INTENT(INOUT) :: BELV,HP
-    REAL(RKD), INTENT(IN) :: TIME
-    REAL, INTENT(IN) :: HDRY
-    REAL,ALLOCATABLE,DIMENSION(:) :: WSEL
-    INTEGER :: L
+    real,dimension(:),intent(INOUT) :: BELV,HP
+    real(RKD), intent(IN) :: TIME
+    real, intent(IN) :: HDRY
+    real,allocatable,dimension(:) :: WSEL
+    integer :: L
 
-    ! *** Delme - This approach does not maintain mass balance.  Use with care!
-    ALLOCATE(WSEL(LA))
-    DO L=2,LA
+    ! *** Delme - This approach does not maintain mass balance.  use with care!
+    allocate(WSEL(LA))
+    do L = 2,LA
       WSEL(L) = HP(L) + BELV(L)
-    ENDDO
-    CALL UPDATEFIELD(BATHY,TIME,1,BELV)
-    DO L=2,LA
-      IF(LMASKDRY(L) .AND. BATHY.CFLAG(L) > 0 ) THEN
+    enddo
+    call UPDATEFIELD(BATHY,TIME,1,BELV)
+    do L = 2,LA
+      if(LMASKDRY(L) .and. BATHY.CFLAG(L) > 0 )then
         HP(L) = WSEL(L) - BELV(L)
-        IF( HP(L) < HDRY) HP(L) = HDRY
-      ENDIF
-    ENDDO
+        if( HP(L) < HDRY) HP(L) = HDRY
+      endif
+    enddo
     !L = 1438
-    !OPEN(910,FILE=OUTDIR//'FIELD.LOG',POSITION='APPEND')
-    !write(910,*) 'T=',TIME,', B=',BELV(L),', H=',HP(L),', H=',WSEL(L)
+    !OPEN(910,FILE = OUTDIR//'FIELD.LOG',POSITION = 'APPEND')
+    !write(910,*) 'T = ',TIME,', B = ',BELV(L),', H = ',HP(L),', H = ',WSEL(L)
     !CLOSE(910)
-    DEALLOCATE(WSEL)
+    deallocate(WSEL)
 END SUBROUTINE
 
 END MODULE

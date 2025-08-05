@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!
@@ -13,21 +13,20 @@
 ! @author  Zander Mausolff
 ! @date  5/22/2019
 !---------------------------------------------------------------------------!
-#ifdef _MPI
-  Subroutine Initialize_MPI
+Subroutine Initialize_MPI
 
-  Use GLOBAL
-  Use MPI
-  USE Variables_MPI
+  use GLOBAL
+  use MPI
+  use Variables_MPI
 
-  Implicit none
+  implicit none
 
   !***Dummy variables
 
   !***Local variables
-  Integer :: ierr     ! Error value needed
-  Integer :: required_thread
-  Integer :: provided_thread_sup
+  integer :: ierr     ! Error value needed
+  integer :: required_thread
+  integer :: provided_thread_sup
   !---------------------------------------------------------------------------!
 
   !***Required first call to start the environment
@@ -36,27 +35,27 @@
   ! @todo look back at this when we need multithreading + MPI
   !***Ensure that only one thread will make MPI calls
   required_thread = MPI_Thread_Funneled
-  Call MPI_Init_thread( required_thread, provided_thread_sup, ierr)
+  call MPI_Init_thread( required_thread, provided_thread_sup, ierr)
 
   !***Determine the rank of the calling process in the communicator
-  Call MPI_COMM_RANK(MPI_Comm_World, process_id, ierr)
+  call MPI_COMM_RANK(MPI_Comm_World, process_id, ierr)
 
   !***Get total number of processors available
-  Call MPI_COMM_SIZE(MPI_Comm_World, num_Processors, ierr)
+  call MPI_COMM_SIZE(MPI_Comm_World, num_Processors, ierr)
 
   !***Check thread level support
-  !    IF( provided_thread_sup .lt. required_thread )THEN
+  !    if( provided_thread_sup .lt. required_thread )then
   !
   !         ! Insufficient support, degrade to 1 thread and warn the user
   !
-  !         IF( process_id .eq. 0 )THEN
+  !         if( process_id .eq. 0 )then
   !            write(*,*) "Warning:  This MPI implementation provides ",   &
   !                        &         "insufficient threading support."
-  !         end if
+  !         endif
   !
   !         call omp_set_num_threads(1)
   !
-  !    end if
+  !    endif
 
   !  *** Define MPI real
 
@@ -64,19 +63,18 @@
     !Call MPI_INIT(ierr)
     
 !***Determine the rank of the calling process in the communicator
-    Call MPI_COMM_RANK(MPI_Comm_World, process_id, ierr)
+    call MPI_COMM_RANK(MPI_Comm_World, process_id, ierr)
 
   !***Setup File for writing info out from each process
-  Call Setup_MPI_Debug_File
+  call Setup_MPI_Debug_File
 
-  Call WriteBreak(mpi_log_unit)
+  call WriteBreak(mpi_log_unit)
   write (mpi_log_unit, '(a,I3)' ) 'Hello from process: ', process_id
   write (mpi_log_unit, '(a,I3)' ) 'The master process ID is:   ', master_id
   write (mpi_log_unit, '(a,I3)' ) 'Total # of processes: ', num_Processors
-  Call WriteBreak(mpi_log_unit)
+  call WriteBreak(mpi_log_unit)
 
   DoublePrecision = KIND(DXU) == 8
   
-  End Subroutine Initialize_MPI
+End Subroutine Initialize_MPI
 
-#endif MPI

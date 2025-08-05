@@ -3,13 +3,13 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 module Mod_Position_Elev
     
-    Use GLOBAL, only : RKD, RK4
-    Use Mod_Position
+    use GLOBAL, only : RKD, RK4
+    use Mod_Position
     
     implicit none
     

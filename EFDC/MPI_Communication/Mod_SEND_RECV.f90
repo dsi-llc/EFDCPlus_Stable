@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 ! @details Performs MPI Send/Receive with automatic handling of precision
@@ -12,19 +12,19 @@
   
 Module Mod_DSI_SendRecv
 
-  USE GLOBAL
-  USE MPI
-  Use Variables_MPI
+  use GLOBAL
+  use MPI
+  use Variables_MPI
   
-  IMPLICIT NONE
+  implicit none
   
-  SAVE
+  save
 
   Public :: DSI_SEND
 
   !***Set up the geneic interface for commuicating ghost cells
   !***This will select the the proper array size depending on what is passed in
-  Interface DSI_SEND
+  interface DSI_SEND
 
   Module Procedure DSI_SEND_Integer,   &
                    DSI_SEND_Real4,     &
@@ -33,7 +33,7 @@ Module Mod_DSI_SendRecv
 
   Public :: DSI_RECV
 
-  Interface DSI_RECV
+  interface DSI_RECV
 
   Module Procedure DSI_RECV_Integer,   &
                    DSI_RECV_Real4,     &
@@ -47,40 +47,40 @@ Module Mod_DSI_SendRecv
  
 SUBROUTINE DSI_SEND_Integer(ValIn, iLen, iDir)
 
-  Integer, Intent(in) :: ValIn(*)
-  Integer, Intent(in) :: iLen, iDir
-  INTEGER             :: IERR, status_message(MPI_Status_Size)
+  integer, Intent(in) :: ValIn(*)
+  integer, Intent(in) :: iLen, iDir
+  integer             :: IERR, status_message(MPI_Status_Size)
 
-  IF( num_Processors > 1 )THEN
+  if( num_Processors > 1 )then
     IERR = 0
-    CALL MPI_SEND(ValIn, iLen, mpi_integer, iDir, process_id, comm_2d, IERR)
-  ENDIF
+    call MPI_SEND(ValIn, iLen, mpi_integer, iDir, process_id, comm_2d, IERR)
+  endif
   
 END SUBROUTINE DSI_SEND_Integer
 
 SUBROUTINE DSI_SEND_Real4(ValIn, iLen, iDir)
 
-  Real(4), Intent(in) :: ValIn(*)
-  Integer, Intent(in) :: iLen, iDir
-  INTEGER             :: IERR
+  real(4), Intent(in) :: ValIn(*)
+  integer, Intent(in) :: iLen, iDir
+  integer             :: IERR
 
-  IF( num_Processors > 1 )THEN
+  if( num_Processors > 1 )then
     IERR = 0
-    CALL MPI_SEND(ValIn, iLen, mpi_real4, iDir, process_id, comm_2d, IERR)
-  ENDIF
+    call MPI_SEND(ValIn, iLen, mpi_real4, iDir, process_id, comm_2d, IERR)
+  endif
   
 END SUBROUTINE DSI_SEND_Real4
 
 SUBROUTINE DSI_SEND_Real8(ValIn, iLen, iDir)
 
-  Real(8), Intent(in) :: ValIn(*)
-  Integer, Intent(in) :: iLen, iDir
-  INTEGER             :: IERR
+  real(8), Intent(in) :: ValIn(*)
+  integer, Intent(in) :: iLen, iDir
+  integer             :: IERR
 
-  IF( num_Processors > 1 )THEN
+  if( num_Processors > 1 )then
     IERR = 0
-    CALL MPI_SEND(ValIn, iLen, mpi_real8, iDir, process_id, comm_2d, IERR)
-  ENDIF
+    call MPI_SEND(ValIn, iLen, mpi_real8, iDir, process_id, comm_2d, IERR)
+  endif
   
 END SUBROUTINE DSI_SEND_Real8
 
@@ -89,40 +89,40 @@ END SUBROUTINE DSI_SEND_Real8
 
 SUBROUTINE DSI_RECV_Integer(Valout, iLen, iDir)
 
-  Integer, Intent(out) :: Valout(*)
-  Integer, Intent(in)  :: iLen, iDir
-  INTEGER             :: IERR, status_message(MPI_Status_Size)
+  integer, Intent(out) :: Valout(*)
+  integer, Intent(in)  :: iLen, iDir
+  integer             :: IERR, status_message(MPI_Status_Size)
 
-  IF( num_Processors > 1 )THEN
+  if( num_Processors > 1 )then
     IERR = 0
-    CALL MPI_RECV(Valout, iLen, mpi_integer, iDir, iDir, comm_2d, status_message, IERR)
-  ENDIF
+    call MPI_RECV(Valout, iLen, mpi_integer, iDir, iDir, comm_2d, status_message, IERR)
+  endif
   
 END SUBROUTINE DSI_RECV_Integer
 
 SUBROUTINE DSI_RECV_Real4(Valout, iLen, iDir)
 
-  Real(4), Intent(out) :: Valout(*)
-  Integer, Intent(in)  :: iLen, iDir
-  INTEGER             :: IERR, status_message(MPI_Status_Size)
+  real(4), Intent(out) :: Valout(*)
+  integer, Intent(in)  :: iLen, iDir
+  integer             :: IERR, status_message(MPI_Status_Size)
 
-  IF( num_Processors > 1 )THEN
+  if( num_Processors > 1 )then
     IERR = 0
-    CALL MPI_RECV(Valout, iLen, mpi_real4, iDir, iDir, comm_2d, status_message, IERR)
-  ENDIF
+    call MPI_RECV(Valout, iLen, mpi_real4, iDir, iDir, comm_2d, status_message, IERR)
+  endif
   
 END SUBROUTINE DSI_RECV_Real4
 
 SUBROUTINE DSI_RECV_Real8(Valout, iLen, iDir)
 
-  Real(8), Intent(out) :: Valout(*)
-  Integer, Intent(in) :: iLen, iDir
-  INTEGER             :: IERR, status_message(MPI_Status_Size)
+  real(8), Intent(out) :: Valout(*)
+  integer, Intent(in) :: iLen, iDir
+  integer             :: IERR, status_message(MPI_Status_Size)
 
-  IF( num_Processors > 1 )THEN
+  if( num_Processors > 1 )then
     IERR = 0
-    CALL MPI_RECV(Valout, iLen, mpi_real8, iDir, iDir, comm_2d, status_message, IERR)
-  ENDIF
+    call MPI_RECV(Valout, iLen, mpi_real8, iDir, iDir, comm_2d, status_message, IERR)
+  endif
   
 END SUBROUTINE DSI_RECV_Real8
 

@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!  
@@ -18,17 +18,16 @@
 ! @date 5/28/2019
 !---------------------------------------------------------------------------!
 
-#ifdef _MPI
 Module Broadcast_Routines
 
-    Implicit None
+    implicit none
 
-    Save
+    save
 
     Public :: Broadcast_Scalar, Broadcast_Array
 
 !***Handles the broadcasting of scalars with different types and precision
-    Interface Broadcast_Scalar
+    interface Broadcast_Scalar
 
      Module Procedure broadcast_scalar_int,    &
                       broadcast_scalar_int8,   &
@@ -36,11 +35,11 @@ Module Broadcast_Routines
                       broadcast_scalar_real8,  &
                       broadcast_scalar_log,    &
                       broadcast_scalar_char
-    End Interface
+    end interface
 
 !***Handles the broadcasting of array dimensions (up to 4D)
 !   Handles different precision of arrays and integers (single & double)
-Interface Broadcast_Array
+interface Broadcast_Array
 
      Module Procedure broadcast_array_int_1d,     &
                       broadcast_array_int_2d,     &
@@ -58,18 +57,18 @@ Interface Broadcast_Array
                       broadcast_array_log_1d,     &
                       broadcast_array_log_2d,     &
                       broadcast_array_log_3d
-End Interface
+end interface
 
 Contains
 
 !---------------------------------------------------------------------------!
 ! @details Broadcasts a scalar real variable from one processor (root_pe)
 !!  to all other processors. This is a specific instance of the generic
-!!  broadcast\_scalar Interface.
+!!  broadcast\_scalar interface.
 Subroutine broadcast_scalar_real(scalar, root_pe)
 
-   USE MPI 
-   USE Variables_MPI
+   use MPI 
+   use Variables_MPI
    
 !***Dummy variables
    real(4), intent(in) :: scalar    !< scalar to be broadcast
@@ -90,19 +89,19 @@ Subroutine broadcast_scalar_real(scalar, root_pe)
 ! 
  Subroutine broadcast_scalar_real8(scalar, root_pe)
 
-    Use MPI ! MPI Fortran include file
-    Use Variables_MPI
+    use MPI ! MPI Fortran include file
+    use Variables_MPI
    
 !***Dummy variables
     real(8), intent(in) :: scalar    !< scalar to be broadcast
     integer, intent(in) :: root_pe   !< processor number to broadcast from
 
 !***Local
-    Integer  :: ierr  !< local MPI error flag
+    integer  :: ierr  !< local MPI error flag
     
     ! *** Must specify MPI_Real8 
-    Call MPI_BCAST(scalar, 1, MPI_REAL8, root_pe, comm_2d, ierr)
-    Call MPI_BARRIER(comm_2d, ierr)
+    call MPI_BCAST(scalar, 1, MPI_REAL8, root_pe, comm_2d, ierr)
+    call MPI_BARRIER(comm_2d, ierr)
 
  End Subroutine broadcast_scalar_real8
 !---------------------------------------------------------------------------!
@@ -111,32 +110,32 @@ Subroutine broadcast_scalar_real(scalar, root_pe)
 !!         to all other processors. Handles single precision Integer
 Subroutine broadcast_scalar_int(scalar, root_pe)
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
 !***Dummy variables
-   Integer, intent(in)       :: root_pe !< processor number to broadcast from
+   integer, intent(in)       :: root_pe !< processor number to broadcast from
    Integer(4), intent(inout) :: scalar  !< scalar to be broadcast
 
 !***Local variables
-   Integer  :: ierr  !< local MPI error flag
+   integer  :: ierr  !< local MPI error flag
 
-   Call MPI_BCAST(scalar, 1, MPI_Integer4, root_pe, comm_2d, ierr)
-   Call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(scalar, 1, MPI_Integer4, root_pe, comm_2d, ierr)
+   call MPI_BARRIER(comm_2d, ierr)
 
  End Subroutine broadcast_scalar_int
 
 !---------------------------------------------------------------------------!
 ! @details Broadcasts a scalar integer variable from one processor (root_pe)
 !!  to all other processors. This is a specific instance of the generic
-!!  broadcast\_scalar Interface.
+!!  broadcast\_scalar interface.
 Subroutine broadcast_scalar_int8(scalar, root_pe)
 
-    Use MPI  ! MPI Fortran include file
-    Use Variables_MPI
+    use MPI  ! MPI Fortran include file
+    use Variables_MPI
     
 !***Dummy variables
-    Integer, intent(in)       :: root_pe !< processor number to broadcast from
+    integer, intent(in)       :: root_pe !< processor number to broadcast from
     Integer(8), intent(inout) :: scalar  !< scalar to be broadcast
 
 !***Local variables
@@ -149,22 +148,22 @@ End Subroutine broadcast_scalar_int8
 !---------------------------------------------------------------------------!
 ! @details Broadcasts a scalar logical variable from one processor (root_pe)
 !!  to all other processors. This is a specific instance of the generic
-!!  broadcast\_scalar Interface.
+!!  broadcast\_scalar interface.
 Subroutine broadcast_scalar_log(scalar, root_pe)
 
-    Use MPI  ! MPI Fortran include file
-    Use Variables_MPI
+    use MPI  ! MPI Fortran include file
+    use Variables_MPI
    
 !***Dummy variables
-    Integer, intent(in)    :: root_pe !< processor number to broadcast from
-    Logical, intent(inout) :: scalar  !< scalar to be broadcast
+    integer, intent(in)    :: root_pe !< processor number to broadcast from
+    logical, intent(inout) :: scalar  !< scalar to be broadcast
 
 !***Local Variables
-    Integer :: itmp !< local temporary
-    Integer :: ierr !< MPI error flag
+    integer :: itmp !< local temporary
+    integer :: ierr !< MPI error flag
 
 !***Maps the logical to 0/1 and then broadcasts that back
-   IF( scalar )THEN
+   if( scalar )then
      itmp = 1
    else
      itmp = 0
@@ -174,7 +173,7 @@ Subroutine broadcast_scalar_log(scalar, root_pe)
    call MPI_BARRIER(comm_2d, ierr)
 
 !***Remaps the integer value recieved back to a logical value
-   IF( itmp == 1 )THEN
+   if( itmp == 1 )then
      scalar = .true.
    else
      scalar = .false.
@@ -187,16 +186,16 @@ Subroutine broadcast_scalar_log(scalar, root_pe)
 !!  to all other processors. 
 Subroutine broadcast_scalar_char(scalar, root_pe)
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
 !***Dummy variables
-    Integer , intent(in)         :: root_pe !< processor number to broadcast from
+    integer , intent(in)         :: root_pe !< processor number to broadcast from
     Character (*), intent(inout) :: scalar  !< scalar to be broadcast
 
 !***Local variables
-   Integer :: clength !< length of character
-   Integer :: ierr    !< MPI error flag
+   integer :: clength !< length of character
+   integer :: ierr    !< MPI error flag
 
    clength = len(scalar)
 
@@ -210,42 +209,42 @@ Subroutine broadcast_scalar_char(scalar, root_pe)
 !!  to all other processors. This handles single precision Real
 Subroutine broadcast_array_real_1d(array, root_pe)
 
-   Use MPI  ! MPI Fortran include file
-   Use GLOBAL
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use GLOBAL
+   use Variables_MPI
    
 !***Dummy variables
-   Integer , intent(in)           :: root_pe !< processor number to broadcast from
-   Real(4), dimension(:), intent(in) :: array   !< array to be broadcast
+   integer , intent(in)           :: root_pe !< processor number to broadcast from
+   real(4), dimension(:), intent(in) :: array   !< array to be broadcast
 
 !***Local variables
-   Integer :: nelements !< size of array to be broadcast
-   Integer :: ierr      !< local MPI error flag
+   integer :: nelements !< size of array to be broadcast
+   integer :: ierr      !< local MPI error flag
     
    nelements = size(array) ! get the size of the array for broadcasting
    
-   Call MPI_BCAST(array, nelements, mpi_real4, root_pe, comm_2d, ierr)
-   Call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, mpi_real4, root_pe, comm_2d, ierr)
+   call MPI_BARRIER(comm_2d, ierr)
 
 End Subroutine broadcast_array_real_1d
 !--------------------------------------------------------------------
 !--------------------------------------------------------------------
 ! @details Broadcasts a real vector from one processor (root_pe)
 !!  to all other processors. This is a specific instance of the generic
-!!!  broadcast\_array Interface.
+!!!  broadcast\_array interface.
 Subroutine broadcast_array_real8_1d(array, root_pe)
 
-   Use MPI  ! MPI Fortran include file
-   Use GLOBAL
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use GLOBAL
+   use Variables_MPI
    
 !***Dummy variables
-   Integer , intent(in)           :: root_pe !< processor number to broadcast from
-   Real(8), dimension(:), intent(in) :: array   !< array to be broadcast
+   integer , intent(in)           :: root_pe !< processor number to broadcast from
+   real(8), dimension(:), intent(in) :: array   !< array to be broadcast
 
 !***Local variables
-   Integer :: nelements !< size of array to be broadcast
-   Integer :: ierr      !< local MPI error flag
+   integer :: nelements !< size of array to be broadcast
+   integer :: ierr      !< local MPI error flag
     
    nelements = size(array)
    call MPI_BCAST(array, nelements, MPI_REAL8, root_pe, comm_2d, ierr)
@@ -258,15 +257,15 @@ End Subroutine broadcast_array_real8_1d
 !!  to all other processors. Handles 1D single preciscion integer array 
 Subroutine broadcast_array_int_1d(array, root_pe)
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
     
-   Integer, intent(in)                  :: root_pe !< processor number to broadcast from
-   Integer, dimension(:), intent(inout) :: array   !< array to be broadcast
+   integer, intent(in)                  :: root_pe !< processor number to broadcast from
+   integer, dimension(:), intent(inout) :: array   !< array to be broadcast
 
 !***Local variables
-   Integer :: nelements !< size of array to be broadcast
-   Integer :: ierr      !< local MPI error flag
+   integer :: nelements !< size of array to be broadcast
+   integer :: ierr      !< local MPI error flag
   
    nelements = size(array)
    call MPI_BCAST(array, nelements, MPI_Int, root_pe, comm_2d, ierr)
@@ -277,23 +276,23 @@ Subroutine broadcast_array_int_1d(array, root_pe)
 !---------------------------------------------------------------------------!
 ! @details  Broadcasts a character vector from one processor (root_pe)
 !!  to all other processors. This is a specific instance of the generic
-!!  broadcast\_array Interface.
+!!  broadcast\_array interface.
 Subroutine broadcast_array_char_1d(array,  root_pe)
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
 !***Dummy variables
-   Integer , intent(in)                   :: root_pe !< processor number to broadcast from
-   Character, dimension(:), intent(inout) :: array   !< array to be broadcast
+   integer , intent(in)                      :: root_pe !< processor number to broadcast from
+   Character(*), dimension(:), intent(inout) :: array   !< array to be broadcast
 !***Local variables
-   Integer :: nelements !< size of array to be broadcast
-   Integer :: ierr      !< local MPI error flag
+   integer :: nelements !< size of array to be broadcast
+   integer :: ierr      !< local MPI error flag
 
    nelements = size(array)
 
-   Call MPI_BCAST(array, nelements, MPI_CHARACTER, root_pe, comm_2d, ierr)
-   Call MPI_BARRIER(comm_2d, ierr)
+   call MPI_BCAST(array, nelements, MPI_CHARACTER, root_pe, comm_2d, ierr)
+   call MPI_BARRIER(comm_2d, ierr)
 
  End Subroutine broadcast_array_char_1d
 !---------------------------------------------------------------------------!
@@ -303,24 +302,24 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a logical vector from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
-   Integer , intent(in) :: root_pe              ! processor number to broadcast from
+! !INPUT parameterS:
+   integer , intent(in) :: root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
-   Logical , dimension(:), intent(inout) :: array                ! array to be broadcast
-   Integer , dimension(:), allocatable :: array_int            ! temporary array for MPI bcast
-   Integer  :: nelements         ! size of array to be broadcast
-   Integer ::   ierr                 ! local MPI error flag
+! !INPUT/OUTPUT parameterS:
+   logical , dimension(:), intent(inout) :: array                ! array to be broadcast
+   integer , dimension(:), allocatable :: array_int            ! temporary array for MPI bcast
+   integer  :: nelements         ! size of array to be broadcast
+   integer ::   ierr                 ! local MPI error flag
 
 !---------------------------------------------------------------------------!
 
@@ -355,22 +354,22 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a real 2d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use mpi  ! MPI Fortran include file
-   Use Variables_MPI
+   use mpi  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: &
      root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    real(4) , dimension(:,:), intent(inout) :: array                ! array to be broadcast
 
@@ -408,21 +407,21 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a real 2d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    real(8) , dimension(:,:), intent(inout) :: array                ! array to be broadcast
 !---------------------------------------------------------------------------!
@@ -456,21 +455,21 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a 2d integer array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use mpi  ! MPI Fortran include file
-   Use Variables_MPI
+   use mpi  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    integer(4) , dimension(:,:), intent(inout) :: array              ! array to be broadcast
 
@@ -482,8 +481,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 !
 !---------------------------------------------------------------------------!
 
-   Integer :: nelements  ! size of array to be broadcast
-   Integer ::   ierr                 ! local MPI error flag
+   integer :: nelements  ! size of array to be broadcast
+   integer ::   ierr                 ! local MPI error flag
 
 !---------------------------------------------------------------------------!
 
@@ -507,22 +506,22 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a logical 2d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: &
      root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    logical , dimension(:,:), intent(inout) :: &
      array                ! array to be broadcast
@@ -545,7 +544,7 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 !---------------------------------------------------------------------------!
 
    nelements = size(array)
-   allocate(array_int(size(array,dim=1),size(array,dim=2)))
+   allocate(array_int(size(array,dim = 1),size(array,dim = 2)))
 
    where (array)
      array_int = 1
@@ -580,22 +579,22 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a real 3d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use mpi  ! MPI Fortran include file
-   Use Variables_MPI
+   use mpi  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: &
      root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    real(4) , dimension(:,:,:), intent(inout) :: &
      array                ! array to be broadcast
@@ -634,21 +633,21 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a real 3d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    real(8) , dimension(:,:,:), intent(inout) :: array  ! array to be broadcast
 !---------------------------------------------------------------------------!
@@ -680,22 +679,22 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a real 3d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: &
      root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    real(4) , dimension(:,:,:,:), intent(inout) :: &
      array                ! array to be broadcast
@@ -731,22 +730,22 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a real 3d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use mpi  ! MPI Fortran include file
- Use Variables_MPI
+   use mpi  ! MPI Fortran include file
+ use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: &
      root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    real(8) , dimension(:,:,:,:), intent(inout) :: &
      array                ! array to be broadcast
@@ -787,21 +786,21 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts an integer 3d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    integer , dimension(:,:,:), intent(inout) :: array              ! array to be broadcast
 
@@ -813,8 +812,8 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 !
 !---------------------------------------------------------------------------!
 
-   Integer  :: nelements  ! size of array to be broadcast
-   Integer  :: ierr                 ! local MPI error flag
+   integer  :: nelements  ! size of array to be broadcast
+   integer  :: ierr                 ! local MPI error flag
 
 !---------------------------------------------------------------------------!
 
@@ -838,7 +837,7 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts an integer 3d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !  This one handles special case where integer arrays have to be *8 precision
 !
 ! !REVISION HISTORY:
@@ -846,15 +845,15 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 
 ! !INCLUDES:
 
-   Use MPI  ! MPI Fortran include file
-   Use Variables_MPI
+   use MPI  ! MPI Fortran include file
+   use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: &
      root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    integer(8) , dimension(:,:,:), intent(inout) ::array              ! array to be broadcast
 
@@ -893,22 +892,22 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 ! !DESCRIPTION:
 !  Broadcasts a logical 3d array from one processor (root_pe)
 !  to all other processors. This is a specific instance of the generic
-!  broadcast\_array Interface.
+!  broadcast\_array interface.
 !
 ! !REVISION HISTORY:
 !  same as Module
 
 ! !INCLUDES:
 
-   Use mpi  ! MPI Fortran include file
- Use Variables_MPI
+   use mpi  ! MPI Fortran include file
+ use Variables_MPI
    
-! !INPUT PARAMETERS:
+! !INPUT parameterS:
 
    integer , intent(in) :: &
      root_pe              ! processor number to broadcast from
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT parameterS:
 
    logical , dimension(:,:,:), intent(inout) :: &
      array                ! array to be broadcast
@@ -931,9 +930,9 @@ Subroutine broadcast_array_log_1d(array, root_pe)
 !---------------------------------------------------------------------------!
 
    nelements = size(array)
-   allocate(array_int(size(array,dim=1), &
-                      size(array,dim=2), &
-                      size(array,dim=3)))
+   allocate(array_int(size(array,dim = 1), &
+                      size(array,dim = 2), &
+                      size(array,dim = 3)))
 
    where (array)
      array_int = 1
@@ -959,4 +958,3 @@ End Subroutine broadcast_array_log_3d
 
 !---------------------------------------------------------------------------!
 End Module Broadcast_Routines
-#endif

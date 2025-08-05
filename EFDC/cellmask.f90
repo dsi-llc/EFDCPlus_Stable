@@ -3,76 +3,64 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
   SUBROUTINE CELLMASK
 
-  ! **  SUBROUTINE CELLMASK CONVERTS LAND CELLS TO WATER CELLS BY
-  ! **  MASKING VARIABLES.  DEPTHS IN THE MASKED CELLS SHOULD BE INPUT AT
-  ! **  THE END OF THE DXDY.INP FILE.
+  ! ***  SUBROUTINE CELLMASK CONVERTS LAND CELLS TO WATER CELLS BY
+  ! ***  MASKING VARIABLES.  DEPTHS IN THE MASKED CELLS SHOULD BE INPUT AT
+  ! ***  THE END OF THE DXDY.INP FILE.
 
   ! CHANGE RECORD
 
-  USE GLOBAL
-  USE INFOMOD,ONLY:READSTR
+  use GLOBAL
+  use INFOMOD,only:READSTR
 
-#ifdef _MPI
-  Use Broadcast_Routines
-  Use Variables_MPI
-  Use MPI
-#endif
+  use Broadcast_Routines
+  use Variables_MPI
+  use MPI
 
-  IMPLICIT NONE
+  implicit none
 
-  INTEGER :: I, J, K, L, LG, LN, LE, M, MMASK, MTYPE
-  INTEGER :: I_GL, J_GL
-  CHARACTER(200) :: STR
+  integer :: I,J,K,L,LN,LE,M,MMASK,MTYPE
+  integer :: I_GL, J_GL
+  character(200) :: STR
 
-  if( process_id == master_id )THEN
-    WRITE(*,'(A)')'READING MASK.INP'
-    OPEN(1,FILE='mask.inp',STATUS='UNKNOWN')
+  if( process_id == master_id )then
+    write(*,'(A)')'READING MASK.INP'
+    open(1,FILE = 'mask.inp',STATUS = 'UNKNOWN')
     STR = READSTR(1)
-    READ(1,*,ERR=1000) MMASK
-  end if
+    read(1,*,err = 1000) MMASK
+  endif
 
-  Call Broadcast_Scalar(MMASK, master_id)
+  call Broadcast_Scalar(MMASK, master_id)
 
-  DO M=1,MMASK
+  do M = 1,MMASK
 
-    if( process_id == master_id )THEN
-      READ(1,*,ERR=1000,END=999) I_GL, J_GL, MTYPE
+    if( process_id == master_id )then
+      read(1,*,err = 1000,end = 999) I_GL, J_GL, MTYPE
+    endif
 
-      LG= LIJ_Global(I_GL,J_GL)
-      IF( MTYPE == 1 )THEN
-        UMASK_Global(LG) = 1
-      ELSEIF( MTYPE == 2 )THEN
-        VMASK_Global(LG) = 1
-      ELSEIF( MTYPE == 3 )THEN
-        UMASK_Global(LG) = 1
-        VMASK_Global(LG) = 1
-      ENDIF
-    end if
-
-    Call Broadcast_Scalar(I_GL  ,master_id)
-    Call Broadcast_Scalar(J_GL  ,master_id)
-    Call Broadcast_Scalar(MTYPE ,master_id)
+    call Broadcast_Scalar(I_GL  ,master_id)
+    call Broadcast_Scalar(J_GL 	,master_id)
+    call Broadcast_Scalar(MTYPE	,master_id)
 
     !***Remap to local values
     I = IG2IL(I_GL)
     J = JG2JL(J_GL)
 
-    IF( I > 0 .AND. I <= IC )THEN
-      IF( J > 0 .AND. J <= JC )THEN
+    if( I > 0 .and. I <= IC )then
+      if( J > 0 .and. J <= JC )then
         L = LIJ(I,J)
-        IF( MTYPE == 1 )THEN
+        if( MTYPE == 1 )then
           SUB(L) = 0.
           SUBO(L) = 0.
           UHDYE(L) = 0.
           UHDY1E(L) = 0.
           UHDY2E(L) = 0.
           UMASK(L) = 1
-          DO K = 1,KC
+          do K = 1,KC
             U(L,K) = 0.
             U1(L,K) = 0.
             U2(L,K) = 0.
@@ -82,17 +70,17 @@
             UHDYF(L,K) = 0.
             UHDYF1(L,K) = 0.
             UHDYF2(L,K) = 0.
-          ENDDO
-        ENDIF
+          enddo
+        endif
 
-        IF( MTYPE == 2 )THEN
+        if( MTYPE == 2 )then
           SVB(L) = 0.
           SVBO(L) = 0.
           VHDXE(L) = 0.
           VHDX1E(L) = 0.
           VHDX2E(L) = 0.
           VMASK(L)  =  1
-          DO K = 1,KC
+          do K = 1,KC
             V(L,K) = 0.
             V1(L,K) = 0.
             V2(L,K) = 0.
@@ -102,10 +90,10 @@
             VHDXF(L,K) = 0.
             VHDXF1(L,K) = 0.
             VHDXF2(L,K) = 0.
-          ENDDO
-        ENDIF
+          enddo
+        endif
 
-        IF( MTYPE == 3 )THEN
+        if( MTYPE == 3 )then   ! *** PMC
           ! *** U Face
           SUB(L) = 0.
           SUBO(L) = 0.
@@ -113,7 +101,7 @@
           UHDY1E(L) = 0.
           UHDY2E(L) = 0.
           UMASK(L) = 1
-          DO K = 1,KC
+          do K = 1,KC
             U(L,K) = 0.
             U1(L,K) = 0.
             U2(L,K) = 0.
@@ -123,7 +111,7 @@
             UHDYF(L,K) = 0.
             UHDYF1(L,K) = 0.
             UHDYF2(L,K) = 0.
-          ENDDO
+          enddo
           ! *** V Face
           SVB(L) = 0.
           SVBO(L) = 0.
@@ -131,7 +119,7 @@
           VHDX1E(L) = 0.
           VHDX2E(L) = 0.
           VMASK(L)  =  1
-          DO K = 1,KC
+          do K = 1,KC
             V(L,K) = 0.
             V1(L,K) = 0.
             V2(L,K) = 0.
@@ -141,10 +129,10 @@
             VHDXF(L,K) = 0.
             VHDXF1(L,K) = 0.
             VHDXF2(L,K) = 0.
-          ENDDO
-        ENDIF
+          enddo
+        endif
 
-        IF( MTYPE == 4 )THEN   ! *** PMC - Change to MTYPE 4 for isolated !waters
+        if( MTYPE == 4 )then   ! *** PMC - Change to MTYPE 4 for isolated !waters
           LN = LNC(L)
           LE = LEC(L)
           SUB(L) = 0.
@@ -169,7 +157,7 @@
           VHDX2E(LN) = 0.
           P(L) = 0.
           P1(L) = 0.
-          DO K = 1,KC
+          do K = 1,KC
             B(L,K) = 0.
             B1(L,K) = 0.
             SAL(L,K) = 0.
@@ -216,22 +204,22 @@
             VHDX(LN,K) = 0.
             VHDX1(LN,K) = 0.
             VHDX2(LN,K) = 0.
-          ENDDO
-        ENDIF
-      ENDIF
-    ENDIF
-  ENDDO
+          enddo
+        endif
+      endif
+    endif
+  enddo
 
-999 CONTINUE
-  CLOSE(1)
+999 continue
+  close(1)
 
-  ! **  WRITE READ ERRORS ON CELLMASK
+  ! ***  WRITE READ ERRORS ON CELLMASK
   GOTO 1002
 
-1000 CALL STOPP('READ ERROR ON FILE MASK.INP ')
-1002 CONTINUE
+1000 call STOPP('READ ERROR ON FILE MASK.INP ')
+1002 continue
 
-  RETURN
+  return
   
 END SUBROUTINE CELLMASK
 
@@ -248,72 +236,70 @@ SUBROUTINE BLOCKING
   !---------------------------------------------------------------------------
   !    2019-08       PAUL M. CRAIG     IMPLEMENTED LAYER BY LAYER FACE BLOCKNG
 
-  USE GLOBAL
-  Use Variables_MPI
-  Use Broadcast_Routines
-  USE INFOMOD,ONLY:READSTR
+  use GLOBAL
+  use Variables_MPI
+  use Broadcast_Routines
+  use INFOMOD,only:READSTR
 
-  IMPLICIT NONE
+  implicit none
 
-  INTEGER :: I, J, L, M, LG, NTMP
-  REAL :: BLANCHORUM, BLDRAFTUOM, BLSILLUM, BLANCHORVM, BLDRAFTVOM, BLSILLVM
-  CHARACTER(200) :: STR
+  integer :: I, J, L, M, LG, NTMP
+  real :: BLANCHORUM, BLDRAFTUOM, BLSILLUM, BLANCHORVM, BLDRAFTVOM, BLSILLVM
+  character(200) :: STR
 
   if( process_id == master_id )then
-    WRITE(*,'(A)')'READING LAYERMASK.INP'
-    OPEN(1,FILE='layermask.inp',STATUS='UNKNOWN')
+    write(*,'(A)')'READING LAYERMASK.INP'
+    open(1,FILE = 'layermask.inp',STATUS = 'UNKNOWN')
     STR = READSTR(1)
   endif
   
   NTMP = NBLOCKED
   NBLOCKED = 0
-  DO M=1,NTMP
+  do M = 1,NTMP
     if( process_id == master_id )then
-        READ(1,*,ERR=1000,END=999) I,J, BLANCHORUM, BLDRAFTUOM, BLSILLUM, BLANCHORVM, BLDRAFTVOM, BLSILLVM
+      read(1,*,err = 1000,end = 999) I,J, BLANCHORUM, BLDRAFTUOM, BLSILLUM, BLANCHORVM, BLDRAFTVOM, BLSILLVM
     endif
     
-    Call Broadcast_Scalar(I, master_id)
-    Call Broadcast_Scalar(J, master_id)
-    Call Broadcast_Scalar(BLANCHORUM, master_id)
-    Call Broadcast_Scalar(BLDRAFTUOM, master_id)
-    Call Broadcast_Scalar(BLSILLUM,   master_id)
-    Call Broadcast_Scalar(BLANCHORVM, master_id)
-    Call Broadcast_Scalar(BLDRAFTVOM, master_id) 
-    Call Broadcast_Scalar(BLSILLVM,   master_id)
+    call Broadcast_Scalar(I, master_id)
+    call Broadcast_Scalar(J, master_id)
+    call Broadcast_Scalar(BLANCHORUM, master_id)
+    call Broadcast_Scalar(BLDRAFTUOM, master_id)
+    call Broadcast_Scalar(BLSILLUM,   master_id)
+    call Broadcast_Scalar(BLANCHORVM, master_id)
+    call Broadcast_Scalar(BLDRAFTVOM, master_id) 
+    call Broadcast_Scalar(BLSILLVM,   master_id)
     
     LG = LIJ_Global(I,J)
     L = Map2Local(LG).LL
     
-    IF( L > 0 )THEN
+    if( L > 0 )then
       NBLOCKED = NBLOCKED + 1
       LBLOCKED(NBLOCKED) = L
 
-      IF( SUBO(L) > 0.0 )THEN
+      if( SUBO(L) > 0.0 )then
         BLANCHORU(NBLOCKED) = BLANCHORUM
         BLDRAFTUO(NBLOCKED) = BLDRAFTUOM
         BLSILLU(NBLOCKED)   = BLSILLUM
-      ENDIF
-      IF( SVBO(L) > 0.0 )THEN
+      endif
+      if( SVBO(L) > 0.0 )then
         BLANCHORV(NBLOCKED) = BLANCHORVM
         BLDRAFTVO(NBLOCKED) = BLDRAFTVOM
         BLSILLV(NBLOCKED)   = BLSILLVM
-      ENDIF
+      endif
       
       ! *** SET WAVE FETCH FLAGS
-      IF( BLDRAFTUO(NBLOCKED) > 0.0 .OR. BLSILLU(NBLOCKED) > HP(L) ) UMASK(L) = 1
-      IF( BLDRAFTVO(NBLOCKED) > 0.0 .OR. BLSILLV(NBLOCKED) > HP(L) ) VMASK(L) = 1
-    ENDIF
-  ENDDO
+      if( BLDRAFTUO(NBLOCKED) > 0.0 .or. BLSILLU(NBLOCKED) > HP(L) ) UMASK(L) = 1
+      if( BLDRAFTVO(NBLOCKED) > 0.0 .or. BLSILLV(NBLOCKED) > HP(L) ) VMASK(L) = 1
+    endif
+  enddo
 
-  999 CONTINUE
+  999 continue
   
-  if( process_id == master_id )then
-    CLOSE(1)  
-  endif
+  close(1)  
   
-  RETURN
+  return
 
-  ! **  WRITE READ ERRORS ON CELLMASK
-1000 CALL STOPP('READ ERROR ON FILE LAYERMASK.INP ')
+  ! ***  WRITE READ ERRORS ON CELLMASK
+1000 call STOPP('READ ERROR ON FILE LAYERMASK.INP ')
 
 END SUBROUTINE BLOCKING

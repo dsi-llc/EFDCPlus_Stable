@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 ! Copyright (c) 2012 Joseph A. Levin
@@ -21,7 +21,7 @@
 ! INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
 ! PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE 
 ! LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
-! OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+! OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE use OR OTHER
 ! DEALINGS IN THE SOFTWARE.
 
 !     
@@ -68,7 +68,7 @@ contains
     ! FSON STRING CREATE
     !
     function fson_string_create(chars) result(new)
-        character(len=*), optional :: chars
+        character(len = *), optional :: chars
         type(fson_string), pointer :: new
 
         nullify(new)
@@ -77,7 +77,7 @@ contains
         ! append chars if available
         if(present(chars) )then
             call append_chars(new, chars)
-        end if
+        endif
 
     end function fson_string_create
     
@@ -89,16 +89,16 @@ contains
       implicit none
       type(fson_string), pointer :: this
 
-      IF( associated(this) )then
+      if( associated(this) )then
 
          if(associated(this.next) )then
             call fson_string_destroy(this.next)
-         end if
+         endif
 
          deallocate(this)
          nullify (this)
 
-      end if
+      endif
 
     end subroutine fson_string_destroy
 
@@ -111,11 +111,11 @@ contains
       type(fson_string), pointer :: this
       type(fson_string), pointer :: new
 
-      IF( .not.associated(this.next) )then
+      if( .not.associated(this.next) )then
          nullify(new)
          allocate(new)
          this.next => new
-      end if
+      endif
 
     end subroutine allocate_block
 
@@ -131,7 +131,7 @@ contains
 
         do i = 1, length
             call append_char(str1, get_char_at(str2, i))
-        end do
+        enddo
 
 
     end subroutine append_string
@@ -148,7 +148,7 @@ contains
 
         do i = 1, length
             call append_char(str, c(i:i))
-        end do
+        enddo
 
 
     end subroutine append_chars
@@ -160,7 +160,7 @@ contains
         type(fson_string), pointer :: str
         character, intent(in) :: c
 
-        IF( str.index .GE. BLOCK_SIZE )then
+        if( str.index .GE. BLOCK_SIZE )then
             !set down the chain
             call allocate_block(str)
             call append_char(str.next, c)
@@ -169,7 +169,7 @@ contains
             ! set local
             str.index = str.index + 1
             str.chars(str.index:str.index) = c
-        end if
+        endif
 
     end subroutine append_char
 
@@ -185,12 +185,12 @@ contains
 
         do i = 1, length
             to(i:i) = get_char_at(this, i)
-        end do
+        enddo
 
         ! pad with nothing
         do i = length + 1, len(to)
             to(i:i) = ""
-        end do
+        enddo
 
 
     end subroutine copy_chars
@@ -203,11 +203,11 @@ contains
     recursive subroutine string_clear(this)
         type(fson_string), pointer :: this
 
-        IF( associated(this.next) )then
+        if( associated(this.next) )then
             call string_clear(this.next)
             deallocate(this.next)
             nullify (this.next)
-        end if
+        endif
 
         this.index = 0
 
@@ -221,9 +221,9 @@ contains
 
         count = str.index
 
-        IF( str.index == BLOCK_SIZE .AND. associated(str.next) )then
+        if( str.index == BLOCK_SIZE .and. associated(str.next) )then
             count = count + string_length(str.next)
-        end if
+        endif
 
     end function string_length
 
@@ -235,11 +235,11 @@ contains
         type(fson_string), pointer :: this
         integer, intent(in) :: i
 
-        IF( i .LE. this.index )then
+        if( i .LE. this.index )then
             c = this.chars(i:i)
         else
             c = get_char_at(this.next, i - this.index)
-        end if
+        endif
 
     end function get_char_at
 
@@ -254,17 +254,17 @@ contains
         if(fson_string_length(this) .ne. fson_string_length(other) )then
             equals = .false.
             return
-        else if(fson_string_length(this) == 0 )then
+        elseif(fson_string_length(this) == 0 )then
             equals = .true.
             return
-        end if
+        endif
         
-        do i=1, fson_string_length(this)
+        do i = 1, fson_string_length(this)
             if(get_char_at(this, i) .ne. get_char_at(other, i) )then
                 equals = .false.
                 return
-            end if
-        end do
+            endif
+        enddo
         
         equals = .true.
         

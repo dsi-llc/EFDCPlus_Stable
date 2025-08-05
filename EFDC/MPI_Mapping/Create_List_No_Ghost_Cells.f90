@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!
@@ -16,19 +16,19 @@
 !---------------------------------------------------------------------------!  
 Subroutine Create_List_No_Ghost_Cells
     
-  Use GLOBAL
-  Use Variables_MPI_Mapping
-  Use MPI
+  use GLOBAL
+  use Variables_MPI_Mapping
+  use MPI
 
-  Implicit none
+  implicit none
 
   ! *** Local variables
-  Integer :: I, J, L
+  integer :: I, J, L
 
   if(.not.allocated(NoGhost) )then
-    ALLOCATE(NoGhost(LCM))
-    ALLOCATE(IsGhost(LCM))
-    ALLOCATE(GhostMask(LCM))
+    allocate(NoGhost(LCM))
+    allocate(IsGhost(LCM))
+    allocate(GhostMask(LCM))
   endif
 
   ! *** Save the list of active cells, excluding ghost cells
@@ -36,17 +36,17 @@ Subroutine Create_List_No_Ghost_Cells
   GhostMask = 0.0
   NoGhost = 0
   NNoGhost = 0
-  DO J = 3,JC-2
-    DO I = 3,IC-2
+  do J = 3,JC-2
+    do I = 3,IC-2
       L = LIJ(I,J)
-      IF( L > 0 )THEN ! *** Only records the active cells
+      if( L > 0 )then ! *** Only records the active cells
         NNoGhost = NNoGhost + 1
         NoGhost(NNoGhost) = L
         IsGhost(L) = .FALSE.
         GhostMask(L) = 1.0
-      ENDIF
-    ENDDO
-  ENDDO
+      endif
+    enddo
+  enddo
   
   ! *** Get the number of active cells excluding anything in the ghost regions
   LA_Local_no_ghost = NNoGhost

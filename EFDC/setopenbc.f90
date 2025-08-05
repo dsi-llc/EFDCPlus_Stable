@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
@@ -28,211 +28,217 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
   ! *** HUT(LCM), HVT(LCM) are the depths at the cell interfaces of U and V respectively   (m)
   ! *** 
   
-  USE GLOBAL
-  Use Allocate_Initialize
+  use GLOBAL
+  use Allocate_Initialize
   
-  IMPLICIT NONE
+  implicit none
 
   ! *** Passed in
-  INTEGER, INTENT(IN) :: NCORDRY
-  REAL, INTENT(IN)    :: DELTD2
-  REAL, INTENT(IN)    :: HUT(LCM), HVT(LCM)
+  integer, intent(IN) :: NCORDRY
+  real, intent(IN)    :: DELTD2
+  real, intent(IN)    :: HUT(LCM), HVT(LCM)
   
   ! *** Local Variables
-  INTEGER :: IBC, L, LE, LN, LS, LW, LL, M
-  INTEGER, SAVE :: ISRUNNING, ISSUMQ
-  INTEGER, SAVE,ALLOCATABLE,DIMENSION(:) :: RESTYPE          ! *** Type of Residual flow at open BC cells
+  integer :: IBC, L, LE, LN, LS, LW, LL, M
+  integer, save :: ISRUNNING, ISSUMQ
+  integer, save,allocatable,dimension(:) :: RESTYPE          ! *** Type of Residual flow at open BC cells
   
-  REAL    :: C1, HDRY2, HDRY5, HDRY10, TM, TMPVAL, TC, TS, FP1G, FACTOR, TMP, CET, CWT, CNT, CST
-  REAL    :: ELEV, FPE, FPW, FPN, FPS, C, R, UVEL, VVEL
-  REAL(RKD) :: VOLSUM, VOLINC, SUMQ, RINC
+  real    :: C1, HDRY2, HDRY5, HDRY10, TM, TMPVAL, TC, TS, FP1G, FACTOR, TMP, CET, CWT, CNT, CST
+  real    :: ELEV, FPE, FPW, FPN, FPS, C, R, UVEL, VVEL
+  real(RKD) :: VOLSUM, VOLINC, SUMQ, RINC
+  real :: TN             !< 
   
-  REAL(RKD), SAVE :: DAYOLD, SUMDAY
+  real(RKD), save :: DAYOLD, SUMDAY
 
-  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:) :: OBCRESIDUALQ    ! *** Residual flow at open BC cells (m3/s)
-  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:) :: OBCRESIDUALQ1   ! *** Volume (m3)
-  REAL(RKD),SAVE,ALLOCATABLE,DIMENSION(:) :: OBCRESIDUALQ2   ! *** Incremental flow at previous time step (m3/s)
+  real(RKD),save,allocatable,dimension(:) :: OBCRESIDUALQ    ! *** Residual flow at open BC cells (m3/s)
+  real(RKD),save,allocatable,dimension(:) :: OBCRESIDUALQ1   ! *** Volume (m3)
+  real(RKD),save,allocatable,dimension(:) :: OBCRESIDUALQ2   ! *** Incremental flow at previous time step (m3/s)
+  real,save,allocatable,dimension(:) :: CCCOS                     ! 
+  real,save,allocatable,dimension(:) :: SSSIN         
   
-  IF( .NOT. ALLOCATED(OBCRESIDUALQ) )THEN
-    Call AllocateDSI( OBCRESIDUALQ,  NBCSOP, 0.0 )
-    Call AllocateDSI( OBCRESIDUALQ1, NBCSOP, 0.0 )
-    Call AllocateDSI( OBCRESIDUALQ2, NBCSOP, 0.0 )
-    Call AllocateDSI( RESTYPE,       NBCSOP,   0 )
+  if( .not. allocated(OBCRESIDUALQ) )then
+    call AllocateDSI( OBCRESIDUALQ,  NBCSOP, 0.0 )
+    call AllocateDSI( OBCRESIDUALQ1, NBCSOP, 0.0 )
+    call AllocateDSI( OBCRESIDUALQ2, NBCSOP, 0.0 )
+    call AllocateDSI( RESTYPE,       NBCSOP,   0 )
+    call AllocateDSI( CCCOS,         MTM,    0.0 )
+    call AllocateDSI( SSSIN,         MTM,    0.0)
+                             
     SUMDAY = 0.0
 
     ! *** Open BC's in order of NBCSOP assignment
     IBC = 0
-    DO LL = 1,NPBS
+    do LL = 1,NPBS
       IBC = IBC + 1
-      IF( ISPBS(LL) > 3 .AND. ISPRS(LL) < 2 ) RESTYPE(IBC) = ISPRS(LL) + 1
-    ENDDO                                                                    
-    DO LL = 1,NPBW                                                           
+      if( ISPBS(LL) > 3 .and. ISPRS(LL) < 2 ) RESTYPE(IBC) = ISPRS(LL) + 1
+    enddo                                                                    
+    do LL = 1,NPBW                                                           
       IBC = IBC + 1
-      IF( ISPBW(LL) > 3 .AND. ISPRW(LL) < 2 ) RESTYPE(IBC) = ISPRW(LL) + 1
-    ENDDO                                                                    
-    DO LL = 1,NPBE                                                           
+      if( ISPBW(LL) > 3 .and. ISPRW(LL) < 2 ) RESTYPE(IBC) = ISPRW(LL) + 1
+    enddo                                                                    
+    do LL = 1,NPBE                                                           
       IBC = IBC + 1
-      IF( ISPBE(LL) > 3 .AND. ISPRE(LL) < 2 ) RESTYPE(IBC) = ISPRE(LL) + 1
-    ENDDO                                                                    
-    DO LL = 1,NPBN                                                           
+      if( ISPBE(LL) > 3 .and. ISPRE(LL) < 2 ) RESTYPE(IBC) = ISPRE(LL) + 1
+    enddo                                                                    
+    do LL = 1,NPBN                                                           
       IBC = IBC + 1
-      IF( ISPBN(LL) > 3 .AND. ISPRN(LL) < 2 ) RESTYPE(IBC) = ISPRN(LL) + 1
-    ENDDO   
+      if( ISPBN(LL) > 3 .and. ISPRN(LL) < 2 ) RESTYPE(IBC) = ISPRN(LL) + 1
+    enddo   
         
     ! *** Check for outgoing wave and residual flow method
     ISRUNNING = 0
-    IF( ANY(ISPBS > 3) .AND. ANY(ISPRS == 2) ) ISRUNNING = 1
-    IF( ANY(ISPBW > 3) .AND. ANY(ISPRW == 2) ) ISRUNNING = 1
-    IF( ANY(ISPBE > 3) .AND. ANY(ISPRE == 2) ) ISRUNNING = 1
-    IF( ANY(ISPBN > 3) .AND. ANY(ISPRN == 2) ) ISRUNNING = 1
+    if( ANY(ISPBS > 3) .and. ANY(ISPRS == 2) ) ISRUNNING = 1
+    if( ANY(ISPBW > 3) .and. ANY(ISPRW == 2) ) ISRUNNING = 1
+    if( ANY(ISPBE > 3) .and. ANY(ISPRE == 2) ) ISRUNNING = 1
+    if( ANY(ISPBN > 3) .and. ANY(ISPRN == 2) ) ISRUNNING = 1
     
     ISSUMQ = 0
-    IF( ANY(ISPBS > 3) .AND. ANY(ISPRS == 1) ) ISSUMQ = 1
-    IF( ANY(ISPBW > 3) .AND. ANY(ISPRW == 1) ) ISSUMQ = 1
-    IF( ANY(ISPBE > 3) .AND. ANY(ISPRE == 1) ) ISSUMQ = 1
-    IF( ANY(ISPBN > 3) .AND. ANY(ISPRN == 1) ) ISSUMQ = 1
-  ENDIF
+    if( ANY(ISPBS > 3) .and. ANY(ISPRS == 1) ) ISSUMQ = 1
+    if( ANY(ISPBW > 3) .and. ANY(ISPRW == 1) ) ISSUMQ = 1
+    if( ANY(ISPBE > 3) .and. ANY(ISPRE == 1) ) ISSUMQ = 1
+    if( ANY(ISPBN > 3) .and. ANY(ISPRN == 1) ) ISSUMQ = 1
+  endif
   
   ! *** Check for radiation boundary types.  Set residual flows, if needed
-  IF( NCORDRY == 0 )THEN
-    IF( ISSUMQ > 0 )THEN
+  if( NCORDRY == 0 )then
+    if( ISSUMQ > 0 )then
       ! *** Sum all inflow/outflows from domain.  Used for small domains and test cases.
       SUMQ = 0.0
-      DO IBC = 1,NBCS
+      do IBC = 1,NBCS
         L = LBCS(IBC)
-        IF( ANY(LOBCS == L) ) CYCLE                                  ! *** Exclude OBC's
+        if( ANY(LOBCS == L) ) CYCLE                                  ! *** Exclude OBC's
         SUMQ = SUMQ + QSUME(L)
-      ENDDO
+      enddo
     
       ! *** Total volume of OBC's
       VOLSUM = 0.0
-      DO IBC = 1,NBCSOP
-        IF( RESTYPE(IBC) == 2 )THEN
+      do IBC = 1,NBCSOP
+        if( RESTYPE(IBC) == 2 )then
           L = LOBCS(IBC)
           VOLINC = DXYP(L)*HP(L)
           VOLSUM = VOLSUM + VOLINC         
-        ENDIF
-      ENDDO
+        endif
+      enddo
     
       ! *** Distribute the total to the cells
       OBCRESIDUALQ1 = OBCRESIDUALQ                                   ! *** Previous time step OBC flows
       OBCRESIDUALQ = 0.0
-      IF( VOLSUM > 0.0 )THEN
-        DO IBC = 1,NBCSOP
-          IF( RESTYPE(IBC) == 2 )THEN          
+      if( VOLSUM > 0.0 )then
+        do IBC = 1,NBCSOP
+          if( RESTYPE(IBC) == 2 )then          
             L = LOBCS(IBC)
             VOLINC = DXYP(L)*HP(L)
             OBCRESIDUALQ(IBC) = VOLINC/VOLSUM*SUMQ
             OBCRESIDUALQ(IBC) = (OBCRESIDUALQ1(IBC) + 2.*OBCRESIDUALQ(IBC))/3.
-          ENDIF
-        ENDDO
-      ENDIF
-    ENDIF
+          endif
+        enddo
+      endif
+    endif
     
-    IF( ISRUNNING > 0 )THEN
+    if( ISRUNNING > 0 )then
       ! *** Sum flows of current period for application to the next tidal period.
       RINC = 0.0
-      IF( IS2TIM == 0 )THEN
-        IF( ISTL == 3 )THEN
+      if( IS2TIM == 0 )then
+        if( ISTL == 3 )then
           RINC = 2.*DELTD2
-        ENDIF
-      ELSE
+        endif
+      else
         RINC = 2.*DELTD2
-      ENDIF
+      endif
     
       OBCRESIDUALQ2 = OBCRESIDUALQ                                   ! *** Previous time step OBC flows
-      IF( RINC > 0.0 )THEN
+      if( RINC > 0.0 )then
       
         ! *** Convert flows to volumes
-        DO IBC = 1,NBCSOP
+        do IBC = 1,NBCSOP
           OBCRESIDUALQ1(IBC) = OBCRESIDUALQ(IBC)*SUMDAY              ! *** m3    Total volume at beginning
-        ENDDO
+        enddo
         
         ! *** Remove one increment
-        IF( SUMDAY >= TIDALP )THEN      
-          DO IBC = 1,NBCSOP
-            IF( LOPENBCDRY(L) )CYCLE
+        if( SUMDAY >= TIDALP )then      
+          do IBC = 1,NBCSOP
+            if( LOPENBCDRY(L) ) CYCLE
             VOLSUM  = OBCRESIDUALQ1(IBC)                             ! *** m3    Total volume at beginning
             OBCRESIDUALQ1(IBC) = (VOLSUM - RINC*OBCRESIDUALQ(IBC))   ! *** m3    Intermediate volume
-          ENDDO
+          enddo
           SUMDAY = TIDALP - RINC
-        ENDIF
+        endif
       
         ! *** Open BC's in order of NBCSOP assignment
         IBC = 0
-        DO LL = 1,NPBS
+        do LL = 1,NPBS
           IBC = IBC + 1
-          IF( ISPBS(LL) > 3 .AND. ISPRS(LL) == 0 )THEN
+          if( ISPBS(LL) > 3 .and. ISPRS(LL) == 0 )then
             L = LIJ(IPBS(LL),JPBS(LL))
-            IF( LOPENBCDRY(L) )CYCLE
+            if( LOPENBCDRY(L) ) CYCLE
             VOLINC = DELTD2*(FVHDXE(LNC(L)) + OBCRESIDUALQ(IBC))     ! *** m3    Incremental volume for current time step
             OBCRESIDUALQ(IBC) = VOLINC + OBCRESIDUALQ1(IBC)          ! *** m3    Total volume at end    
-          ENDIF
-        ENDDO                                                                    
-        DO LL = 1,NPBW                                                           
+          endif
+        enddo                                                                    
+        do LL = 1,NPBW                                                           
           IBC = IBC + 1                                                          
-          IF( ISPBW(LL) > 3 .AND. ISPRW(LL) == 0 )THEN
+          if( ISPBW(LL) > 3 .and. ISPRW(LL) == 0 )then
             L = LIJ(IPBW(LL),JPBW(LL))                                             
-            IF( LOPENBCDRY(L) )CYCLE
+            if( LOPENBCDRY(L) ) CYCLE
             VOLINC = DELTD2*(FUHDYE(LEC(L)) + OBCRESIDUALQ(IBC))     ! *** m3    Incremental volume for current time step
             OBCRESIDUALQ(IBC) = VOLINC + OBCRESIDUALQ1(IBC)          ! *** m3    Total volume at end          
-          ENDIF
-        ENDDO                                                                    
-        DO LL = 1,NPBE                                                           
+          endif
+        enddo                                                                    
+        do LL = 1,NPBE                                                           
           IBC = IBC + 1                                                          
-          IF( ISPBE(LL) > 3 .AND. ISPRE(LL) == 0 )THEN
+          if( ISPBE(LL) > 3 .and. ISPRE(LL) == 0 )then
             L = LIJ(IPBE(LL),JPBE(LL))                                             
-            IF( LOPENBCDRY(L) )CYCLE
+            if( LOPENBCDRY(L) ) CYCLE
             VOLINC = DELTD2*(FUHDYE(L) + OBCRESIDUALQ(IBC))          ! *** m3    Incremental volume for current time step
             OBCRESIDUALQ(IBC) = VOLINC + OBCRESIDUALQ1(IBC)          ! *** m3    Total volume at end          
-          ENDIF
-        ENDDO   
-        DO LL = 1,NPBN                                                           
+          endif
+        enddo   
+        do LL = 1,NPBN                                                           
           IBC = IBC + 1                                                          
-          IF( ISPBN(LL) > 3 .AND. ISPRN(LL) == 0 )THEN
+          if( ISPBN(LL) > 3 .and. ISPRN(LL) == 0 )then
             L = LIJ(IPBN(LL),JPBN(LL)) 
-            IF( LOPENBCDRY(L) )CYCLE
+            if( LOPENBCDRY(L) ) CYCLE
             VOLINC = DELTD2*(FVHDXE(L) + OBCRESIDUALQ(IBC))          ! *** m3    Incremental volume for current time step
             OBCRESIDUALQ(IBC) = VOLINC + OBCRESIDUALQ1(IBC)          ! *** m3    Total volume at end          
-          ENDIF
-        ENDDO                                                        
+          endif
+        enddo                                                        
                                                                    
         SUMDAY = SUMDAY + RINC                                       ! *** s     Increment the timing counter
                                                                    
-        DO IBC = 1,NBCSOP                                            
+        do IBC = 1,NBCSOP                                            
           L = LOBCS(IBC)
-          IF( LOPENBCDRY(L) )CYCLE
+          if( LOPENBCDRY(L) ) CYCLE
           OBCRESIDUALQ(IBC) = OBCRESIDUALQ(IBC)/SUMDAY               ! *** m3/s  Residual flow for current time step
           !OBCRESIDUALQ(IBC) = (OBCRESIDUALQ2(IBC) + 2.*OBCRESIDUALQ(IBC))/3.
-        ENDDO
+        enddo
 
-      ENDIF
-    ENDIF
-  ENDIF           ! *** End of Residual Flow Update
+      endif
+    endif
+  endif           ! *** End of Residual Flow Update
   
   C1 = 0.5*G
   HDRY2  = 0.2*HDRY
-  IF( ISDRY > 0 )THEN
+  if( ISDRY > 0 )then
     HDRY5  = 5.0*HDRY
     HDRY10 = 10.*HDRY
-  ELSE
+  else
     HDRY5  = 0.0
     HDRY10 = 1E-12
-  ENDIF
+  endif
   IBC = 0
   
   ! *******************************************************************************************************
   ! *** Set open boundary surface elevations
   TN = TIMESEC
-  DO M=1,MTIDE
-    TM=MOD(TN,TCP(M))
-    TM=PI2*TM/TCP(M)
-    CCCOS(M)=COS(TM)
-    SSSIN(M)=SIN(TM)
-  ENDDO
+  do M = 1,MTIDE
+    TM = MOD(TN,TCP(M))
+    TM = PI2*TM/TCP(M)
+    CCCOS(M) = COS(TM)
+    SSSIN(M) = SIN(TM)
+  enddo
 
   ! *** SOUTH OPEN BOUNDARY
-  DO LL=1,NPBS
+  do LL = 1,NPBS
     L = LPBS(LL)
     LN = LNC(L)
     IBC = IBC+ 1
@@ -241,23 +247,23 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
     CW(L) = 0.
     CE(L) = 0.
     CN(L) = 0.
-    IF( LOPENBCDRY(L) )CYCLE
+    if( LOPENBCDRY(L) ) CYCLE
 
     FP(L) = PSERT(NPSERS(LL)) + 0.5*PSERZDF(NPSERS(LL)) + PSERST(NPSERS(LL)) + 0.5*PSERZDS(NPSERS(LL))         ! *** m2/s2
-    IF( NPFORT >= 1 .AND. NPSERS1(LL) > 0 )THEN
+    if( NPFORT >= 1 .and. NPSERS1(LL) > 0 )then
       TMPVAL = PSERT(NPSERS1(LL)) + 0.5*PSERZDF(NPSERS1(LL)) + PSERST(NPSERS1(LL)) + 0.5*PSERZDS(NPSERS1(LL))
       FP(L) = FP(L)+TPCOORDS(LL)*(TMPVAL-FP(L))
-    ENDIF
-    DO M=1,MTIDE
+    endif
+    do M = 1,MTIDE
       TC = CCCOS(M)
       TS = SSSIN(M)
       FP(L) = FP(L)+PCBS(LL,M)*TC+PSBS(LL,M)*TS
-    ENDDO
+    enddo
     
     ELEV = FP(L)/G
     FP1G = ELEV - HDRY2                                              ! *** Prepare for boundary below minimum depths
 
-    IF( ISPBS(LL) == 1 .OR. ISPBS(LL) == 2 )THEN
+    if( ISPBS(LL) == 1 .or. ISPBS(LL) == 2 )then
       ! *** RADIATION BC TYPES
       
       FP(L) = FP(L) - PSERAVG(NPSERS(LL),1)                          ! *** Set radiation calcs in terms of displacement not elevation
@@ -275,7 +281,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       
       FP(L) = FP(L) + CNT*PSERAVG(NPSERS(LL),1)/TMP                  ! *** Add back offset
       
-    ELSEIF( ISPBS(LL) == 4 .OR. ISPBS(LL) == 5 )THEN
+    elseif( ISPBS(LL) == 4 .or. ISPBS(LL) == 5 )then
       ! *** Outgoing wave (anti-reflection) type                     
       
       ! ***        s   m/s2   (-)     (-)     m                      
@@ -287,7 +293,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       CN(L) = -CNT                                                   ! *** m2/s
       
       CST = FVHDXE(LN) - OBCRESIDUALQ(IBC)                           ! *** m3/s   Excess flow 
-      IF( FP1G < BELV(L) .OR. FP1G < BELV(LN) )THEN
+      if( FP1G < BELV(L) .or. FP1G < BELV(LN) )then
         FP(L) = (BELV(L) + HDRY2)*G                                  ! *** m2/s2
         FP(L) = DELTI*DXYP(L)*FP(L)                                  ! *** m4/s3
         CC(L) = DELTI*DXYP(L)                                        ! *** m2/s
@@ -298,11 +304,11 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
         CS(LN) = 0.0
         LOPENBCDRY(L) = .TRUE.
         CYCLE                                                        ! *** Skip to next cell
-      ELSEIF( ELEV < (BELV(L) + HDRY10) )THEN
+      elseif( ELEV < (BELV(L) + HDRY10) )then
         ! *** Gradually reduce flows
         FACTOR = MAX((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
         !CST = FACTOR*CST
-      ENDIF
+      endif
       
       ! *** Setup adjacent cell
       ! ***    m4/s3    m2/s m2/s2
@@ -313,16 +319,16 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       
       FP(L) = FPS + CNT*FP(L)/TMP                                    ! *** Add specified elevation
       
-    ELSE
+    else
       ! *** Inactivate BC'S when elevations drop below BELV + HDRY
-      IF( FP1G < BELV(L) .OR. FP1G < BELV(LN) )THEN
+      if( FP1G < BELV(L) .or. FP1G < BELV(LN) )then
         FP(L) = (BELV(L) + HDRY2)*G                                  ! *** m2/s2
         CNT = 0.
         LOPENBCDRY(L) = .TRUE.
-      ELSE
+      else
         ! ***        s   m/s2   (-)     (-)      m
         CNT = 0.5*DELTD2*G    *HRVO(LN)*RCY(LN)*HVT(LN)              ! *** m2/s
-      ENDIF
+      endif
 
       ! *** Setup adjacent cell
       ! ***    m4/s3    m2/s m2/s2
@@ -332,12 +338,12 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       ! ***    1/s   m2     m2/s2
       FP(L) = DELTI*DXYP(L)*FP(L)                                    ! *** m4/s3
       
-    ENDIF
+    endif
 
-  ENDDO
+  enddo
 
   ! *** WEST OPEN BOUNDARY
-  DO LL=1,NPBW
+  do LL = 1,NPBW
     L = LPBW(LL)
     LE = LEC(L)
     IBC = IBC+ 1
@@ -346,23 +352,23 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
     CW(L) = 0.
     CE(L) = 0.
     CN(L) = 0.
-    IF( LOPENBCDRY(L) )CYCLE
+    if( LOPENBCDRY(L) ) CYCLE
 
     FP(L) = PSERT(NPSERW(LL)) + 0.5*PSERZDF(NPSERW(LL)) + PSERST(NPSERW(LL)) + 0.5*PSERZDS(NPSERW(LL))         ! *** m2/s2
-    IF( NPFORT >= 1 .AND. NPSERW1(LL) > 0 )THEN
+    if( NPFORT >= 1 .and. NPSERW1(LL) > 0 )then
       TMPVAL = PSERT(NPSERW1(LL)) + 0.5*PSERZDF(NPSERW1(LL)) + PSERST(NPSERW1(LL)) + 0.5*PSERZDS(NPSERW1(LL))
       FP(L) = FP(L) + TPCOORDW(LL)*(TMPVAL-FP(L))
-    ENDIF
-    DO M = 1,MTIDE
+    endif
+    do M = 1,MTIDE
       TC = CCCOS(M)
       TS = SSSIN(M)
       FP(L) = FP(L)+PCBW(LL,M)*TC+PSBW(LL,M)*TS
-    ENDDO
+    enddo
 
     ELEV = FP(L)/G
     FP1G = ELEV - HDRY2                                           ! *** Prepare for boundary below minimum depths
 
-    IF( ISPBW(LL) == 1 .OR. ISPBW(LL) == 2 )THEN
+    if( ISPBW(LL) == 1 .or. ISPBW(LL) == 2 )then
       ! *** RADIATION BC TYPES
       
       FP(L) = FP(L) - PSERAVG(NPSERW(LL),1)                          ! *** Set radiation calcs in terms of displacement not elevation
@@ -380,7 +386,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
 
       FP(L) = FP(L) + CET*PSERAVG(NPSERW(LL),1)/TMP                  ! *** Add back offset
 
-    ELSEIF( ISPBW(LL) == 4 .OR. ISPBW(LL) == 5 )THEN                 
+    elseif( ISPBW(LL) == 4 .or. ISPBW(LL) == 5 )then                 
       ! *** Outgoing wave (anti-reflection) type                     
                                                                      
       ! ***        s   m/s2 (-)   (-)      m
@@ -392,7 +398,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       CE(L) = -CET
       
       CWT = FUHDYE(LE) - OBCRESIDUALQ(IBC)                           ! *** m3/s   Excess flow 
-      IF( FP1G < BELV(L) .OR. FP1G < BELV(LE) )THEN
+      if( FP1G < BELV(L) .or. FP1G < BELV(LE) )then
         FP(L) = (BELV(L) + HDRY2)*G                                  ! *** m2/s2
         FP(L) = DELTI*DXYP(L)*FP(L)                                  ! *** m4/s3
         CC(L) = DELTI*DXYP(L)                                        ! *** m2/s
@@ -403,30 +409,30 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
         CW(LE) = 0.0
         LOPENBCDRY(L) = .TRUE.
         CYCLE                                                        ! *** Skip to next cell
-      ELSEIF( ELEV < (BELV(L) + HDRY10) )THEN
+      elseif( ELEV < (BELV(L) + HDRY10) )then
         ! *** Gradually reduce flows
         FACTOR = MAX((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
         !CWT = FACTOR*CWT
-      ENDIF
+      endif
       
       ! *** Setup adjacent cell
       ! ***    m4/s3    m2/s m2/s2
       FP(LE) = FP(LE) + CET*FP(L)                                    ! *** m4/s3
 
-      ! **   m2/s         m/s       m3/s       1/m    1/m     (-)
+      ! ***   m2/s         m/s       m3/s       1/m    1/m     (-)
       FPW = -CET*(SQRT(G*HUT(LE))* CWT*      DYIU(L)/HUT(LE))/TMP    ! *** m4/s3
 
       FP(L) = FPW + CET*FP(L)/TMP                                    ! *** Add specified elevation
 
-    ELSE
+    else
       ! *** Inactivate BC'S when elevations drop below BELV + HDRY
-      IF( FP1G < BELV(L) .OR. FP1G < BELV(LE) )THEN
+      if( FP1G < BELV(L) .or. FP1G < BELV(LE) )then
         FP(L) = (BELV(L) + HDRY2)*G                                  ! *** m2/s2
         CET = 0.
         LOPENBCDRY(L) = .TRUE.
-      ELSE
+      else
         CET = 0.5*DELTD2*G*HRUO(LE)*RCX(LE)*HUT(LE)
-      ENDIF
+      endif
       
       ! *** Setup adjacent cell
       ! ***    m4/s3    m2/s m2/s2
@@ -435,11 +441,11 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
 
       ! ***    1/s   m2     m2/s2
       FP(L) = DELTI*DXYP(L)*FP(L)                                    ! *** m4/s3
-    ENDIF
-  ENDDO
+    endif
+  enddo
 
   ! *** EAST OPEN BOUNDARY
-  DO LL=1,NPBE
+  do LL = 1,NPBE
     L = LPBE(LL)
     LW = LWC(L)
     IBC = IBC+ 1
@@ -449,24 +455,24 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
     CE(L) = 0.
     CN(L) = 0.
     
-    IF( LOPENBCDRY(L) )CYCLE
+    if( LOPENBCDRY(L) ) CYCLE
     
     FP(L) = PSERT(NPSERE(LL)) + 0.5*PSERZDF(NPSERE(LL)) + PSERST(NPSERE(LL)) + 0.5*PSERZDS(NPSERE(LL))         ! *** m2/s2
-    IF( NPFORT >= 1 .AND. NPSERE1(LL) > 0 )THEN
+    if( NPFORT >= 1 .and. NPSERE1(LL) > 0 )then
       TMPVAL = PSERT(NPSERE1(LL)) +0.5*PSERZDF(NPSERE1(LL)) + PSERST(NPSERE1(LL)) + 0.5*PSERZDS(NPSERE1(LL))
       FP(L) = FP(L)+TPCOORDE(LL)*(TMPVAL-FP(L))
-    ENDIF
+    endif
     
-    DO M=1,MTIDE
-      TC=CCCOS(M)
-      TS=SSSIN(M)
-      FP(L)=FP(L)+PCBE(LL,M)*TC+PSBE(LL,M)*TS
-    ENDDO
+    do M = 1,MTIDE
+      TC = CCCOS(M)
+      TS = SSSIN(M)
+      FP(L) = FP(L)+PCBE(LL,M)*TC+PSBE(LL,M)*TS
+    enddo
 
     ELEV = FP(L)/G
     FP1G = ELEV - HDRY2                                           ! *** Prepare for boundary below minimum depths
 
-    IF( ISPBE(LL) == 1 .OR. ISPBE(LL) == 2 )THEN
+    if( ISPBE(LL) == 1 .or. ISPBE(LL) == 2 )then
       ! *** RADIATION BC TYPES
       
       FP(L) = FP(L) - PSERAVG(NPSERE(LL),1)                          ! *** Set radiation calcs in terms of displacement not elevation
@@ -484,7 +490,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
 
       FP(L) = FP(L) + CWT*PSERAVG(NPSERE(LL),1)/TMP                  ! *** Add back offset
                                                                      
-    ELSEIF( ISPBE(LL) == 4 .OR. ISPBE(LL) == 5 )THEN                 
+    elseif( ISPBE(LL) == 4 .or. ISPBE(LL) == 5 )then                 
       ! *** Outgoing wave (anti-reflection) type       
       
       ! ***        s    m/s2    (-)     (-)    m                
@@ -496,7 +502,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       CW(L) = -CWT                                                   ! *** m2/s
       
       CET = FUHDYE(L) - OBCRESIDUALQ(IBC)                            ! *** m3/s   Excess flow 
-      IF( FP1G < BELV(L) .OR. FP1G < BELV(LW) )THEN
+      if( FP1G < BELV(L) .or. FP1G < BELV(LW) )then
         FP(L) = (BELV(L) + HDRY2)*G                                  ! *** m2/s2
         FP(L) = DELTI*DXYP(L)*FP(L)                                  ! *** m4/s3
         CC(L) = DELTI*DXYP(L)                                        ! *** m2/s
@@ -507,31 +513,31 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
         CE(LW) = 0.0
         LOPENBCDRY(L) = .TRUE.
         CYCLE                                                        ! *** Skip to next cell
-      ELSEIF( ELEV < (BELV(L) + HDRY10) )THEN
+      elseif( ELEV < (BELV(L) + HDRY10) )then
         ! *** Gradually reduce flows
         FACTOR = MAX((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
         !CET = FACTOR*CET
-      ENDIF   
+      endif   
       
       ! *** Setup adjacent cell
       ! ***    m4/s3    m2/s m2/s2                           
       FP(LW) = FP(LW) + CWT*FP(L)                                    ! *** m4/s3
       
-      ! **  m2/s         m/s       m3/s     1/m    1/m     (-)
+      ! ***  m2/s         m/s       m3/s     1/m    1/m     (-)
       FPE = CWT*( SQRT(G*HUT(L))* CET*     DYIU(L)/HUT(L))/TMP       ! *** m4/s3
 
       FP(L) = FPE + CWT*FP(L)/TMP                                    ! *** Add specified elevation
       
-    ELSE
+    else
       ! *** Inactivate BC'S when elevations drop below BELV + HDRY
-      IF( FP1G < BELV(L) .OR. FP1G < BELV(LW) )THEN
+      if( FP1G < BELV(L) .or. FP1G < BELV(LW) )then
         FP(L) = (BELV(L) + HDRY2)*G                                  ! *** m2/s2
         CWT = 0.                                                     
         LOPENBCDRY(L) = .TRUE.                                       
-      ELSE                                                           
+      else                                                           
         ! ***        s    m/s2    (-)     (-)    m              
         CWT = 0.5*DELTD2* G*     HRUO(L)*RCX(L)*HUT(L)               ! *** m2/s
-      ENDIF
+      endif
       
       ! *** Setup adjacent cell
       ! ***    m4/s3    m2/s m2/s2                           
@@ -541,12 +547,12 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       ! ***    1/s   m2    m2/s2                                     
       FP(L) = DELTI*DXYP(L)*FP(L)                                    ! *** m4/s3
 
-    ENDIF
+    endif
     
-  ENDDO
+  enddo
 
   ! *** NORTH OPEN BOUNDARY
-  DO LL=1,NPBN
+  do LL = 1,NPBN
     L = LPBN(LL)
     LS = LSC(L)
     IBC = IBC+ 1
@@ -555,23 +561,23 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
     CW(L) = 0.
     CE(L) = 0.
     CN(L) = 0.
-    IF( LOPENBCDRY(L) ) CYCLE
+    if( LOPENBCDRY(L) ) CYCLE
     
     FP(L) = PSERT(NPSERN(LL)) + 0.5*PSERZDF(NPSERN(LL)) + PSERST(NPSERN(LL)) + 0.5*PSERZDS(NPSERN(LL))         ! *** m2/s2
-    IF( NPFORT >= 1 .AND. NPSERN1(LL) > 0 )THEN
+    if( NPFORT >= 1 .and. NPSERN1(LL) > 0 )then
       TMPVAL = PSERT(NPSERN1(LL)) + 0.5*PSERZDF(NPSERN1(LL)) + PSERST(NPSERN1(LL)) + 0.5*PSERZDS(NPSERN1(LL))
       FP(L) = FP(L)+TPCOORDN(LL)*(TMPVAL-FP(L))
-    ENDIF
-    DO M=1,MTIDE
+    endif
+    do M = 1,MTIDE
       TC = CCCOS(M)
       TS = SSSIN(M)
       FP(L) = FP(L)+PCBN(LL,M)*TC+PSBN(LL,M)*TS
-    ENDDO
+    enddo
 
     ELEV = FP(L)/G
     FP1G = ELEV - HDRY2                                           ! *** Prepare for boundary below minimum depths
 
-    IF( ISPBN(LL) == 1 .OR. ISPBN(LL) == 2 )THEN
+    if( ISPBN(LL) == 1 .or. ISPBN(LL) == 2 )then
       ! *** RADIATION BC TYPES
       
       FP(L) = FP(L) - PSERAVG(NPSERN(LL),1)                          ! *** Set radiation calcs in terms of displacement not elevation
@@ -589,7 +595,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       
       FP(L) = FP(L) + CNT*PSERAVG(NPSERN(LL),1)/TMP                  ! *** Add back offset
       
-    ELSEIF( ISPBN(LL) == 4 .OR. ISPBN(LL) == 5 )THEN
+    elseif( ISPBN(LL) == 4 .or. ISPBN(LL) == 5 )then
       ! *** Outgoing wave (anti-reflection) type                     
       
       ! ***        s   m/s2   (-)     (-)     m                      
@@ -601,7 +607,7 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       CS(L) = -CST                                                   ! *** m2/s
       
       CNT = FVHDXE(L) - OBCRESIDUALQ(IBC)                            ! *** m3/s   Excess flow 
-      IF( FP1G < BELV(L) .OR. FP1G < BELV(LS) )THEN
+      if( FP1G < BELV(L) .or. FP1G < BELV(LS) )then
         FP(L) = (BELV(L) + HDRY2)*G                                  ! *** m2/s2
         FP(L) = DELTI*DXYP(L)*FP(L)                                  ! *** m4/s3
         CC(L) = DELTI*DXYP(L)                                        ! *** m2/s
@@ -612,11 +618,11 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
         CN(LS) = 0.0
         LOPENBCDRY(L) = .TRUE.
         CYCLE                                                        ! *** Skip to next cell
-      ELSEIF( ELEV < (BELV(L) + HDRY10) )THEN
+      elseif( ELEV < (BELV(L) + HDRY10) )then
         ! *** Gradually reduce flows
         FACTOR = MAX((ELEV - BELV(L) - HDRY5)/HDRY10, 0.0)
         !CNT = FACTOR*CNT
-      ENDIF
+      endif
       
       ! *** Setup adjacent cell
       ! ***    m4/s3    m2/s m2/s2
@@ -627,16 +633,16 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
        
       FP(L) = FPN + CST*FP(L)/TMP                                    ! *** Add specified elevation
       
-    ELSE
+    else
       ! *** Inactivate BC'S when elevations drop below BELV + HDRY
-      IF( FP1G < BELV(L) .OR. FP1G < BELV(LS) )THEN
+      if( FP1G < BELV(L) .or. FP1G < BELV(LS) )then
         FP(L) = (BELV(L) + HDRY2)*G                                  ! *** m2/s2
         CST = 0.
         LOPENBCDRY(L) = .TRUE.
-      ELSE
+      else
         ! ***        s   m/s2    (-)     (-)     m
         CST = 0.5*DELTD2*G     *HRVO(L)*RCY(L)*HVT(L)                ! *** m2/s
-      ENDIF
+      endif
 
       ! *** Setup adjacent cell
       ! ***    m4/s3    m2/s m2/s2
@@ -646,10 +652,10 @@ SUBROUTINE SETOPENBC(DELTD2, HUT, HVT, NCORDRY)
       ! ***    1/s   m2    m2/s2
       FP(L) = DELTI*DXYP(L)*FP(L)                                    ! *** m4/s3
       
-    ENDIF
+    endif
     
-  ENDDO
+  enddo
 
-  RETURN
+  return
 END
 

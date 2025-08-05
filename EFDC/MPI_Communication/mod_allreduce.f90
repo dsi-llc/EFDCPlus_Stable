@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 ! @details Performs All_Reduce operations with timing
@@ -15,19 +15,19 @@ Module MPI_All_Reduce
   ! *** iOP - MPI_MIN = 0x58000003,
   ! *** iOP - MPI_SUM = 0x58000003,
   
-  USE GLOBAL
-  USE MPI
-  Use Variables_MPI
+  use GLOBAL
+  use MPI
+  use Variables_MPI
   
-  IMPLICIT NONE
+  implicit none
   
-  SAVE
+  save
 
   Public :: DSI_All_Reduce
 
   !***Set up the geneic interface for commuicating ghost cells
   !***This will select the the proper array size depending on what is passed in
-  Interface DSI_All_Reduce
+  interface DSI_All_Reduce
 
   Module Procedure DSI_All_Reduce_Integer,   &
                    DSI_All_Reduce_Real4,     &
@@ -44,355 +44,355 @@ Module MPI_All_Reduce
  
 SUBROUTINE DSI_All_Reduce_Integer(ValIn, ValOut, iOp, ElapsedTime, iWait, WaitTime)
 
-  Integer, Intent(in)  :: ValIn, iOp, iWait
-  Integer, Intent(out) :: ValOut
-  Real(8), Intent(out) :: ElapsedTime, WaitTime
+  integer, Intent(in)  :: ValIn, iOp, iWait
+  integer, Intent(out) :: ValOut
+  real(8), Intent(out) :: ElapsedTime, WaitTime
   
   Integer(4)          :: IERR
-  Real(RKD), EXTERNAL :: DSTIME
-  REAL(RKD)           :: TTDS
+  real(RKD), external :: DSTIME
+  real(RKD)           :: TTDS
 
-  IF( num_Processors > 1 )THEN
-    IF( iWait > 0 )THEN
+  if( num_Processors > 1 )then
+    if( iWait > 0 )then
       TTDS = DSTIME(0)
-      Call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(MPI_Comm_World, ierr)
       WaitTime = DSTIME(0) - TTDS
-    ELSEIF( iWait < 0 )THEN
+    elseif( iWait < 0 )then
       WaitTime = 0.
-      Call MPI_barrier(MPI_Comm_World, ierr)
-    ENDIF
+      call MPI_barrier(MPI_Comm_World, ierr)
+    endif
     TTDS = DSTIME(0)
     
-    CALL MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Integer, iOp, comm_2d, IERR)
+    call MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Integer, iOp, comm_2d, IERR)
 
     ElapsedTime = DSTIME(0) - TTDS
-  ELSE
+  else
     ValOut = ValIn
     ElapsedTime = 0.
     WaitTime = 0.
-  ENDIF
+  endif
   
   
 END SUBROUTINE DSI_All_Reduce_Integer
 
 SUBROUTINE DSI_All_Reduce_Real4(ValIn, ValOut, iOp, ElapsedTime, iWait, WaitTime)
 
-  Integer, Intent(in)    :: iOp, iWait
-  Real(RK4), Intent(in)       :: ValIn
-  Real(RK4), Intent(out)      :: ValOut
-  Real(RKD), Intent(out) :: ElapsedTime, WaitTime
+  integer, Intent(in)    :: iOp, iWait
+  real(RK4), Intent(in)       :: ValIn
+  real(RK4), Intent(out)      :: ValOut
+  real(RKD), Intent(out) :: ElapsedTime, WaitTime
   
-  Integer             :: IERR
-  Real(RKD), EXTERNAL :: DSTIME
-  Real(RKD)           :: TTDS
+  integer             :: IERR
+  real(RKD), external :: DSTIME
+  real(RKD)           :: TTDS
 
-  IF( num_Processors > 1 )THEN
-    IF( iWait > 0 )THEN
+  if( num_Processors > 1 )then
+    if( iWait > 0 )then
       TTDS = DSTIME(0)
-      Call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(MPI_Comm_World, ierr)
       WaitTime = DSTIME(0) - TTDS
-    ELSEIF( iWait < 0 )THEN
+    elseif( iWait < 0 )then
       WaitTime = 0.
-      Call MPI_barrier(MPI_Comm_World, ierr)
-    ENDIF
+      call MPI_barrier(MPI_Comm_World, ierr)
+    endif
     TTDS = DSTIME(0)
   
-    CALL MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Real4, iOp, comm_2d, IERR)
+    call MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Real4, iOp, comm_2d, IERR)
 
     ElapsedTime = DSTIME(0) - TTDS
-  ELSE
+  else
     ValOut = ValIn
     ElapsedTime = 0.
     WaitTime = 0.
-  ENDIF
+  endif
   
 END SUBROUTINE DSI_All_Reduce_Real4
 
 SUBROUTINE DSI_All_Reduce_Real8(ValIn, ValOut, iOp, ElapsedTime, iWait, WaitTime)
 
-  Integer, Intent(in)    :: iOp, iWait
-  Real(8), Intent(in)    :: ValIn
-  Real(8), Intent(out)   :: ValOut
-  Real(RKD), Intent(out) :: ElapsedTime, WaitTime
+  integer, Intent(in)    :: iOp, iWait
+  real(8), Intent(in)    :: ValIn
+  real(8), Intent(out)   :: ValOut
+  real(RKD), Intent(out) :: ElapsedTime, WaitTime
   
   Integer(4)          :: IERR
-  Real(RKD), EXTERNAL :: DSTIME
-  REAL(RKD)           :: TTDS
+  real(RKD), external :: DSTIME
+  real(RKD)           :: TTDS
 
-  IF( num_Processors > 1 )THEN
-    IF( iWait > 0 )THEN
+  if( num_Processors > 1 )then
+    if( iWait > 0 )then
       TTDS = DSTIME(0)
-      Call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(MPI_Comm_World, ierr)
       WaitTime = DSTIME(0) - TTDS
-    ELSEIF( iWait < 0 )THEN
+    elseif( iWait < 0 )then
       WaitTime = 0.
-      Call MPI_barrier(MPI_Comm_World, ierr)
-    ENDIF
+      call MPI_barrier(MPI_Comm_World, ierr)
+    endif
     TTDS = DSTIME(0)
   
-    CALL MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Real8, iOp, comm_2d, IERR)
+    call MPI_ALLREDUCE(ValIn, ValOut, 1, MPI_Real8, iOp, comm_2d, IERR)
 
     ElapsedTime = DSTIME(0) - TTDS
-  ELSE
+  else
     ValOut = ValIn
     ElapsedTime = 0.
     WaitTime = 0.
-  ENDIF
+  endif
   
 END SUBROUTINE DSI_All_Reduce_Real8
 
 SUBROUTINE DSI_All_Reduce_Real48(ValIn, ValOut, iOp, ElapsedTime, iWait, WaitTime)
 
-  Integer,   Intent(in)  :: iOp, iWait
-  Real(RK4), Intent(in)  :: ValIn
-  Real(RKD), Intent(out) :: ValOut
-  Real(RKD), Intent(out) :: ElapsedTime, WaitTime
-  Real(RKD)              :: VAL8
+  integer,   Intent(in)  :: iOp, iWait
+  real(RK4), Intent(in)  :: ValIn
+  real(RKD), Intent(out) :: ValOut
+  real(RKD), Intent(out) :: ElapsedTime, WaitTime
+  real(RKD)              :: VAL8
   
   Integer(IK4)        :: IERR
-  Real(RKD), EXTERNAL :: DSTIME
-  REAL(RKD)           :: TTDS
+  real(RKD), external :: DSTIME
+  real(RKD)           :: TTDS
 
-  IF( num_Processors > 1 )THEN
-    IF( iWait > 0 )THEN
+  if( num_Processors > 1 )then
+    if( iWait > 0 )then
       TTDS = DSTIME(0)
-      Call MPI_barrier(MPI_Comm_World, ierr)
+      call MPI_barrier(MPI_Comm_World, ierr)
       WaitTime = DSTIME(0) - TTDS
-    ELSEIF( iWait < 0 )THEN
+    elseif( iWait < 0 )then
       WaitTime = 0.
-      Call MPI_barrier(MPI_Comm_World, ierr)
-    ENDIF
+      call MPI_barrier(MPI_Comm_World, ierr)
+    endif
     TTDS = DSTIME(0)
   
     VAL8 = DBLE(ValIn)
-    CALL MPI_ALLREDUCE(VAL8, ValOut, 1, MPI_Real8, iOp, comm_2d, IERR)
+    call MPI_ALLREDUCE(VAL8, ValOut, 1, MPI_Real8, iOp, comm_2d, IERR)
 
     ElapsedTime = DSTIME(0) - TTDS
-  ELSE
+  else
     ValOut = DBLE(ValIn)
     ElapsedTime = 0.
     WaitTime = 0.
-  ENDIF
+  endif
   
 END SUBROUTINE DSI_All_Reduce_Real48
 
 subroutine DSI_All_Reduce2(VarIn1, VarIn2, VarOut1, VarOut2, iOp, ElapsedTime, iWait, WaitTime)
 
-  USE Variables_MPI
-  USE MPI
-  USE Broadcast_Routines
+  use Variables_MPI
+  use MPI
+  use Broadcast_Routines
 
-  Implicit none
+  implicit none
 
   ! *** Passed in variables
-  Integer,Intent(in)    :: iOp, iWait
-  Real(RK4),Intent(in)  :: VarIn1
-  Integer,Intent(in)    :: VarIn2
-  Real(RK4),Intent(out) :: VarOut1
-  Integer,Intent(out)   :: VarOut2
-  Real(RKD),Intent(out) :: ElapsedTime, WaitTime
-  Real(RKD),EXTERNAL    :: DSTIME
-  REAL(RKD)             :: TTDS
+  integer,Intent(in)    :: iOp, iWait
+  real(RK4),Intent(in)  :: VarIn1
+  integer,Intent(in)    :: VarIn2
+  real(RK4),Intent(out) :: VarOut1
+  integer,Intent(out)   :: VarOut2
+  real(RKD),Intent(out) :: ElapsedTime, WaitTime
+  real(RKD),external    :: DSTIME
+  real(RKD)             :: TTDS
   
   !***local variables
-  Integer :: i, j, k, II, L, iMin, iMax
-  Integer :: ierr
-  Integer :: displ(num_Processors), IRECV(num_Processors)
+  integer :: i, j, k, II, L, iMin, iMax
+  integer :: ierr
+  integer :: displ(num_Processors), IRECV(num_Processors)
     
-  Real(RK4) :: VarOp
-  Real(RK4) :: VarSend(2), VarRec(num_Processors*2)
+  real(RK4) :: VarOp
+  real(RK4) :: VarSend(2), VarRec(num_Processors*2)
 
-  IF( num_Processors > 1 )THEN
-    IF( iWait > 0 )THEN
+  if( num_Processors > 1 )then
+    if( iWait > 0 )then
       TTDS = DSTIME(0)
-      Call MPI_barrier(comm_2d, ierr)
+      call MPI_barrier(comm_2d, ierr)
       WaitTime = DSTIME(0) - TTDS
-    ELSEIF( iWait < 0 )THEN
+    elseif( iWait < 0 )then
       WaitTime = 0.
-      Call MPI_barrier(comm_2d, ierr)
-    ENDIF
+      call MPI_barrier(comm_2d, ierr)
+    endif
     TTDS = DSTIME(0)
   
-    DO i = 1,num_Processors
+    do i = 1,num_Processors
       displ(i) = (i-1)*2
-    ENDDO
+    enddo
     VarRec(:) = 0.
     ierr = 0
     
     VarSend(1) = VarIn1
     VarSend(2) = REAL(VarIn2)
     IRECV = 2
-    Call MPI_GatherV(VarSend, 2, MPI_Real4, VarRec, IRECV, displ, MPI_Real4, master_id, comm_2d, ierr)
+    call MPI_GatherV(VarSend, 2, MPI_Real4, VarRec, IRECV, displ, MPI_Real4, master_id, comm_2d, ierr)
   
     VarOut2 = 0
-    IF( process_id == master_id )THEN
+    if( process_id == master_id )then
       ! *** Perform the operation
-      IF( iOp == MPI_SUM )THEN
+      if( iOp == MPI_SUM )then
         ! *** Sum
         VarOp = 0.0
-        DO i=1,num_Processors
+        do i = 1,num_Processors
           II = (i-1)*2 + 1
           VarOp = VarOp + VarRec(II)
-        ENDDO
+        enddo
       
-      ELSEIF( iOp == MPI_MAX )THEN
+      elseif( iOp == MPI_MAX )then
         ! *** Maximum
         iMax = 0
         VarOp = -1.e32
-        DO i=1,num_Processors
+        do i = 1,num_Processors
           II = (i-1)*2 + 1
-          IF( VarOp < VarRec(II) )THEN
+          if( VarOp < VarRec(II) )then
             VarOp = VarRec(II)
             iMax = i
             VarOut2 = VarRec(II+1)
-          ENDIF
-        ENDDO
+          endif
+        enddo
 
-      ELSEIF( iOp == MPI_MIN )THEN
+      elseif( iOp == MPI_MIN )then
         ! *** Minimum
         iMin = 0
         VarOp = 1.e32
-        DO i=1,num_Processors
+        do i = 1,num_Processors
           II = (i-1)*2 + 1
-          IF( VarOp > VarRec(II) )THEN
+          if( VarOp > VarRec(II) )then
             VarOp = VarRec(II)
             iMin = i
             VarOut2 = VarRec(II+1)
-          ENDIF
-        ENDDO
+          endif
+        enddo
       
-      ELSEIF( iOp == MPI_PROD )THEN
+      elseif( iOp == MPI_PROD )then
         ! *** Product
         VarOp = 1._8
-        DO i=1,num_Processors
+        do i = 1,num_Processors
           II = (i-1)*2 + 1
           VarOp = VarOp * VarRec(II)
-        ENDDO
+        enddo
 
-      ENDIF
-    ENDIF
+      endif
+    endif
     
-    Call Broadcast_Scalar(VarOp, master_id )
+    call Broadcast_Scalar(VarOp, master_id )
   
     VarOut1 = VarOp
 
     ElapsedTime = DSTIME(0) - TTDS
-  ELSE
+  else
     VarOut1 = VarIn1
     VarOut2 = VarIn2
     ElapsedTime = 0.
     WaitTime = 0.
-  ENDIF
+  endif
 
 END SUBROUTINE DSI_All_Reduce2
 
 subroutine DSI_All_Reduce2_8(VarIn1, VarIn2, VarOut1, VarOut2, iOp, ElapsedTime, iWait, WaitTime)
 
-  USE Variables_MPI
-  USE MPI
-  USE Broadcast_Routines
+  use Variables_MPI
+  use MPI
+  use Broadcast_Routines
 
-  Implicit none
+  implicit none
 
   ! *** Passed in variables
-  Integer,Intent(in)    :: iOp, iWait
-  Real(RKD),Intent(in)  :: VarIn1
-  Integer,Intent(in)    :: VarIn2
-  Real(RKD),Intent(out) :: VarOut1
-  Integer,Intent(out)   :: VarOut2
-  Real(RKD),Intent(out) :: ElapsedTime, WaitTime
-  Real(RKD),EXTERNAL    :: DSTIME
-  REAL(RKD)             :: TTDS
+  integer,Intent(in)    :: iOp, iWait
+  real(RKD),Intent(in)  :: VarIn1
+  integer,Intent(in)    :: VarIn2
+  real(RKD),Intent(out) :: VarOut1
+  integer,Intent(out)   :: VarOut2
+  real(RKD),Intent(out) :: ElapsedTime, WaitTime
+  real(RKD),external    :: DSTIME
+  real(RKD)             :: TTDS
   
   !***local variables
-  Integer :: i, j, k, II, L, iMin, iMax
-  Integer :: ierr
-  Integer :: displ(num_Processors), IRECV(num_Processors)
+  integer :: i, j, k, II, L, iMin, iMax
+  integer :: ierr
+  integer :: displ(num_Processors), IRECV(num_Processors)
     
-  Real(RKD) :: VarOp
-  Real(RKD) :: VarSend(2), VarRec(num_Processors*2)
+  real(RKD) :: VarOp
+  real(RKD) :: VarSend(2), VarRec(num_Processors*2)
 
-  IF( num_Processors > 1 )THEN
-    IF( iWait > 0 )THEN
+  if( num_Processors > 1 )then
+    if( iWait > 0 )then
       TTDS = DSTIME(0)
-      Call MPI_barrier(comm_2d, ierr)
+      call MPI_barrier(comm_2d, ierr)
       WaitTime = DSTIME(0) - TTDS
-    ELSEIF( iWait < 0 )THEN
+    elseif( iWait < 0 )then
       WaitTime = 0.
-      Call MPI_barrier(comm_2d, ierr)
-    ENDIF
+      call MPI_barrier(comm_2d, ierr)
+    endif
     TTDS = DSTIME(0)
   
-    DO i = 1,num_Processors
+    do i = 1,num_Processors
       displ(i) = (i-1)*2
-    ENDDO
+    enddo
     VarRec(:) = 0.
     ierr = 0
     
     VarSend(1) = VarIn1
     VarSend(2) = REAL(VarIn2,8)
     IRECV = 2
-    Call MPI_GatherV(VarSend, 2, MPI_Real8, VarRec, IRECV, displ, MPI_Real8, master_id, comm_2d, ierr)
+    call MPI_GatherV(VarSend, 2, MPI_Real8, VarRec, IRECV, displ, MPI_Real8, master_id, comm_2d, ierr)
   
     VarOut2 = 0
-    IF( process_id == master_id )THEN
+    if( process_id == master_id )then
       ! *** Perform the operation
-      IF( iOp == MPI_SUM )THEN
+      if( iOp == MPI_SUM )then
         ! *** Sum
         VarOp = 0.0
-        DO i=1,num_Processors
+        do i = 1,num_Processors
           II = (i-1)*2 + 1
           VarOp = VarOp + VarRec(II)
-        ENDDO
+        enddo
       
-      ELSEIF( iOp == MPI_MAX )THEN
+      elseif( iOp == MPI_MAX )then
         ! *** Maximum
         iMax = 0
         VarOp = -1.e32
-        DO i=1,num_Processors
+        do i = 1,num_Processors
           II = (i-1)*2 + 1
-          IF( VarOp < VarRec(II) )THEN
+          if( VarOp < VarRec(II) )then
             VarOp = VarRec(II)
             iMax = i
             VarOut2 = VarRec(II+1)
-          ENDIF
-        ENDDO
+          endif
+        enddo
 
-      ELSEIF( iOp == MPI_MIN )THEN
+      elseif( iOp == MPI_MIN )then
         ! *** Minimum
         iMin = 0
         VarOp = 1.e32
-        DO i=1,num_Processors
+        do i = 1,num_Processors
           II = (i-1)*2 + 1
-          IF( VarOp > VarRec(II) )THEN
+          if( VarOp > VarRec(II) )then
             VarOp = VarRec(II)
             iMin = i
             VarOut2 = VarRec(II+1)
-          ENDIF
-        ENDDO
+          endif
+        enddo
       
-      ELSEIF( iOp == MPI_PROD )THEN
+      elseif( iOp == MPI_PROD )then
         ! *** Product
         VarOp = 1._8
-        DO i=1,num_Processors
+        do i = 1,num_Processors
           II = (i-1)*2 + 1
           VarOp = VarOp * VarRec(II)
-        ENDDO
+        enddo
 
-      ENDIF
-    ENDIF
+      endif
+    endif
     
-    Call Broadcast_Scalar(VarOp, master_id )
+    call Broadcast_Scalar(VarOp, master_id )
   
     VarOut1 = VarOp
 
     ElapsedTime = DSTIME(0) - TTDS
-  ELSE
+  else
     VarOut1 = VarIn1
     VarOut2 = VarIn2
     ElapsedTime = 0.
     WaitTime = 0.
-  ENDIF
+  endif
 
 END SUBROUTINE DSI_All_Reduce2_8
 

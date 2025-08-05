@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 ! Copyright (c) 2012 Joseph A. Levin
@@ -21,7 +21,7 @@
 ! INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
 ! PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE 
 ! LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
-! OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+! OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE use OR OTHER
 ! DEALINGS IN THE SOFTWARE.
 
 !     
@@ -91,7 +91,7 @@ contains
     !
     recursive subroutine get_by_path(this, path, p)
         type(fson_value), pointer :: this, p        
-        character(len=*) :: path
+        character(len = *) :: path
         integer :: i, length, child_i
         character :: c
         logical :: array        
@@ -105,14 +105,14 @@ contains
         
         length = len_trim(path)
         
-        do i=1, length
+        do i = 1, length
             c = path(i:i)    
             select case (c)
                 case ("$")
                     ! root
                     do while (associated (p.parent))
                         p => p.parent
-                    end do
+                    enddo
                     child_i = i + 1
                 case ("@")
                     ! this                    
@@ -120,46 +120,46 @@ contains
                     child_i = i + 1
                 case (".", "[")                    
                     ! get child member from p                          
-                    IF( child_i < i )then                          
+                    if( child_i < i )then                          
                         p => fson_value_get(p, path(child_i:i-1))
                     else
                         child_i = i + 1
                         cycle
-                    end if
+                    endif
                     
                     if(.not.associated(p) )then
-                        return                                        
-                    end if
+                        return                                       
+                    endif
                     
                     child_i = i+1
                     
                     ! check if this is an array
                     ! if so set the array flag
-                    IF( c == "[" )then
+                    if( c == "[" )then
                         ! start looking for the array element index
                         array = .true.
-                    end if
+                    endif
                 case ("]")
-                    IF( .not.array )then
+                    if( .not.array )then
                         print *, "ERROR: Unexpected ], not missing preceding ["
                         call Stopp('.')    ! exit(1)
-                    end if
+                    endif
                     array = .false.
                     child_i = parse_integer(path(child_i:i-1))                                                
                     p => fson_value_get(p, child_i)                                                                                                                    
                     
                     child_i= i + 1                                     
             end select            
-        end do
+        enddo
                 
         ! grab the last child if present in the path
-        IF( child_i <= length )then            
+        if( child_i <= length )then            
             p => fson_value_get(p, path(child_i:length))
             if(.not.associated(p) )then
                 return
             else                
-            end if
-        end if
+            endif
+        endif
                 
         
     end subroutine get_by_path
@@ -168,12 +168,12 @@ contains
     ! PARSE INTEGER
     !
     integer function parse_integer(chars) result(integral)
-        character(len=*) :: chars
+        character(len = *) :: chars
         character :: c
         integer :: tmp, i
                 
         integral = 0        
-        do i=1, len_trim(chars)
+        do i = 1, len_trim(chars)
             c = chars(i:i)            
             select case(c)
                 case ("0":"9")
@@ -183,14 +183,14 @@ contains
                     ! shift
                     if(i > 1 )then
                         integral = integral * 10
-                    end if
+                    endif
                     ! add
                     integral = integral + tmp
                                                     
                 case default                          
                     return
             end select            
-        end do
+        enddo
     
     end function parse_integer    
     
@@ -199,39 +199,40 @@ contains
     !
     subroutine get_integer(this, path, value)
         type(fson_value), pointer :: this, p
-        character(len=*), optional :: path
+        character(len = *), optional :: path
         integer :: value        
         
         
         nullify(p)                
         if(present(path) )then
-            call get_by_path(this=this, path=path, p=p)
+            call get_by_path(this = this, path = path, p = p)
         else
             p => this
-        end if
+        endif
         
         if(.not.associated(p) )then
             print *, "Unable to resolve path: ", path
             !call Stopp('.')    ! exit(1)
-            value = -999
+            !value = -999
             return
-        end if
+        endif
                 
         
         if(p.value_type == TYPE_INTEGER )then            
             value = p.value_integer
-        else IF( p.value_type == TYPE_REAL )then
+        elseif( p.value_type == TYPE_REAL )then
             value = int(p.value_real)
-        else IF( p.value_type == TYPE_LOGICAL )then
-            IF( p.value_logical )then
+        elseif( p.value_type == TYPE_LOGICAL )then
+            if( p.value_logical )then
                 value = 1
             else
                 value = 0
-            end if
+            endif
         else
-            print *, "Unable to resolve value to integer: ", path
-            Call Stopp('.')    ! exit(1)
-        end if
+            !print *, "Unable to resolve value to integer: ", path
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
         
     end subroutine get_integer
     
@@ -240,37 +241,38 @@ contains
     !
     subroutine get_long_integer(this, path, value)
       type(fson_value), pointer :: this, p
-      character(len=*), optional :: path
+      character(len = *), optional :: path
       integer(kind = 8) :: value
 
       nullify(p)
       if(present(path) )then
-         call get_by_path(this=this, path=path, p=p)
+         call get_by_path(this = this, path = path, p = p)
       else
          p => this
-      end if
+      endif
 
       if(.not.associated(p) )then
          print *, "Unable to resolve path: ", path
          !Call Stopp('.')    ! exit(1)
-          value = -999
-          return
-      end if
+         !value = -999
+         return
+      endif
 
       if(p.value_type == TYPE_INTEGER )then
          value = p.value_long_integer
-      else IF( p.value_type == TYPE_REAL )then
+      elseif( p.value_type == TYPE_REAL )then
          value = int(p.value_real, kind = 8)
-      else IF( p.value_type == TYPE_LOGICAL )then
-         IF( p.value_logical )then
+      elseif( p.value_type == TYPE_LOGICAL )then
+         if( p.value_logical )then
             value = 1
          else
             value = 0
-         end if
+         endif
       else
          print *, "Unable to resolve value to long integer: ", path
-         Call Stopp('.')    ! exit(1)
-      end if
+         !call Stopp('.')    ! exit(1)
+         return
+      endif
 
     end subroutine get_long_integer
 
@@ -279,40 +281,41 @@ contains
     !
     subroutine get_real(this, path, value)
         type(fson_value), pointer :: this, p
-        character(len=*), optional :: path
+        character(len = *), optional :: path
         real(4) :: value        
         
         
         nullify(p)                
         
         if(present(path) )then
-            call get_by_path(this=this, path=path, p=p)
+            call get_by_path(this = this, path = path, p = p)
         else
             p => this
-        end if
+        endif
         
         if(.not.associated(p) )then
             print *, "Unable to resolve path: ", path
             !Call Stopp('.')    ! exit(1)
-            value = -999.
+            !value = -999.
             return
-        end if
+        endif
                 
         
         if(p.value_type == TYPE_INTEGER )then            
             value = real(p.value_long_integer)
-        else IF( p.value_type == TYPE_REAL )then
+        elseif( p.value_type == TYPE_REAL )then
             value = p.value_real
-        else IF( p.value_type == TYPE_LOGICAL )then
-            IF( p.value_logical )then
+        elseif( p.value_type == TYPE_LOGICAL )then
+            if( p.value_logical )then
                 value = 1
             else
                 value = 0
-            end if
+            endif
         else
             print *, "Unable to resolve value to real: ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
         
     end subroutine get_real
     
@@ -321,40 +324,41 @@ contains
     !
     subroutine get_double(this, path, value)
         type(fson_value), pointer :: this, p
-        character(len=*), optional :: path
+        character(len = *), optional :: path
         double precision :: value        
         
         
         nullify(p)                
         
         if(present(path) )then
-            call get_by_path(this=this, path=path, p=p)
+            call get_by_path(this = this, path = path, p = p)
         else
             p => this
-        end if
+        endif
         
         if(.not.associated(p) )then
             print *, "Unable to resolve path: ", path
             !call Stopp('.')    ! exit(1)
-            value = -999.
+            !value = -999.
             return
-        end if
+        endif
                 
         
         if(p.value_type == TYPE_INTEGER )then            
             value = p.value_long_integer
-        else IF( p.value_type == TYPE_REAL )then
+        elseif( p.value_type == TYPE_REAL )then
             value = p.value_double
-        else IF( p.value_type == TYPE_LOGICAL )then
-            IF( p.value_logical )then
+        elseif( p.value_type == TYPE_LOGICAL )then
+            if( p.value_logical )then
                 value = 1
             else
                 value = 0
-            end if
+            endif
         else
             print *, "Unable to resolve value to double: ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
         
     end subroutine get_double
     
@@ -364,31 +368,33 @@ contains
     !
     subroutine get_logical(this, path, value)
         type(fson_value), pointer :: this, p
-        character(len=*), optional :: path
+        character(len = *), optional :: path
         logical :: value        
         
         
         nullify(p)                
         
         if(present(path) )then
-            call get_by_path(this=this, path=path, p=p)
+            call get_by_path(this = this, path = path, p = p)
         else
             p => this
-        end if
+        endif
         
         if(.not.associated(p) )then
             print *, "Unable to resolve path: ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
         
         if(p.value_type == TYPE_INTEGER )then            
             value = (p.value_long_integer > 0)
-        else IF( p.value_type == TYPE_LOGICAL )then
+        elseif( p.value_type == TYPE_LOGICAL )then
             value = p.value_logical
         else
-            print *, "Unable to resolve value to real: ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            print *, "Unable to resolve value to logical: ", path
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
         
     end subroutine get_logical
     
@@ -397,29 +403,31 @@ contains
     !
     subroutine get_chars(this, path, value)
         type(fson_value), pointer :: this, p
-        character(len=*), optional :: path
-        character(len=*) :: value  
+        character(len = *), optional :: path
+        character(len = *) :: value  
         
         nullify(p)                
         
         if(present(path) )then
-            call get_by_path(this=this, path=path, p=p)
+            call get_by_path(this = this, path = path, p = p)
         else
             p => this
-        end if
+        endif
         
         if(.not.associated(p) )then
             print *, "Unable to resolve path: ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
                 
         
         if(p.value_type == TYPE_STRING )then            
             call fson_string_copy(p.value_string, value)          
         else
             print *, "Unable to resolve value to characters: ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
         
     end subroutine get_chars
     
@@ -439,15 +447,16 @@ contains
         
         ! resolve the path to the value
         if(present(path) )then
-            call get_by_path(this=this, path=path, p=p)
+            call get_by_path(this = this, path = path, p = p)
         else
             p => this
-        end if
+        endif
             
         if(.not.associated(p) )then
             print *, "Unable to resolve path: ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
         
         if(p.value_type == TYPE_ARRAY )then            
             count = fson_value_count(p)
@@ -455,13 +464,14 @@ contains
             do index = 1, count
                 call array_callback(element, index, count)
                 element => element.next
-            end do
+            enddo
         else
-            print *, "Resolved value is not an array. ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            print *, "Resolved value is not an 1D array. ", path
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
 
-        IF( associated(p)) nullify(p)
+        if( associated(p)) nullify(p)
 
       end subroutine get_array_1d
 
@@ -472,10 +482,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path   
+      character(len = *), intent(in), optional :: path   
       integer, allocatable, intent(out) :: arr(:)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_1d(this, path, array_callback_1d_integer)
 
     contains
@@ -484,7 +494,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i, count
-        IF( .not. allocated(arr)) allocate(arr(count))
+        if( .not. allocated(arr)) allocate(arr(count))
         call fson_path_get(element, "", arr(i))
       end subroutine array_callback_1d_integer
 
@@ -497,10 +507,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path   
+      character(len = *), intent(in), optional :: path   
       real(4), allocatable, intent(out) :: arr(:)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_1d(this, path, array_callback_1d_real)
 
     contains
@@ -509,7 +519,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i, count
-        IF( .not. allocated(arr)) allocate(arr(count))
+        if( .not. allocated(arr)) allocate(arr(count))
         call fson_path_get(element, "", arr(i))
       end subroutine array_callback_1d_real
 
@@ -522,10 +532,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path   
+      character(len = *), intent(in), optional :: path   
       double precision, allocatable, intent(out) :: arr(:)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_1d(this, path, array_callback_1d_double)
 
     contains
@@ -534,7 +544,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i, count
-        IF( .not. allocated(arr)) allocate(arr(count))
+        if( .not. allocated(arr)) allocate(arr(count))
         call fson_path_get(element, "", arr(i))
       end subroutine array_callback_1d_double
 
@@ -547,10 +557,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path   
+      character(len = *), intent(in), optional :: path   
       logical, allocatable, intent(out) :: arr(:)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_1d(this, path, array_callback_1d_logical)
 
     contains
@@ -559,7 +569,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i, count
-        IF( .not. allocated(arr)) allocate(arr(count))
+        if( .not. allocated(arr)) allocate(arr(count))
         call fson_path_get(element, "", arr(i))
       end subroutine array_callback_1d_logical
 
@@ -572,10 +582,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path
+      character(len = *), intent(in), optional :: path
       character(len = *), allocatable, intent(out) :: arr(:)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_1d(this, path, array_callback_1d_char)
 
     contains
@@ -584,7 +594,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i, count
-        IF( .not. allocated(arr)) allocate(arr(count))
+        if( .not. allocated(arr)) allocate(arr(count))
         call fson_path_get(element, "", arr(i))
       end subroutine array_callback_1d_char
 
@@ -607,46 +617,49 @@ contains
         
         ! resolve the path to the value
         if(present(path) )then
-            call get_by_path(this=this, path=path, p=p)
+            call get_by_path(this = this, path = path, p = p)
         else
             p => this
-        end if
+        endif
             
         if(.not.associated(p) )then
             print *, "Unable to resolve path: ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
         
         if(p.value_type == TYPE_ARRAY )then            
             count1 = fson_value_count(p)
             element => p.children
             do i1 = 1, count1
-               IF( element.value_type == TYPE_ARRAY )then
+               if( element.value_type == TYPE_ARRAY )then
                   c = fson_value_count(element)
-                  IF( i1 == 1 )then
+                  if( i1 == 1 )then
                      count2 = c
-                  else IF( c /= count2 )then
+                  elseif( c /= count2 )then
                      print *, "Resolved value has the wrong number of elements. ", &
                           path, "[", i1, "]"
                      call Stopp('.')    ! exit(1)
-                  end if
+                  endif
                   item => element.children
                   do i2 = 1, count2
                      call array_callback(item, i1, i2, count1, count2)
                      item => item.next
-                  end do
+                  enddo
                   element => element.next
                else
                   print *, "Resolved value is not an array. ", path, "[", i1, "]"
-                  call Stopp('.')    ! exit(1)
-               end if
-            end do
+                  !call Stopp('.')    ! exit(1)
+                  return
+               endif
+            enddo
         else
-            print *, "Resolved value is not an array. ", path
-            call Stopp('.')    ! exit(1)
-        end if
+            print *, "Resolved value is not a 2D array. ", path
+            !call Stopp('.')    ! exit(1)
+            return
+        endif
 
-        IF( associated(p)) nullify(p)
+        if( associated(p)) nullify(p)
 
       end subroutine get_array_2d
 
@@ -657,10 +670,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path   
+      character(len = *), intent(in), optional :: path   
       integer, allocatable, intent(out) :: arr(:, :)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_2d(this, path, array_callback_2d_integer)
 
     contains
@@ -669,7 +682,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i1, i2, count1, count2
-        IF( .not. allocated(arr)) allocate(arr(count1, count2))
+        if( .not. allocated(arr)) allocate(arr(count1, count2))
         call fson_path_get(element, "", arr(i1, i2))
       end subroutine array_callback_2d_integer
 
@@ -682,10 +695,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path   
+      character(len = *), intent(in), optional :: path   
       real(4), allocatable, intent(out) :: arr(:, :)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_2d(this, path, array_callback_2d_real)
 
     contains
@@ -694,7 +707,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i1, i2, count1, count2
-        IF( .not. allocated(arr)) allocate(arr(count1, count2))
+        if( .not. allocated(arr)) allocate(arr(count1, count2))
         call fson_path_get(element, "", arr(i1, i2))
       end subroutine array_callback_2d_real
 
@@ -707,10 +720,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path   
+      character(len = *), intent(in), optional :: path   
       double precision, allocatable, intent(out) :: arr(:, :)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_2d(this, path, array_callback_2d_double)
 
     contains
@@ -719,7 +732,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i1, i2, count1, count2
-        IF( .not. allocated(arr)) allocate(arr(count1, count2))
+        if( .not. allocated(arr)) allocate(arr(count1, count2))
         call fson_path_get(element, "", arr(i1, i2))
       end subroutine array_callback_2d_double
 
@@ -732,10 +745,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path   
+      character(len = *), intent(in), optional :: path   
       logical, allocatable, intent(out) :: arr(:, :)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_2d(this, path, array_callback_2d_logical)
 
     contains
@@ -744,7 +757,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i1, i2, count1, count2
-        IF( .not. allocated(arr)) allocate(arr(count1, count2))
+        if( .not. allocated(arr)) allocate(arr(count1, count2))
         call fson_path_get(element, "", arr(i1, i2))
       end subroutine array_callback_2d_logical
 
@@ -757,10 +770,10 @@ contains
 
       implicit none
       type(fson_value), pointer, intent(in) :: this
-      character(len=*), intent(in), optional :: path
+      character(len = *), intent(in), optional :: path
       character(len = *), allocatable, intent(out) :: arr(:, :)
 
-      IF( allocated(arr)) deallocate(arr)
+      if( allocated(arr)) deallocate(arr)
       call get_array_2d(this, path, array_callback_2d_char)
 
     contains
@@ -769,7 +782,7 @@ contains
         implicit none
         type(fson_value), pointer, intent(in) :: element
         integer, intent(in) :: i1, i2, count1, count2
-        IF( .not. allocated(arr)) allocate(arr(count1, count2))
+        if( .not. allocated(arr)) allocate(arr(count1, count2))
         call fson_path_get(element, "", arr(i1, i2))
       end subroutine array_callback_2d_char
 

@@ -3,14 +3,14 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 SUBROUTINE CALEXP
 
   ! *** *******************************************************************!
-  ! **  SUBROUTINE CALEXP CALCULATES EXPLICIT MOMENTUM EQUATION TERMS  
-  ! **  USING A TWO TIME LEVEL SCHEME  
+  ! ***  SUBROUTINE CALEXP CALCULATES EXPLICIT MOMENTUM EQUATION TERMS  
+  ! ***  USING A TWO TIME LEVEL SCHEME  
   
   ! *** VARIABLES   DESCRIPTION                                 UNITS
   ! *** FUHU,FVHU   GROSS MOMENTUM, U COMPONENTS                M4/S2
@@ -23,192 +23,196 @@ SUBROUTINE CALEXP
   ! CHANGE RECORD  
   ! DATE MODIFIED     BY               DESCRIPTION
   !----------------------------------------------------------------------!
-  ! ** 2018-01     PAUL M. CRAIG      CORRECTED WITHDRAWAL/RETURN MOMENTUM OPTION
-  ! **                                  ADDED MOMENTUM OPTION FOR STANDARD FLOW BC
-  ! ** 2016-02     PAUL M. CRAIG      UPDATED SIGMA-Z (SGZ) FOR EE8.0 
-  ! ** 2015-12     PAUL M. CRAIG      ADOPTED AQEA ISHDMF>0 FOR 3TL
-  ! ** 2015-06     PAUL M. CRAIG      IMPLEMENTED SIGMA-Z (SGZ) IN EE7.3 
-  ! ** 2015-02     Paul M. Craig      UPDATED OMP AND ADDED LDRY/LWET
-  ! ** 2014-01     Paul M. Craig      Fixed the TOT FXVEGE/FYVEGE when partial vegetation penetration using VEGK
-  ! ** 2012-09     Dang H Chung       Added OMP
-  ! ** 2011-03     John Hamrick/Scott James
-  ! **                                Fixed the Vegetative Resistance from AVG to TOT using FKC
-  ! ** 2010-10     Scott James        Added MHK
+  ! *** 2018-01     PAUL M. CRAIG      CORRECTED WITHDRAWAL/RETURN MOMENTUM OPTION
+  ! ***                                  ADDED MOMENTUM OPTION FOR STANDARD FLOW BC
+  ! *** 2016-02     PAUL M. CRAIG      UPDATED SIGMA-Z (SGZ) FOR EE8.0 
+  ! *** 2015-12     PAUL M. CRAIG      ADOPTED AQEA ISHDMF>0 FOR 3TL
+  ! *** 2015-06     PAUL M. CRAIG      IMPLEMENTED SIGMA-Z (SGZ) IN EE7.3 
+  ! *** 2015-02     Paul M. Craig      UPDATED OMP AND ADDED LDRY/LWET
+  ! *** 2014-01     Paul M. Craig      Fixed the TOT FXVEGE/FYVEGE when partial vegetation penetration using VEGK
+  ! *** 2012-09     Dang H Chung       Added OMP
+  ! *** 2011-03     John Hamrick/Scott James
+  ! ***                                Fixed the Vegetative Resistance from AVG to TOT using FKC
+  ! *** 2010-10     Scott James        Added MHK
   !
   !----------------------------------------------------------------------C
   !
   ! *** *******************************************************************C
   !
-  USE GLOBAL
-  USE FIELDS
-  USE CYCLONE
+  use GLOBAL
+  use Allocate_Initialize
+  use FIELDS
+  use CYCLONE
   
-  USE Variables_MPI
-  Use Variables_Propwash
-  Use Variables_Ship
-  Use Mod_Active_Ship
+  use Variables_MPI
+  use Variables_Propwash
+  use Variables_Ship
+  use Mod_Active_Ship
 
-  IMPLICIT NONE
+  implicit none
   
-  INTEGER :: I, LU, NS, ID,  JD, KD, LD, K,  L,  LL, LW, LNW, LSE, LE, LP  
-  INTEGER :: LEE, LWW, LNN, LSS
-  INTEGER :: ND, LF, NWR, IU, JU, KU, LN, LS   
+  integer :: I, IOBC, LU, NS, ID,  JD, KD, LD, K,  L,  LL, LW, LNW, LSE, LE, LP  
+  integer :: LEE, LWW, LNN, LSS
+  integer :: ND, LF, NWR, IU, JU, KU, LN, LS   
   
-  REAL :: QMF, QUMF, WUU, VTMPATU, UTMPATV, UMAGTMP, VMAGTMP, CACSUMT                                                                      
-  REAL :: WVFACT, WVV, CFEFF, TMPVAL, DZPU, DZPV, FMDUY_TMP, FMDVX_TMP                                                       
-  REAL :: VHC, VHB, DELTD2, UHC, UHB, QWRABS, VDIR                                                            
+  real :: QMF, QUMF, WUU, VTMPATU, UTMPATV, UMAGTMP, VMAGTMP, CACSUMT                                                                      
+  real :: WVFACT, WVV, CFEFF, TMPVAL, DZPU, DZPV, FMDUY_TMP, FMDVX_TMP                                                       
+  real :: VHC, VHB, DELTD2, UHC, UHB, QWRABS, VDIR                                                            
 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)   :: CACSUM  
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: DZPC
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: FUHJ
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: FVHJ
-
-  IF(  .NOT. ALLOCATED(DZPC) )THEN
-    ALLOCATE(CACSUM(NTHREADS))  
-    ALLOCATE(FUHJ(LCM,KCM))
-    ALLOCATE(FVHJ(LCM,KCM))
-    ALLOCATE(DZPC(LCM,KCM))
-    CACSUM=0.
-    FUHJ=0.
-    FVHJ=0.
-    DZPC=0.
-  ENDIF
+  real,save,allocatable,dimension(:)   :: CACSUM  
+  real,save,allocatable,dimension(:,:) :: DZPC
+  real,save,allocatable,dimension(:,:) :: FUHJ
+  real,save,allocatable,dimension(:,:) :: FVHJ
+  
+  if( .not. allocated(DZPC) )then
+    allocate(CACSUM(NTHREADS))  
+    allocate(FUHJ(LCM,KCM))
+    allocate(FVHJ(LCM,KCM))
+    allocate(DZPC(LCM,KCM))
+    CACSUM = 0.0
+    FUHJ = 0.0
+    FVHJ = 0.0
+    DZPC = 0.0
+  endif
   
   ! *** *******************************************************************C
-  DELT=DT2
-  DELTD2=DT
-  IF( ISTL == 2 )THEN
-    DELT=DT
-    DELTD2=0.5*DT
-  ENDIF
+  DELT = DT2
+  DELTD2 = DT
+  if( ISTL == 2 )then
+    DELT = DT
+    DELTD2 = 0.5*DT
+  endif
 
-  DELTI=1./DELT
+  DELTI = 1./DELT
 
-  IF( N == 1 .AND. DEBUG )THEN  
-    OPEN(1,FILE=OUTDIR//'MFLUX.DIA')  
-    CLOSE(1,STATUS='DELETE')  
-  ENDIF  
+  if( N == 1 .and. DEBUG )then  
+    open(1,FILE = OUTDIR//'MFLUX.DIA')  
+    close(1,STATUS = 'DELETE')  
+  endif  
 
   ! *** WAVE RAMPUP FACTOR
-  IF( ISWAVE == 2 .OR. ISWAVE == 4 )THEN
-    IF( N < NTSWV )THEN  
+  if( ISWAVE == 2 .or. ISWAVE == 4 )then
+    if( N < NTSWV )then  
       TMPVAL = FLOAT(N)/FLOAT(NTSWV)  
       WVFACT = 0.5-0.5*COS(PI*TMPVAL)  
-    ELSE  
+    else  
       WVFACT = 1.0  
-    ENDIF  
-  ENDIF
+    endif  
+  endif
   CACSUMT = 0.
 
   ! *** *******************************************************************!  
   ! *** ZERO NEWLY DRY CELL SHEARS/MOMENTUM
-  IF( LADRY > 0 )THEN
-    DO LP=1,LADRY
-      L=LDRY(LP)  
-      FCAXE(L)=0.  
-      FCAYE(L)=0.  
-      FXE(L)=0.  
-      FYE(L)=0.  
-    ENDDO
+  if( LADRY > 0 )then
+    do LP = 1,LADRY
+      L = LDRY(LP)  
+      FCAXE(L) = 0.  
+      FCAYE(L) = 0.  
+      FXE(L) = 0.  
+      FYE(L) = 0.  
+    enddo
 
-    DO K=1,KC
-      DO LP=1,LADRY
-        L=LDRY(LP)  
-        FUHU(L,K)=0.  
-        FVHU(L,K)=0.  
-        FUHV(L,K)=0.  
-        FVHV(L,K)=0.  
-        FWU(L,K)=0.
-        FWV(L,K)=0.
-        CAC(L,K)=0.0
-        FCAX(L,K)=0.
-        FCAY(L,K)=0.
-        FX(L,K)=0.
-        FY(L,K)=0.
-        FBBX(L,K)=0.
-        FBBY(L,K)=0.
-        DU(L,K)=0.0  
-        DV(L,K)=0.0  
+    do K = 1,KC
+      do LP = 1,LADRY
+        L = LDRY(LP)  
+        FUHU(L,K) = 0.0  
+        FVHU(L,K) = 0.0  
+        FUHV(L,K) = 0.0  
+        FVHV(L,K) = 0.0  
+        FWU(L,K)  = 0.0
+        FWV(L,K)  = 0.0
+        CAC(L,K)  = 0.0
+        FCAX(L,K) = 0.0
+        FCAY(L,K) = 0.0
+        FX(L,K)   = 0.0
+        FY(L,K)   = 0.0
+        FBBX(L,K) = 0.0
+        FBBY(L,K) = 0.0
+        DU(L,K)   = 0.0  
+        DV(L,K)   = 0.0  
         
         ! *** TWO LAYER ROTATIONAL EFFECTS OR WITHDRAWAL/RETURN
-        FUHJ(L,K)=0.  
-        FVHJ(L,K)=0.
+        FUHJ(L,K) = 0.0  
+        FVHJ(L,K) = 0.0
         
-        TVAR2E(L,K)=0.
-        TVAR2N(L,K)=0.
-      ENDDO
-    ENDDO
+        TVAR2E(L,K) = 0.0
+        TVAR2N(L,K) = 0.0
+      enddo
+    enddo
     
-    IF( ISVEG > 0 )THEN
-      DO LP=1,LADRY
-        L=LDRY(LP)  
-        FXVEGE(L)=0.
-        FYVEGE(L)=0.
-      ENDDO
-      DO K=1,KC
-        DO LP=1,LADRY
-          L=LDRY(LP)  
-          FXVEG(L,K)=0.0
-          FYVEG(L,K)=0.0
-        ENDDO
-      ENDDO
-    ENDIF
-  ENDIF
+    if( ISVEG > 0 )then
+      do LP = 1,LADRY
+        L = LDRY(LP)  
+        FXVEGE(L) = 0.0
+        FYVEGE(L) = 0.0
+      enddo
+      do K = 1,KC
+        do LP = 1,LADRY
+          L = LDRY(LP)  
+          FXVEG(L,K) = 0.0
+          FYVEG(L,K) = 0.0
+        enddo
+      enddo
+    endif
+  endif
 
   ! *** *******************************************************************!  
   ! *** *******************************************************************!  
   ! *** INITIALIZE EXTERNAL CORIOLIS-CURVATURE AND ADVECTIVE FLUX TERMS
   !----------------------------------------------------------------------!
   !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L)
-  DO ND=1,NDM  
-    LF=(ND-1)*LDMWET+1  
-    LL=MIN(LF+LDMWET-1,LAWET)
+  do ND = 1,NDM  
+    LF = (ND-1)*LDMWET+1  
+    LL = MIN(LF+LDMWET-1,LAWET)
 
-    DO LP=LF,LL
-      L=LWET(LP)  
-      FCAXE(L)=0.  
-      FCAYE(L)=0.  
-      FXE(L)=0.  
-      FYE(L)=0.  
-    ENDDO  
-  ENDDO
+    do LP = LF,LL
+      L = LWET(LP)  
+      FCAXE(L) = 0.0  
+      FCAYE(L) = 0.0  
+      FXE(L) = 0.0  
+      FYE(L) = 0.0  
+    enddo  
+  enddo
   !$OMP END PARALLEL DO
   
   ! *** *******************************************************************C
   ! *** SELECT ADVECTIVE FLUX FORM
   ! ***
-  IF( ISTL == 2 )THEN
+
+  if( ISTL == 2 )then
   
     ! *** THREE TIME LEVEL CORRECTOR STEP
     ! *** CALCULATE ADVECTIVE FLUXES BY UPWIND DIFFERENCE WITH ADVECTION
     ! *** AVERAGED BETWEEN (N) AND (N+1) AND ADVECTED FIELD AT N
 
     !$OMP PARALLEL DEFAULT(SHARED)
-    !$OMP DO PRIVATE(ND,K,LP,L)
-    DO ND=1,NDM
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
+    
+    !$OMP DO PRIVATE(ND,K,LF,LL,L)
+    do ND = 1,NDM
+      LF = 2 + (ND-1)*LDM
+      LL = MIN(LF+LDM-1,LA)
+      do K = 1,KC
+        do L = LF,LL
           TVAR2E(L,K) = 0.5*(UHDY(L,K) + UHDY1(L,K))
           TVAR2N(L,K) = 0.5*(VHDX(L,K) + VHDX1(L,K))
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     !$OMP END DO
 
     !$OMP DO PRIVATE(ND,K,LP,L,LE,LN,LS,LW,UHC,UHB,VHC,VHB)
-    DO ND=1,NDM
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
-          LE=LEC(L)
-          LN=LNC(L)
-          LS=LSC(L)
-          LW=LWC(L)
-
+    do ND = 1,NDM
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
+          L  = LKWET(LP,K,ND)  
+          LE = LEC(L)
+          LN = LNC(L)
+          LS = LSC(L)
+          LW = LWC(L)
+          
           ! *** U COMPONENTS  
-          UHB = 0.5*(TVAR2E(L,K)+TVAR2E(LE,K))
-          VHC = 0.5*(TVAR2N(L,K)+TVAR2N(LW,K))
+          UHB = 0.5*(TVAR2E(L,K) + TVAR2E(LE,K))
+          VHC = 0.5*(TVAR2N(L,K) + TVAR2N(LW,K))
 
           ! ***       |-- EAST FLOWING --|    |-- WEST FLOWING --|
           FUHU(L,K) = (MAX(UHB,0.)*U1(L,K)  + MIN(UHB,0.)*U1(LE,K))
@@ -216,38 +220,38 @@ SUBROUTINE CALEXP
           FVHU(L,K) = (MAX(VHC,0.)*U1(LS,K) + MIN(VHC,0.)*U1(L,K))
 
           ! *** V COMPONENTS
-          VHB = 0.5*(TVAR2N(L,K)+TVAR2N(LN,K))
-          UHC = 0.5*(TVAR2E(L,K)+TVAR2E(LS,K))
+          VHB = 0.5*(TVAR2N(L,K) + TVAR2N(LN,K))
+          UHC = 0.5*(TVAR2E(L,K) + TVAR2E(LS,K))
           
           ! ***       |-- NORTH FLOWING --|   |-- SOUTH FLOWING --|
           FVHV(L,K) = (MAX(VHB,0.)*V1(L,K)  + MIN(VHB,0.)*V1(LN, K))
           ! ***       |-- EAST  FLOWING --|   |-- WEST  FLOWING --|
           FUHV(L,K) = (MAX(UHC,0.)*V1(LW,K) + MIN(UHC,0.)*V1(L,K))
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     !$OMP END DO
 
-    IF( KC > 1 )THEN
+    if( KC > 1 )then
       !$OMP DO PRIVATE(ND,K,LP,L,LS,LW,WUU,WVV)
-      DO ND=1,NDM
-        DO K=1,KS
-          DO LP=1,LLWET(K,ND)
-            L=LKWET(LP,K,ND)  
-            LW=LWC(L)
-            LS=LSC(L)
+      do ND = 1,NDM
+        do K = 1,KS
+          do LP = 1,LLWET(K,ND)
+            L  = LKWET(LP,K,ND)  
+            LW = LWC(L)
+            LS = LSC(L)
             WUU = 0.25*DXYU(L)*(W2(L,K) + W2(LW,K))
             WVV = 0.25*DXYV(L)*(W2(L,K) + W2(LS,K))
             FWU(L,K) = MAX(WUU,0.)*U1(L,K) + MIN(WUU,0.)*U1(L,K+1)
             FWV(L,K) = MAX(WVV,0.)*V1(L,K) + MIN(WVV,0.)*V1(L,K+1)
-          ENDDO
-        ENDDO
-      ENDDO
+          enddo
+        enddo
+      enddo
       !$OMP END DO
-    ENDIF
+    endif
     !$OMP END PARALLEL
   
-  ELSEIF( ISTL /= 2 .AND. ISCDMA == 0 )THEN
+  elseif( ISTL /= 2 .and. ISCDMA == 0 )then
 
     ! *** THREE TIME LEVEL (LEAP-FROG) STEP
     ! *** WITH TRANSPORT AT (N) AND TRANSPORTED FIELD AT (N-1)
@@ -255,24 +259,24 @@ SUBROUTINE CALEXP
 
     !$OMP PARALLEL DEFAULT(SHARED)
     !$OMP DO PRIVATE(ND,K,LP,L,LE,LS,LN,LW,UHC,UHB,VHC,VHB)
-    DO ND=1,NDM
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
-          LE=LEC(L)
-          LN=LNC(L)
-          LS=LSC(L)
-          LW=LWC(L)
+    do ND = 1,NDM
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
+          L  = LKWET(LP,K,ND)  
+          LE = LEC(L)
+          LN = LNC(L)
+          LS = LSC(L)
+          LW = LWC(L)
 
           ! *** U COMPONENTS  
-          UHB = 0.5*(UHDY(L,K)+UHDY(LE,K))
-          VHC = 0.5*(VHDX(L,K)+VHDX(LW,K))
+          UHB = 0.5*(UHDY(L,K) + UHDY(LE,K))
+          VHC = 0.5*(VHDX(L,K) + VHDX(LW,K))
           
           ! ***       |-- EAST FLOWING --|    |-- WEST FLOWING --|
           FUHU(L,K) = (MAX(UHB,0.)*U1(L,K)  + MIN(UHB,0.)*U1(LE,K))  
           ! ***       |-- NORTH FLOWING --|   |-- SOUTH FLOWING --|
           FVHU(L,K) = (MAX(VHC,0.)*U1(LS,K) + MIN(VHC,0.)*U1(L,K))
-
+          
           ! *** V COMPONENTS
           VHB = 0.5*(VHDX(L,K)+VHDX(LN,K))
           UHC = 0.5*(UHDY(L,K)+UHDY(LS,K))
@@ -281,34 +285,34 @@ SUBROUTINE CALEXP
           FVHV(L,K) = (MAX(VHB,0.)*V1(L,K)  + MIN(VHB,0.)*V1(LN, K))
           ! ***       |-- EAST  FLOWING --|   |-- WEST  FLOWING --|
           FUHV(L,K) = (MAX(UHC,0.)*V1(LW,K) + MIN(UHC,0.)*V1(L,K))
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     !$OMP END DO
-
+    
     !----------------------------------------------------------------------!  
     ! *** COMPUTE VERTICAL ACCELERATIONS
-    IF( KC > 1 )THEN
+    if( KC > 1 )then
       !$OMP DO PRIVATE(ND,K,LP,L,LS,LW,WUU,WVV)
-      DO ND=1,NDM
+      do ND = 1,NDM
 
-        DO K=1,KS
-          DO LP=1,LLWET(K,ND)
-            L=LKWET(LP,K,ND)  
-            LW=LWC(L)
-            LS=LSC(L)
+        do K = 1,KS
+          do LP = 1,LLWET(K,ND)
+            L  = LKWET(LP,K,ND)  
+            LW = LWC(L)
+            LS = LSC(L)
             WUU = 0.5*DXYU(L)*(W(L,K)+W(LW,K))
             WVV = 0.5*DXYV(L)*(W(L,K)+W(LS,K))
             FWU(L,K) = MAX(WUU,0.)*U1(L,K) + MIN(WUU,0.)*U1(L,K+1)
             FWV(L,K) = MAX(WVV,0.)*V1(L,K) + MIN(WVV,0.)*V1(L,K+1)
-          ENDDO
-        ENDDO
-      ENDDO
+          enddo
+        enddo
+      enddo
       !$OMP END DO
-    ENDIF
+    endif
     !$OMP END PARALLEL
   
-  ELSEIF( ISTL /= 2 .AND. ISCDMA == 1 )THEN
+  elseif( ISTL /= 2 .and. ISCDMA == 1 )then
     
     ! *** THREE TIME LEVEL (LEAP-FROG) STEP
     ! *** AT (N) AND TRANSPORTED FIELD AT (N)
@@ -316,15 +320,14 @@ SUBROUTINE CALEXP
   
     !$OMP PARALLEL DEFAULT(SHARED) 
     !$OMP DO PRIVATE(ND,K,LP,L,LE,LS,LN,LW)
-    DO ND=1,NDM
-
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
-          LE=LEC(L)
-          LN=LNC(L)
-          LS=LSC(L)
-          LW=LWC(L)
+    do ND = 1,NDM
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
+          L  = LKWET(LP,K,ND)  
+          LE = LEC(L)
+          LN = LNC(L)
+          LS = LSC(L)
+          LW = LWC(L)
           
           ! *** U COMPONENTS
           FUHU(L,K) = 0.25*(UHDY(L,K) + UHDY(LE,K))*(U(L,K)+U(LE,K))
@@ -333,25 +336,25 @@ SUBROUTINE CALEXP
           ! *** V COMPONENTS
           FVHV(L,K) = 0.25*(VHDX(L,K) + VHDX(LN,K))*(V(L,K)+V(LN,K))
           FUHV(L,K) = 0.25*(UHDY(L,K) + UHDY(LS,K))*(V(L,K)+V(LW,K))
-        ENDDO
-      ENDDO
+        enddo
+      enddo
 
-      IF( KC > 1 )THEN
-        DO K=1,KS
-          DO LP=1,LLWET(K,ND)
-            L=LKWET(LP,K,ND)  
-            LW=LWC(L)
-            LS=LSC(L)
+      if( KC > 1 )then
+        do K = 1,KS
+          do LP = 1,LLWET(K,ND)
+            L = LKWET(LP,K,ND)  
+            LW = LWC(L)
+            LS = LSC(L)
             FWU(L,K) = 0.25*DXYU(L)*(W(L,K)+W(LW,K))*(U(L,K+1)+U(L,K))
             FWV(L,K) = 0.25*DXYV(L)*(W(L,K)+W(LS,K))*(V(L,K+1)+V(L,K))
-          ENDDO
-        ENDDO
-      ENDIF
-    ENDDO   ! ***  END OF DOMAIN
+          enddo
+        enddo
+      endif
+    enddo   ! ***  END OF DOMAIN
     !$OMP END DO
     !$OMP END PARALLEL   
   
-  ELSEIF( ISTL /= 2 .AND. ISCDMA == 2 )THEN
+  elseif( ISTL /= 2 .and. ISCDMA == 2 )then
     
     ! *** THREE TIME LEVEL (LEAP-FROG) STEP
     ! *** FIRST HALF STEP CALCULATE ADVECTIVE FLUXES BY UPWIND DIFFERENCE
@@ -361,23 +364,22 @@ SUBROUTINE CALEXP
     
     !$OMP PARALLEL DEFAULT(SHARED) 
     !$OMP DO PRIVATE(ND,K,LP,L,LE,LS,LN,LW,UHC,UHB,VHC,VHB,WUU,WVV)
-    DO ND=1,NDM
-
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
+    do ND = 1,NDM
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
+          L  = LKWET(LP,K,ND)  
           U2(L,K) = U1(L,K)+U(L,K)
           V2(L,K) = V1(L,K)+V(L,K)
-        ENDDO
-      ENDDO
+        enddo
+      enddo
 
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
-          LE=LEC(L)
-          LN=LNC(L)
-          LS=LSC(L)
-          LW=LWC(L)
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
+          L  = LKWET(LP,K,ND)  
+          LE = LEC(L)
+          LN = LNC(L)
+          LS = LSC(L)
+          LW = LWC(L)
 
           ! *** U COMPONENTS
           UHB = 0.25*(UHDY(L,K)+UHDY(LE,K))
@@ -392,201 +394,208 @@ SUBROUTINE CALEXP
 
           FVHV(L,K) = MAX(VHB,0.)*V2(L,K)  + MIN(VHB,0.)*V2(LN,K)
           FUHV(L,K) = MAX(UHC,0.)*V2(LW,K) + MIN(UHC,0.)*V2(L,K)
-        ENDDO
-      ENDDO
+        enddo
+      enddo
   
-      IF( KC > 1 )THEN
-        DO K=1,KS
-          DO LP=1,LLWET(K,ND)
-            L=LKWET(LP,K,ND)  
-            LW=LWC(L)
-            LS=LSC(L)
+      if( KC > 1 )then
+        do K = 1,KS
+          do LP = 1,LLWET(K,ND)
+            L  = LKWET(LP,K,ND)  
+            LW = LWC(L)
+            LS = LSC(L)
             WUU = 0.25*DXYU(L)*(W(L,K)+W(LW,K))
             WVV = 0.25*DXYV(L)*(W(L,K)+W(LS,K))
             FWU(L,K) = MAX(WUU,0.)*U2(L,K) + MIN(WUU,0.)*U2(L,K+1)
             FWV(L,K) = MAX(WVV,0.)*V2(L,K) + MIN(WVV,0.)*V2(L,K+1)
-          ENDDO
-        ENDDO
-      ENDIF
-    ENDDO
+          enddo
+        enddo
+      endif
+    enddo
     !$OMP END DO
     !$OMP END PARALLEL
  
-  ENDIF ! *** NUMERICAL SCHEMES
+  endif ! *** NUMERICAL SCHEMES
   
-  ! *** ADD WITHDRAWAL/RETURN FLOW MOMENTUM FLUXES
-  DO NWR=1,NQWR  
-    IF( ABS(WITH_RET(NWR).NQWRMFU) > 0 )THEN  
+  ! *** Zero vertical momentum for open boundaries
+  do IOBC = 1,NBCSOP2  
+    L = LOBCS2(IOBC)  
+    FWU(L,:) = 0.0
+    FWV(L,:) = 0.0
+  enddo  
+    
+  ! *** Add withdrawal/return flow momentum fluxes
+  do NWR = 1,NQWR  
+    if( ABS(WITH_RET(NWR).NQWRMFU) > 0 )then  
       ! *** Handle +/- Flows for Withdrawal/Return Structures
       NS = WITH_RET(NWR).NQWRSERQ  
-      IF( QWRSERT(NS) >= 0. )THEN
+      if( QWRSERT(NS) >= 0. )then
         ! *** Original Withdrawal/Return
-        IU=WITH_RET(NWR).IQWRU  
-        JU=WITH_RET(NWR).JQWRU  
-        KU=WITH_RET(NWR).KQWRU
+        IU = WITH_RET(NWR).IQWRU  
+        JU = WITH_RET(NWR).JQWRU  
+        KU = WITH_RET(NWR).KQWRU
         VDIR = 1.
-      ELSE
+      else
         ! *** Reverse Flow Withdrawal/Return
-        IU=WITH_RET(NWR).IQWRD  
-        JU=WITH_RET(NWR).JQWRD  
-        KU=WITH_RET(NWR).KQWRD 
+        IU = WITH_RET(NWR).IQWRD  
+        JU = WITH_RET(NWR).JQWRD  
+        KU = WITH_RET(NWR).KQWRD 
         VDIR = -1.
-      ENDIF
-      LU=LIJ(IU,JU)  
+      endif
+      LU = LIJ(IU,JU)  
 
       QWRABS = ABS(QWRSERT(NS))
       QMF = WITH_RET(NWR).QWR + QWRABS 
       QUMF = VDIR*QMF*( QMF/( HPK(LU,KU)*WITH_RET(NWR).BQWRMFU ) )   ! *** M4/S2
-      IF( WITH_RET(NWR).NQWRMFU ==  1 ) FUHJ(LU     ,KU) = -QUMF  
-      IF( WITH_RET(NWR).NQWRMFU ==  2 ) FVHJ(LU     ,KU) = -QUMF  
-      IF( WITH_RET(NWR).NQWRMFU ==  3 ) FUHJ(LEC(LU),KU) = -QUMF  
-      IF( WITH_RET(NWR).NQWRMFU ==  4 ) FVHJ(LNC(LU),KU) = -QUMF  
-      IF( WITH_RET(NWR).NQWRMFU == -1 ) FUHJ(LU     ,KU) = QUMF  
-      IF( WITH_RET(NWR).NQWRMFU == -2 ) FVHJ(LU     ,KU) = QUMF  
-      IF( WITH_RET(NWR).NQWRMFU == -3 ) FUHJ(LEC(LU),KU) = QUMF  
-      IF( WITH_RET(NWR).NQWRMFU == -4 ) FVHJ(LNC(LU),KU) = QUMF  
-    ENDIF  
-    IF( ABS(WITH_RET(NWR).NQWRMFD) > 0 )THEN  
+      if( WITH_RET(NWR).NQWRMFU ==  1 ) FUHJ(LU     ,KU) = -QUMF  
+      if( WITH_RET(NWR).NQWRMFU ==  2 ) FVHJ(LU     ,KU) = -QUMF  
+      if( WITH_RET(NWR).NQWRMFU ==  3 ) FUHJ(LEC(LU),KU) = -QUMF  
+      if( WITH_RET(NWR).NQWRMFU ==  4 ) FVHJ(LNC(LU),KU) = -QUMF  
+      if( WITH_RET(NWR).NQWRMFU == -1 ) FUHJ(LU     ,KU) = QUMF  
+      if( WITH_RET(NWR).NQWRMFU == -2 ) FVHJ(LU     ,KU) = QUMF  
+      if( WITH_RET(NWR).NQWRMFU == -3 ) FUHJ(LEC(LU),KU) = QUMF  
+      if( WITH_RET(NWR).NQWRMFU == -4 ) FVHJ(LNC(LU),KU) = QUMF  
+    endif  
+    if( ABS(WITH_RET(NWR).NQWRMFD) > 0 )then  
       ! *** Handle +/- Flows for Withdrawal/Return Structures
       NS = WITH_RET(NWR).NQWRSERQ  
-      IF( QWRSERT(NS) >= 0. )THEN
+      if( QWRSERT(NS) >= 0. )then
         ! *** Original Withdrawal/Return
-        ID=WITH_RET(NWR).IQWRD  
-        JD=WITH_RET(NWR).JQWRD  
-        KD=WITH_RET(NWR).KQWRD  
+        ID = WITH_RET(NWR).IQWRD  
+        JD = WITH_RET(NWR).JQWRD  
+        KD = WITH_RET(NWR).KQWRD  
         VDIR = 1.
-      ELSE
+      else
         ! *** Reverse Flow Withdrawal/Return
-        ID=WITH_RET(NWR).IQWRU  
-        JD=WITH_RET(NWR).JQWRU  
-        KD=WITH_RET(NWR).KQWRU 
+        ID = WITH_RET(NWR).IQWRU  
+        JD = WITH_RET(NWR).JQWRU  
+        KD = WITH_RET(NWR).KQWRU 
         VDIR = -1.
-      ENDIF
-      LD=LIJ(ID,JD)
+      endif
+      LD = LIJ(ID,JD)
 
       QWRABS = ABS(QWRSERT(NS))
       QMF = WITH_RET(NWR).QWR + QWRABS 
       QUMF = VDIR*QMF*( QMF/( HPK(LD,KD)*WITH_RET(NWR).BQWRMFD ) )   ! *** M4/S2
-      IF( WITH_RET(NWR).NQWRMFD ==  1 ) FUHJ(LD     ,KD) = -QUMF  
-      IF( WITH_RET(NWR).NQWRMFD ==  2 ) FVHJ(LD     ,KD) = -QUMF  
-      IF( WITH_RET(NWR).NQWRMFD ==  3 ) FUHJ(LEC(LD),KD) = -QUMF  
-      IF( WITH_RET(NWR).NQWRMFD ==  4 ) FVHJ(LNC(LD),KD) = -QUMF  
-      IF( WITH_RET(NWR).NQWRMFD == -1 ) FUHJ(LD     ,KD) = QUMF  
-      IF( WITH_RET(NWR).NQWRMFD == -2 ) FVHJ(LD     ,KD) = QUMF  
-      IF( WITH_RET(NWR).NQWRMFD == -3 ) FUHJ(LEC(LD),KD) = QUMF  
-      IF( WITH_RET(NWR).NQWRMFD == -4 ) FVHJ(LNC(LD),KD) = QUMF  
-    ENDIF  
-  ENDDO  
+      if( WITH_RET(NWR).NQWRMFD ==  1 ) FUHJ(LD     ,KD) = -QUMF  
+      if( WITH_RET(NWR).NQWRMFD ==  2 ) FVHJ(LD     ,KD) = -QUMF  
+      if( WITH_RET(NWR).NQWRMFD ==  3 ) FUHJ(LEC(LD),KD) = -QUMF  
+      if( WITH_RET(NWR).NQWRMFD ==  4 ) FVHJ(LNC(LD),KD) = -QUMF  
+      if( WITH_RET(NWR).NQWRMFD == -1 ) FUHJ(LD     ,KD) = QUMF  
+      if( WITH_RET(NWR).NQWRMFD == -2 ) FVHJ(LD     ,KD) = QUMF  
+      if( WITH_RET(NWR).NQWRMFD == -3 ) FUHJ(LEC(LD),KD) = QUMF  
+      if( WITH_RET(NWR).NQWRMFD == -4 ) FVHJ(LNC(LD),KD) = QUMF  
+    endif  
+  enddo  
   
   ! *** ADD QSER MOMENTUM FLUXES
-  DO LL=1,NQSIJ
-    IF( ABS(NQSMF(LL)) > 0 .AND. NQSMF(LL) /= 5 )THEN  
-      L=LQS(LL)
-      DO K=KSZ(L),KC
+  do LL = 1,NQSIJ
+    if( ABS(BCFL(LL).NQSMF) > 0 .and. BCFL(LL).NQSMF /= 5 )then  
+      L = BCFL(LL).L
+      do K = KSZ(L),KC
         ! *** Handle reversing flows in/out of domain
-        IF( QSERCELL(K,LL) >= 0. )THEN
+        if( QSERCELL(K,LL) >= 0. )then
           VDIR = 1.
-        ELSE
+        else
           VDIR = -1.
-        ENDIF
-        !LD = LIJ(IQS(LL),JQS(LL))
+        endif
+        !LD = LIJ(BCFL(LL).I,BCFL(LL).J)
         
         QMF = ABS(QSERCELL(K,LL))
-        QUMF = VDIR*QMF*( QMF/( HPK(L,K)*QWIDTH(LL) ) )   ! *** M4/S2
-        IF( NQSMF(LL) ==  1 ) FUHJ(L     ,K) = -QUMF  
-        IF( NQSMF(LL) ==  2 ) FVHJ(L     ,K) = -QUMF  
-        IF( NQSMF(LL) ==  3 ) FUHJ(LEC(L),K) = -QUMF  
-        IF( NQSMF(LL) ==  4 ) FVHJ(LNC(L),K) = -QUMF  
-        IF( NQSMF(LL) == -1 ) FUHJ(L     ,K) = QUMF  
-        IF( NQSMF(LL) == -2 ) FVHJ(L     ,K) = QUMF  
-        IF( NQSMF(LL) == -3 ) FUHJ(LEC(L),K) = QUMF  
-        IF( NQSMF(LL) == -4 ) FVHJ(LNC(L),K) = QUMF  
-      ENDDO
-    ENDIF  
-  ENDDO
+        QUMF = VDIR*QMF*( QMF/( HPK(L,K)*BCFL(LL).QWIDTH ) )   ! *** M4/S2
+        if( BCFL(LL).NQSMF ==  1 ) FUHJ(L     ,K) = -QUMF  
+        if( BCFL(LL).NQSMF ==  2 ) FVHJ(L     ,K) = -QUMF  
+        if( BCFL(LL).NQSMF ==  3 ) FUHJ(LEC(L),K) = -QUMF  
+        if( BCFL(LL).NQSMF ==  4 ) FVHJ(LNC(L),K) = -QUMF  
+        if( BCFL(LL).NQSMF == -1 ) FUHJ(L     ,K) = QUMF  
+        if( BCFL(LL).NQSMF == -2 ) FVHJ(L     ,K) = QUMF  
+        if( BCFL(LL).NQSMF == -3 ) FUHJ(LEC(L),K) = QUMF  
+        if( BCFL(LL).NQSMF == -4 ) FVHJ(LNC(L),K) = QUMF  
+      enddo
+    endif  
+  enddo
 
   ! *** Add propeller efflux velocity momentum
-  IF( ISPROPWASH == 2 .AND. NACTIVESHIPS > 0 )THEN
-    Call add_ship_momentum(FUHJ, FVHJ)
-  ENDIF
+  if( ISPROPWASH == 2 .and. NACTIVESHIPS > 0 )then
+    call add_ship_momentum(FUHJ, FVHJ)
+  endif
   
   !$OMP PARALLEL DEFAULT(SHARED)     
   ! **********************************************************************!  
-  ! ** BLOCK MOMENTUM FLUX ON LAND SIDE OF TRIANGULAR CELLS  
-  IF( ITRICELL > 0 )THEN
+  ! *** BLOCK MOMENTUM FLUX ON LAND SIDE OF TRIANGULAR CELLS  
+  if( ITRICELL > 0 )then
     !$OMP DO PRIVATE(ND,K,LP,L)
-    DO ND=1,NDM
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
+    do ND = 1,NDM
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
+          L = LKWET(LP,K,ND)  
           FUHU(L,K) = STCUV(L)*FUHU(L,K)
           FVHV(L,K) = STCUV(L)*FVHV(L,K)
-        ENDDO
-      ENDDO
-    ENDDO   ! ***  END OF DOMAIN
+        enddo
+      enddo
+    enddo   ! ***  END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
   
   ! *** *******************************************************************C
   !
   ! *** CALCULATE CORIOLIS AND CURVATURE ACCELERATION COEFFICIENTS
   !$OMP SINGLE
-  CACSUM=0. 
-  CFMAX=CF  
+  CACSUM = 0. 
+  CFMAX = CF  
   !$OMP END SINGLE
 
-  IF( ISCURVATURE )THEN
-    IF( ISDCCA == 0 )THEN
+  if( ISCURVATURE )then
+    if( ISDCCA == 0 )then
       ! *** STANDARD CALCULATIONS, NO DIAGNOSTICS
       !$OMP DO PRIVATE(ND,K,LP,L,LE,LN)
-      DO ND=1,NDM  
-        DO K=1,KC
-          DO LP=1,LLWET(K,ND)
-            L=LKWET(LP,K,ND)  
-            LE=LEC(L)
-            LN=LNC(L)
+      do ND = 1,NDM  
+        do K = 1,KC
+          do LP = 1,LLWET(K,ND)
+            L = LKWET(LP,K,ND)  
+            LE = LEC(L)
+            LN = LNC(L)
             CAC(L,K) = ( FCORC(L)*DXYP(L) + 0.5*SNLT*(V(LN,K) + V(L,K))*DYDI(L) - 0.5*SNLT*(U(LE,K) + U(L,K))*DXDJ(L) )*HP(L)
             CACSUM(ND) = CACSUM(ND)+CAC(L,K)
-          ENDDO
-        ENDDO
-      ENDDO   ! ***  END OF DOMAIN
+          enddo
+        enddo
+      enddo   ! ***  END OF DOMAIN
       !$OMP END DO
       
-    ELSE
+    else
       ! *** STANDARD CALCULATIONS, WITH DIAGNOSTICS
       !$OMP SINGLE
-      DO K=1,KC
-        DO L=2,LA
+      do K = 1,KC
+        do L = 2,LA
           LE = LEC(L)
           LN = LNC(L)
           CAC(L,K) = ( FCORC(L)*DXYP(L) + 0.5*SNLT*(V(LN,K) + V(L,K))*DYDI(L) - 0.5*SNLT*(U(LE,K) + U(L,K))*DXDJ(L) )*HP(L)
           CFEFF = ABS(CAC(L,K))*DXYIP(L)*HPI(L)
           CFMAX = MAX(CFMAX,CFEFF)
           CACSUM(1) = CACSUM(1)+CAC(L,K)
-        ENDDO
-      ENDDO
+        enddo
+      enddo
       !$OMP END SINGLE
-    ENDIF
+    endif
 
     ! *** ENSURE FCAY & FCAX ARE RESET
     !$OMP SINGLE
     CACSUMT = ABS(SUM(CACSUM(:)))
     !$OMP END SINGLE
 
-    IF( CACSUMT < 1.E-7 )THEN
+    if( CACSUMT < 1.E-7 )then
       !$OMP DO PRIVATE(ND,K,LP,L)
-      DO ND=1,NDM  
-        DO K=1,KC  
-          DO LP=1,LLWET(K,ND)
+      do ND = 1,NDM  
+        do K = 1,KC  
+          do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
             FCAX(L,K) = 0.
             FCAY(L,K) = 0.
-          ENDDO
-        ENDDO
-      ENDDO  
+          enddo
+        enddo
+      enddo  
       !$OMP END DO
-    ENDIF
-  ENDIF
+    endif
+  endif
 
   ! *** *******************************************************************C
   !
@@ -594,13 +603,13 @@ SUBROUTINE CALEXP
   !
   !----------------------------------------------------------------------C
 
-  ! **  STANDARD CALCULATION
-  IF( CACSUMT > 1.E-7 )THEN
+  ! ***  STANDARD CALCULATION
+  if( CACSUMT > 1.E-7 )then
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,LE,LN,LS,LW,LNW,LSE)
-    DO ND=1,NDM
+    do ND = 1,NDM
 
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
           LE = LEC(L)
           LN = LNC(L)  
@@ -610,64 +619,64 @@ SUBROUTINE CALEXP
           LSE = LSEC(L)  
           FCAX(L,K) = ROLD*FCAX(L,K) + 0.25*RNEW*SCAX(L)*(CAC(L,K)*(V(LN,K) + V(L,K)) + CAC(LW,K)*(V(LNW,K) + V(LW,K)))
           FCAY(L,K) = ROLD*FCAY(L,K) + 0.25*RNEW*SCAY(L)*(CAC(L,K)*(U(LE,K) + U(L,K)) + CAC(LS,K)*(U(LSE,K) + U(LS,K)))
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     !$OMP END DO
 
     !----------------------------------------------------------------------C
     !
     ! *** MODIFICATION FOR TYPE 2 OPEN BOUNDARIES
     !$OMP SINGLE
-    DO LL=1,NPBW
-      IF( ISPBW(LL) == 2 .OR. ISPBW(LL) == 5 )THEN
+    do LL = 1,NPBW
+      if( ISPBW(LL) == 2 .or. ISPBW(LL) == 5 )then
         L = LPBW(LL)+1
         LN = LNC(L)
-        DO K=KSZ(L),KC
+        do K = KSZ(L),KC
           FCAX(L,K) = 0.5*SCAX(L)*CAC(L,K)*(V(LN,K)+V(L,K))
-        ENDDO
-      ENDIF
-    ENDDO
+        enddo
+      endif
+    enddo
   
-    DO LL=1,NPBE
-      IF( ISPBE(LL) == 2 .OR. ISPBE(LL) == 5 )THEN
+    do LL = 1,NPBE
+      if( ISPBE(LL) == 2 .or. ISPBE(LL) == 5 )then
         L = LPBE(LL)
         LNW = LNWC(L)
-        DO K=KSZ(L),KC
+        do K = KSZ(L),KC
           FCAX(L,K) = 0.5*SCAX(L)*CAC(LWC(L),K)*(V(LNW,K)+V(LWC(L),K))
-        ENDDO
-      ENDIF
-    ENDDO
+        enddo
+      endif
+    enddo
   
-    DO LL=1,NPBS
-      IF( ISPBS(LL) == 2 .OR. ISPBS(LL) == 5 )THEN
+    do LL = 1,NPBS
+      if( ISPBS(LL) == 2 .or. ISPBS(LL) == 5 )then
         L = LNC(LPBS(LL))
-        DO K=KSZ(L),KC
+        do K = KSZ(L),KC
           FCAY(L,K) = 0.5*SCAY(L)*CAC(L,K)*(U(LEC(L),K)+U(L,K))
-        ENDDO
-      ENDIF
-    ENDDO
+        enddo
+      endif
+    enddo
   
-    DO LL=1,NPBN
-      IF( ISPBN(LL) == 2 .OR. ISPBN(LL) == 5 )THEN
+    do LL = 1,NPBN
+      if( ISPBN(LL) == 2 .or. ISPBN(LL) == 5 )then
         L = LPBN(LL)
         LS = LSC(L)
         LSE = LSEC(L)
-        DO K=KSZ(L),KC
+        do K = KSZ(L),KC
           FCAY(L,K) = 0.5*SCAY(L)*CAC(LS,K)*(U(LSE,K)+U(LS,K))
-        ENDDO
-      ENDIF
-    ENDDO
+        enddo
+      endif
+    enddo
     !$OMP END SINGLE
 
-  ENDIF    ! *** END OF CACSUMT > 1.E-7
+  endif    ! *** END OF CACSUMT > 1.E-7
 
   !----------------------------------------------------------------------C
   !  INITIALIZE EXTERNAL FORCINGS WITH GROSS MOMENTUM
   !$OMP DO PRIVATE(ND,K,LP,L,LE,LN,LS,LW)
-  DO ND=1,NDM
-    DO K=1,KC
-      DO LP=1,LLWET(K,ND)
+  do ND = 1,NDM
+    do K = 1,KC
+      do LP = 1,LLWET(K,ND)
         L = LKWET(LP,K,ND)  
         LE = LEC(L)
         LN = LNC(L)
@@ -675,55 +684,55 @@ SUBROUTINE CALEXP
         LW = LWC(L)
         FX(L,K) = FSGZU(L,K)*( FUHU(L,K)-FUHU(LW,K) + FVHU(LN,K)-FVHU(L,K) ) + FUHJ(L,K)   ! ***  M4/S2
         FY(L,K) = FSGZV(L,K)*( FVHV(L,K)-FVHV(LS,K) + FUHV(LE,K)-FUHV(L,K) ) + FVHJ(L,K)   ! ***  M4/S2
-      ENDDO
-    ENDDO
-  ENDDO
+      enddo
+    enddo
+  enddo
   !$OMP END DO
 
   ! *** TREAT BC'S NEAR EDGES
   !$OMP SINGLE
-  DO LL=1,NBCS
+  do LL = 1,NBCS
     ! *** BC CELL
     L = LBCS(LL)
-    DO K=KSZ(L),KC
+    do K = KSZ(L),KC
       FX(L,K) = SAAX(L)*FX(L,K) + FUHJ(L,K)   ! ***  M4/S2
       FY(L,K) = SAAY(L)*FY(L,K) + FVHJ(L,K)   ! ***  M4/S2
-    ENDDO
+    enddo
 
     ! *** EAST/WEST ADJACENT CELL
     L = MAX(1,LBERC(LL))
-    DO K=KSZ(L),KC
+    do K = KSZ(L),KC
       FX(L,K) = SAAX(L)*FX(L,K) + FUHJ(L,K)   ! ***  M4/S2
-    ENDDO
+    enddo
 
     ! *** NORTH/SOUTH ADJACENT CELL
     L = MAX(1, LBNRC(LL))
-    DO K=KSZ(L),KC
+    do K = KSZ(L),KC
       FY(L,K) = SAAY(L)*FY(L,K) + FVHJ(L,K)   ! ***  M4/S2
-    ENDDO
-  ENDDO
+    enddo
+  enddo
     
   ! *** Selective zero
-  IF( ISPROPWASH == 2 .AND. NACTIVESHIPS > 0 )THEN
-    DO I = 1, total_ships
-      IF( all_ships(i).efflux_vel > 0.0 )THEN
+  if( ISPROPWASH == 2 .and. NACTIVESHIPS > 0 )then
+    do I = 1, total_ships
+      if( all_ships(i).efflux_vel > 0.0 )then
         L = all_ships(i).pos.cell
         FUHJ(L,:)      = 0.0
         FUHJ(LEC(L),:) = 0.0
         FVHJ(L,:)      = 0.0
         FVHJ(LNC(L),:) = 0.0
-      ENDIF
-      IF( all_ships(i).ship.num_fixed_cells > 0 )THEN
-        DO NS = 1, all_ships(i).ship.num_fixed_cells
+      endif
+      if( all_ships(i).ship.num_fixed_cells > 0 )then
+        do NS = 1, all_ships(i).ship.num_fixed_cells
           L = all_ships(i).ship.fixed_cells(NS)
           FUHJ(L,:)      = 0.0
           FUHJ(LEC(L),:) = 0.0
           FVHJ(L,:)      = 0.0
           FVHJ(LNC(L),:) = 0.0
-        ENDDO
-      ENDIF
-    ENDDO
-  ENDIF
+        enddo
+      endif
+    enddo
+  endif
   
   !$OMP END SINGLE
 
@@ -732,44 +741,44 @@ SUBROUTINE CALEXP
   ! *** ADD VEGETATION DRAG TO HORIZONTAL ADVECTIVE ACCELERATIONS
   !
   !----------------------------------------------------------------------!
-  IF( ISVEG > 0 )THEN
+  if( ISVEG > 0 )then
     ! *** ADD IN MHK DEVICES, IF NEEDED
     !$OMP SINGLE
-    IF( LMHK )CALL MHKPWRDIS
+    if( LMHK )CALL MHKPWRDIS
     !$OMP END SINGLE
 
-    IF( ISDRY > 0 .AND. LADRY > 0 )THEN
+    if( ISDRY > 0 .and. LADRY > 0 )then
       ! *** UPDATE ACTIVE CELL BY LAYER LIST
       !$OMP DO PRIVATE(ND,K,LN,LP,L)
-      DO ND=1,NDM  
-        DO K=1,KC  
-          LN=0
-          DO LP=1,LLWET(K,ND)
-            L=LKWET(LP,K,ND)  
-            IF( LVEG(L) )THEN
+      do ND = 1,NDM  
+        do K = 1,KC  
+          LN = 0
+          do LP = 1,LLWET(K,ND)
+            L = LKWET(LP,K,ND)  
+            if( LVEG(L) )then
               LN = LN+1
               LKVEG(LN,K,ND) = L
-            ENDIF
-          ENDDO
-          LLVEG(K,ND)=LN
-        ENDDO
-      ENDDO
+            endif
+          enddo
+          LLVEG(K,ND) = LN
+        enddo
+      enddo
       !$OMP END DO
-    ENDIF
+    endif
     
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,LW,LE,LS,LN,LNW,LSE) &
     !$OMP    PRIVATE(UTMPATV,VTMPATU,UMAGTMP,VMAGTMP)
-    DO ND=1,NDM  
+    do ND = 1,NDM  
 
-      DO LP=1,LLVEG(KC,ND)
-        L=LKVEG(LP,KC,ND) 
+      do LP = 1,LLVEG(KC,ND)
+        L = LKVEG(LP,KC,ND) 
         FXVEGE(L) = 0.  
         FYVEGE(L) = 0.  
-      ENDDO  
+      enddo  
 
-      DO K=1,KC  
-        DO LP=1,LLVEG(K,ND)
-          L=LKVEG(LP,K,ND)
+      do K = 1,KC  
+        do LP = 1,LLVEG(K,ND)
+          L = LKVEG(LP,K,ND)
           LW = LWC(L)    !west cell
           LE = LEC(L)    !east cell
           LS = LSC(L)    !south cell
@@ -793,305 +802,323 @@ SUBROUTINE CALEXP
           !FXVEG/FXVEGE are added to the body forces as C_d(N/L^2)A|q|q
           FXVEGE(L) = FXVEGE(L) + FXVEG(L,K)*DZC(L,K)    !Integrating the vegetative resistance [m/s] used in FUHDXE
           FYVEGE(L) = FYVEGE(L) + FYVEG(L,K)*DZC(L,K)    !Integrating the vegetative resistance [m/s] used in FVHDYE
-        ENDDO
-      ENDDO
+        enddo
+      enddo
 
       ! *** ADD VEGETATIVE DRAG TO INTERNAL MODE SHEAR AND EXTERNAL MODE MOMENTUM
-      IF(ISVEG == 1) THEN
-        DO K=1,KC  
-          DO LP=1,LLVEG(K,ND)
-            L=LKVEG(LP,K,ND)
-            IF( (K-KSZ(L)+1) > INT(VEGK(L)+1.) )CYCLE
-            !***                 (        m/s       )   m/s    m2
+      if(ISVEG == 1 )then
+        do K = 1,KC  
+          do LP = 1,LLVEG(K,ND)
+            L = LKVEG(LP,K,ND)
+            if( (K-KSZ(L)+1) > INT(VEGK(L)+1.) ) CYCLE
             FX(L,K) = FX(L,K) + (FXVEG(L,K)-FXVEGE(L))*U(L,K)*DXYU(L) ![m^4/s^2] adding vegetative resistance to the body force (no net force added) FXVEGE goes into FUHDXE for momentum conservation
             FY(L,K) = FY(L,K) + (FYVEG(L,K)-FYVEGE(L))*V(L,K)*DXYV(L) ![m^4/s^2] adding vegetative resistance to the body force (no net force added) FYVEGE goes into FVHDYE for momentum conservation
-          ENDDO
-        ENDDO
-      ELSE
-        DO K=1,KC
-          DO LP=1,LLVEG(K,ND)
+          enddo
+        enddo
+      else
+        do K = 1,KC
+          do LP = 1,LLVEG(K,ND)
             L = LKVEG(LP,K,ND)
-            IF( (K-KSZ(L)+1) > INT(VEGK(L)+1.) ) CYCLE
-            ! ***                m/s        m/s    m2
-            FX(L,K) = FX(L,K) + FXVEG(L,K)*U(L,K)*DXYU(L) ! *** (m^4/s^2)
-            FY(L,K) = FY(L,K) + FYVEG(L,K)*V(L,K)*DXYV(L) ! *** (m^4/s^2)
-          ENDDO  
-        ENDDO
-      ENDIF
+            if( (K-KSZ(L)+1) > INT(VEGK(L)+1.) ) CYCLE
+            ! ***                m3/s      m/s   
+            FX(L,K) = FX(L,K) + FXVEG(L,K)*U(L,K) ! *** (m^4/s^2)
+            FY(L,K) = FY(L,K) + FYVEG(L,K)*V(L,K) ! *** (m^4/s^2)
+          enddo  
+        enddo
+      endif
       
       ! *** CONVERT THE AVG FXVEGE/FYVEGE TO TOTAL FXVEGE/FYVEGE
-      DO LP=1,LLVEG(KC,ND)
-        L=LKVEG(LP,KC,ND) 
+      do LP = 1,LLVEG(KC,ND)
+        L = LKVEG(LP,KC,ND) 
         FXVEGE(L) = FXVEGE(L)*HUI(L)*VEGK(L) !Calculate vegetative dissipation for FUHDYE for momentum conservation in CALPUV (need to have sum of forces, not average provided to CALPUV)
         FYVEGE(L) = FYVEGE(L)*HVI(L)*VEGK(L) !Calculate vegetative dissipation for FVHDXE for momentum conservation in CALPUV (need to have sum of forces, not average provided to CALPUV)
-      ENDDO
+      enddo
   
-      IF( LMHK )THEN
-        DO LP=1,LLVEG(KC,ND)
-          L=LKVEG(LP,KC,ND) 
+      if( LMHK )then
+        do LP = 1,LLVEG(KC,ND)
+          L = LKVEG(LP,KC,ND) 
           FXVEGE(L) = FXVEGE(L) + FXMHKE(L)   ! Add MHK to vegetative dissipation in FUHDYE for momentum conservation in CALPUV multiply by HUI took place in MHKPWRDIS
           FYVEGE(L) = FYVEGE(L) + FYMHKE(L)   ! Add MHK to vegetative dissipation in FVHDXE for momentum conservation in CALPUV multiply by HVI took place in MHKPWRDIS
           FXVEGE(L) = FXVEGE(L) + FXSUPE(L)   ! Add MHK support to vegetative dissipation in FUHDYE for momentum conservation in CALPUV
           FYVEGE(L) = FYVEGE(L) + FYSUPE(L)   ! Add MHK support to vegetative dissipation in FVHDXE for momentum conservation in CALPUV
-        ENDDO
-      ENDIF
+        enddo
+      endif
       
-    ENDDO   ! *** END OF DOMAIN
+    enddo   ! *** END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
 
   ! *** *******************************************************************!
   !
   ! *** ADD HORIZONTAL MOMENTUM DIFFUSION TO ADVECTIVE ACCELERATIONS
   !
   !----------------------------------------------------------------------!
-  IF( ISHDMF >= 1 )THEN
+  if( ISHDMF >= 1 )then
     ! *** Modification for open boundaries for large cell aspect ratios
     !$OMP SINGLE
-    DO LL=1,NPBW
-      IF( ISPBW(LL) == 0 .OR. ISPBW(LL) == 1 .OR. ISPBW(LL) == 4 )THEN
+    do LL = 1,NPBW
+      if( ISPBW(LL) == 0 .or. ISPBW(LL) == 1 .or. ISPBW(LL) == 4 )then
         L   = LEC(LPBW(LL))
         LE  = LEC(L)
         LEE = LEC(LE)
         ! *** Both adjacent and connected cell must both meet aspect criteria
-        IF( MAX(DXP(LE),DYP(LE)) / MIN(DXP(LE),DYP(LE)) > 4.0 )THEN
-          IF( MAX(DXP(LEE),DYP(LEE)) / MIN(DXP(LEE),DYP(LEE)) > 4.0 )THEN
-            DO K=KSZ(LE),KC
+        if( MAX(DXP(LE),DYP(LE)) / MIN(DXP(LE),DYP(LE)) > 4.0 )then
+          if( MAX(DXP(LEE),DYP(LEE)) / MIN(DXP(LEE),DYP(LEE)) > 4.0 )then
+            do K = KSZ(LE),KC
               FMDUY(LE,K) = 0.0
-            ENDDO
-            DO K=KSZ(LEE),KC
+            enddo
+            do K = KSZ(LEE),KC
               FMDUY(LEE,K) = 0.0
-            ENDDO
-          ENDIF
-        ENDIF
-      ENDIF
-    ENDDO
+            enddo
+          endif
+        endif
+      endif
+    enddo
   
-    DO LL=1,NPBE
-      IF( ISPBE(LL) == 0 .OR. ISPBE(LL) == 1 .OR. ISPBE(LL) == 4 )THEN
+    do LL = 1,NPBE
+      if( ISPBE(LL) == 0 .or. ISPBE(LL) == 1 .or. ISPBE(LL) == 4 )then
         L   = LPBE(LL)
         LW  = LWC(L)
         LWW = LEC(LW)
         ! *** Both adjacent and connected cell must both meet aspect criteria
-        IF( MAX(DXP(LW),DYP(LW)) / MIN(DXP(LW),DYP(LW)) > 4.0 )THEN
-          IF( MAX(DXP(LWW),DYP(LWW)) / MIN(DXP(LWW),DYP(LWW)) > 4.0 )THEN
-            DO K=KSZ(LW),KC
+        if( MAX(DXP(LW),DYP(LW)) / MIN(DXP(LW),DYP(LW)) > 4.0 )then
+          if( MAX(DXP(LWW),DYP(LWW)) / MIN(DXP(LWW),DYP(LWW)) > 4.0 )then
+            do K = KSZ(LW),KC
               FMDUY(LW,K) = 0.0
-            ENDDO
-            DO K=KSZ(LWW),KC
+            enddo
+            do K = KSZ(LWW),KC
               FMDUY(LWW,K) = 0.0
-            ENDDO
-          ENDIF
-        ENDIF
-      ENDIF
-    ENDDO
+            enddo
+          endif
+        endif
+      endif
+    enddo
   
-    DO LL=1,NPBS
-      IF( ISPBS(LL) == 0 .OR. ISPBS(LL) == 1 .OR. ISPBS(LL) == 4 )THEN
+    do LL = 1,NPBS
+      if( ISPBS(LL) == 0 .or. ISPBS(LL) == 1 .or. ISPBS(LL) == 4 )then
         L = LPBS(LL)
         LN = LNC(L)
         LNN = LEC(LN)
         ! *** Both adjacent and connected cell must both meet aspect criteria
-        IF( MAX(DXP(LN),DYP(LN)) / MIN(DXP(LN),DYP(LN)) > 4.0 )THEN
-          IF( MAX(DXP(LNN),DYP(LNN)) / MIN(DXP(LNN),DYP(LNN)) > 4.0 )THEN
-            DO K=KSZ(LN),KC
+        if( MAX(DXP(LN),DYP(LN)) / MIN(DXP(LN),DYP(LN)) > 4.0 )then
+          if( MAX(DXP(LNN),DYP(LNN)) / MIN(DXP(LNN),DYP(LNN)) > 4.0 )then
+            do K = KSZ(LN),KC
               FMDUY(LN,K) = 0.0
-            ENDDO
-            DO K=KSZ(LNN),KC
+            enddo
+            do K = KSZ(LNN),KC
               FMDUY(LNN,K) = 0.0
-            ENDDO
-          ENDIF
-        ENDIF
-      ENDIF
-    ENDDO
+            enddo
+          endif
+        endif
+      endif
+    enddo
   
-    DO LL=1,NPBN
-      IF( ISPBN(LL) == 0 .OR. ISPBN(LL) == 1 .OR. ISPBN(LL) == 4 )THEN
+    do LL = 1,NPBN
+      if( ISPBN(LL) == 0 .or. ISPBN(LL) == 1 .or. ISPBN(LL) == 4 )then
         L = LPBN(LL)
         LS = LSC(L)
         LSS = LEC(LS)
         ! *** Both adjacent and connected cell must both meet aspect criteria
-        IF( MAX(DXP(LS),DYP(LS)) / MIN(DXP(LS),DYP(LS)) > 4.0 )THEN
-          IF( MAX(DXP(LSS),DYP(LSS)) / MIN(DXP(LSS),DYP(LSS)) > 4.0 )THEN
-            DO K=KSZ(LS),KC
+        if( MAX(DXP(LS),DYP(LS)) / MIN(DXP(LS),DYP(LS)) > 4.0 )then
+          if( MAX(DXP(LSS),DYP(LSS)) / MIN(DXP(LSS),DYP(LSS)) > 4.0 )then
+            do K = KSZ(LS),KC
               FMDUY(LS,K) = 0.0
-            ENDDO
-            DO K=KSZ(LSS),KC
+            enddo
+            do K = KSZ(LSS),KC
               FMDUY(LSS,K) = 0.0
-            ENDDO
-          ENDIF
-        ENDIF
-      ENDIF
-    ENDDO
+            enddo
+          endif
+        endif
+      endif
+    enddo
     !$OMP END SINGLE
       
     !$OMP DO PRIVATE(ND,K,LP,L,LE,LS,LN,LW,FMDUY_TMP,FMDVX_TMP)
-    DO ND=1,NDM  
-      DO K=1,KC
-        DO LP=1,LLHDMF(K,ND)
+    do ND = 1,NDM  
+      do K = 1,KC
+        do LP = 1,LLHDMF(K,ND)
           L = LKHDMF(LP,K,ND)
           ! *** THE FOLLOWING IS FROM AQEA 2015 CODE
-          LS=LSC(L)
-          LN=LNC(L)  
-          LW=LWC(L)
-          LE=LEC(L)
-          ! ** CALCULATE DIFFUSIVE FLUX ON THE NORTHERN EXTERNAL BOUNDARY  
-          IF( SVB(LN) < 0.5  )THEN
-            ! ** DXV1 IS 0 ON NORTHERN CLOSED BOUNDARY
-            ! ** DYU1 IS CALCULATED USING THE U1 CLOSEST TO THE WALL AND 0
+          LS = LSC(L)
+          LN = LNC(L)  
+          LW = LWC(L)
+          LE = LEC(L)
+          ! *** CALCULATE DIFFUSIVE FLUX ON THE NORTHERN EXTERNAL BOUNDARY  
+          if( SVB(LN) < 0.5  )then
+            ! *** DXV1 IS 0 ON NORTHERN CLOSED BOUNDARY
+            ! *** DYU1 IS CALCULATED USING THE U1 CLOSEST TO THE WALL AND 0
             FMDUY_TMP = DXU(L)*H1C(L)*AHC(L,K)*(-1.*U1(L,K)/DYU(L))
             FX(L,K) = FX(L,K) - SUB3D(L,K)*SDX(L)*( FMDUX(L,K) - FMDUX(LW,K) + FMDUY_TMP   - FMDUY(L,K) )
-          ELSE
+          else
             FX(L,K) = FX(L,K) - SUB3D(L,K)*SDX(L)*( FMDUX(L,K) - FMDUX(LW,K) + FMDUY(LN,K) - FMDUY(L,K) )
-          END IF
+          endif
             
-          ! ** CALCULATE DIFFUSIVE FLUX ON THE EASTERN EXTERNAL BOUNDARY  
-          IF( SUB(LE) < 0.5 )THEN
-            ! ** DXV1 IS 0 IS CALCUALATED USING V1 CLOSEST TO THE WALL AND 0
-            ! ** DYU1 IS 0 ON EASTERN CLOSED BOUNDARY
+          ! *** CALCULATE DIFFUSIVE FLUX ON THE EASTERN EXTERNAL BOUNDARY  
+          if( SUB(LE) < 0.5 )then
+            ! *** DXV1 IS 0 IS CALCUALATED USING V1 CLOSEST TO THE WALL AND 0
+            ! *** DYU1 IS 0 ON EASTERN CLOSED BOUNDARY
             FMDVX_TMP = (DYU(L))*H1C(L)*AHC(L,K)*((-1.*V1(L,K)/DXU(L)))
             FY(L,K) = FY(L,K) - SVB3D(L,K)*SDY(L)*( FMDVY(L,K) - FMDVY(LS,K) + FMDVX_TMP   - FMDVX(L,K) )
-          ELSE 
+          else 
             FY(L,K) = FY(L,K) - SVB3D(L,K)*SDY(L)*( FMDVY(L,K) - FMDVY(LS,K) + FMDVX(LE,K) - FMDVX(L,K) )
-          END IF
-        ENDDO  
-      ENDDO
-    ENDDO   ! *** END OF DOMAIN
+          endif
+        enddo  
+      enddo
+    enddo   ! *** END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
   
   ! *** *******************************************************************C
   !
   ! *** ADD BODY FORCE TO ADVECTIVE ACCELERATIONS
-  ! *** DISTRIBUTE UNIFORMLY OVER ALL LAYERS IF ISBODYF=1
-  ! *** DISTRIBUTE OVER SURFACE LAYER IF ISBODYF=2
+  ! *** DISTRIBUTE UNIFORMLY OVER ALL LAYERS IF ISBODYF = 1
+  ! *** DISTRIBUTE OVER SURFACE LAYER IF ISBODYF = 2
   !
   !----------------------------------------------------------------------C
-  IF( ISBODYF == 1 )THEN
+  if( ISBODYF == 1 )then
     !$OMP DO PRIVATE(ND,K,LP,L)
-    DO ND=1,NDM  
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
+    do ND = 1,NDM  
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
+          L = LKWET(LP,K,ND)  
           FX(L,K) = FX(L,K) - DYU(L)*HU(L)*FBODYFX(L,K)
           FY(L,K) = FY(L,K) - DXV(L)*HV(L)*FBODYFY(L,K)
-        ENDDO
-      ENDDO
-    ENDDO   ! *** END OF DOMAIN
+        enddo
+      enddo
+    enddo   ! *** END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
   
-  IF( ISBODYF == 2 )THEN
+  if( ISBODYF == 2 )then
     !$OMP DO PRIVATE(ND,LF,LL,LP,L)
-    DO ND=1,NDM  
-      LF=(ND-1)*LDMWET+1  
-      LL=MIN(LF+LDMWET-1,LAWET)
-      DO LP=LF,LL
-        L=LWET(LP)
+    do ND = 1,NDM  
+      LF = (ND-1)*LDMWET+1  
+      LL = MIN(LF+LDMWET-1,LAWET)
+      do LP = LF,LL
+        L = LWET(LP)
         FX(L,KC) = FX(L,KC) - DZIC(L,KC)*DYU(L)*HU(L)*FBODYFX(L,KC)
         FY(L,KC) = FY(L,KC) - DZIC(L,KC)*DXV(L)*HV(L)*FBODYFY(L,KC)
-      ENDDO
-    ENDDO   ! *** END OF DOMAIN
+      enddo
+    enddo   ! *** END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
   
   ! *** *******************************************************************C
   !
   ! *** ADD EXPLICIT NONHYDROSTATIC PRESSURE
   !
-  IF( KC > 1 .AND. ISPNHYDS >= 1 )THEN
+  if( KC > 1 .and. ISPNHYDS >= 1 )then
     !$OMP DO PRIVATE(ND,L,LP,K,TMPVAL) 
-    DO ND=1,NDM  
-      DO LP=1,LLWET(K,ND)
-        L=LKWET(LP,K,ND)  
+    do ND = 1,NDM  
+      do LP = 1,LLWET(K,ND)
+        L = LKWET(LP,K,ND)  
         TMPVAL    = 2./( DZC(L,KSZ(L)) + DZC(L,KSZ(L)+1) )
         DZPC(L,1) = TMPVAL*(PNHYDS(L,2)-PNHYDS(L,1))
-      ENDDO
-    ENDDO  
+      enddo
+    enddo  
     !$OMP END DO
   
     !$OMP DO PRIVATE(ND,L,LP,TMPVAL) 
-    DO ND=1,NDM  
-      DO LP=1,LLWET(K,ND)
-        L=LKWET(LP,K,ND)  
+    do ND = 1,NDM  
+      do LP = 1,LLWET(K,ND)
+        L = LKWET(LP,K,ND)  
         TMPVAL     = 2./( DZC(L,KC) + DZC(L,KC-1) )
         DZPC(L,KC) = TMPVAL*(PNHYDS(L,KC)-PNHYDS(L,KC-1))
-      ENDDO
-    ENDDO  
+      enddo
+    enddo  
     !$OMP END DO
 
-    IF( KC >= 3 )THEN
+    if( KC >= 3 )then
       !$OMP DO PRIVATE(ND,K,LP,L,TMPVAL)
-      DO ND=1,NDM  
-        DO K=2,KS
-          DO LP=1,LLWET(K-1,ND)
-            L=LKWET(LP,K-1,ND) 
+      do ND = 1,NDM  
+        do K = 2,KS
+          do LP = 1,LLWET(K-1,ND)
+            L = LKWET(LP,K-1,ND) 
             TMPVAL    = 2./( DZC(L,K+1)+2.*DZC(L,K)+DZC(L,K-1) )
             DZPC(L,K) = TMPVAL*(PNHYDS(L,K+1)-PNHYDS(L,K-1))
-          ENDDO
-        ENDDO
-      ENDDO  
+          enddo
+        enddo
+      enddo  
       !$OMP END DO
-    ENDIF
+    endif
   
    !$OMP DO PRIVATE(ND,K,LP,L,LS,LW,DZPU,DZPV)
-    DO ND=1,NDM  
-      DO K=1,KC  
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
-          LW=LWC(L)
-          LS=LSC(L)
-          DZPU=0.5*(DZPC(L,K)+DZPC(LW,K))
-          DZPV=0.5*(DZPC(L,K)+DZPC(LS,K))
+    do ND = 1,NDM  
+      do K = 1,KC  
+        do LP = 1,LLWET(K,ND)
+          L = LKWET(LP,K,ND)  
+          LW = LWC(L)
+          LS = LSC(L)
+          DZPU = 0.5*(DZPC(L,K)+DZPC(LW,K))
+          DZPV = 0.5*(DZPC(L,K)+DZPC(LS,K))
           FX(L,K) = FX(L,K) + SUB3D(L,K)*DYU(L)*( HU(L)*(PNHYDS(L,K)-PNHYDS(LW,K) ) - ( BELV(L)-BELV(LW) + ZZ(L,K) *(HP(L)-HP(LW)) )*DZPU )
           FY(L,K) = FY(L,K) + SVB3D(L,K)*DXV(L)*( HV(L)*(PNHYDS(L,K)-PNHYDS(LS,K) ) - ( BELV(L)-BELV(LS) + ZZ(LS,K)*(HP(L)-HP(LS)) )*DZPV )
-        ENDDO
-      ENDDO
-    ENDDO   ! *** END OF DOMAIN
+        enddo
+      enddo
+    enddo   ! *** END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
   
-  IF( IATMP > 0 .OR. PRESS.IFLAG > 0 .OR. ICYCLONE > 0 )THEN
+  if( IATMP > 0 .or. PRESS.IFLAG > 0 .or. ICYCLONE > 0 )then
     ! *** ADD AIR PRESSURE GRADIENT (PRESS.IFLAG ASSUMES A SPATIALLY VARYING PRESSURE FIELD)
     !$OMP DO PRIVATE(ND,K,LP,L,LS,LW)
-    DO ND=1,NDM  
-      DO K=1,KC  
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
-          LW=LWC(L)
-          LS=LSC(L)
+    do ND = 1,NDM  
+      do K = 1,KC  
+        do LP = 1,LLWET(K,ND)
+          L = LKWET(LP,K,ND)  
+          LW = LWC(L)
+          LS = LSC(L)
           ! ***                            M       M         M2/S2        
           FX(L,K) = FX(L,K) + SUB3D(L,K)*DYU(L)*HU(L)*( ATMP(L)-ATMP(LW) )
           FY(L,K) = FY(L,K) + SVB3D(L,K)*DXV(L)*HV(L)*( ATMP(L)-ATMP(LS) )
-        ENDDO
-      ENDDO
-    ENDDO   ! *** END OF DOMAIN
+        enddo
+      enddo
+    enddo   ! *** END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
 
   !----------------------------------------------------------------------!
   !
   ! *** ADD NET WAVE REYNOLDS STRESSES TO EXTERNAL ADVECTIVE ACCEL.
   !
-  IF( ISWAVE == 2 .OR. ISWAVE == 4 )THEN
+  if( ISWAVE == 2 .or. ISWAVE == 4 )then
   
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L) 
-    DO ND=1,NDM  
-      LF=(ND-1)*NWVCELLS+1  
-      LL=MIN(LF+NWVCELLS-1,NWVCELLS)
+    do ND = 1,NDM  
+      LF = (ND-1)*NWVCELLS+1  
+      LL = MIN(LF+NWVCELLS-1,NWVCELLS)
       
-      DO K=1,KC  
-        DO LP=LF,LL
+      do K = 1,KC  
+        do LP = LF,LL
           L = LWVCELL(LP)
-          IF( LKSZ(L,K) )CYCLE  
+          if( LKSZ(L,K) ) CYCLE  
           FX(L,K) = FX(L,K) + SUB3D(L,K)*WVFACT*SAAX(L)*FXWAVE(L,K)
           FY(L,K) = FY(L,K) + SVB3D(L,K)*WVFACT*SAAY(L)*FYWAVE(L,K)
-        ENDDO
-      ENDDO
-    ENDDO   ! *** END OF DOMAIN
+        enddo
+      enddo
+    enddo   ! *** END OF DOMAIN
     !$OMP END DO
   
-  ENDIF
+  endif
+  
+  ! *** Filter cells which have been impacted by newly wet cells
+  if( ISDRY > 0 )then
+    !$OMP DO PRIVATE(ND,K,LP,L)
+    do ND = 1,NDM   
+      do K = 1,KC  
+        do LP = 1,LLWET(K,ND)
+          L = LKWET(LP,K,ND)
+          if( NWET(L) > 2*NTSTBC ) CYCLE
+          
+          FX(L,K) = FX1(L,K) + SIGN(MAX(1E-8,MIN( ABS(FX(L,K)-FX1(L,K)), ABS(2.0*FX1(L,K)) )), FX(L,K)-FX1(L,K) )
+          FY(L,K) = FY1(L,K) + SIGN(MAX(1E-8,MIN( ABS(FY(L,K)-FY1(L,K)), ABS(2.0*FY1(L,K)) )), FY(L,K)-FY1(L,K) )
+          FX1(L,K) = FX(L,K)
+          FY1(L,K) = FY(L,K)
+        enddo
+      enddo
+    enddo   ! *** END OF DOMAIN
+    !$OMP END DO
+  endif
   
   ! *** *******************************************************************!
   !
@@ -1099,271 +1126,283 @@ SUBROUTINE CALEXP
   !
   !----------------------------------------------------------------------!
   !$OMP DO PRIVATE(ND,K,LP,L)
-  DO ND=1,NDM   
-    DO K=1,KC  
-      DO LP=1,LLWET(K,ND)
+  do ND = 1,NDM   
+    do K = 1,KC  
+      do LP = 1,LLWET(K,ND)
         L = LKWET(LP,K,ND)  
         FCAXE(L) = FCAXE(L) + FCAX(L,K)*SGZU(L,K)
         FCAYE(L) = FCAYE(L) + FCAY(L,K)*SGZV(L,K)
         FXE(L) = FXE(L) + FX(L,K)*SGZU(L,K)
         FYE(L) = FYE(L) + FY(L,K)*SGZV(L,K)
-      ENDDO
-    ENDDO
-  ENDDO   ! *** END OF DOMAIN
+      enddo
+    enddo
+  enddo   ! *** END OF DOMAIN
   !$OMP END DO
 
   ! *** *******************************************************************!  
-  ! **  COMPLETE CALCULATION OF INTERNAL MODE ADVECTIVE ACCELERATIONS  
-  IF( KC > 1 )THEN
+  ! ***  COMPLETE CALCULATION OF INTERNAL MODE ADVECTIVE ACCELERATIONS  
+  if( KC > 1 )then
     ! *** LIMIT THE VERTICAL MOMENTUM AT THE KSZ DIFFERENCES
   
     !$OMP DO PRIVATE(ND,K,LP,L)
-    DO ND=1,NDM  
-      DO K=1,KC  
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
+    do ND = 1,NDM  
+      do K = 1,KC  
+        do LP = 1,LLWET(K,ND)
+          L = LKWET(LP,K,ND)  
           FX(L,K) = FX(L,K) + SAAX(L)*(FWU(L,K)-FWU(L,K-1))*DZIC(L,K)
           FY(L,K) = FY(L,K) + SAAY(L)*(FWV(L,K)-FWV(L,K-1))*DZIC(L,K)
-        ENDDO
-      ENDDO
-    ENDDO   ! *** END OF DOMAIN
+        enddo
+      enddo
+    enddo   ! *** END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
   
   ! *** *******************************************************************C
   !
   ! *** CALCULATE EXPLICIT INTERNAL BUOYANCY FORCINGS CENTERED AT N FOR
   ! *** THREE TIME LEVEL STEP AND AT (N+1/2) FOR TWO TIME LEVEL STEP
-  ! *** SBX=SBX*0.5*DYU & SBY=SBY*0.5*DXV
+  ! *** SBX = SBX*0.5*DYU & SBY = SBY*0.5*DXV
   !
   !----------------------------------------------------------------------C
-  IF( BSC > 1.E-6 .AND. KC > 1 )THEN
+  if( BSC > 1.E-6 .and. KC > 1 )then
 
-    IF( IGRIDV == 1 )THEN
+    if( IGRIDV == 1 )then
       ! *** SIGMA-ZED BOUYANCY SHEARS
       !$OMP DO PRIVATE(ND,K,LP,L,LS,LW) 
-      DO ND=1,NDM  
-        DO K=1,KS  
-          DO LP=1,LLWET(K,ND)
-            L=LKWET(LP,K,ND)  
-            LS=LSC(L) 
-            LW=LWC(L)
+      do ND = 1,NDM  
+        do K = 1,KS  
+          do LP = 1,LLWET(K,ND)
+            L = LKWET(LP,K,ND)  
+            LS = LSC(L) 
+            LW = LWC(L)
             FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SUB3D(L,K)*SBX(L)*GP*HU(L)*( HU(L)*( (B(L,K+1)-B(LW,K+1))*SGZU(L,K+1) + (B(L,K)-B(LW,K))*SGZU(L,K) )                                &
-                                                    - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
+                                                                                 - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
             FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SVB3D(L,K)*SBY(L)*GP*HV(L)*( HV(L)*( (B(L,K+1)-B(LS,K+1))*SGZV(L,K+1) + (B(L,K)-B(LS,K))*SGZV(L,K) )                                &
-                                                    - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) )  
-          ENDDO  
-        ENDDO  
-      ENDDO
+                                                                                 - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) ) 
+          enddo  
+        enddo  
+      enddo
       !$OMP END DO
       
-    ELSEIF( IGRIDV == 2 )THEN
+    elseif( IGRIDV > 1 )then
       ! *** SIGMA-ZED BOUYANCY SHEARS
       !$OMP DO PRIVATE(ND,K,LP,L,LS,LW) 
-      DO ND=1,NDM
+      do ND = 1,NDM
         ! *** ALL LAYERS
-        DO K=1,KS
-          DO LP=1,LLWET(K,ND)
+        do K = 1,KS
+          do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND) 
             LS = LSC(L) 
             LW = LWC(L)
             FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SUB3D(L,K)*SBX(L)*GP*HU(L)*( BW(L,K+1)*HPW(L)*SGZW(L,K+1) - BE(LW,K+1)*HPE(LW)*SGZE(LW,K+1) + BW(L,K)*HPW(L)*SGZW(L,K) - BE(LW,K)*HPE(LW)*SGZE(LW,K)   &
-                                                    - (BW(L,K+1)-BW(L,K)+BE(LW,K+1)-BE(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
+                                                                        - (BW(L,K+1)-BW(L,K)+BE(LW,K+1) - BE(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
             FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SVB3D(L,K)*SBY(L)*GP*HV(L)*( BS(L,K+1)*HPS(L)*SGZS(L,K+1) - BN(LS,K+1)*HPN(LS)*SGZN(LS,K+1) + BS(L,K)*HPS(L)*SGZS(L,K) - BN(LS,K)*HPN(LS)*SGZN(LS,K)   &
-                                                    - (BS(L,K+1)-BS(L,K)+BN(LS,K+1)-BN(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) )  
-          ENDDO  
-        ENDDO
-      ENDDO
+                                                                        - (BS(L,K+1)-BS(L,K)+BN(LS,K+1) - BN(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) )  
+          enddo  
+        enddo
+      enddo
       !$OMP END DO
       
 
-    ELSEIF( IINTPG == 0 )THEN  
-      ! *** IINTPG=0  
+    elseif( IINTPG == 0 )then  
+      ! *** IINTPG = 0  
       !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,LS,LW) 
-      DO ND=1,NDM  
-        LF=(ND-1)*LDMWET+1  
-        LL=MIN(LF+LDMWET-1,LAWET)
-      
-        DO K=1,KS  
-          DO LP=LF,LL
-            L = LWET(LP)  
+      do ND = 1,NDM  
+        do K = 1,KS  
+        do LP = 1,LLWET(K,ND)
+          L  = LKWET(LP,K,ND)  
             LS = LSC(L)
             LW = LWC(L)
             FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( HU(L)*( (B(L,K+1)-B(LW,K+1))*DZCK(K+1) + (B(L,K)-B(LW,K))*DZCK(K) ) - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*(BELV(L)-BELV(LW)+Z(L,K)*(HP(L)-HP(LW))) )
             FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( HV(L)*( (B(L,K+1)-B(LS,K+1))*DZCK(K+1) + (B(L,K)-B(LS,K))*DZCK(K) ) - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*(BELV(L)-BELV(LS)+Z(L,K)*(HP(L)-HP(LS))) )
-          ENDDO
-        ENDDO
-      ENDDO
+          enddo
+        enddo
+      enddo
       !$OMP END DO  
   
-    ELSEIF( IINTPG == 1 )THEN
+    elseif( IINTPG == 1 )then
       ! *** JACOBIAN
       !$OMP SINGLE
-      K=1
-      DO L=2,LA
-        LW=LWC(L)
-        LS=LSC(L)
+      K = 1
+      do L = 2,LA
+        LW = LWC(L)
+        LS = LSC(L)
         FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( 0.5*HU(L)*( (B(L,K+2)-B(LW,K+2))*DZC(L,K+2)+(B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+(B(L,K  )-B(LW,K  ))*DZC(L,K  )+(B(L,K  )-B(LW,K  ))*DZC(L,K  ) ) &
                    -0.5*(B(L,K+2)-B(L,K+1)+B(LW,K+2)-B(LW,K+1))*(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW)))-0.5*(B(L,K  )-B(L,K  )+B(LW,K  )-B(LW,K  ))*(BELV(L)-BELV(LW)+Z(L,K-1)*(HP(L)-HP(LW))) )
   
         FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( 0.5*HV(L)*( (B(L,K+2)-B(LS ,K+2))*DZC(L,K+2)+(B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+(B(L,K  )-B(LS ,K  ))*DZC(L,K  )+(B(L,K  )-B(LS ,K  ))*DZC(L,K  ) ) &
                    -0.5*(B(L,K+2)-B(L,K+1)+B(LS ,K+2)-B(LS ,K+1))*(BELV(L)-BELV(LS)+Z(L,K+1)*(HP(L)-HP(LS)))-0.5*(B(L,K  )-B(L,K  )+B(LS ,K  )-B(LS ,K  ))*(BELV(L)-BELV(LS )+Z(L,K-1)*(HP(L)-HP(LS ))) )
-      ENDDO
+      enddo
   
-      IF( KC > 2 )THEN
-        K=KS
-        DO L=2,LA
-          LW=LWC(L)
-          LS=LSC(L)
+      if( KC > 2 )then
+        K = KS
+        do L = 2,LA
+          LW = LWC(L)
+          LS = LSC(L)
           FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( 0.5*HU(L)*( (B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+(B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+(B(L,K  )-B(LW,K  ))*DZC(L,K  )+(B(L,K-1)-B(LW,K-1))*DZC(L,K-1) ) &
                      -0.5*(B(L,K+1)-B(L,K+1)+B(LW,K+1)-B(LW,K+1))*(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW)))-0.5*(B(L,K  )-B(L,K-1)+B(LW,K  )-B(LW,K-1))*(BELV(L)-BELV(LW)+Z(L,K-1)*(HP(L)-HP(LW))) )
           FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( 0.5*HV(L)*( (B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+(B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+(B(L,K  )-B(LS ,K  ))*DZC(L,K  )+(B(L,K-1)-B(LS ,K-1))*DZC(L,K-1) ) &
                      -0.5*(B(L,K+1)-B(L,K+1)+B(LS ,K+1)-B(LS ,K+1))*(BELV(L)-BELV(LS)+Z(L,K+1)*(HP(L)-HP(LS)))-0.5*(B(L,K  )-B(L,K-1)+B(LS ,K  )-B(LS ,K-1))*(BELV(L)-BELV(LS )+Z(L,K-1)*(HP(L)-HP(LS ))) )
-        ENDDO
-      ENDIF
+        enddo
+      endif
   
-      IF( KC > 3 )THEN
-        DO K=1,KS
-          DO L=2,LA
-            LW=LWC(L)
-            LS=LSC(L)
+      if( KC > 3 )then
+        do K = 1,KS
+          do L = 2,LA
+            LW = LWC(L)
+            LS = LSC(L)
             FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( 0.5*HU(L)*( (B(L,K+2)-B(LW,K+2))*DZC(L,K+2)+(B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+(B(L,K  )-B(LW,K  ))*DZC(L,K  )+(B(L,K-1)-B(LW,K-1))*DZC(L,K-1) ) &
                        -0.5*(B(L,K+2)-B(L,K+1)+B(LW,K+2)-B(LW,K+1))*(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW)))-0.5*(B(L,K  )-B(L,K-1)+B(LW,K  )-B(LW,K-1))*(BELV(L)-BELV(LW)+Z(L,K-1)*(HP(L)-HP(LW))) )
             FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( 0.5*HV(L)*( (B(L,K+2)-B(LS ,K+2))*DZC(L,K+2)+(B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+(B(L,K  )-B(LS ,K  ))*DZC(L,K  )+(B(L,K-1)-B(LS ,K-1))*DZC(L,K-1) ) &
                        -0.5*(B(L,K+2)-B(L,K+1)+B(LS ,K+2)-B(LS ,K+1))*(BELV(L)-BELV(LS)+Z(L,K+1)*(HP(L)-HP(LS)))-0.5*(B(L,K  )-B(L,K-1)+B(LS ,K  )-B(LS ,K-1))*(BELV(L)-BELV(LS )+Z(L,K-1)*(HP(L)-HP(LS ))) )
-          ENDDO
-        ENDDO
-      ENDIF
+          enddo
+        enddo
+      endif
       !$OMP END SINGLE
         
-    ELSEIF( IINTPG == 2 )THEN
+    elseif( IINTPG == 2 )then
       ! *** FINITE VOLUME
       !$OMP SINGLE
-      DO K=1,KS
-        DO L=2,LA
-          LW=LWC(L)
-          LS=LSC(L)
+      do K = 1,KS
+        do L = 2,LA
+          LW = LWC(L)
+          LS = LSC(L)
           FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( ( HP(L)*B(L,K+1)-HP(LW)*B(LW,K+1) )*DZC(L,K+1)+( HP(L)*B(L,K  )-HP(LW)*B(LW,K  ) )*DZC(L,K  ) )-RNEW*SBX(L)*GP*(BELV(L)-BELV(LW)) &
                      *( HP(L)*B(L,K+1)-HP(L)*B(L,K)+HP(LW)*B(LW,K+1)-HP(LW)*B(LW,K) )   - RNEW*SBX(L)*GP*(HP(L)-HP(LW))*( HP(L)*ZZ(L,K+1)*B(L,K+1)-HP(L)*ZZ(L,K)*B(L,K)+HP(LW)*ZZ(L,K+1)*B(LW,K+1)-HP(LW)*ZZ(L,K)*B(LW,K) )
           FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( ( HP(L)*B(L,K+1)-HP(LS )*B(LS ,K+1) )*DZC(L,K+1)+( HP(L)*B(L,K  )-HP(LS )*B(LS ,K  ) )*DZC(L,K  ) )-RNEW*SBY(L)*GP*(BELV(L)-BELV(LS )) &
                      *( HP(L)*B(L,K+1)-HP(L)*B(L,K)+HP(LS)*B(LS ,K+1)-HP(LS)*B(LS ,K) ) - RNEW*SBY(L)*GP*(HP(L)-HP(LS ))*( HP(L)*ZZ(L,K+1)*B(L,K+1)-HP(L)*ZZ(L,K)*B(L,K)+HP(LS)*ZZ(L,K+1)*B(LS ,K+1)-HP(LS)*ZZ(L,K)*B(LS ,K) )
-        ENDDO
-      ENDDO
+        enddo
+      enddo
       !$OMP END SINGLE
-    ENDIF
+    endif
 
     ! *** BLOCKED LAYER FACE OPTION
-    IF( NBLOCKED > 0 .AND. N > 1 )THEN 
+    if( NBLOCKED > 0 .and. N > 1 )then 
       !$OMP SINGLE
-      DO LP=1,NBLOCKED
+      do LP = 1,NBLOCKED
         L = LBLOCKED(LP)
         
-        IF( KSZ(L) == KC ) CYCLE
+        if( KSZ(L) == KC ) CYCLE
         
         ! *** LAYER U BLOCKING
-        IF( BLDRAFTU(LP)+BLSILLU(LP) > 0.0 )THEN
+        if( BLDRAFTU(LP)+BLSILLU(LP) > 0.0 )then
           ! *** LAYER SPECIFIC DEPTH AVERAGED FLOWS (M3/S)
-          IF( SUB(L) == 0.0 ) CYCLE
+          if( SUB(L) == 0.0 ) CYCLE
 
           FBBX(L,:) = 0.0
-          DO K=KBBU(LP),KTBU(LP)-1
+          do K = KBBU(LP),KTBU(LP)-1
             LW = LWC(L)
             
             ! *** ADJUST ELEVATIONS AND DEPTHS
-            IF( BLSILLU(LP) > 0.0 )THEN
+            if( BLSILLU(LP) > 0.0 )then
               ! *** SILL HEIGHT DICTATES BOTTOM ELEVATIONS
               BELVW(L)  = BELV(L) + BLSILLU(LP)
               BELVE(LW) = BELVW(L)
               HPW(L)  = HP(L)  - BLSILLU(LP)
               HPE(LW) = HP(LW) - BLSILLU(LP)
-            ELSE
-              IF( IGRIDV == 0 )THEN
+            else
+              if( IGRIDV == 0 )then
                 BELVW(L)  = BELV(L)
                 BELVE(LW) = BELV(LW)
-              ENDIF
+              endif
               HPW(L)  = HP(L)  - BLDRAFTU(LP)
               HPE(LW) = HP(LW) - BLDRAFTU(LP)
-            ENDIF
+            endif
 
             FBBX(L,K) = SUB3D(L,K)*GP*HU(L)*( HU(L)*( (B(L,K+1)-B(LW,K+1))*SGZU(L,K+1) + (B(L,K)-B(LW,K))*SGZU(L,K) )                                &
                                                     - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
-          ENDDO  
-        ENDIF
+          enddo  
+        endif
       
         ! *** LAYER V BLOCKING
-        IF( BLDRAFTV(LP)+BLSILLV(LP) > 0.0 )THEN
+        if( BLDRAFTV(LP)+BLSILLV(LP) > 0.0 )then
           ! *** LAYER SPECIFIC DEPTH AVERAGED FLOWS (M3/S)
-          IF( SVB(L) == 0.0 ) CYCLE
+          if( SVB(L) == 0.0 ) CYCLE
 
           FBBY(L,:) = 0.0
-          DO K=KBBV(LP),KTBV(LP)-1
+          do K = KBBV(LP),KTBV(LP)-1
             LS = LSC(L)  
 
             ! *** ADJUST ELEVATIONS AND DEPTHS
-            IF( BLSILLV(LP) > 0.0 )THEN
+            if( BLSILLV(LP) > 0.0 )then
               ! *** SILL HEIGHT DICTATES BOTTOM ELEVATIONS
               BELVS(L)  = BELV(L) + BLSILLV(LP)
               BELVN(LS) = BELVS(L)
               HPS(L)  = HP(L)  - BLSILLV(LP)
               HPN(LS) = HP(LS) - BLSILLV(LP)
-            ELSE
-              IF( IGRIDV == 0 )THEN
+            else
+              if( IGRIDV == 0 )then
                 BELVS(L)  = BELV(L)
                 BELVN(LS) = BELV(LS)
-              ENDIF
+              endif
               HPS(L)  = HP(L)  - BLDRAFTV(LP)
               HPN(LS) = HP(LS) - BLDRAFTV(LP)
-            ENDIF
+            endif
 
             FBBY(L,K) = SVB3D(L,K)*GP*HV(L)*( HV(L)*( (B(L,K+1)-B(LS,K+1))*SGZV(L,K+1) + (B(L,K)-B(LS,K))*SGZV(L,K) )                                &
                                                     - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) )  
-          ENDDO  
-        ENDIF
-      ENDDO
+          enddo  
+        endif
+      enddo
       !$OMP END SINGLE
-    ENDIF
+    endif
 
-  ENDIF  ! *** END OF BOUYANCY
+  endif  ! *** END OF BOUYANCY
 
   ! *** *******************************************************************!
   !
-  ! **  CALCULATE EXPLICIT INTERNAL U AND V SHEAR EQUATION TERMS
+  ! ***  CALCULATE EXPLICIT INTERNAL U AND V SHEAR EQUATION TERMS
   !
   !----------------------------------------------------------------------!
-  IF( KC > 1 )THEN
+  if( KC > 1 )then
     !$OMP DO PRIVATE(ND,LF,LL,LP,L,K)
-    DO ND=1,NDM  
+    do ND = 1,NDM  
       ! *** COMPUTE THE INTERNAL SHEARS FOR THE LOWER LAYERS
-      DO K=1,KS
-        DO LP=1,LLWET(K,ND)
-          L=LKWET(LP,K,ND)  
+      do K = 1,KS
+        do LP = 1,LLWET(K,ND)
+          L = LKWET(LP,K,ND)  
           DU(L,K) = CDZFU(L,K)*( H1U(L)*(U1(L,K+1)-U1(L,K))*DELTI + DXYIU(L)*(FCAX(L,K+1)-FCAX(L,K)   + FBBX(L,K) + SNLT*(FX(L,K)-FX(L,K+1))) )
           DV(L,K) = CDZFV(L,K)*( H1V(L)*(V1(L,K+1)-V1(L,K))*DELTI + DXYIV(L)*(FCAY(L,K)  -FCAY(L,K+1) + FBBY(L,K) + SNLT*(FY(L,K)-FY(L,K+1))) )
-        ENDDO
-      ENDDO
-    ENDDO   ! *** END OF DOMAIN
+        enddo
+      enddo
+    enddo   ! *** END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
 
   ! *** ADD WIND SHEAR TO THE KC/KS INTERFACE
-  IF( ISTL == 2 .AND. NWSER > 0 )THEN
+  if( (ISTL == 2 .and. NWSER > 0) .or. (ISTL == 2 .and. iGOTM_Test > 0 ) )then
     !$OMP DO PRIVATE(ND,LF,LL,LP,L)
-    DO ND=1,NDM  
-      LF=(ND-1)*LDMWET+1  
-      LL=MIN(LF+LDMWET-1,LAWET)
+    do ND = 1,NDM  
+      LF = (ND-1)*LDMWET+1  
+      LL = MIN(LF+LDMWET-1,LAWET)
 
-      DO LP=LF,LL
+      do LP = LF,LL
         L = LWET(LP)  
         DU(L,KS) = DU(L,KS) - CDZUU(L,KS)*TSX(L)
         DV(L,KS) = DV(L,KS) - CDZUV(L,KS)*TSY(L)
-      ENDDO
-    ENDDO    ! *** END OF DOMAIN
+      enddo
+      
+    enddo    ! *** END OF DOMAIN
     !$OMP END DO
-  ENDIF
+  endif
+
+  ! *** Apply masks
+  !$OMP DO PRIVATE(ND,LP,K,L)
+  do ND = 1,NDM  
+    do K = 1,KS
+      do LP = 1,LLWET(K,ND)
+        L = LKWET(LP,K,ND)
+        DU(L,K) = SUB(L)*DU(L,K)
+        DV(L,K) = SVB(L)*DV(L,K)
+      enddo
+    enddo
+  enddo    ! *** END OF DOMAIN
+  !$OMP END DO
   
   !$OMP END PARALLEL
-  
+       
   ! *** *******************************************************************!
 
-  RETURN
-END
+  return
+  
+END SUBROUTINE CALEXP

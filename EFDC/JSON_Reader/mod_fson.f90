@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 ! Copyright (c) 2012 Joseph A. Levin
@@ -21,7 +21,7 @@
 ! INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
 ! PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE 
 ! LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
-! OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+! OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE use OR OTHER
 ! DEALINGS IN THE SOFTWARE.
 
 
@@ -77,9 +77,9 @@ contains
         nullify(p)
 
         ! select the file unit to use
-        IF( present(unit) .and. present(file) )then
+        if( present(unit) .and. present(file) )then
             u = unit
-        elseif (present(file) )then
+        elseif( present(file) )then
             ! find the first available unit
             unit_available = .false.
             u = 20
@@ -87,35 +87,35 @@ contains
             do while (.not.unit_available)
                 inquire(unit = u, exist = unit_available)
                 u = u + 1
-            end do
-        elseif (present(str) )then
+            enddo
+        elseif( present(str) )then
             strBuffer = str
             u = 0
         else 
             print *, "ERROR: Need a file or a string"
             call Stopp('.')    ! exit(1)
-        end if
+        endif
 
         ! open the file
-        IF( present(file) )then
+        if( present(file) )then
             open (unit = u, file = file, status = "old", action = "read", form = "formatted", position = "rewind")
-        end if
+        endif
         
         ! 2021-06-14, NTL: fixed unallocated strBuffer
-        if (.not.present(str) )then
-            allocate(character(len=1024) :: strBuffer)
-        end if
+        if( .not.present(str) )then
+            allocate(character(len = 1024) :: strBuffer)
+        endif
         
         ! create the value and associate the pointer        
         p => fson_value_create()
 
         ! parse as a value
-        call parse_value(unit=u, str=strBuffer, value=p)
+        call parse_value(unit = u, str = strBuffer, value = p)
 
         ! close the file
         if( .not. present(unit) )then
             close (u)
-        end if
+        endif
 
         !if(allocated(strBuffer)) deallocate(strBuffer)
 
@@ -135,7 +135,7 @@ contains
         ! pop the next non whitespace character off the file
         c = pop_char(unit, str, eof = eof, skip_ws = .true.)
 
-        IF( eof )then
+        if( eof )then
             return
         else
             select case (c)
@@ -172,10 +172,10 @@ contains
                 call push_char(c)
                 call parse_number(unit, str, value)
             case default
-                print *, "ERROR: Unexpected character while parsing value. '", c, "' ASCII=", iachar(c)
+                print *, "ERROR: Unexpected character while parsing value. '", c, "' ASCII = ", iachar(c)
                 call Stopp('.')    ! exit(1)
             end select
-        end if
+        endif
 
     end subroutine parse_value
 
@@ -184,7 +184,7 @@ contains
     !    
     recursive subroutine parse_object(unit, str, parent)
         integer, intent(inout) :: unit
-        character(len=*),target, intent(inout) :: str
+        character(len = *),target, intent(inout) :: str
         type(fson_value), pointer :: parent, pair
 
 
@@ -193,47 +193,47 @@ contains
 
         ! pair name
         c = pop_char(unit, str, eof = eof, skip_ws = .true.)
-        IF( eof )then
+        if( eof )then
             print *, "ERROR: Unexpected end of file while parsing start of object."
             call Stopp('.')    ! exit(1)
-        else IF( "}" == c )then
+        elseif( "}" == c )then
             ! end of an empty object
             return
-        else IF( '"' == c )then
+        elseif( '"' == c )then
             pair => fson_value_create()
             pair.name => parse_string(unit, str)
         else
             print *, "ERROR: Expecting string: '", c, "'"
             call Stopp('.')    ! exit(1)
-        end if
+        endif
 
         ! pair value
         c = pop_char(unit, str, eof = eof, skip_ws = .true.)
-        IF( eof )then
+        if( eof )then
             print *, "ERROR: Unexpected end of file while parsing object member. 1"
             call Stopp('.')    ! exit(1)
-        else IF( ":" == c )then
+        elseif( ":" == c )then
             ! parse the value                       
             call parse_value(unit, str, pair)
             call fson_value_add(parent, pair)
         else
             print *, "ERROR: Expecting : and then a value. ", c
             call Stopp('.')    ! exit(1)
-        end if
+        endif
 
         ! another possible pair
         c = pop_char(unit, str, eof = eof, skip_ws = .true.)
-        IF( eof )then
+        if( eof )then
             return
-        else IF( "," == c )then
+        elseif( "," == c )then
             ! read the next member            
-            call parse_object(unit = unit, str=str, parent = parent)
-        else IF( "}" == c )then
+            call parse_object(unit = unit, str = str, parent = parent)
+        elseif( "}" == c )then
             return
         else
             print *, "ERROR: Expecting end of object.", c
             call Stopp('.')    ! exit(1)
-        end if
+        endif
 
     end subroutine parse_object
 
@@ -244,7 +244,7 @@ contains
 
       implicit none
       integer, intent(inout) :: unit
-      character(len=*),target,  intent(inout) :: str
+      character(len = *),target,  intent(inout) :: str
       type(fson_value), pointer :: array, element
 
       logical :: eof, finished
@@ -258,21 +258,21 @@ contains
          call parse_value(unit, str, element)
 
          ! parse value will disassociate an empty array value
-         IF( associated(element) )then
+         if( associated(element) )then
             call fson_value_add(array, element)
-         end if
+         endif
 
          ! pop the next character
          c = pop_char(unit, str, eof = eof, skip_ws = .true.)
 
-         IF( eof )then
+         if( eof )then
             finished = .true.
-         else IF( "]" == c )then
+         elseif( "]" == c )then
             ! end of array
             finished = .true.
-         end if
+         endif
 
-      end do
+      enddo
 
     end subroutine parse_array
 
@@ -292,22 +292,22 @@ contains
 
         do
             c = pop_char(unit, str, eof = eof, skip_ws = .false.)
-            IF( eof )then
+            if( eof )then
                print *, "Expecting end of string"
                call Stopp('.')    ! exit(1)
-            else IF( escape )then
+            elseif( escape )then
               call fson_string_append(string,c)
               escape = .false.
             else
-               IF( c == '\' )then
+               if( c == '\' )then
                   escape = .true.
-               else IF( c == '"' )then
+               elseif( c == '"' )then
                   exit
                else
                   call fson_string_append(string,c)
-               end if
-            end if
-        end do
+               endif
+            endif
+        enddo
     end function parse_string
 
     !
@@ -325,14 +325,14 @@ contains
 
         do i = 1, length
             c = pop_char(unit, str, eof = eof, skip_ws = .true.)
-            IF( eof )then
+            if( eof )then
                 print *, "ERROR: Unexpected end of file while parsing array."
                 call Stopp('.')    ! exit(1)
-            else IF( c .ne. chars(i:i) )then
+            elseif( c .ne. chars(i:i) )then
                 print *, "ERROR: Unexpected character.'", c,"'", chars(i:i)
                 call Stopp('.')    ! exit(1)
-            end if
-        end do
+            endif
+        enddo
 
     end subroutine parse_for_chars
 
@@ -346,21 +346,21 @@ contains
         logical :: eof, negative, decimal, scientific
         character :: c
         integer :: exp, digit_count
-        integer(kind=8) :: integral
+        integer(kind = 8) :: integral
         double precision :: frac
 
 
         ! first character is either - or a digit        
         c = pop_char(unit, str, eof = eof, skip_ws = .true.)
-        IF( eof )then
+        if( eof )then
             print *, "ERROR: Unexpected end of file while parsing number."
             call Stopp('.')    ! exit(1)
-        else IF( "-" == c )then
+        elseif( "-" == c )then
             negative = .true.
         else
             negative = .false.
             call push_char(c)
-        end if
+        endif
 
         ! parse the integral
         integral = parse_integer(unit, str)
@@ -373,68 +373,68 @@ contains
         do
             ! first character is either - or a digit        
             c = pop_char(unit, str, eof = eof, skip_ws = .true.)
-            IF( eof )then
+            if( eof )then
                 print *, "ERROR: Unexpected end of file while parsing number."
                 call Stopp('.')    ! exit(1)
             else
                 select case (c)
                 case (".")
                     ! this is already fractional number
-                    IF( decimal )then
+                    if( decimal )then
                         ! already found a decimal place
                         print *, "ERROR: Unexpected second decimal place while parsing number."
                         call Stopp('.')    ! exit(1)
-                    end if
+                    endif
                     decimal = .true.
                     frac = parse_integer(unit, str, digit_count, allow_truncate = .true.)
                     frac = frac / (10.0d0 ** digit_count)
                 case ("e", "E")
                     ! this is already an exponent number
-                    IF( scientific )then
+                    if( scientific )then
                         ! already found a e place
                         print *, "ERROR: Unexpected second exponent while parsing number."
                         call Stopp('.')    ! exit(1)
-                    end if
+                    endif
                     scientific = .true.
                     decimal = .true.
                     ! this number has an exponent
                     exp = int(parse_integer(unit, str), kind = 4)
                 case default
-                    IF( decimal )then
+                    if( decimal )then
                         ! add the integral
                         frac = frac + integral
-                        IF( scientific )then
+                        if( scientific )then
                             ! apply exponent
                             frac = frac * (10.0d0 ** exp)
-                        end if
+                        endif
                         ! apply negative
-                        IF( negative )then
+                        if( negative )then
                             frac = -frac
-                        end if
+                        endif
                         value.value_type = TYPE_REAL
                         value.value_real = real(frac)
                         value.value_double = frac
                     else
-                       IF( negative )then
+                       if( negative )then
                           ! apply negative
                           integral = -integral
-                       end if
+                       endif
                        value.value_type = TYPE_INTEGER
                        value.value_integer = int(integral, kind = 4)
                        value.value_long_integer = integral
-                    end if
+                    endif
                     call push_char(c)
                     exit
                 end select
-            end if
-        end do
+            endif
+        enddo
 
     end subroutine
 
     !
     ! PARSE INTEGER    
     !
-    integer(kind=8) function parse_integer(unit, str, digit_count, allow_truncate) &
+    integer(kind = 8) function parse_integer(unit, str, digit_count, allow_truncate) &
          result(integral)
         integer, intent(in) :: unit
         character(*), intent(inout) :: str
@@ -446,11 +446,11 @@ contains
         logical :: do_truncate, truncating
         integer, parameter :: max_integer_length = 18
 
-        IF( present(allow_truncate) )then
+        if( present(allow_truncate) )then
            do_truncate = allow_truncate
         else
            do_truncate = .false.
-        end if
+        endif
 
         icount = 0
         integral = 0
@@ -460,57 +460,57 @@ contains
         truncating = .false.
         do
             c = pop_char(unit, str, eof = eof, skip_ws = .true.)
-            IF( eof )then
+            if( eof )then
                 print *, "ERROR: Unexpected end of file while parsing digit."
                 call Stopp('.')    ! exit(1)
             else
                 select case(c)
                 case ("+")
-                    IF( found_sign.or.found_digit )then
+                    if( found_sign.or.found_digit )then
                         print *, "ERROR: Misformatted number."
                         call Stopp('.')    ! exit(1)
-                    end if
+                    endif
                     found_sign = .true.
                 case ("-")
-                    IF( found_sign.or.found_digit )then
+                    if( found_sign.or.found_digit )then
                         print *, "ERROR: Misformatted number."
                         call Stopp('.')    ! exit(1)
-                    end if
+                    endif
                     found_sign = .true.
                     isign = -1
                 case ("0":"9")
                     found_sign = .true.
-                    IF( (icount > max_integer_length) .and. (.not. truncating) )then
-                       IF( do_truncate )then
+                    if( (icount > max_integer_length) .and. (.not. truncating) )then
+                       if( do_truncate )then
                           truncating = .true.
                        else
                           print *, "ERROR: Too many digits for an integer."
                           call Stopp('.')    ! exit(1)
-                       end if
-                    end if
+                       endif
+                    endif
                     ! digit        
                     read (c, '(i1)') tmp
                     ! shift
-                    IF( .not. truncating )then
-                       IF( icount > 0 )then
+                    if( .not. truncating )then
+                       if( icount > 0 )then
                           integral = integral * 10
-                       end if
+                       endif
                        ! add
                        integral = integral + tmp
                        ! increase the icount
                        icount = icount + 1
-                    end if
+                    endif
 
                 case default
-                    IF( present(digit_count) )then
+                    if( present(digit_count) )then
                         digit_count = icount
-                    end if
+                    endif
                     call push_char(c)
                     integral = isign * integral
                     return
                 end select
-            end if
-        end do
+            endif
+        enddo
 
     end function parse_integer
 
@@ -528,41 +528,41 @@ contains
         logical :: ignore
 
         eof = .false.
-        IF( .not.present(skip_ws) )then
+        if( .not.present(skip_ws) )then
             ignore = .false.
         else
             ignore = skip_ws
-        end if
+        endif
 
         do
-            IF( pushed_index > 0 )then
+            if( pushed_index > 0 )then
                 ! there is a character pushed back on, most likely from the number parsing                
                 c = pushed_char(pushed_index:pushed_index)
                 pushed_index = pushed_index - 1
                 ios = 0
             else
-                IF( unit .gt. 0 )then
+                if( unit .gt. 0 )then
                     read (unit = unit, fmt = "(a)", advance = "no", iostat = ios, EOR = 777, end = 999, err = 999) c
                 else
                     read (unit = str, fmt = "(a)", iostat = ios) c
                     str = str(2:)
                 endif
-            end if
-            IF( ios == end_of_record )then
+            endif
+            if( ios == end_of_record )then
 777             cycle            
-            else IF( ios == end_of_file )then
+            elseif( ios == end_of_file )then
 999             eof = .true.
                 exit
-            else IF( iachar(c) <= 31 )then
+            elseif( iachar(c) <= 31 )then
                 ! non printing ascii characters
                 cycle
-            else IF( ignore .and. c == " " )then
+            elseif( ignore .and. c == " " )then
                 cycle
             else
                 popped = c
                 exit
-            end if
-        end do
+            endif
+        enddo
 
     end function pop_char
 

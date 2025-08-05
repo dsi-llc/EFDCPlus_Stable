@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
   !---------------------------------------------------------------------------!
@@ -17,31 +17,29 @@
   !> @date 9/15/2019
   !---------------------------------------------------------------------------!
 
-#ifdef _MPI
   Subroutine Get_LA_Local_No_Ghost()
 
-  Use GLOBAL
-  Use Variables_MPI
-  Use Variables_MPI_Mapping
-  Use MPI
+  use GLOBAL
+  use Variables_MPI
+  use Variables_MPI_Mapping
+  use MPI
 
-  Implicit None
+  implicit none
 
   ! *** Local variables
-  Integer :: I, J, L
-  Integer :: ierr
+  integer :: I, J, L
+  integer :: ierr
 
   L = 0
-  DO J = 3,JC-2
-    DO I = 3,IC-2
-      IF( LIJ(I,J) > 0 )THEN
+  do J = 3,JC-2
+    do I = 3,IC-2
+      if( LIJ(I,J) > 0 )then
         L = L + 1
-      ENDIF
-    END DO
-  END DO
+      endif
+    enddo
+  enddo
 
   ! *** Get the number of active cells excluding anything in the ghost regions
   LA_Local_no_ghost = L
 
   End Subroutine Get_LA_Local_No_Ghost
-#endif

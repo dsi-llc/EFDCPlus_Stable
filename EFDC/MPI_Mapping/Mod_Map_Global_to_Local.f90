@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 ! *****************************************************************************************************
@@ -20,17 +20,17 @@
 !---------------------------------------------------------------------------!
 Module Mod_Map_Global_to_Local
 
-  Use GLOBAL
-  Use Variables_MPI
-  Use Broadcast_Routines
+  use GLOBAL
+  use Variables_MPI
+  use Broadcast_Routines
     
-  Implicit None
+  implicit none
 
   Save
     
   Public :: Map_Global_to_Local
     
-  Interface Map_Global_to_Local
+  interface Map_Global_to_Local
     
     Module Procedure Map_Global_to_Local_RK4, &
                      Map_Global_to_Local_RK8, &
@@ -42,30 +42,30 @@ Module Mod_Map_Global_to_Local
                      Map_Global_to_Local_GRP, &
                      Map_Global_to_Local_GRP_RK8
     
-  End Interface
+  end interface
 
   Contains
     
   !---------------------------------------------------------------------------!  
   Subroutine Map_Global_to_Local_RK4(Array)
 
-    Use GLOBAL
-    Use Variables_MPI
+    use GLOBAL
+    use Variables_MPI
     
-    Implicit none
+    implicit none
     
     ! *** Passed in variables
-    Real(4), Intent(inout), Allocatable, Dimension(:) :: Array
+    real(4), Intent(inout), Allocatable, Dimension(:) :: Array
         
     ! *** Local variables
-    Integer :: L, LG
-    Real(4), Allocatable, Dimension(:) :: ArrayG
+    integer :: L, LG
+    real(4), Allocatable, Dimension(:) :: ArrayG
     
     ! *** First Get the global array from the master_id
-    Call Broadcast_Array(Array, master_id)
+    call Broadcast_Array(Array, master_id)
 
     ! *** Setup temporary arrays for transfer
-    Allocate(ArrayG(LCM_Global))
+    allocate(ArrayG(LCM_Global))
     ArrayG(:) = 0.
     
     do LG = 1,LCM_Global
@@ -76,7 +76,7 @@ Module Mod_Map_Global_to_Local
     deallocate(Array)
     
     ! *** Reallocate to local LCM
-    Allocate(Array(LCM))
+    allocate(Array(LCM))
     Array = 0.
     
     ! *** Now map global to local
@@ -95,23 +95,23 @@ Module Mod_Map_Global_to_Local
   !---------------------------------------------------------------------------!  
   Subroutine Map_Global_to_Local_RK8(Array)
 
-    Use GLOBAL
-    Use Variables_MPI
+    use GLOBAL
+    use Variables_MPI
     
-    Implicit none
+    implicit none
     
     ! *** Passed in variables
-    Real(8), Intent(inout), Allocatable, Dimension(:) :: Array
+    real(8), Intent(inout), Allocatable, Dimension(:) :: Array
         
     ! *** Local variables
-    Integer :: L, LG
-    Real(8), Allocatable, Dimension(:) :: ArrayG
+    integer :: L, LG
+    real(8), Allocatable, Dimension(:) :: ArrayG
     
     ! *** First Get the global array from the master_id
-    Call Broadcast_Array(Array, master_id)
+    call Broadcast_Array(Array, master_id)
 
     ! *** Setup temporary arrays for transfer
-    Allocate(ArrayG(LCM_Global))
+    allocate(ArrayG(LCM_Global))
     ArrayG(:) = 0.
     
     do LG = 1,LCM_Global
@@ -122,7 +122,7 @@ Module Mod_Map_Global_to_Local
     deallocate(Array)
     
     ! *** Reallocate to local LCM
-    Allocate(Array(LCM))
+    allocate(Array(LCM))
     Array = 0.
     
     ! *** Now map global to local
@@ -142,23 +142,23 @@ Module Mod_Map_Global_to_Local
   !---------------------------------------------------------------------------!  
   Subroutine Map_Global_to_Local_I4(Array)
 
-    Use GLOBAL
-    Use Variables_MPI
+    use GLOBAL
+    use Variables_MPI
     
-    Implicit none
+    implicit none
     
     ! *** Passed in variables
     Integer(4), Intent(inout), Allocatable, Dimension(:) :: Array
         
     ! *** Local variables
-    Integer :: L, LG
+    integer :: L, LG
     Integer(4), Allocatable, Dimension(:) :: ArrayG
     
     ! *** First Get the global array from the master_id
-    Call Broadcast_Array(Array, master_id)
+    call Broadcast_Array(Array, master_id)
 
     ! *** Setup temporary arrays for transfer
-    Allocate(ArrayG(LCM_Global))
+    allocate(ArrayG(LCM_Global))
     ArrayG(:) = 0.
     
     do LG = 1,LCM_Global
@@ -169,7 +169,7 @@ Module Mod_Map_Global_to_Local
     deallocate(Array)
     
     ! *** Reallocate to local LCM
-    Allocate(Array(LCM))
+    allocate(Array(LCM))
     Array = 0
     
     ! *** Now map global to local
@@ -189,24 +189,24 @@ Module Mod_Map_Global_to_Local
   !---------------------------------------------------------------------------!  
   Subroutine Map_Global_to_Local_L4(Array)
 
-    Use GLOBAL
-    Use Variables_MPI
+    use GLOBAL
+    use Variables_MPI
     
-    Implicit none
+    implicit none
     
     ! *** Passed in variables
-    Logical, Intent(inout), Allocatable, Dimension(:) :: Array
+    logical, Intent(inout), Allocatable, Dimension(:) :: Array
         
     ! *** Local variables
-    Integer :: L, LG
-    Logical, Allocatable, Dimension(:) :: ArrayG
+    integer :: L, LG
+    logical, Allocatable, Dimension(:) :: ArrayG
     
     ! *** First Get the global array from the master_id
-    Call Broadcast_Array(Array, master_id)
+    call Broadcast_Array(Array, master_id)
 
     ! *** Setup temporary arrays for transfer
-    Allocate(ArrayG(LCM_Global))
-    ArrayG(:) = 0.
+    allocate(ArrayG(LCM_Global))
+    ArrayG(:) = .false.
     
     do LG = 1,LCM_Global
       ArrayG(LG) = Array(LG)
@@ -216,8 +216,8 @@ Module Mod_Map_Global_to_Local
     deallocate(Array)
     
     ! *** Reallocate to local LCM
-    Allocate(Array(LCM))
-    Array = 0.
+    allocate(Array(LCM))
+    Array = .false.
     
     ! *** Now map global to local
     do LG = 1,LCM_Global
@@ -235,24 +235,24 @@ Module Mod_Map_Global_to_Local
   !---------------------------------------------------------------------------!  
   Subroutine Map_Global_to_Local_R2D(Array,KMAX)
 
-    Use GLOBAL
-    Use Variables_MPI
+    use GLOBAL
+    use Variables_MPI
     
-    Implicit none
+    implicit none
     
     ! *** Passed in variables
-    Integer, Intent(in) :: KMAX
-    Real(4), Intent(inout), Allocatable, Dimension(:,:) :: Array
+    integer, Intent(in) :: KMAX
+    real(4), Intent(inout), Allocatable, Dimension(:,:) :: Array
         
     ! *** Local variables
-    Integer :: L, LG, K
-    Real(4), Allocatable, Dimension(:,:) :: ArrayG
+    integer :: L, LG, K
+    real(4), Allocatable, Dimension(:,:) :: ArrayG
     
     ! *** First Get the global array from the master_id
-    Call Broadcast_Array(Array, master_id)
+    call Broadcast_Array(Array, master_id)
 
     ! *** Setup temporary arrays for transfer
-    Allocate(ArrayG(LCM_Global,KMAX))
+    allocate(ArrayG(LCM_Global,KMAX))
     ArrayG = 0.
     
     do K = 1,KMAX
@@ -265,7 +265,7 @@ Module Mod_Map_Global_to_Local
     deallocate(Array)
     
     ! *** Reallocate to local LCM
-    Allocate(Array(LCM,KMAX))
+    allocate(Array(LCM,KMAX))
     Array = 0.
     
     ! *** Now map global to local
@@ -286,24 +286,24 @@ Module Mod_Map_Global_to_Local
   !---------------------------------------------------------------------------!  
   Subroutine Map_Global_to_Local_R2D_RK8(Array,KMAX)
 
-    Use GLOBAL
-    Use Variables_MPI
+    use GLOBAL
+    use Variables_MPI
     
-    Implicit none
+    implicit none
     
     ! *** Passed in variables
-    Integer, Intent(in) :: KMAX
-    Real(8), Intent(inout), Allocatable, Dimension(:,:) :: Array
+    integer, Intent(in) :: KMAX
+    real(8), Intent(inout), Allocatable, Dimension(:,:) :: Array
         
     ! *** Local variables
-    Integer :: L, LG, K
-    Real(8), Allocatable, Dimension(:,:) :: ArrayG
+    integer :: L, LG, K
+    real(8), Allocatable, Dimension(:,:) :: ArrayG
     
     ! *** First Get the global array from the master_id
-    Call Broadcast_Array(Array, master_id)
+    call Broadcast_Array(Array, master_id)
 
     ! *** Setup temporary arrays for transfer
-    Allocate(ArrayG(LCM_Global,KMAX))
+    allocate(ArrayG(LCM_Global,KMAX))
     ArrayG = 0.
     
     do K = 1,KMAX
@@ -316,7 +316,7 @@ Module Mod_Map_Global_to_Local
     deallocate(Array)
     
     ! *** Reallocate to local LCM
-    Allocate(Array(LCM,KMAX))
+    allocate(Array(LCM,KMAX))
     Array = 0.
     
     ! *** Now map global to local
@@ -337,24 +337,24 @@ Module Mod_Map_Global_to_Local
   !---------------------------------------------------------------------------!  
   Subroutine Map_Global_to_Local_I2D(Array,KMAX)
 
-    Use GLOBAL
-    Use Variables_MPI
+    use GLOBAL
+    use Variables_MPI
     
-    Implicit none
+    implicit none
     
     ! *** Passed in variables
-    Integer, Intent(in) :: KMAX
-    Integer, Intent(inout), Allocatable, Dimension(:,:) :: Array
+    integer, Intent(in) :: KMAX
+    integer, Intent(inout), Allocatable, Dimension(:,:) :: Array
         
     ! *** Local variables
-    Integer :: L, LG, K
-    Integer, Allocatable, Dimension(:,:) :: ArrayG
+    integer :: L, LG, K
+    integer, Allocatable, Dimension(:,:) :: ArrayG
     
     ! *** First Get the global array from the master_id
-    Call Broadcast_Array(Array, master_id)
+    call Broadcast_Array(Array, master_id)
 
     ! *** Setup temporary arrays for transfer
-    Allocate(ArrayG(LCM_Global,KMAX))
+    allocate(ArrayG(LCM_Global,KMAX))
     ArrayG = 0
     
     do K = 1,KMAX
@@ -367,7 +367,7 @@ Module Mod_Map_Global_to_Local
     deallocate(Array)
     
     ! *** Reallocate to local LCM
-    Allocate(Array(LCM,KMAX))
+    allocate(Array(LCM,KMAX))
     Array = 0.
     
     ! *** Now map global to local
@@ -388,24 +388,24 @@ Module Mod_Map_Global_to_Local
   !---------------------------------------------------------------------------!  
   Subroutine Map_Global_to_Local_GRP(Array,KMAX,NGRP)
 
-    Use GLOBAL
-    Use Variables_MPI
+    use GLOBAL
+    use Variables_MPI
     
-    Implicit none
+    implicit none
     
     ! *** Passed in variables
-    Integer, Intent(in) :: KMAX, NGRP
-    Real(4), Intent(inout), Allocatable, Dimension(:,:,:) :: Array
+    integer, Intent(in) :: KMAX, NGRP
+    real(4), Intent(inout), Allocatable, Dimension(:,:,:) :: Array
         
     ! *** Local variables
-    Integer :: L, LG, NS, K
-    Real(4), Allocatable, Dimension(:,:,:) :: ArrayG
+    integer :: L, LG, NS, K
+    real(4), Allocatable, Dimension(:,:,:) :: ArrayG
     
     ! *** First Get the global array from the master_id
-    Call Broadcast_Array(Array, master_id)
+    call Broadcast_Array(Array, master_id)
 
     ! *** Setup temporary arrays for transfer
-    Allocate(ArrayG(LCM_Global,KMAX,NGRP))
+    allocate(ArrayG(LCM_Global,KMAX,NGRP))
     ArrayG = 0.
     
     do NS = 1,NGRP
@@ -420,7 +420,7 @@ Module Mod_Map_Global_to_Local
     deallocate(Array)
     
     ! *** Reallocate to local LCM
-    Allocate(Array(LCM,KMAX,NGRP))
+    allocate(Array(LCM,KMAX,NGRP))
     Array = 0.
     
     ! *** Now map global to local
@@ -442,24 +442,24 @@ Module Mod_Map_Global_to_Local
   !---------------------------------------------------------------------------!  
   Subroutine Map_Global_to_Local_GRP_RK8(Array,KMAX,NGRP)
 
-    Use GLOBAL
-    Use Variables_MPI
+    use GLOBAL
+    use Variables_MPI
     
-    Implicit none
+    implicit none
     
     ! *** Passed in variables
-    Integer, Intent(in) :: KMAX, NGRP
-    Real(8), Intent(inout), Allocatable, Dimension(:,:,:) :: Array
+    integer, Intent(in) :: KMAX, NGRP
+    real(8), Intent(inout), Allocatable, Dimension(:,:,:) :: Array
         
     ! *** Local variables
-    Integer :: L, LG, NS, K
-    Real(8), Allocatable, Dimension(:,:,:) :: ArrayG
+    integer :: L, LG, NS, K
+    real(8), Allocatable, Dimension(:,:,:) :: ArrayG
     
     ! *** First Get the global array from the master_id
-    Call Broadcast_Array(Array, master_id)
+    call Broadcast_Array(Array, master_id)
 
     ! *** Setup temporary arrays for transfer
-    Allocate(ArrayG(LCM_Global,KMAX,NGRP))
+    allocate(ArrayG(LCM_Global,KMAX,NGRP))
     ArrayG = 0.
     
     do NS = 1,NGRP
@@ -474,7 +474,7 @@ Module Mod_Map_Global_to_Local
     deallocate(Array)
     
     ! *** Reallocate to local LCM
-    Allocate(Array(LCM,KMAX,NGRP))
+    allocate(Array(LCM,KMAX,NGRP))
     Array = 0.
     
     ! *** Now map global to local

@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
   !---------------------------------------------------------------------------!
@@ -16,24 +16,24 @@
 
   Subroutine Map_OpenBC_Conc
 
-  Use GLOBAL
-  Use Variables_MPI
-  Use Variables_MPI_Mapping
-  Use Variables_MPI_Write_Out
+  use GLOBAL
+  use Variables_MPI
+  use Variables_MPI_Mapping
+  use Variables_MPI_Write_Out
 
-  Implicit None
+  implicit none
 
   ! *** Local Variables
-  Integer :: II, LL, III, JJJ, MS, K, M, NOPEN
-  Integer :: MMAX, MMIN
-  Integer :: NCBS_GL, NCBW_GL, NCBE_GL, NCBN_GL
-  Integer, ALLOCATABLE, DIMENSION(:) :: LLSave
+  integer :: II, LL, III, JJJ, MS, K, M, NOPEN
+  integer :: MMAX, MMIN
+  integer :: NCBS_GL, NCBW_GL, NCBE_GL, NCBN_GL
+  integer, allocatable, dimension(:) :: LLSave
 
   NOPEN = NCBW+NCBE+NCBS+NCBN
-  ALLOCATE(LLSave(NOPEN))
+  allocate(LLSave(NOPEN))
   LLSave = 0
   
-  Call WriteBreak(mpi_mapping_unit)
+  call WriteBreak(mpi_mapping_unit)
   write(mpi_mapping_unit,'(a)') 'NUMBER OF CONCENTRATION BOUNDARY CONDITIONS CELLS ON OPEN BOUNDARIES'
   write(mpi_mapping_unit, '(a,I5)') 'Global NCBW = ',  NCBW
   write(mpi_mapping_unit, '(a,I5)') 'Global NCBE = ',  NCBE
@@ -43,11 +43,11 @@
   NCBS_GL = NCBS
   NCBS = 0
   II   = 0
-  DO LL = 1,NCBS_GL
+  do LL = 1,NCBS_GL
     III = IG2IL(ICBS_GL(LL))  ! Get local I value
     JJJ = JG2JL(JCBS_GL(LL))  ! Get local J value
-    IF(  III > 0 .AND. III <= IC )THEN
-      IF(  JJJ > 0 .AND. JJJ <= JC )THEN
+    if( III > 0 .and. III <= IC )then
+      if( JJJ > 0 .and. JJJ <= JC )then
         II = II + 1
         LLSave(II) = LL
 
@@ -65,40 +65,40 @@
         NCSERS(II,7) = NCSERS_GL(LL,7)
         
         MMAX = 3 + NDYM + NTOX  ! New format (multiple dye classes)
-        DO MS = 1,MMAX
+        do MS = 1,MMAX
           CBS(II,1,MS) = CBS_GL(LL,1,MS)
           CBS(II,2,MS) = CBS_GL(LL,2,MS)
-        END DO
+        enddo
 
         MMIN = MMAX + 1
         MMAX = MMAX + NSED + NSND
-        DO MS = MMIN,MMAX
+        do MS = MMIN,MMAX
           CBS(II,1,MS) = CBS_GL(LL,1,MS)
           CBS(II,2,MS) = CBS_GL(LL,2,MS)
-        END DO
+        enddo
         
-      END IF
-    END IF
-  END DO
+      endif
+    endif
+  enddo
 
   write(mpi_mapping_unit,'(A)') ' '
   write(mpi_mapping_unit,'( 50("*"),A10,47("*") )' )  '  SOUTH  '
   write(mpi_mapping_unit,'(2( " ****",2("********"),a8,3("********"),"|") )' ) 'GLOBAL ', 'LOCAL '
   write(mpi_mapping_unit,'(2(a5,6a8,1x))') 'N','IOPEN','JOPEN','PSER','SAL-BOT','SAL-TOP','SAL-SER','N','IOPEN','JOPEN','PSER','SAL-BOT','SAL-TOP','SAL-SER'
-  DO II = 1,NCBS
+  do II = 1,NCBS
     LL = LLSave(II)
     write(mpi_mapping_unit,'(2(I5,3I8,2F8.1,I8,1X))') LL,ICBS_GL(LL),JCBS_GL(LL),NPSERS_GL(LL),CBS_GL(LL,1,2),CBS_GL(LL,2,2),NCSERS_GL(LL,2),  &
                                                        II,ICBS(II),   JCBS(II),   NPSERS(II),   CBS(II,1,2)   ,CBS(II,2,2),   NCSERS(II,2)
-  ENDDO
+  enddo
 
   NCBW_GL = NCBW
   NCBW = 0
   II = 0
-  DO LL =1,NCBW_GL
+  do LL  = 1,NCBW_GL
     III = IG2IL(ICBW_GL(LL))
     JJJ = JG2JL(JCBW_GL(LL))
-    IF(  III .GT. 0 .AND. III <= IC )THEN
-      IF(  JJJ .GT. 0 .AND. JJJ <= JC )THEN
+    if( III .GT. 0 .and. III <= IC )then
+      if( JJJ .GT. 0 .and. JJJ <= JC )then
         II = II +1
         LLSave(II) = LL
 
@@ -116,41 +116,41 @@
         NCSERW(II,7) = NCSERW_GL(LL,7)
 
         MMAX = 3 + NDYM + NTOX  ! New format (multiple dye classes)
-        DO MS = 1,MMAX
+        do MS = 1,MMAX
           CBW(II,1,MS) = CBW_GL(LL,1,MS)
           CBW(II,2,MS) = CBW_GL(LL,2,MS)
-        END DO
+        enddo
 
         MMIN = MMAX + 1
         MMAX = MMAX+NSED+NSND
-        DO MS = MMIN,MMAX
+        do MS = MMIN,MMAX
           CBW(II,1,MS) = CBW_GL(LL,1,MS)
           CBW(II,2,MS) = CBW_GL(LL,2,MS)
-        END DO
+        enddo
         
-      END IF
-    END IF
-  END DO
+      endif
+    endif
+  enddo
 
   write(mpi_mapping_unit,'(A)') ' '
   write(mpi_mapping_unit,'( 50("*"),A10,47("*") )' )  '   WEST  '
   write(mpi_mapping_unit,'(2( " ****",2("********"),a8,3("********"),"|") )' ) 'GLOBAL ', 'LOCAL '
   write(mpi_mapping_unit,'(2(a5,6a8,1x))') 'N','IOPEN','JOPEN','PSER','SAL-BOT','SAL-TOP','SAL-SER','N','IOPEN','JOPEN','PSER','SAL-BOT','SAL-TOP','SAL-SER'
-  DO II = 1,NCBW
+  do II = 1,NCBW
     LL = LLSave(II)
     write(mpi_mapping_unit,'(2(I5,3I8,2F8.1,I8,1X))') LL,ICBW_GL(LL),JCBW_GL(LL),NPSERW_GL(LL),CBW_GL(LL,1,2),CBW_GL(LL,2,2),NCSERW_GL(LL,2),  &
                                                        II,ICBW(II),   JCBW(II),   NPSERW(II),   CBW(II,1,2)   ,CBW(II,2,2),   NCSERW(II,2)
-  ENDDO
+  enddo
 
   ! *** East
   NCBE_GL = NCBE ! Set global copy
   NCBE = 0  ! recalculate the local value in the next lines of code
   II = 0
-  DO LL =1,NCBE_GL
+  do LL  = 1,NCBE_GL
     III = IG2IL(ICBE_GL(LL))
     JJJ = JG2JL(JCBE_GL(LL))
-    IF(  III .GT. 0 .AND. III <= IC )THEN
-      IF(  JJJ .GT. 0 .AND. JJJ <= JC )THEN
+    if( III .GT. 0 .and. III <= IC )then
+      if( JJJ .GT. 0 .and. JJJ <= JC )then
         II = II + 1
         LLSave(II) = LL
 
@@ -168,41 +168,41 @@
         NCSERE(II,7) = NCSERE_GL(LL,7)
 
         MMAX = 3 + NDYM + NTOX  ! New format (multiple dye classes)
-        DO MS = 1,MMAX
+        do MS = 1,MMAX
           CBE(II,1,MS) = CBE_GL(LL,1,MS)
           CBE(II,2,MS) = CBE_GL(LL,2,MS)
-        END DO
+        enddo
         
         MMIN = MMAX + 1
         MMAX = MMAX+NSED+NSND
-        DO MS = MMIN,MMAX
+        do MS = MMIN,MMAX
           CBE(II,1,MS) = CBE_GL(LL,1,MS)
           CBE(II,2,MS) = CBE_GL(LL,2,MS)
-        END DO
+        enddo
         
-      END IF
-    END IF
-  END DO
+      endif
+    endif
+  enddo
 
   write(mpi_mapping_unit,'(A)') ' '
   write(mpi_mapping_unit,'( 50("*"),A10,47("*") )' )  '   EAST  '
   write(mpi_mapping_unit,'(2( " ****",2("********"),a8,3("********"),"|") )' ) 'GLOBAL ', 'LOCAL '
   write(mpi_mapping_unit,'(2(a5,6a8,1x))') 'N','IOPEN','JOPEN','PSER','SAL-BOT','SAL-TOP','SAL-SER','N','IOPEN','JOPEN','PSER','SAL-BOT','SAL-TOP','SAL-SER'
-  DO II = 1,NCBE
+  do II = 1,NCBE
     LL = LLSave(II)
     write(mpi_mapping_unit,'(2(I5,3I8,2F8.1,I8,1X))') LL,ICBE_GL(LL),JCBE_GL(LL),NPSERE_GL(LL),CBE_GL(LL,1,2),CBE_GL(LL,2,2),NCSERE_GL(LL,2),  &
                                                        II,ICBE(II),   JCBE(II),   NPSERE(II),   CBE(II,1,2)   ,CBE(II,2,2),   NCSERE(II,2)
-  ENDDO
+  enddo
   
   ! *** North boundary
   NCBN_GL = NCBN
   NCBN = 0
   II = 0
-  DO LL =1,NCBN_GL
+  do LL  = 1,NCBN_GL
     III = IG2IL(ICBN_GL(LL))
     JJJ = JG2JL(JCBN_GL(LL))
-    IF(  III .GT. 0 .AND. III <= IC )THEN
-      IF(  JJJ .GT. 0 .AND. JJJ <= JC )THEN
+    if( III .GT. 0 .and. III <= IC )then
+      if( JJJ .GT. 0 .and. JJJ <= JC )then
         II = II +1
         LLSave(II) = LL
         
@@ -220,33 +220,33 @@
         NCSERN(II,7) = NCSERN_GL(LL,7)
 
         MMAX = 3 + NDYM + NTOX  ! New format (multiple dye classes)
-        DO MS = 1,MMAX
+        do MS = 1,MMAX
           CBN(II,1,MS) = CBN_GL(LL,1,MS)
           CBN(II,2,MS) = CBN_GL(LL,2,MS)
-        END DO
+        enddo
         
         MMIN = MMAX + 1
         MMAX = MMAX+NSED+NSND
-        DO MS = MMIN,MMAX
+        do MS = MMIN,MMAX
           CBN(II,1,MS) = CBN_GL(LL,1,MS)
           CBN(II,2,MS) = CBN_GL(LL,2,MS)
-        END DO
+        enddo
 
-      END IF
-    END IF
-  END DO
+      endif
+    endif
+  enddo
 
   write(mpi_mapping_unit,'(A)') ' '
   write(mpi_mapping_unit,'( 50("*"),A10,47("*") )' )  '  NORTH  '
   write(mpi_mapping_unit,'(2( " ****",2("********"),a8,3("********"),"|") )' ) 'GLOBAL ', 'LOCAL '
   write(mpi_mapping_unit,'(2(a5,6a8,1x))') 'N','IOPEN','JOPEN','PSER','SAL-BOT','SAL-TOP','SAL-SER','N','IOPEN','JOPEN','PSER','SAL-BOT','SAL-TOP','SAL-SER'
-  DO II = 1,NCBN
+  do II = 1,NCBN
     LL = LLSave(II)
     write(mpi_mapping_unit,'(2(I5,3I8,2F8.1,I8,1X))') LL,ICBN_GL(LL),JCBN_GL(LL),NPSERN_GL(LL),CBN_GL(LL,1,2),CBN_GL(LL,2,2),NCSERN_GL(LL,2),  &
                                                        II,ICBN(II),   JCBN(II),   NPSERN(II),   CBN(II,1,2)   ,CBN(II,2,2),   NCSERN(II,2)
-  ENDDO
+  enddo
 
-  Call WriteBreak(mpi_mapping_unit)
+  call WriteBreak(mpi_mapping_unit)
   
   write(mpi_mapping_unit, '(a,I5)') ' '
   write(mpi_mapping_unit, '(a,I5)') 'Local NCBW  = ',  NCBW
@@ -254,7 +254,7 @@
   write(mpi_mapping_unit, '(a,I5)') 'Local NCBN  = ',  NCBN
   write(mpi_mapping_unit, '(a,I5)') 'Local NCBS  = ',  NCBS
 
-  RETURN
+  return
 
 End Subroutine Map_OpenBC_Conc
 
@@ -267,29 +267,29 @@ End Subroutine Map_OpenBC_Conc
 
 Subroutine Map_OpenBC_Eutrophication
 
-  Use GLOBAL
-  Use Variables_WQ
+  use GLOBAL
+  use Variables_WQ
 
-  Use Variables_MPI
-  Use Variables_MPI_Mapping
-  Use Variables_MPI_Write_Out
+  use Variables_MPI
+  use Variables_MPI_Mapping
+  use Variables_MPI_Write_Out
 
-  Implicit None
+  implicit none
 
   ! *** Local Variables
-  Integer :: II, LL, III, JJJ, MS, K, M, NOPEN, NT, NW
-  Integer :: MMAX, MMIN
-  Integer :: NCBS_GL, NCBW_GL, NCBE_GL, NCBN_GL
-  Integer, ALLOCATABLE, DIMENSION(:) :: LLSave
+  integer :: II, LL, III, JJJ, MS, K, M, NOPEN, NT, NW
+  integer :: MMAX, MMIN
+  integer :: NCBS_GL, NCBW_GL, NCBE_GL, NCBN_GL
+  integer, allocatable, dimension(:) :: LLSave
 
-  Integer, ALLOCATABLE, DIMENSION(:) :: ITMP
-  Integer, ALLOCATABLE, DIMENSION(:) :: JTMP
+  integer, allocatable, dimension(:) :: ITMP
+  integer, allocatable, dimension(:) :: JTMP
 
   NOPEN = NWQOBW + NWQOBE + NWQOBS + NWQOBN
-  ALLOCATE(LLSave(NOPEN))
+  allocate(LLSave(NOPEN))
   LLSave = 0
   
-  Call WriteBreak(mpi_mapping_unit)
+  call WriteBreak(mpi_mapping_unit)
   write(mpi_mapping_unit,'(a)') 'NUMBER OF WQ CONCENTRATION BOUNDARY CONDITIONS CELLS ON OPEN BOUNDARIES'
   write(mpi_mapping_unit, '(a,I5)') 'Global NWQOBW = ',  NWQOBW
   write(mpi_mapping_unit, '(a,I5)') 'Global NWQOBE = ',  NWQOBE
@@ -298,7 +298,7 @@ Subroutine Map_OpenBC_Eutrophication
 
   ! *** South
   NCBS_GL = NWQOBS
-  ALLOCATE(ITMP(NWQOBS), JTMP(NWQOBS))
+  allocate(ITMP(NWQOBS), JTMP(NWQOBS))
   ITMP = IWQCBS
   JTMP = JWQCBS
   
@@ -306,11 +306,11 @@ Subroutine Map_OpenBC_Eutrophication
   IWQCBS = 0
   JWQCBS = 0
   II   = 0
-  DO LL = 1,NCBS_GL
+  do LL = 1,NCBS_GL
     III = IG2IL(ITMP(LL))  ! Get local I value
     JJJ = JG2JL(JTMP(LL))  ! Get local J value
-    IF(  III > 0 .AND. III <= IC )THEN
-      IF(  JJJ > 0 .AND. JJJ <= JC )THEN
+    if( III > 0 .and. III <= IC )then
+      if( JJJ > 0 .and. JJJ <= JC )then
         II = II + 1
         LLSave(II) = LL
 
@@ -319,38 +319,38 @@ Subroutine Map_OpenBC_Eutrophication
         JWQCBS(II) = JJJ
 
         ! *** CONCENTRATION SERIES ASSIGNMENTS
-        IF( IWQCBS(II) == IG2IL(ICBS_GL(LL)) .AND. JWQCBS(II) == JG2JL(JCBS_GL(LL)) )THEN
-          NCSERS(II,8) = IWQOBS(LL,IDOX)   ! *** ALL CONSTITUENTS USE THE SAME SERIES
-        ELSE
-          CALL STOPP('WQ: SOUTH OBC: MISS MATCH BETWEEN NCBS & NWQOBS')
-        ENDIF
+        if( IWQCBS(II) == IG2IL(ICBS_GL(LL)) .and. JWQCBS(II) == JG2JL(JCBS_GL(LL)) )then
+          NCSERS(II,8) = IWQOBS(LL,IDOX)   ! *** ALL CONSTITUENTS use THE SAME SERIES
+        else
+          call STOPP('WQ: SOUTH OBC: MISS MATCH BETWEEN NCBS & NWQOBS')
+        endif
         
-        DO NW=1,NWQV
-          IF( ISTRWQ(NW) > 0 )THEN
+        do NW = 1,NWQV
+          if( ISTRWQ(NW) > 0 )then
             NT = MSVWQV(NW)
             CBS(II,1,NT) = WQOBCS(LL,1,NW)
             CBS(II,2,NT) = WQOBCS(LL,2,NW)
-          ENDIF
-        ENDDO
+          endif
+        enddo
 
-      END IF
-    END IF
-  END DO
+      endif
+    endif
+  enddo
 
   write(mpi_mapping_unit,'(A)') ' '
   write(mpi_mapping_unit,'( 48("*"),A14,45("*") )' )  ' EUTRO SOUTH  '
   write(mpi_mapping_unit,'(2( " ****",2("****"),a8,3("****"),"|") )' ) 'GLOBAL ', 'LOCAL '
   write(mpi_mapping_unit,'(2(a5,5a8,1x))') 'N','IOPEN','JOPEN','WQ-SER','DO-BOT','DO-TOP','N','IOPEN','JOPEN','WQ-SER','DO-BOT','DO-TOP'
-  DO II = 1,NWQOBS
+  do II = 1,NWQOBS
     LL = LLSave(II)
     write(mpi_mapping_unit,'(2(I5,3I8,2F8.1,1X))') LL, ITMP(LL),   JTMP(LL),   IWQOBS(LL,IDOX), WQOBCS(LL,1,IDOX), WQOBCS(LL,2,IDOX), &
                                                     II, IWQCBS(II), JWQCBS(II), NCSERS(II,8),  CBS(II,1,IDOX),    CBS(II,2,IDOX)
-  ENDDO
-  DEALLOCATE(ITMP, JTMP)
+  enddo
+  deallocate(ITMP, JTMP)
 
   ! *** West
   NCBW_GL = NWQOBW
-  ALLOCATE(ITMP(NWQOBW), JTMP(NWQOBW))
+  allocate(ITMP(NWQOBW), JTMP(NWQOBW))
   ITMP = IWQCBW
   JTMP = JWQCBW
   
@@ -358,11 +358,11 @@ Subroutine Map_OpenBC_Eutrophication
   IWQCBW = 0
   JWQCBW = 0
   II = 0
-  DO LL =1,NCBW_GL
+  do LL  = 1,NCBW_GL
     III = IG2IL(ITMP(LL))
     JJJ = JG2JL(JTMP(LL))
-    IF(  III .GT. 0 .AND. III <= IC )THEN
-      IF(  JJJ .GT. 0 .AND. JJJ <= JC )THEN
+    if( III .GT. 0 .and. III <= IC )then
+      if( JJJ .GT. 0 .and. JJJ <= JC )then
         II = II +1
         LLSave(II) = LL
 
@@ -371,38 +371,38 @@ Subroutine Map_OpenBC_Eutrophication
         JWQCBW(II) = JJJ
 
         ! *** CONCENTRATION SERIES ASSIGNMENTS
-        IF( IWQCBW(II) == IG2IL(ICBW_GL(LL)) .AND. JWQCBW(II) == JG2JL(JCBW_GL(LL)) )THEN
-          NCSERW(II,8) = IWQOBW(LL,IDOX)   ! *** ALL CONSTITUENTS USE THE SAME SERIES
-        ELSE
-          CALL STOPP('WQ: WEST OBC: MISS MATCH BETWEEN NCBW & NWQOBW')
-        ENDIF
+        if( IWQCBW(II) == IG2IL(ICBW_GL(LL)) .and. JWQCBW(II) == JG2JL(JCBW_GL(LL)) )then
+          NCSERW(II,8) = IWQOBW(LL,IDOX)   ! *** ALL CONSTITUENTS use THE SAME SERIES
+        else
+          call STOPP('WQ: WEST OBC: MISS MATCH BETWEEN NCBW & NWQOBW')
+        endif
 
-        DO NW=1,NWQV
-          IF( ISTRWQ(NW) > 0 )THEN
+        do NW = 1,NWQV
+          if( ISTRWQ(NW) > 0 )then
             NT = MSVWQV(NW)
             CBW(II,1,NT) = WQOBCW(LL,1,NW)
             CBW(II,2,NT) = WQOBCW(LL,2,NW)
-          ENDIF
-        ENDDO
+          endif
+        enddo
 
-      END IF
-    END IF
-  END DO
+      endif
+    endif
+  enddo
 
   write(mpi_mapping_unit,'(A)') ' '
   write(mpi_mapping_unit,'( 48("*"),A14,45("*") )' )  ' EUTRO WEST   '
   write(mpi_mapping_unit,'(2( " ****",2("****"),a8,3("****"),"|") )' ) 'GLOBAL ', 'LOCAL '
   write(mpi_mapping_unit,'(2(a5,5a8,1x))') 'N','IOPEN','JOPEN','WQ-SER','DO-BOT','DO-TOP','N','IOPEN','JOPEN','WQ-SER','DO-BOT','DO-TOP'
-  DO II = 1,NWQOBW
+  do II = 1,NWQOBW
     LL = LLSave(II)
     write(mpi_mapping_unit,'(2(I5,3I8,2F8.1,1X))') LL, ITMP(LL),   JTMP(LL),   IWQOBW(LL,IDOX), WQOBCW(LL,1,IDOX), WQOBCW(LL,2,IDOX), &
                                                     II, IWQCBW(II), JWQCBW(II), NCSERW(II,8),  CBW(II,1,IDOX),    CBW(II,2,IDOX)
-  ENDDO
-  DEALLOCATE(ITMP, JTMP)
+  enddo
+  deallocate(ITMP, JTMP)
 
   ! *** East
   NCBE_GL = NWQOBE ! Set global copy
-  ALLOCATE(ITMP(NWQOBE), JTMP(NWQOBE))
+  allocate(ITMP(NWQOBE), JTMP(NWQOBE))
   ITMP = IWQCBE
   JTMP = JWQCBE
   
@@ -410,11 +410,11 @@ Subroutine Map_OpenBC_Eutrophication
   IWQCBE = 0
   JWQCBE = 0
   II = 0
-  DO LL =1,NCBE_GL
+  do LL  = 1,NCBE_GL
     III = IG2IL(ITMP(LL))
     JJJ = JG2JL(JTMP(LL))
-    IF(  III .GT. 0 .AND. III <= IC )THEN
-      IF(  JJJ .GT. 0 .AND. JJJ <= JC )THEN
+    if( III .GT. 0 .and. III <= IC )then
+      if( JJJ .GT. 0 .and. JJJ <= JC )then
         II = II + 1
         LLSave(II) = LL
 
@@ -423,38 +423,38 @@ Subroutine Map_OpenBC_Eutrophication
         JWQCBE(II) = JJJ
 
         ! *** CONCENTRATION SERIES ASSIGNMENTS
-        IF( IWQCBE(II) == IG2IL(ICBE_GL(LL)) .AND. JWQCBE(II) == JG2JL(JCBE_GL(LL)) )THEN
-          NCSERE(II,8) = IWQOBE(LL,IDOX)   ! *** ALL CONSTITUENTS USE THE SAME SERIES
-        ELSE
-          CALL STOPP('WQ: EAST OBC: MISS MATCH BETWEEN NCBE & NWQOBE')
-        ENDIF
+        if( IWQCBE(II) == IG2IL(ICBE_GL(LL)) .and. JWQCBE(II) == JG2JL(JCBE_GL(LL)) )then
+          NCSERE(II,8) = IWQOBE(LL,IDOX)   ! *** ALL CONSTITUENTS use THE SAME SERIES
+        else
+          call STOPP('WQ: EAST OBC: MISS MATCH BETWEEN NCBE & NWQOBE')
+        endif
 
-        DO NW=1,NWQV
-          IF( ISTRWQ(NW) > 0 )THEN
+        do NW = 1,NWQV
+          if( ISTRWQ(NW) > 0 )then
             NT = MSVWQV(NW)
             CBE(II,1,NT) = WQOBCE(LL,1,NW)
             CBE(II,2,NT) = WQOBCE(LL,2,NW)
-          ENDIF
-        ENDDO
+          endif
+        enddo
 
-      END IF
-    END IF
-  END DO
+      endif
+    endif
+  enddo
 
   write(mpi_mapping_unit,'(A)') ' '
   write(mpi_mapping_unit,'( 48("*"),A14,45("*") )' )  ' EUTRO EAST   '
   write(mpi_mapping_unit,'(2( " ****",2("****"),a8,3("****"),"|") )' ) 'GLOBAL ', 'LOCAL '
   write(mpi_mapping_unit,'(2(a5,5a8,1x))') 'N','IOPEN','JOPEN','WQ-SER','DO-BOT','DO-TOP','N','IOPEN','JOPEN','WQ-SER','DO-BOT','DO-TOP'
-  DO II = 1,NWQOBE
+  do II = 1,NWQOBE
     LL = LLSave(II)
     write(mpi_mapping_unit,'(2(I5,3I8,2F8.1,1X))') LL, ITMP(LL),   JTMP(LL),   IWQOBE(LL,IDOX), WQOBCE(LL,1,IDOX), WQOBCE(LL,2,IDOX), &
                                                     II, IWQCBE(II), JWQCBE(II), NCSERE(II,8),  CBE(II,1,IDOX),    CBE(II,2,IDOX)
-  ENDDO
-  DEALLOCATE(ITMP, JTMP)
+  enddo
+  deallocate(ITMP, JTMP)
   
   ! *** North boundary
   NCBN_GL = NWQOBN
-  ALLOCATE(ITMP(NWQOBN), JTMP(NWQOBN))
+  allocate(ITMP(NWQOBN), JTMP(NWQOBN))
   ITMP = IWQCBN
   JTMP = JWQCBN
 
@@ -462,11 +462,11 @@ Subroutine Map_OpenBC_Eutrophication
   IWQCBN = 0
   JWQCBN = 0
   II = 0
-  DO LL =1,NCBN_GL
+  do LL  = 1,NCBN_GL
     III = IG2IL(ITMP(LL))
     JJJ = JG2JL(JTMP(LL))
-    IF(  III .GT. 0 .AND. III <= IC )THEN
-      IF(  JJJ .GT. 0 .AND. JJJ <= JC )THEN
+    if( III .GT. 0 .and. III <= IC )then
+      if( JJJ .GT. 0 .and. JJJ <= JC )then
         II = II +1
         LLSave(II) = LL
         
@@ -475,35 +475,35 @@ Subroutine Map_OpenBC_Eutrophication
         JWQCBN(II) = JJJ
 
         ! *** CONCENTRATION SERIES ASSIGNMENTS
-        IF( IWQCBN(II) == IG2IL(ICBN_GL(LL)) .AND. JWQCBN(II) == JG2JL(JCBN_GL(LL)) )THEN
-          NCSERN(II,8) = IWQOBN(LL,IDOX)   ! *** ALL CONSTITUENTS USE THE SAME SERIES
-        ELSE
-          CALL STOPP('WQ: NORTH OBC: MISS MATCH BETWEEN NCBN & NWQOBN')
-        ENDIF
+        if( IWQCBN(II) == IG2IL(ICBN_GL(LL)) .and. JWQCBN(II) == JG2JL(JCBN_GL(LL)) )then
+          NCSERN(II,8) = IWQOBN(LL,IDOX)   ! *** ALL CONSTITUENTS use THE SAME SERIES
+        else
+          call STOPP('WQ: NORTH OBC: MISS MATCH BETWEEN NCBN & NWQOBN')
+        endif
 
-        DO NW=1,NWQV
-          IF( ISTRWQ(NW) > 0 )THEN
+        do NW = 1,NWQV
+          if( ISTRWQ(NW) > 0 )then
             NT = MSVWQV(NW)
             CBN(II,1,NT) = WQOBCN(LL,1,NW)
             CBN(II,2,NT) = WQOBCN(LL,2,NW)
-          ENDIF
-        ENDDO
+          endif
+        enddo
 
-      END IF
-    END IF
-  END DO
+      endif
+    endif
+  enddo
 
   write(mpi_mapping_unit,'(A)') ' '
   write(mpi_mapping_unit,'( 48("*"),A14,45("*") )' )  ' EUTRO NORTH  '
   write(mpi_mapping_unit,'(2( " ****",2("****"),a8,3("****"),"|") )' ) 'GLOBAL ', 'LOCAL '
   write(mpi_mapping_unit,'(2(a5,5a8,1x))') 'N','IOPEN','JOPEN','WQ-SER','DO-BOT','DO-TOP','N','IOPEN','JOPEN','WQ-SER','DO-BOT','DO-TOP'
-  DO II = 1,NWQOBN
+  do II = 1,NWQOBN
     LL = LLSave(II)
     write(mpi_mapping_unit,'(2(I5,3I8,2F8.1,1X))') LL, ITMP(LL),   JTMP(LL),   IWQOBN(LL,IDOX), WQOBCN(LL,1,IDOX), WQOBCN(LL,2,IDOX), &
                                                     II, IWQCBN(II), JWQCBN(II), NCSERN(II,8),  CBN(II,1,IDOX),    CBN(II,2,IDOX)
-  ENDDO
+  enddo
 
-  Call WriteBreak(mpi_mapping_unit)
+  call WriteBreak(mpi_mapping_unit)
   
   write(mpi_mapping_unit, '(a,I5)') ' '
   write(mpi_mapping_unit, '(a,I5)') 'Local NWQOBW  = ',  NWQOBW
@@ -511,6 +511,6 @@ Subroutine Map_OpenBC_Eutrophication
   write(mpi_mapping_unit, '(a,I5)') 'Local NWQOBN  = ',  NWQOBN
   write(mpi_mapping_unit, '(a,I5)') 'Local NWQOBS  = ',  NWQOBS
 
-  RETURN
+  return
 
   End Subroutine Map_OpenBC_Eutrophication

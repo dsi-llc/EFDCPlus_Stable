@@ -1,0 +1,276 @@
+#include"cppdefs.h"
+!-----------------------------------------------------------------------
+!BOP
+!
+! !ROUTINE: The dynamic q2l-equation\label{sec:lengthscaleeq}
+!
+! !INTERFACE:
+   subroutine lengthscaleeq(nlev,dt,depth,u_taus,u_taub,z0s,z0b,h,NN,SS,ith)
+
+!
+! !DESCRIPTION:
+! Following suggestions of \cite{Rotta51a}, \cite{MellorYamada82}
+! proposed an equation for the product $q^2 l$ expressed by
+! \begin{equation}
+!   \label{MY}
+!   \dot{\overline{q^2 l}}
+!   = {\cal D}_l + l ( E_1  P + E_3 G - E_2  F \epsilon )
+!   \comma
+! \end{equation}
+! where $\dot{\overline{q^2 l}}$ denotes the material derivative of $q^2 l$.
+! The production terms $P$ and $G$ follow from \eq{PandG}, and $\epsilon$
+! can be computed either directly from \eq{epsilonMY}, or from \eq{epsilon}
+! with the help \eq{B1}.
+!
+! The so-called wall function, $F$, appearing in \eq{MY} is defined by
+! \begin{equation}
+!   \label{F}
+!   F = 1 + E_2 \left( \dfrac{l}{\kappa {\cal Lgs}_z} \right)^2
+!   \comma
+! \end{equation}
+! $\kappa$ being the von K{\'a}rm{\'a}n constant and ${\cal Lgs}_z$ some
+! measure for the distance from the wall. Different possiblities
+! for  ${\cal Lgs}_z$ are implemented in GOTM, which can be activated
+! be setting the parameter {\tt MY\_length} in {\tt gotmturb.nml} to
+! appropriate values. Close to the wall, however, one always has
+! ${\cal Lgs}_z= \overline{z}$, where $\overline{z}$ is the distance from
+! the wall.
+!
+! For horizontally homogeneous flows, the transport term ${\cal D}_l$
+! appearing in \eq{MY} is expressed by a simple gradient formulation,
+! \begin{equation}
+!   \label{diffusionMYlength}
+!   {\cal D}_l = \frstder{z} \left( q l S_l \partder{q^2 l}{z} \right)
+!  \comma
+! \end{equation}
+! where $S_l$ is a constant of the model. The values for the model
+! constants recommended by \cite{MellorYamada82} are displayed in
+! \tab{tab:MY_constants}. They can be set in {\tt gotmturb.nml}. Note,
+! that the parameter $E_3$ in stably stratifed flows is in principle
+! a function of the so-called steady state Richardson-number,
+! as discussed by \cite{Burchard2001c}, see discussion in the context
+! of \eq{Ri_st}.
+! \begin{table}[ht]
+!   \begin{center}
+! \begin{tabular}{ccccccc}
+!                           & $B_1$  & $S_q$ & $S_l$ & $E_1$ & $E_2$ & $E_3$    \\[1mm]
+!      \hline
+!     \cite{MellorYamada82} & $16.6$ & $0.2$ & $0.2$ & $1.8$ & $1.33$ & $1.8$\\
+!   \end{tabular}
+!   \caption{\label{tab:MY_constants} Constants appearing in \eq{MY}
+!     and \eq{epsilonMY}}
+!   \end{center}
+! \end{table}
+!
+! At the end of this routine the length-scale can be constrained according to a
+! suggestion of \cite{Galperinetal88}. This feature is optional and can be activated
+! by setting {\tt length\_lim = .true.} in {\tt gotmturb.nml}.
+!
+! !USES:
+   use turbulence, only: P,B
+   use turbulence, only: tke,tkeo,k_min,eps,eps_min,Lgs
+   use turbulence, only: kappa,e1,e2,e3,b1
+   use turbulence, only: MY_length,cm0,cde,galp,length_lim
+   use turbulence, only: q2l_bc, psi_ubc, psi_lbc, ubc_type, lbc_type
+   use turbulence, only: sl
+   use util,       only: Dirichlet,Neumann
+
+   implicit none
+!
+! !INPUT parameterS:
+
+!  number of vertical layers
+   integer,  intent(in)                :: nlev
+   
+!  thread index
+   integer,  intent(in)                :: ith
+   
+!  time step (s)
+   REALTYPE, intent(in)                :: dt
+
+!  local water depth (m)
+   REALTYPE, intent(in)                :: depth
+
+!  surface and bottom
+!  friction velocity (m/s)
+   REALTYPE, intent(in)                :: u_taus,u_taub
+
+!  surface and bottom
+!  roughness length (m)
+   REALTYPE, intent(in)                :: z0s,z0b
+
+!  layer thickness (m)
+   REALTYPE, intent(in)                :: h(0:nlev)
+
+!  square of shear and buoyancy
+!  frequency (1/s^2)
+   REALTYPE, intent(in)                :: NN(0:nlev),SS(0:nlev)
+!
+! !REVISION HISTORY:
+!  Original author(s): Lars Umlauf
+!                     (re-write after first version of
+!                      H. Burchard and K. Bolding
+!EOP
+!------------------------------------------------------------------------
+!
+! !LOCAL VARIABLES:
+   REALTYPE                  :: DiffQ2lup,DiffQ2ldw,pos_bc
+   REALTYPE                  :: prod,buoyan,diss
+   REALTYPE                  :: prod_pos,prod_neg,buoyan_pos,buoyan_neg
+   REALTYPE                  :: ki,epslim,NN_pos
+   REALTYPE                  :: ds,db,Lcrit
+   REALTYPE                  :: cnpar = _ONE_
+   REALTYPE                  :: q2l(0:nlev),q3(0:nlev)
+   REALTYPE                  :: avh(0:nlev)
+   REALTYPE                  :: Lz(0:nlev)
+   REALTYPE                  :: Lsour(0:nlev),Qsour(0:nlev)
+
+   REALTYPE                  :: l_min
+
+   integer                   :: i
+!
+!------------------------------------------------------------------------
+!BOC
+
+! compute lower bound for length scale
+  l_min = cde*k_min**1.5/eps_min
+  
+!  some quantities in Mellor-Yamada notation
+   do i = 1,nlev-1
+      if( Lgs(i,ith) <= l_min) Lgs(i,ith) = l_min
+      q2l(i) = 2.*tkeo(i,ith)*Lgs(i,ith)
+#ifdef _HARCOURT_QINGLI_
+      q3 (i) = sqrt(8.*tkeo(i,ith)*tkeo(i,ith)*tkeo(i,ith))
+#else
+      q3 (i) = sqrt(8.*tke(i,ith)*tke(i,ith)*tke(i,ith))
+#endif
+   enddo
+
+!  diagnostic length scale for wall function
+   db = _ZERO_
+   ds = _ZERO_
+   do i = 1,nlev-1
+      db = db+h(i)
+      ds = depth-db
+      ! Parabola shape
+      if( MY_length.eq.1) Lz(i) = kappa*(ds+z0s)*(db+z0b)/(ds+z0s+db+z0b)
+      ! Triangle shape
+      if( MY_length.eq.2) Lz(i) = kappa*min(ds+z0s,db+z0b)
+      ! For infinite depth
+      if( MY_length.eq.3) Lz(i) = kappa*(ds+z0s)
+      ! Blumberg et al., 1992 (correction for open channel flow)
+      if( MY_length.eq.4) Lz(i) = kappa*(ds+z0s)*(db+z0b)*sqrt(e2/(e2*(ds+z0s)*(ds+z0s) + 0.25*(db+z0b)*(db+z0b)))
+   enddo
+
+! prepare the production terms
+   do i = 1,nlev-1
+
+!     compute diffusivity
+
+#ifdef _HARCOURT_QINGLI_
+      avh(i)      =  sl*sqrt(2.*tkeo(i,ith))*Lgs(i,ith)
+#else
+      avh(i)      =  sl*sqrt(2.*tke(i,ith))*Lgs(i,ith)
+#endif
+
+!     compute production terms in q^2 l - equation
+      prod        =  e1*Lgs(i,ith)*P(i,ith)
+      buoyan      =  e3*Lgs(i,ith)*B(i,ith)
+      if( MY_length.eq.0 )then
+        diss        =  q3(i)/b1
+      else
+        diss        =  q3(i)/b1*(1.+e2*(Lgs(i,ith)/Lz(i))*(Lgs(i,ith)/Lz(i)))
+      endif
+
+!     compute positive and negative parts of RHS
+      if( prod+buoyan .gt. 0 )then
+         Qsour(i) =  prod + buoyan
+         Lsour(i) = -diss/q2l(i)
+      else
+         Qsour(i) =  prod
+         Lsour(i) = -(diss-buoyan)/q2l(i)
+      endif
+
+   enddo
+
+!  TKE and position for upper BC
+   if( psi_ubc.eq.Neumann )then
+!     tke at center "nlev"
+      ki = tke(nlev-1,ith)
+
+!     flux at center "nlev"
+      pos_bc = 0.5*h(nlev)
+   else
+!     tke at face "nlev-1"
+      ki = tke(nlev-1,ith)
+
+!     value at face "nlev-1"
+      pos_bc = h(nlev)
+   endif
+
+!  obtain BC for upper boundary of type "ubc_type"
+   DiffQ2lup  = q2l_bc(psi_ubc,ubc_type,pos_bc,ki,z0s,u_taus)
+
+
+!  TKE and position for lower BC
+   if( psi_lbc.eq.Neumann )then
+!     tke at center "1"
+      ki = tke(1,ith)
+
+!     flux at center "1"
+      pos_bc = 0.5*h(1)
+   else
+!     tke at face "1"
+      ki = tke(1,ith)
+
+!     value at face "1"
+      pos_bc = h(1)
+   endif
+
+!  obtain BC for lower boundary of type "lbc_type"
+   DiffQ2ldw  = q2l_bc(psi_lbc,lbc_type,pos_bc,ki,z0b,u_taub)
+
+
+!  do diffusion step
+   call diff_face(nlev,dt,cnpar,h,psi_ubc,psi_lbc,                          &
+                  DiffQ2lup,DiffQ2ldw,avh,Lsour,Qsour,q2l,ith)
+
+
+!  fill top and bottom value with something nice
+!  (only for output)
+   q2l(nlev)  = q2l_bc(Dirichlet,ubc_type,z0s,tke(nlev,ith),z0s,u_taus)
+   q2l(0   )  = q2l_bc(Dirichlet,lbc_type,z0b,tke(0   ,ith),z0b,u_taub)
+
+
+
+! compute Lgs and epsilon
+  do i = 0,nlev
+     Lgs(i,ith) = q2l(i)/(2.*tke(i,ith))
+
+!    apply the length-scale clipping of Galperin et al. (1988)
+     if( (NN(i).gt.0).and.(length_lim) )then
+        Lcrit = sqrt(2*galp*galp*tke(i,ith)/NN(i))
+        if( Lgs(i,ith).gt.Lcrit) Lgs(i,ith) = Lcrit
+     endif
+
+!    compute dissipation rate
+     eps(i,ith) = cde*sqrt(tke(i,ith)*tke(i,ith)*tke(i,ith))/Lgs(i,ith)
+
+!    check for very small lengh scale
+     if( Lgs(i,ith).lt.l_min) Lgs(i,ith) = l_min
+
+!    substitute minimum value
+     if( eps(i,ith).lt.eps_min )then
+        eps(i,ith) = eps_min
+          Lgs(i,ith) = cde*sqrt(tke(i,ith)*tke(i,ith)*tke(i,ith))/eps_min
+     endif
+  enddo
+
+
+  return
+  end subroutine lengthscaleeq
+!EOC
+
+!-----------------------------------------------------------------------
+! Copyright by the GOTM-team under the GNU Public License - www.gnu.org
+!-----------------------------------------------------------------------

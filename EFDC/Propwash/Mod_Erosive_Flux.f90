@@ -3,20 +3,20 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 Module Mod_Erosive_Flux
     
-    Use GLOBAL, only : RKD, RK4
+    use GLOBAL, only : RKD, RK4
     
     private
     public :: erosive_flux
     
     type :: erosive_flux
     
-        Real(kind = RKD), Allocatable, Dimension(:) :: sub_grid_flux 
-        Real(kind = RKD) :: total_flux = 0.0
+        real(kind = RKD), Allocatable, Dimension(:) :: sub_grid_flux 
+        real(kind = RKD) :: total_flux = 0.0
         
     end type erosive_flux
     

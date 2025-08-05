@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 ! *** THE FUNCTIONS IN THIS FILE WERE ADDED TO REPLACE THE C LIB FUNCTIONS OF KBHIT AND ATEXIT
@@ -20,7 +20,7 @@
 LOGICAL FUNCTION KEY_PRESSED()  
   ! *** DETERMINES IF THE USER HAS PRESSED A KEY
 
-  USE IFCORE
+  use IFCORE
   
   KEY_PRESSED = PEEKCHARQQ ( )
   
@@ -30,41 +30,41 @@ END FUNCTION KEY_PRESSED
 LOGICAL FUNCTION ISEXIT()
   ! *** DETERMINES IF THE KEYBOARD HIT RESUMES (I1 /= I2) OR TERMINATES (I1 == I2) THE RUN
   
-  USE IFCORE
-  USE GLOBAL,ONLY:IK4
+  use IFCORE
+  use GLOBAL,only:IK4
   
-  INTEGER(IK4) :: I1, I2
-  CHARACTER*1 :: KEY
+  integer(IK4) :: I1, I2
+  character*1 :: KEY
   
   KEY = GETCHARQQ()
-  I1=ICHAR(KEY)
+  I1 = ICHAR(KEY)
   
-  WRITE(*,'(A)')'PROGRAM PAUSED BY USER'  
-  WRITE(*,'(A)')'  EFDC+: TO EXIT PRESS THE SAME KEY: ' // KEY
-  WRITE(*,'(A)')'  EFDC+: TO CONTINUE RUN PRESS ANY OTHER KEY'  
+  write(*,'(A)')'PROGRAM PAUSED BY USER'  
+  write(*,'(A)')'  EFDC+: TO EXIT PRESS THE SAME KEY: ' // KEY
+  write(*,'(A)')'  EFDC+: TO CONTINUE RUN PRESS ANY OTHER KEY'  
 
   KEY = GETCHARQQ()
-  I2=ICHAR(KEY)
+  I2 = ICHAR(KEY)
   
-  IF( I1 /= I2 )THEN
+  if( I1 /= I2 )then
     ISEXIT = .FALSE.
-  ELSE
+  else
     ISEXIT = .TRUE.
-  ENDIF
+  endif
   
 END FUNCTION ISEXIT
 
 ! *****************************************************************************
 SUBROUTINE QUIT
 
-  USE IFCORE
-  CHARACTER KEY*1  
+  use IFCORE
+  character KEY*1  
 
-  WRITE(6,'(/,A28,$)')'TAP ANY KEY TO EXIT EFDC_DSI'
+  write(6,'(/,A28,$)')'TAP ANY KEY TO EXIT EFDC_DSI'
 
   KEY = GETCHARQQ()
 
-  RETURN
+  return
   
   END SUBROUTINE
 #endif

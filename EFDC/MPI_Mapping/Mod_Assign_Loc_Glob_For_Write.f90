@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!  
@@ -25,18 +25,18 @@
 !---------------------------------------------------------------------------!
 Module Mod_Assign_Loc_Glob_For_Write
 
-    Use Global
-    Use Variables_MPI
-    Use Variables_MPI_Mapping
-    Use Variables_MPI_MapGatherSort
+    use GLOBAL
+    use Variables_MPI
+    use Variables_MPI_Mapping
+    use Variables_MPI_MapGatherSort
     
-    Implicit None
+    implicit none
 
-    Save
+    save
     
     Public :: Assign_Loc_Glob_For_Write
     
-    Interface Assign_Loc_Glob_For_Write
+    interface Assign_Loc_Glob_For_Write
     
         Module Procedure Assign_Loc_Glob_For_Write_1D_Real, &
                          Assign_Loc_Glob_For_Write_1D_Real_RK8, &
@@ -49,7 +49,7 @@ Module Mod_Assign_Loc_Glob_For_Write
                          Assign_Loc_Glob_For_Write_3D_Int
     
         
-    End Interface
+    end interface
 
     Contains
     !---------------------------------------------------------------------------!  
@@ -69,14 +69,14 @@ Module Mod_Assign_Loc_Glob_For_Write
     Subroutine Assign_Loc_Glob_For_Write_1D_Real(index, first_dim_local, Soln_Local, &
                                                  first_dim_gl, Soln_Global)
                                                  
-        Implicit None
+        implicit none
         
         ! *** Read in 
-        Integer, Intent(in) :: index
-        Integer, Intent(in) :: first_dim_local
-        Real(4), Target, Intent(inout) :: Soln_Local(first_dim_local)
-        Integer, Intent(in) :: first_dim_gl
-        Real(4),  Target,   Intent(inout) :: Soln_Global(first_dim_gl)
+        integer, Intent(in) :: index
+        integer, Intent(in) :: first_dim_local
+        real(4), Target, Intent(inout) :: Soln_Local(first_dim_local)
+        integer, Intent(in) :: first_dim_gl
+        real(4),  Target,   Intent(inout) :: Soln_Global(first_dim_gl)
         ! *** Local variables
     
         Local_Arrays_to_Write_1D_Real(index).val  => Soln_Local
@@ -100,16 +100,16 @@ Module Mod_Assign_Loc_Glob_For_Write
     !---------------------------------------------------------------------------!
     Subroutine Assign_Loc_Glob_For_Write_1D_Real_RK8(index, first_dim_local, Soln_Local, &
                                                  first_dim_gl, Soln_Global)
-        Use Global
+        use GLOBAL
                                                  
-        Implicit None
+        implicit none
         
         ! *** Read in 
-        Integer, Intent(in) :: index
-        Integer, Intent(in) :: first_dim_local
-        Real(rkd), Target, Intent(inout) :: Soln_Local(first_dim_local)
-        Integer, Intent(in) :: first_dim_gl
-        Real(rkd),  Target,   Intent(inout) :: Soln_Global(first_dim_gl)
+        integer, Intent(in) :: index
+        integer, Intent(in) :: first_dim_local
+        real(rkd), Target, Intent(inout) :: Soln_Local(first_dim_local)
+        integer, Intent(in) :: first_dim_gl
+        real(rkd),  Target,   Intent(inout) :: Soln_Global(first_dim_gl)
         ! *** Local variables
     
         Local_Arrays_to_Write_1D_Real_RK8(index).val  => Soln_Local
@@ -134,14 +134,14 @@ Module Mod_Assign_Loc_Glob_For_Write
     Subroutine Assign_Loc_Glob_For_Write_1D_Int(index, first_dim_local, Soln_Local, &
                                                  first_dim_gl, Soln_Global)
                                                  
-        Implicit None
+        implicit none
         
         ! *** Read in 
-        Integer, Intent(in) :: index
-        Integer, Intent(in) :: first_dim_local
-        Integer,Target, Intent(inout) :: Soln_Local(first_dim_local)
-        Integer, Intent(in) :: first_dim_gl
-        Integer,Target,  Intent(inout) :: Soln_Global(first_dim_gl)
+        integer, Intent(in) :: index
+        integer, Intent(in) :: first_dim_local
+        integer,Target, Intent(inout) :: Soln_Local(first_dim_local)
+        integer, Intent(in) :: first_dim_gl
+        integer,Target,  Intent(inout) :: Soln_Global(first_dim_gl)
         ! *** Local variables
     
         Local_Arrays_to_Write_1D_Int(index).val  => Soln_Local
@@ -168,16 +168,16 @@ Module Mod_Assign_Loc_Glob_For_Write
     Subroutine Assign_Loc_Glob_For_Write_2D_Real(index, first_dim_local, second_dim_local, Soln_Local, &
                                                  first_dim_gl, second_dim_gl, Soln_Global)
                                                  
-        Implicit None
+        implicit none
         
         ! *** Read in 
-        Integer, Intent(in) :: index
-        Integer, Intent(in) :: first_dim_local
-        Integer, Intent(in) :: second_dim_local
-        Real(4), Target,  Intent(inout) :: Soln_Local(first_dim_local, second_dim_local)
-        Integer, Intent(in) :: first_dim_gl
-        Integer, Intent(in) :: second_dim_gl
-        Real(4), Target,  Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl)
+        integer, Intent(in) :: index
+        integer, Intent(in) :: first_dim_local
+        integer, Intent(in) :: second_dim_local
+        real(4), Target,  Intent(inout) :: Soln_Local(first_dim_local, second_dim_local)
+        integer, Intent(in) :: first_dim_gl
+        integer, Intent(in) :: second_dim_gl
+        real(4), Target,  Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl)
         ! *** Local variables
     
         Local_Arrays_to_Write_2D_Real(index).val  => Soln_Local
@@ -203,18 +203,18 @@ Module Mod_Assign_Loc_Glob_For_Write
     !---------------------------------------------------------------------------!
     Subroutine Assign_Loc_Glob_For_Write_2D_Real_RK8(index, first_dim_local, second_dim_local, Soln_Local, &
                                                  first_dim_gl, second_dim_gl, Soln_Global)
-        Use Global
+        use GLOBAL
                                         
-        Implicit None
+        implicit none
         
         ! *** Read in 
-        Integer, Intent(in) :: index
-        Integer, Intent(in) :: first_dim_local
-        Integer, Intent(in) :: second_dim_local
-        Real(rkd), Target,  Intent(inout) :: Soln_Local(first_dim_local, second_dim_local)
-        Integer, Intent(in) :: first_dim_gl
-        Integer, Intent(in) :: second_dim_gl
-        Real(rkd), Target,  Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl)
+        integer, Intent(in) :: index
+        integer, Intent(in) :: first_dim_local
+        integer, Intent(in) :: second_dim_local
+        real(rkd), Target,  Intent(inout) :: Soln_Local(first_dim_local, second_dim_local)
+        integer, Intent(in) :: first_dim_gl
+        integer, Intent(in) :: second_dim_gl
+        real(rkd), Target,  Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl)
         ! *** Local variables
     
         Local_Arrays_to_Write_2D_Real_RK8(index).val  => Soln_Local
@@ -241,16 +241,16 @@ Module Mod_Assign_Loc_Glob_For_Write
     Subroutine Assign_Loc_Glob_For_Write_2D_Int(index, first_dim_local, second_dim_local, Soln_Local, &
                                                  first_dim_gl, second_dim_gl, Soln_Global)
                                                  
-        Implicit None
+        implicit none
         
         ! *** Read in 
-        Integer, Intent(in) :: index
-        Integer, Intent(in) :: first_dim_local
-        Integer, Intent(in) :: second_dim_local
-        Integer, Target,  Intent(inout) :: Soln_Local(first_dim_local, second_dim_local)
-        Integer, Intent(in) :: first_dim_gl
-        Integer, Intent(in) :: second_dim_gl
-        Integer, Target,  Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl)
+        integer, Intent(in) :: index
+        integer, Intent(in) :: first_dim_local
+        integer, Intent(in) :: second_dim_local
+        integer, Target,  Intent(inout) :: Soln_Local(first_dim_local, second_dim_local)
+        integer, Intent(in) :: first_dim_gl
+        integer, Intent(in) :: second_dim_gl
+        integer, Target,  Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl)
         ! *** Local variables
     
         Local_Arrays_to_Write_2D_Int(index).val  => Soln_Local
@@ -279,18 +279,18 @@ Module Mod_Assign_Loc_Glob_For_Write
     Subroutine Assign_Loc_Glob_For_Write_3D_Real(index, first_dim_local, second_dim_local, third_dim_local, Soln_Local, &
                                                  first_dim_gl, second_dim_gl, third_dim_gl, Soln_Global)
                                                  
-        Implicit None
+        implicit none
         
         ! *** Read in 
-        Integer, Intent(in)         :: index
-        Integer, Intent(in)         :: first_dim_local
-        Integer, Intent(in)         :: second_dim_local
-        Integer, Intent(in)         :: third_dim_local
-        Real(4), Target, Intent(inout) :: Soln_Local(first_dim_local, second_dim_local, third_dim_local)
-        Integer, Intent(in)         :: first_dim_gl
-        Integer, Intent(in)         :: second_dim_gl
-        Integer, Intent(in)         :: third_dim_gl
-        Real(4), Target, Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl, third_dim_gl)
+        integer, Intent(in)         :: index
+        integer, Intent(in)         :: first_dim_local
+        integer, Intent(in)         :: second_dim_local
+        integer, Intent(in)         :: third_dim_local
+        real(4), Target, Intent(inout) :: Soln_Local(first_dim_local, second_dim_local, third_dim_local)
+        integer, Intent(in)         :: first_dim_gl
+        integer, Intent(in)         :: second_dim_gl
+        integer, Intent(in)         :: third_dim_gl
+        real(4), Target, Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl, third_dim_gl)
         ! *** Local variables
     
         Local_Arrays_to_Write_3D_Real(index).val  => Soln_Local
@@ -318,20 +318,20 @@ Module Mod_Assign_Loc_Glob_For_Write
     !---------------------------------------------------------------------------!
     Subroutine Assign_Loc_Glob_For_Write_3D_Real_RK8(index, first_dim_local, second_dim_local, third_dim_local, Soln_Local, &
                                                  first_dim_gl, second_dim_gl, third_dim_gl, Soln_Global)
-        Use Global
+        use GLOBAL
                                                  
-        Implicit None
+        implicit none
         
         ! *** Read in 
-        Integer, Intent(in)         :: index
-        Integer, Intent(in)         :: first_dim_local
-        Integer, Intent(in)         :: second_dim_local
-        Integer, Intent(in)         :: third_dim_local
-        Real(rkd), Target, Intent(inout) :: Soln_Local(first_dim_local, second_dim_local, third_dim_local)
-        Integer, Intent(in)         :: first_dim_gl
-        Integer, Intent(in)         :: second_dim_gl
-        Integer, Intent(in)         :: third_dim_gl
-        Real(rkd), Target, Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl, third_dim_gl)
+        integer, Intent(in)         :: index
+        integer, Intent(in)         :: first_dim_local
+        integer, Intent(in)         :: second_dim_local
+        integer, Intent(in)         :: third_dim_local
+        real(rkd), Target, Intent(inout) :: Soln_Local(first_dim_local, second_dim_local, third_dim_local)
+        integer, Intent(in)         :: first_dim_gl
+        integer, Intent(in)         :: second_dim_gl
+        integer, Intent(in)         :: third_dim_gl
+        real(rkd), Target, Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl, third_dim_gl)
         ! *** Local variables
     
         Local_Arrays_to_Write_3D_Real_RK8(index).val  => Soln_Local
@@ -360,18 +360,18 @@ Module Mod_Assign_Loc_Glob_For_Write
     Subroutine Assign_Loc_Glob_For_Write_3D_Int(index, first_dim_local, second_dim_local, third_dim_local, Soln_Local, &
                                                  first_dim_gl, second_dim_gl, third_dim_gl, Soln_Global)
                                                  
-        Implicit None
+        implicit none
         
         ! *** Read in 
-        Integer, Intent(in)            :: index
-        Integer, Intent(in)            :: first_dim_local
-        Integer, Intent(in)            :: second_dim_local
-        Integer, Intent(in)            :: third_dim_local
-        Integer,Target,  Intent(inout) :: Soln_Local(first_dim_local, second_dim_local, third_dim_local)
-        Integer, Intent(in)            :: first_dim_gl
-        Integer, Intent(in)            :: second_dim_gl
-        Integer, Intent(in)            :: third_dim_gl
-        Integer,Target,  Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl, third_dim_gl)
+        integer, Intent(in)            :: index
+        integer, Intent(in)            :: first_dim_local
+        integer, Intent(in)            :: second_dim_local
+        integer, Intent(in)            :: third_dim_local
+        integer,Target,  Intent(inout) :: Soln_Local(first_dim_local, second_dim_local, third_dim_local)
+        integer, Intent(in)            :: first_dim_gl
+        integer, Intent(in)            :: second_dim_gl
+        integer, Intent(in)            :: third_dim_gl
+        integer,Target,  Intent(inout) :: Soln_Global(first_dim_gl, second_dim_gl, third_dim_gl)
         ! *** Local variables
     
         Local_Arrays_to_Write_3D_Int(index).val  => Soln_Local

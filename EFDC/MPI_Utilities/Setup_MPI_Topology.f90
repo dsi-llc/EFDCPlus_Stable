@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!
@@ -26,20 +26,20 @@
 
 Subroutine Setup_MPI_Topology
 
-  Use MPI
-  Use GLOBAL
-  Use Variables_MPI
+  use MPI
+  use GLOBAL
+  use Variables_MPI
 
-  Implicit none
+  implicit none
 
   ! *** Local
-  Integer :: ierr, maxsize, nnodes, i, j, i1, edge, inode, iedge
-  Integer :: ndim                                       !< Dimension of the problem, 1D, 2D, 3D, etc. Going to be 2D in our case
-  Integer,Allocatable,dimension(:) :: index
-  Integer,Allocatable,dimension(:) :: NearestNeighbor
-  Integer,Allocatable,dimension(:) :: edges
+  integer :: ierr, maxsize, nnodes, i, j, i1, edge, inode, iedge
+  integer :: ndim                                       !< Dimension of the problem, 1D, 2D, 3D, etc. Going to be 2D in our case
+  integer,Allocatable,dimension(:) :: index
+  integer,Allocatable,dimension(:) :: NearestNeighbor
+  integer,Allocatable,dimension(:) :: edges
   
-  Call WriteBreak(mpi_log_unit)
+  call WriteBreak(mpi_log_unit)
   write(mpi_log_unit, '(a)') 'Setting up MPI Topology'
   write(mpi_log_unit, '(a)') 'This configures where process is in reference to one another'
   write(mpi_log_unit, '(a)') 'For example, with 4 processes the layout will look something like this'
@@ -62,25 +62,29 @@ Subroutine Setup_MPI_Topology
   if( .false. )then
     ! *** Cartesian Topology
     ! *** MPI Tolopolgy routine, creates new communictor for 2d decomp
-    Call MPI_Cart_Create(MPI_Comm_World, ndim, dimensions, is_periodic, reorder, comm_2d, ierr )
+    call MPI_Cart_Create(MPI_Comm_World, ndim, dimensions, is_periodic, reorder, comm_2d, ierr )
 
     ! *** Get rank of the process within the 'new' communicator comm_2d
-    Call MPI_Comm_Rank(comm_2d,   process_id, ierr)  ! process_id becomes 'new id'
+    call MPI_Comm_Rank(comm_2d,   process_id, ierr)  ! process_id becomes 'new id'
 
     ! *** Gets the location of each processes reference to one another
-    Call MPI_Cart_Coords(comm_2d, process_id, 2, domain_coords)
+#ifdef GNU
+    call MPI_Cart_Coords(comm_2d, process_id, 2, domain_coords,  ierr)
+#else
+    call MPI_Cart_Coords(comm_2d, process_id, 2, domain_coords)
+#endif     
 
     ! *** Get the East and West neighbors in addition to the north and south neighbors
-    Call MPI_Cart_Shift(comm_2d, 0, 1, nbr_west,  nbr_east,  ierr)
-    Call MPI_Cart_Shift(comm_2d, 1, 1, nbr_south, nbr_north, ierr)
+    call MPI_Cart_Shift(comm_2d, 0, 1, nbr_west,  nbr_east,  ierr)
+    call MPI_Cart_Shift(comm_2d, 1, 1, nbr_south, nbr_north, ierr)
   else
     ! *** Graph Topology
     ! *** Initial Graph Topology Arrays
     nnodes = active_domains
     maxsize = n_x_partitions * n_y_partitions       ! *** nnodes
-    Allocate(index(maxsize))                        ! *** nnodes
-    Allocate(NearestNeighbor(maxsize))
-    Allocate(edges(maxsize*4))                      ! *** 2*nnodes
+    allocate(index(maxsize))                        ! *** nnodes
+    allocate(NearestNeighbor(maxsize))
+    allocate(edges(maxsize*4))                      ! *** 2*nnodes
     index = 0
     NearestNeighbor = 0
     edges = -1
@@ -119,11 +123,11 @@ Subroutine Setup_MPI_Topology
       enddo
     enddo
     
-    if(inode /= nnodes) then
-        write(*,*) 'Warning: actual nnodes=',inode,'<>',nnodes
+    if(inode /= nnodes )then
+        write(*,*) 'Warning: actual nnodes = ',inode,'<>',nnodes
         nnodes = inode
     endif
-    if(iedge > 2*nnodes) write(*,*) 'actual nedges=',iedge,'>',2*nnodes
+    if(iedge > 2*nnodes) write(*,*) 'actual nedges = ',iedge,'>',2*nnodes
     
     ! *** Set the index array based on NearestNeighbor
     index(1) = NearestNeighbor(1)
@@ -132,10 +136,10 @@ Subroutine Setup_MPI_Topology
     enddo
     
     ! *** Create the Topology
-    Call MPI_Graph_Create(MPI_Comm_World, nnodes, index, edges, .false., comm_2d, ierr)
+    call MPI_Graph_Create(MPI_Comm_World, nnodes, index, edges, .false., comm_2d, ierr)
     
     ! *** Get rank of the process within the 'new' communicator comm_2d
-    Call MPI_Comm_Rank(comm_2d, process_id, ierr) 
+    call MPI_Comm_Rank(comm_2d, process_id, ierr) 
 
     ! *** Initialize to Unconnected
     nbr_west  = -1
@@ -172,16 +176,16 @@ Subroutine Setup_MPI_Topology
   enddo
   
   write(mpi_log_unit, '(a,I3,a,i3,a)') 'Virtual Coordinates: (',domain_coords(1),',',domain_coords(2), ')'
-  Call WriteInteger(dimensions(1), mpi_log_unit, '# I Partitions:     ')
-  Call WriteInteger(dimensions(2), mpi_log_unit, '# J Partitions:     ')
-  Call WriteInteger(nbr_west,  mpi_log_unit,  'West  neighbor:     ')
-  Call WriteInteger(nbr_east,  mpi_log_unit,  'East  neighbor:     ')
-  Call WriteInteger(nbr_north, mpi_log_unit,  'North neighbor:     ')
-  Call WriteInteger(nbr_south, mpi_log_unit,  'South neighbor:     ')
+  call WriteInteger(dimensions(1), mpi_log_unit, '# I Partitions:     ')
+  call WriteInteger(dimensions(2), mpi_log_unit, '# J Partitions:     ')
+  call WriteInteger(nbr_west,  mpi_log_unit,  'West  neighbor:     ')
+  call WriteInteger(nbr_east,  mpi_log_unit,  'East  neighbor:     ')
+  call WriteInteger(nbr_north, mpi_log_unit,  'North neighbor:     ')
+  call WriteInteger(nbr_south, mpi_log_unit,  'South neighbor:     ')
   write(mpi_log_unit, '(a)') 'Note, (-1) values indicate there is no neighbor in the stated direction'
   write(mpi_log_unit, '(a)') 'Ending setup of MPI Topology'
-  Call WriteBreak(mpi_log_unit)
+  call WriteBreak(mpi_log_unit)
 
-  Call MPI_Barrier(comm_2d, ierr)
+  call MPI_Barrier(comm_2d, ierr)
 
 End subroutine Setup_MPI_Topology

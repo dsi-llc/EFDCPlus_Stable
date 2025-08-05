@@ -3,14 +3,14 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
     ! Parametric cyclone models
     ! 2021-01-20, Nghiem Tien Lam
     module cyclone
 
-    use global
+    use GLOBAL
     
     implicit none
 
@@ -49,7 +49,7 @@
     real(RKD) :: rad2deg, deg2rad, fcor, sgnW, Rmw, delP, Vfm, Vfa, coeffB, CONVRT2
     type(CycloneTrack), allocatable, dimension(:), target :: cyclone_tracks
     integer :: num_cyclone_tracks = 0   !> number of cyclone tracks
-    integer :: ICYCLONE = 0             !> 0=no, 1=McConochie (2004), 2=Willoughby (2006)
+    integer :: ICYCLONE = 0             !> 0 = no, 1 = McConochie (2004), 2 = Willoughby (2006)
 
     contains
 
@@ -67,8 +67,8 @@
         
         !ICYCLONE = 0
         
-        inquire(FILE="cyclones.jnp", EXIST=file_exists)
-        if (.not. file_exists) return
+        inquire(FILE = "cyclones.jnp", EXIST = file_exists)
+        if( .not. file_exists) return
         
         call utmpars
         
@@ -106,14 +106,14 @@
                 pt(j).Yc = yutm(1)
                 pt(j).Vfx = 0.
                 pt(j).Vfy = 0.
-                if (j > 1) then
+                if( j > 1 )then
                     delTT = 86400.*(pt(j).Time - pt(j-1).Time)
                     delX = pt(j).Xc - pt(j-1).Xc
                     delY = pt(j).Yc - pt(j-1).Yc
-                    if (ABS(delTT) >= 1.0e-9) then
+                    if( ABS(delTT) >= 1.0e-9 )then
                         pt(j).Vfx = delX/delTT
                         pt(j).Vfy = delY/delTT
-                        if (j == 2) then
+                        if( j == 2 )then
                             pt(j-1).Vfx = pt(j).Vfx
                             pt(j-1).Vfy = pt(j).Vfy
                         endif    
@@ -139,10 +139,10 @@
         integer :: i
 
         do i = 1, self.num_points - 1
-            if ((time >= self.points(i).Time) .AND. &
-                (time <= self.points(i+1).Time)) then
+            if( (time >= self.points(i).Time) .and. &
+                (time <= self.points(i+1).Time) )then
                 deltaT = self.points(i+1).Time - self.points(i).Time
-                if(ABS(deltaT) > 1.0e-9) then
+                if(ABS(deltaT) > 1.0e-9 )then
                     factor = (time - self.points(i).Time)/deltaT
                 else
                     factor = 0.5
@@ -181,26 +181,26 @@
         ! *** EE7.3 CONVERT TO 2 METERS FOR ALL CALCULATIONS (0.003 IS OPEN GRASSLAND Z0)
         CONVRT2   = LOG(2.0/0.003)/LOG(10.0/0.003)
         
-        IF(TC_KM <= 0.) TC_KM = 0.9
-        IF(TC_KF <= 0.) TC_KM = 0.5
-        IF(TC_CSWP == 0.) TC_CSWP = 0.88
+        if(TC_KM <= 0.) TC_KM = 0.9
+        if(TC_KF <= 0.) TC_KM = 0.5
+        if(TC_CSWP == 0.) TC_CSWP = 0.88
         
         !write(*,*) 'CycloneFields at @',time
-        do i=1, num_cyclone_tracks
+        do i = 1, num_cyclone_tracks
             ret = InterpCycloneTrack(cyclone_tracks(i), time, pt)
-            if (ret == 1) then
+            if( ret == 1 )then
                 fcor = 2. * omega * SIN(deg2rad*pt.Lat)
                 sgnW = SIGN(1., pt.Lat)
                 delP = Pinf - pt.Pc
                 Vfm = SQRT(pt.Vfx**2 + pt.Vfy**2)
                 Vfa = ATAN2(pt.Vfy, pt.Vfx)
-                if (ICYCLONE == 1) then
+                if( ICYCLONE == 1 )then
                     call CycloneFieldHolland1980(pt)
-                elseif (ICYCLONE == 2) then
+                elseif( ICYCLONE == 2 )then
                     call CycloneFieldHubbert1991(pt)
-                elseif (ICYCLONE == 3) then
+                elseif( ICYCLONE == 3 )then
                     call CycloneFieldMcConochie2004(pt)
-                elseif (ICYCLONE == 4) then
+                elseif( ICYCLONE == 4 )then
                     call CycloneFieldWilloughby2006(pt)
                 endif
             endif
@@ -229,17 +229,17 @@
         if(coeffB <= 0.) coeffB = MIN(MAX(rho_a*EXP(1.0)*Vm**2/delP, 1.0), 2.5)
 
         !$OMP DO PRIVATE(ND,LF,LL,L,X,Y)
-        DO ND=1,NDM  
-            LF=2+(ND-1)*LDM  
-            LL=MIN(LF+LDM-1,LA)
+        do ND = 1,NDM  
+            LF = 2+(ND-1)*LDM  
+            LL = MIN(LF+LDM-1,LA)
             
-            DO L=LF,LL 
+            do L = LF,LL 
                 x = DLON(L) !XCOR(L,5)
                 y = DLAT(L) !YCOR(L,5)
                 call CyclonePointHolland1980(pt, x, y, r, Pa, Wx, Wy)
                 call assimilate_cyclone(L, r, Rmw, Pa, CONVRT2 * WX, CONVRT2 * WY)
-            ENDDO
-        ENDDO   ! *** END OF DOMAIN LOOP
+            enddo
+        enddo   ! *** END OF DOMAIN LOOP
         !$OMP END DO        
     end subroutine 
     
@@ -260,7 +260,7 @@
         theta = ATAN2(dy, dx)
         Pa = pt.Pc
         Vg = 0.
-        if ( r > 0.) then
+        if( r > 0. )then
             delta = (Rmw / r) ** coeffB
             Pa = pt.Pc + delP * EXP(-delta)
         
@@ -299,17 +299,17 @@
         if(coeffB <= 0.) coeffB = 1.5 + (980. - pt.Pc)/120.
         
         !$OMP DO PRIVATE(ND,LF,LL,L,X,Y)
-        DO ND=1,NDM  
-            LF=2+(ND-1)*LDM  
-            LL=MIN(LF+LDM-1,LA)
+        do ND = 1,NDM  
+            LF = 2+(ND-1)*LDM  
+            LL = MIN(LF+LDM-1,LA)
             
-            DO L=LF,LL 
+            do L = LF,LL 
                 x = DLON(L) !XCOR(L,5)
                 y = DLAT(L) !YCOR(L,5)
                 call CyclonePointHubbert1991(pt, x, y, r, Pa, Wx, Wy)
                 call assimilate_cyclone(L, r, Rmw, Pa, CONVRT2 * WX, CONVRT2 * WY)
-            ENDDO
-        ENDDO   ! *** END OF DOMAIN LOOP
+            enddo
+        enddo   ! *** END OF DOMAIN LOOP
         !$OMP END DO        
     end subroutine 
     
@@ -332,7 +332,7 @@
         theta = rad2deg*ATAN2(dy, dx)
         Pa = pt.Pc
         Vg = 0.
-        if ( r > 0.) then
+        if( r > 0. )then
             delta = (Rmw / r) ** coeffB
             Pa = pt.Pc + delP * EXP(-delta)
             
@@ -365,20 +365,20 @@
         coeffB = pt.B 
         if(coeffB <= 0.) coeffB = 0.886 + 0.0177 * pt.Vmax - 0.0094 * pt.Lat
         Rmw = pt.Rmw
-        if (Rmw <= 0.) Rmw = 46.4 * EXP(-0.0155 * pt.Vmax + 0.0169 * pt.Lat)
+        if( Rmw <= 0.) Rmw = 46.4 * EXP(-0.0155 * pt.Vmax + 0.0169 * pt.Lat)
 
         !$OMP DO PRIVATE(ND,LF,LL,L,X,Y)
-        DO ND=1,NDM  
-            LF=2+(ND-1)*LDM  
-            LL=MIN(LF+LDM-1,LA)
+        do ND = 1,NDM  
+            LF = 2+(ND-1)*LDM  
+            LL = MIN(LF+LDM-1,LA)
             
-            DO L=LF,LL 
+            do L = LF,LL 
                 x = DLON(L) !XCOR(L,5)
                 y = DLAT(L) !YCOR(L,5)
                 call CyclonePointMcConochie2004(pt, x, y, r, Pa, Wx, Wy)
                 call assimilate_cyclone(L, r, Rmw, Pa, CONVRT2 * WX, CONVRT2 * WY)
-            ENDDO
-        ENDDO   ! *** END OF DOMAIN LOOP
+            enddo
+        enddo   ! *** END OF DOMAIN LOOP
         !$OMP END DO        
     end subroutine 
     
@@ -398,7 +398,7 @@
         theta = rad2deg * ATAN2(dy, dx)
         Pa = pt.Pc
         Vg = 0.
-        if ( r > 0.) then
+        if( r > 0. )then
             delta = (Rmw / r) ** coeffB
             Pa = pt.Pc + delP * EXP(-delta)
         
@@ -410,16 +410,16 @@
 
         ! Inflow angle (Sobey, 1977)
         beta = 25.
-        if (r < Rmw) then
+        if( r < Rmw )then
             beta = 10. * r / Rmw
-        elseif (r < 1.2 * Rmw) then
+        elseif( r < 1.2 * Rmw )then
             beta = 10. + 75. * (r / Rmw - 1.)
         endif
                 
         phi = deg2rad*(sgnW*(90. + beta) + theta)
         
         asym = 0.5 * (1. + COS(deg2rad*(theta + sgnW*thetaMax)- Vfa))
-        if(Vg /= 0.) then
+        if(Vg /= 0. )then
             asym =  asym * Vg / ABS(Vg)
         endif
         Vgr = Vg + TC_KF * asym * Vfm
@@ -427,11 +427,11 @@
         
         ! Boundary layer coeff. (Harper, 2001)        
         gamma = 0.66
-        if (Vabs < 6.) then
+        if( Vabs < 6. )then
             gamma = 0.81
-        else if (Vabs < 19.5) then
+        elseif( Vabs < 19.5 )then
             gamma = 0.81 - 2.93e-3 * (Vabs - 6.)
-        else if (Vabs < 45.) then
+        elseif( Vabs < 45. )then
             gamma = 0.77 - 4.31e-3 * (Vabs - 19.5)
         endif
         
@@ -460,7 +460,7 @@
         ! Vmax:	Maximum 10-m 1-min sustained wind for the tropical cyclone	(m/s)
         ! vmax_ss	(Vmax,?sym):	Maximum 10-m 1-min sustained wind for the tropical cyclone with motion asymmetry removed	(m/s)
         vmax_ss = pt.Vmax - 0.5 * Vfm
-        if (vmax_ss < 0.) vmax_ss = 0.
+        if( vmax_ss < 0.) vmax_ss = 0.
         
         ! Converts maximum 10-m 1-minute symmetric sustained wind speed to gradient
         ! wind speed.The conversion factor depends on whether the storm is over land
@@ -477,7 +477,7 @@
         nn = 0.4067 + 0.0144 * vmax_gl - 0.0038 * pt.Lat;
         ! Calculates A using Eqn 10c (Willoughby et al. 2006).
         A = 0.0696 + 0.0049 * vmax_gl - 0.0064 * pt.Lat
-        if (A < 0) A = 0.
+        if( A < 0) A = 0.
         ! Calculate right-hand side of Eqn. 3
         eq3_rhs = (nn * ((1 - A) * X1 + 25 * A)) / (nn * ((1 - A) * X1 + 25 * A) + Rmw)
         xi = SolveNewtonRaphson(eq3_rhs)
@@ -489,18 +489,18 @@
         R2 = R1 + r1_r2           ! R2 (km):	Upper boundary of the transition zone for Willoughby model
                 
         !$OMP DO PRIVATE(ND,LF,LL,L,X,Y)
-        DO ND=1,NDM  
-            LF=2+(ND-1)*LDM  
-            LL=MIN(LF+LDM-1,LA)
+        do ND = 1,NDM  
+            LF = 2+(ND-1)*LDM  
+            LL = MIN(LF+LDM-1,LA)
             
-            DO L=LF,LL 
+            do L = LF,LL 
                 x = DLON(L) !XCOR(L,5)
                 y = DLAT(L) !YCOR(L,5)                
                 call CyclonePointWilloughby2006(pt, x, y, r, Pa, Wx, Wy, &
                     vmax_gl, R1, R2, X1, X2, A, nn)
                 call assimilate_cyclone(L, r, Rmw, Pa, CONVRT2 * WX, CONVRT2 * WY)
-            ENDDO
-        ENDDO   ! *** END OF DOMAIN LOOP
+            enddo
+        enddo   ! *** END OF DOMAIN LOOP
         !$OMP END DO  
     end subroutine CycloneFieldWilloughby2006
 
@@ -521,7 +521,7 @@
         theta = rad2deg * ATAN2(dy, dx)
 
         Pa = pt.Pc
-        if ( r > 0.) then
+        if( r > 0. )then
             delta = (Rmw / r) ** coeffB
             Pa = pt.Pc + delP * EXP(-delta)
         endif            
@@ -531,23 +531,23 @@
         Vo = vmax_gl * ((1. - A) * EXP((Rmw - r) / X1) + A * EXP((Rmw - r) / X2))   !V0 (deg.):	Azimuthal average winds outside R2
         ! Vg (VG(r), m/s):	Azimuthal average winds, varies by radius r
         Vg = 0.
-        if (r < R1) then 
+        if( r < R1 )then 
             Vg = Vi
-        elseif (r > R2) then
+        elseif( r > R2 )then
             Vg = Vo
         else
             xi = (r - R1) / (R2 - R1)
             ww = WeightingDeriv(xi)
             Vg = Vi * (1. - ww) + Vo * ww
         endif
-        if (Vg < 0.) Vg = 0.
+        if( Vg < 0.) Vg = 0.
 
         ! Bring back to surface level (surface wind reduction factor) (Knaff et al., 2011)
         ! fr:	Reduction factor for converting between surface and gradient winds
         fr = 0.9
-        if (r >= 700.) then
+        if( r >= 700. )then
             fr = 0.75
-        elseif (r > 100.) then
+        elseif( r > 100. )then
             fr = 0.90 - 0.15*(r - 100.) / 600.
         endif
         
@@ -556,9 +556,9 @@
         ! Calculate inflow angle over water based on radius of location from storm
         ! center in comparison to radius of maximum winds (Phadke et al. 2003)
         beta = 25.
-        if (r < Rmw) then
+        if( r < Rmw )then
             beta = 10. + (1. + r / Rmw)
-        elseif (r < 1.2 * Rmw) then
+        elseif( r < 1.2 * Rmw )then
             beta = 20. + 25. * (r / Rmw - 1.)
         endif
 
@@ -617,7 +617,7 @@
         do i = 1, itmax
             df = WeightingDeriv(x)
             fx = WeightingFunc(x) - rhs
-            if (Abs(fx) <= eps) exit
+            if( Abs(fx) <= eps) exit
             dx = -fx / df
             x = x + dx
         enddo

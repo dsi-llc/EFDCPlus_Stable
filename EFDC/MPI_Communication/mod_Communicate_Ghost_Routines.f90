@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 ! Generic interface for the communication of ghost cells
@@ -12,15 +12,15 @@ Module Communicate_Ghost_Routines
 
   !Use Mod_Communicate_Functions
 
-  IMPLICIT NONE
+  implicit none
 
-  SAVE
+  save
 
   Public :: communicate_ghost_cells
 
   !***Set up the geneic interface for commuicating ghost cells
   !***This will select the the proper array size depending on what is passed in
-  Interface Communicate_ghost_cells
+  interface Communicate_ghost_cells
 
   Module Procedure Communicate_1D_Real,    &
                    Communicate_1D_Real8,   &
@@ -56,41 +56,41 @@ Module Communicate_Ghost_Routines
   
   Subroutine Communicate_1D_Real(pardata, var_name)
 
-  Use Variables_MPI
-  Use MPI
+  use Variables_MPI
+  use MPI
 
-  Implicit None
+  implicit none
 
   !***Read in variables
-  Real(4), Intent(inout), DIMENSION(lcm) ::  pardata
-  Character(len=*), Intent(in) :: var_name
+  real(4), Intent(inout), dimension(lcm) ::  pardata
+  Character(len = *), Intent(in) :: var_name
   !***Local variables
 
-  Integer :: I, J, II, L
-  Integer :: length_arg
-  INTEGER :: ierr, status_message(MPI_Status_Size)
+  integer :: I, J, II, L
+  integer :: length_arg
+  integer :: ierr, status_message(MPI_Status_Size)
 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDW
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDE
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVE
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVW
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDN
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDS
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVN
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVS
+  real,save,allocatable,dimension(:)::PSENDW
+  real,save,allocatable,dimension(:)::PSENDE
+  real,save,allocatable,dimension(:)::PRECVE
+  real,save,allocatable,dimension(:)::PRECVW
+  real,save,allocatable,dimension(:)::PSENDN
+  real,save,allocatable,dimension(:)::PSENDS
+  real,save,allocatable,dimension(:)::PRECVN
+  real,save,allocatable,dimension(:)::PRECVS
 
   if( num_Processors == 1 ) return
 
-  IF(.NOT.ALLOCATED(PSENDW))THEN
-    ALLOCATE(PSENDW(max_width_y*2))
-    ALLOCATE(PSENDE(max_width_y*2))
-    ALLOCATE(PRECVE(max_width_y*2))
-    ALLOCATE(PRECVW(max_width_y*2))
+  if(.not.ALLOCATED(PSENDW) )then
+    allocate(PSENDW(max_width_y*2))
+    allocate(PSENDE(max_width_y*2))
+    allocate(PRECVE(max_width_y*2))
+    allocate(PRECVW(max_width_y*2))
     
-    ALLOCATE(PSENDN(max_width_x*2))
-    ALLOCATE(PSENDS(max_width_x*2))
-    ALLOCATE(PRECVN(max_width_x*2))
-    ALLOCATE(PRECVS(max_width_x*2))
+    allocate(PSENDN(max_width_x*2))
+    allocate(PSENDS(max_width_x*2))
+    allocate(PRECVN(max_width_x*2))
+    allocate(PRECVS(max_width_x*2))
     PSENDW = 0.0
     PSENDE = 0.0
     PRECVE = 0.0
@@ -99,163 +99,163 @@ Module Communicate_Ghost_Routines
     PSENDS = 0.0
     PRECVN = 0.0
     PRECVS = 0.0
-  ENDIF
+  endif
     
-  IF( MPI_DEBUG_FLAG == .TRUE. )THEN
-    Call WriteBreak(mpi_comm_unit)
+  if( MPI_DEBUG_FLAG )then
+    call WriteBreak(mpi_comm_unit)
     write(mpi_comm_unit, '(a)') var_name
-  ENDIF
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
       II = II + 1
       PSENDW(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
 
     ierr = 0
-    CALL MPI_SEND(PSENDW, length_arg, mpi_real4, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDW, length_arg, mpi_real4, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVE, length_arg, mpi_real4, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVE, length_arg, mpi_real4, nbr_east, nbr_east, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + 1
       pardata(L) = PRECVE(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
       II = II + 1
       PSENDE(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDE, length_arg, mpi_real4, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDE, length_arg, mpi_real4, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVW, length_arg, mpi_real4, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVW, length_arg, mpi_real4, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + 1
       pardata(L) = PRECVW(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
       II = II + 1
       PSENDN(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDN, length_arg, mpi_real4, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDN, length_arg, mpi_real4, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVS, length_arg, mpi_real4, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVS, length_arg, mpi_real4, nbr_south, nbr_south, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + 1
       pardata(L) = PRECVS(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
       II = II + 1
       PSENDS(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDS, length_arg, mpi_real4, nbr_south, process_id,  comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDS, length_arg, mpi_real4, nbr_south, process_id,  comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVN, length_arg, mpi_real4, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVN, length_arg, mpi_real4, nbr_north, nbr_north, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + 1
       pardata(L) = PRECVN(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   END SUBROUTINE Communicate_1D_Real
   !-----------------------------------------------------------------------
@@ -268,41 +268,41 @@ Module Communicate_Ghost_Routines
   
   Subroutine Communicate_1D_Real8(pardata, var_name)
 
-  Use Variables_MPI
-  Use MPI
+  use Variables_MPI
+  use MPI
 
-  Implicit None
+  implicit none
 
   !***Read in variables
-  Real(8), Intent(inout), DIMENSION(lcm)::  pardata
-  Character(len=*), Intent(in) :: var_name
+  real(8), Intent(inout), dimension(lcm)::  pardata
+  Character(len = *), Intent(in) :: var_name
   !***Local variables
 
-  Integer :: I, J, II, L
-  Integer :: length_arg
-  INTEGER :: ierr, status_message(MPI_Status_Size)
+  integer :: I, J, II, L
+  integer :: length_arg
+  integer :: ierr, status_message(MPI_Status_Size)
 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDW
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDE
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVE
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVW
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDN
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDS
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVN
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVS
+  real,save,allocatable,dimension(:)::PSENDW
+  real,save,allocatable,dimension(:)::PSENDE
+  real,save,allocatable,dimension(:)::PRECVE
+  real,save,allocatable,dimension(:)::PRECVW
+  real,save,allocatable,dimension(:)::PSENDN
+  real,save,allocatable,dimension(:)::PSENDS
+  real,save,allocatable,dimension(:)::PRECVN
+  real,save,allocatable,dimension(:)::PRECVS
 
   if( num_Processors == 1 ) return
 
-  IF(.NOT.ALLOCATED(PSENDW))THEN
-    ALLOCATE(PSENDW(max_width_y*2))
-    ALLOCATE(PSENDE(max_width_y*2))
-    ALLOCATE(PRECVE(max_width_y*2))
-    ALLOCATE(PRECVW(max_width_y*2))
+  if(.not.ALLOCATED(PSENDW) )then
+    allocate(PSENDW(max_width_y*2))
+    allocate(PSENDE(max_width_y*2))
+    allocate(PRECVE(max_width_y*2))
+    allocate(PRECVW(max_width_y*2))
     
-    ALLOCATE(PSENDN(max_width_x*2))
-    ALLOCATE(PSENDS(max_width_x*2))
-    ALLOCATE(PRECVN(max_width_x*2))
-    ALLOCATE(PRECVS(max_width_x*2))
+    allocate(PSENDN(max_width_x*2))
+    allocate(PSENDS(max_width_x*2))
+    allocate(PRECVN(max_width_x*2))
+    allocate(PRECVS(max_width_x*2))
     PSENDW = 0.0
     PSENDE = 0.0
     PRECVE = 0.0
@@ -311,163 +311,163 @@ Module Communicate_Ghost_Routines
     PSENDS = 0.0
     PRECVN = 0.0
     PRECVS = 0.0
-  ENDIF
+  endif
     
-  IF( MPI_DEBUG_FLAG == .TRUE. )THEN
-    Call WriteBreak(mpi_comm_unit)
+  if( MPI_DEBUG_FLAG )then
+    call WriteBreak(mpi_comm_unit)
     write(mpi_comm_unit, '(a)') var_name
-  ENDIF
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
       II = II + 1
       PSENDW(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
 
     ierr = 0
-    CALL MPI_SEND(PSENDW, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDW, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVE, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVE, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + 1
       pardata(L) = PRECVE(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
       II = II + 1
       PSENDE(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDE, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDE, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVW, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVW, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + 1
       pardata(L) = PRECVW(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
       II = II + 1
       PSENDN(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDN, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDN, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVS, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVS, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + 1
       pardata(L) = PRECVS(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
       II = II + 1
       PSENDS(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDS, length_arg, mpi_real8, nbr_south, process_id,  comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDS, length_arg, mpi_real8, nbr_south, process_id,  comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVN, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVN, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + 1
       pardata(L) = PRECVN(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   END SUBROUTINE Communicate_1D_Real8
   !-----------------------------------------------------------------------
@@ -478,40 +478,40 @@ Module Communicate_Ghost_Routines
 
   SUBROUTINE Communicate_1D_Integer(pardata, var_name)
 
-  Use Variables_MPI
-  Use MPI
+  use Variables_MPI
+  use MPI
 
-  Implicit None
+  implicit none
 
   !***Read in variables
-  Integer, Intent(inout), DIMENSION(lcm)::  pardata
-  Character(len=*), Intent(in) :: var_name
+  integer, Intent(inout), dimension(lcm)::  pardata
+  Character(len = *), Intent(in) :: var_name
   !***Local variables
 
-  Integer :: I, J, II, L
-  Integer :: length_arg
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
+  integer :: I, J, II, L
+  integer :: length_arg
+  integer(4) :: ierr, status_message(MPI_Status_Size)
 
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDW
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDE
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVE
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVW
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDN
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDS
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVN
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVS
+  integer,save,allocatable,dimension(:)::PSENDW
+  integer,save,allocatable,dimension(:)::PSENDE
+  integer,save,allocatable,dimension(:)::PRECVE
+  integer,save,allocatable,dimension(:)::PRECVW
+  integer,save,allocatable,dimension(:)::PSENDN
+  integer,save,allocatable,dimension(:)::PSENDS
+  integer,save,allocatable,dimension(:)::PRECVN
+  integer,save,allocatable,dimension(:)::PRECVS
 
   if( num_Processors == 1 ) return
 
-  IF(.NOT.ALLOCATED(PSENDW))THEN
-    ALLOCATE(PSENDW(max_width_y*2))
-    ALLOCATE(PSENDE(max_width_y*2))
-    ALLOCATE(PRECVE(max_width_y*2))
-    ALLOCATE(PRECVW(max_width_y*2))
-    ALLOCATE(PSENDN(max_width_x*2))
-    ALLOCATE(PSENDS(max_width_x*2))
-    ALLOCATE(PRECVN(max_width_x*2))
-    ALLOCATE(PRECVS(max_width_x*2))
+  if(.not.ALLOCATED(PSENDW) )then
+    allocate(PSENDW(max_width_y*2))
+    allocate(PSENDE(max_width_y*2))
+    allocate(PRECVE(max_width_y*2))
+    allocate(PRECVW(max_width_y*2))
+    allocate(PSENDN(max_width_x*2))
+    allocate(PSENDS(max_width_x*2))
+    allocate(PRECVN(max_width_x*2))
+    allocate(PRECVS(max_width_x*2))
     PSENDW = 0.0
     PSENDE = 0.0
     PRECVE = 0.0
@@ -520,163 +520,163 @@ Module Communicate_Ghost_Routines
     PSENDS = 0.0
     PRECVN = 0.0
     PRECVS = 0.0
-  ENDIF
+  endif
 
-  IF( MPI_DEBUG_FLAG == .TRUE. )THEN
-    Call WriteBreak(mpi_comm_unit)
+  if( MPI_DEBUG_FLAG )then
+    call WriteBreak(mpi_comm_unit)
     write(mpi_comm_unit, '(a)') var_name
-  ENDIF
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
       II = II + 1
       PSENDW(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
 
     ierr = 0
-    CALL MPI_SEND(PSENDW, length_arg, mpi_integer, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDW, length_arg, mpi_integer, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVE, length_arg, mpi_integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVE, length_arg, mpi_integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + 1
       pardata(L) = PRECVE(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
       II = II + 1
       PSENDE(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDE, length_arg, mpi_integer, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDE, length_arg, mpi_integer, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVW, length_arg, mpi_integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVW, length_arg, mpi_integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + 1
       pardata(L) = PRECVW(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
       II = II + 1
       PSENDN(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDN, length_arg, mpi_integer, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDN, length_arg, mpi_integer, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVS, length_arg, mpi_integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVS, length_arg, mpi_integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + 1
       pardata(L) = PRECVS(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
       II = II + 1
       PSENDS(II) = pardata(L)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDS, length_arg, mpi_integer, nbr_south, process_id,  comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDS, length_arg, mpi_integer, nbr_south, process_id,  comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVN, length_arg, mpi_integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVN, length_arg, mpi_integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + 1
       pardata(L) = PRECVN(II)
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   END SUBROUTINE Communicate_1D_Integer
   
@@ -688,39 +688,39 @@ Module Communicate_Ghost_Routines
 
   SUBROUTINE Communicate_1D_Logical(pardata)
 
-  Use Variables_MPI
-  Use MPI
+  use Variables_MPI
+  use MPI
 
-  Implicit None
+  implicit none
 
   !***Read in variables
-  Logical, Intent(inout), DIMENSION(lcm)::  pardata
+  logical, Intent(inout), dimension(lcm)::  pardata
 
   !***Local variables
-  Integer :: I, J, II, L
-  Integer :: length_arg
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
+  integer :: I, J, II, L
+  integer :: length_arg
+  integer(4) :: ierr, status_message(MPI_Status_Size)
 
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDW
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDE
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVE
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVW
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDN
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PSENDS
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVN
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::PRECVS
+  integer,save,allocatable,dimension(:)::PSENDW
+  integer,save,allocatable,dimension(:)::PSENDE
+  integer,save,allocatable,dimension(:)::PRECVE
+  integer,save,allocatable,dimension(:)::PRECVW
+  integer,save,allocatable,dimension(:)::PSENDN
+  integer,save,allocatable,dimension(:)::PSENDS
+  integer,save,allocatable,dimension(:)::PRECVN
+  integer,save,allocatable,dimension(:)::PRECVS
 
   if( num_Processors == 1 ) return
 
-  IF(.NOT.ALLOCATED(PSENDW))THEN
-    ALLOCATE(PSENDW(max_width_y*2))
-    ALLOCATE(PSENDE(max_width_y*2))
-    ALLOCATE(PRECVE(max_width_y*2))
-    ALLOCATE(PRECVW(max_width_y*2))
-    ALLOCATE(PSENDN(max_width_x*2))
-    ALLOCATE(PSENDS(max_width_x*2))
-    ALLOCATE(PRECVN(max_width_x*2))
-    ALLOCATE(PRECVS(max_width_x*2))
+  if(.not.ALLOCATED(PSENDW) )then
+    allocate(PSENDW(max_width_y*2))
+    allocate(PSENDE(max_width_y*2))
+    allocate(PRECVE(max_width_y*2))
+    allocate(PRECVW(max_width_y*2))
+    allocate(PSENDN(max_width_x*2))
+    allocate(PSENDS(max_width_x*2))
+    allocate(PRECVN(max_width_x*2))
+    allocate(PRECVS(max_width_x*2))
     PSENDW = 0.0
     PSENDE = 0.0
     PRECVE = 0.0
@@ -729,171 +729,171 @@ Module Communicate_Ghost_Routines
     PSENDS = 0.0
     PRECVN = 0.0
     PRECVS = 0.0
-  ENDIF
+  endif
 
-  IF( MPI_DEBUG_FLAG == .TRUE. )THEN
-    Call WriteBreak(mpi_comm_unit)
-  ENDIF
+  if( MPI_DEBUG_FLAG )then
+    call WriteBreak(mpi_comm_unit)
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
       II = II + 1
       PSENDW(II) = 0
-      IF( pardata(L) ) PSENDW(II) = 1
-    ENDDO
+      if( pardata(L) ) PSENDW(II) = 1
+    enddo
     length_arg = II
 
     ierr = 0
-    CALL MPI_SEND(PSENDW, length_arg, mpi_integer, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDW, length_arg, mpi_integer, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVE, length_arg, mpi_integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVE, length_arg, mpi_integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + 1
       
       pardata(L) = .false.
-      IF( PRECVE(II) == 1 ) pardata(L) = .true. 
-    ENDDO
-  ENDIF
+      if( PRECVE(II) == 1 ) pardata(L) = .true. 
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
       II = II + 1
       PSENDE(II) = 0
-      IF( pardata(L) ) PSENDE(II) = 1
-    ENDDO
+      if( pardata(L) ) PSENDE(II) = 1
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDE, length_arg, mpi_integer, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDE, length_arg, mpi_integer, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVW, length_arg, mpi_integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVW, length_arg, mpi_integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + 1
       pardata(L) = .false.
-      IF( PRECVW(II) == 1 ) pardata(L) = .true. 
-    ENDDO
-  ENDIF
+      if( PRECVW(II) == 1 ) pardata(L) = .true. 
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
       II = II + 1
       PSENDN(II) = 0
-      IF( pardata(L) ) PSENDN(II) = 1
-    ENDDO
+      if( pardata(L) ) PSENDN(II) = 1
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDN, length_arg, mpi_integer, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDN, length_arg, mpi_integer, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVS, length_arg, mpi_integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVS, length_arg, mpi_integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + 1
       pardata(L) = .false.
-      IF( PRECVS(II) == 1 ) pardata(L) = .true. 
-    ENDDO
-  ENDIF
+      if( PRECVS(II) == 1 ) pardata(L) = .true. 
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
       II = II + 1
       PSENDS(II) = 0
-      IF( pardata(L) ) PSENDS(II) = 1
-    ENDDO
+      if( pardata(L) ) PSENDS(II) = 1
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(PSENDS, length_arg, mpi_integer, nbr_south, process_id,  comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(PSENDS, length_arg, mpi_integer, nbr_south, process_id,  comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + 1
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(PRECVN, length_arg, mpi_integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(PRECVN, length_arg, mpi_integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + 1
       pardata(L) = .false.
-      IF( PRECVN(II) == 1 ) pardata(L) = .true. 
-    ENDDO
-  ENDIF
+      if( PRECVN(II) == 1 ) pardata(L) = .true. 
+    enddo
+  endif
 
   END SUBROUTINE Communicate_1D_Logical
 
@@ -912,18 +912,18 @@ Module Communicate_Ghost_Routines
   use variables_mpi
   use mpi
 
-  Implicit none
+  implicit none
 
   !***passed in variables
   !      dimension  partem(lcm,kcm)
-  Real(4),intent(inout) ::partem(lcm, kcm)
+  real(4),intent(inout) ::partem(lcm, kcm)
 
   !***local variables
-  Integer :: i, j, k, II, L
-  Integer :: length_arg
-  Integer :: east_west_size   !< Size of the collapsed 1D array containg ghost cell values
-  Integer :: north_south_size !< Size of the collapsed 1D array containg ghost cell values
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
+  integer :: i, j, k, II, L
+  integer :: length_arg
+  integer :: east_west_size   !< Size of the collapsed 1D array containg ghost cell values
+  integer :: north_south_size !< Size of the collapsed 1D array containg ghost cell values
+  integer(4) :: ierr, status_message(MPI_Status_Size)
     
   Real,save,allocatable,dimension(:)::dsendw
   Real,save,allocatable,dimension(:)::dsende
@@ -939,7 +939,7 @@ Module Communicate_Ghost_Routines
   east_west_size   = max_width_y*kcm*4
   north_south_size = max_width_x*kcm*4
   
-  IF(.not.allocated(dsendw))THEN
+  if(.not.allocated(dsendw) )then
     allocate(dsendw(east_west_size))
     allocate(dsende(east_west_size))
     allocate(drecve(east_west_size))
@@ -958,179 +958,179 @@ Module Communicate_Ghost_Routines
     dsends = 0.0
     drecvn = 0.0
     drecvs = 0.0
-  ENDIF
+  endif
     
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDW(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsendw, length_arg, mpi_real, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsendw, length_arg, mpi_real, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVE, length_arg, mpi_real, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE, length_arg, mpi_real, nbr_east, nbr_east, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     ii = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         ii = ii + 1
         partem(l,k) = drecve(ii)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
   Endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDE(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsende, length_arg, mpi_real, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsende, length_arg, mpi_real, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVW, length_arg, mpi_real, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW, length_arg, mpi_real, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = DRECVW(II)
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDN(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsendn, length_arg, mpi_real, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsendn, length_arg, mpi_real, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south  /=  -1 )THEN
+  if( nbr_south  /=  -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(drecvs, length_arg, mpi_real, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvs, length_arg, mpi_real, nbr_south, nbr_south, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     ii = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         ii = II + 1
         partem(l,k) = drecvs(ii) 
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     ii = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         ii = II + 1
         dsends(ii) = partem(l,k)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsends, length_arg, mpi_real, nbr_south, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsends, length_arg, mpi_real, nbr_south, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north  /=  -1 )THEN
+  if( nbr_north  /=  -1 )then
     ii = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(drecvn, length_arg, mpi_real, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvn, length_arg, mpi_real, nbr_north, nbr_north, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     ii = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         ii = ii + 1
         partem(l,k) = drecvn(ii)
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
 
   End Subroutine Communicate_3d_Real
@@ -1150,18 +1150,18 @@ Module Communicate_Ghost_Routines
   use variables_mpi
   use mpi
 
-  Implicit none
+  implicit none
 
   !***passed in variables
   !      dimension  partem(lcm,kcm)
-  Real(8),intent(inout) ::partem(lcm, kcm)
+  real(8),intent(inout) ::partem(lcm, kcm)
 
   !***local variables
-  Integer :: i, j, k, II, L
-  Integer :: length_arg
-  Integer :: east_west_size   !< Size of the collapsed 1D array containg ghost cell values
-  Integer :: north_south_size !< Size of the collapsed 1D array containg ghost cell values
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
+  integer :: i, j, k, II, L
+  integer :: length_arg
+  integer :: east_west_size   !< Size of the collapsed 1D array containg ghost cell values
+  integer :: north_south_size !< Size of the collapsed 1D array containg ghost cell values
+  integer(4) :: ierr, status_message(MPI_Status_Size)
     
   Real,save,allocatable,dimension(:)::dsendw
   Real,save,allocatable,dimension(:)::dsende
@@ -1177,7 +1177,7 @@ Module Communicate_Ghost_Routines
   east_west_size   = max_width_y*kcm*4
   north_south_size = max_width_x*kcm*4
   
-  IF(.not.allocated(dsendw))THEN
+  if(.not.allocated(dsendw) )then
     allocate(dsendw(east_west_size))
     allocate(dsende(east_west_size))
     allocate(drecve(east_west_size))
@@ -1197,177 +1197,177 @@ Module Communicate_Ghost_Routines
     drecvn = 0.0
     drecvs = 0.0
 
-  ENDIF
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDW(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsendw, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsendw, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVE, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     ii = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         ii = ii + 1
         partem(l,k) = drecve(ii)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
   Endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDE(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsende, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsende, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVW, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = DRECVW(II)
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDN(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsendn, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsendn, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south  /=  -1 )THEN
+  if( nbr_south  /=  -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(drecvs, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvs, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     ii = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         ii = II + 1
         partem(l,k) = drecvs(ii) 
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     ii = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         ii = II + 1
         dsends(ii) = partem(l,k)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsends, length_arg, mpi_real8, nbr_south, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsends, length_arg, mpi_real8, nbr_south, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north  /=  -1 )THEN
+  if( nbr_north  /=  -1 )then
     ii = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
-    CALL MPI_RECV(drecvn, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvn, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     ii = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         ii = ii + 1
         partem(l,k) = drecvn(ii)
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
   End Subroutine Communicate_3d_Real8
 
@@ -1383,29 +1383,29 @@ Module Communicate_Ghost_Routines
   use variables_mpi
   use mpi
 
-  Implicit none
+  implicit none
 
   !***passed in variables
   !      dimension  partem(lcm,kcm)
-  Integer,intent(inout) ::partem(lcm, kcm)
+  integer,intent(inout) ::partem(lcm, kcm)
 
   !***local variables
-  Integer :: i, j, k, II, L
-  Integer :: length_arg
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
+  integer :: i, j, k, II, L
+  integer :: length_arg
+  integer(4) :: ierr, status_message(MPI_Status_Size)
 
-  Integer,save,allocatable,dimension(:)::dsendw
-  Integer,save,allocatable,dimension(:)::dsende
-  Integer,save,allocatable,dimension(:)::drecve
-  Integer,save,allocatable,dimension(:)::drecvw
-  Integer,save,allocatable,dimension(:)::dsendn
-  Integer,save,allocatable,dimension(:)::dsends
-  Integer,save,allocatable,dimension(:)::drecvn
-  Integer,save,allocatable,dimension(:)::drecvs
+  integer,save,allocatable,dimension(:)::dsendw
+  integer,save,allocatable,dimension(:)::dsende
+  integer,save,allocatable,dimension(:)::drecve
+  integer,save,allocatable,dimension(:)::drecvw
+  integer,save,allocatable,dimension(:)::dsendn
+  integer,save,allocatable,dimension(:)::dsends
+  integer,save,allocatable,dimension(:)::drecvn
+  integer,save,allocatable,dimension(:)::drecvs
 
   if( num_Processors == 1 ) return
 
-  IF(.not.allocated(dsendw))THEN
+  if(.not.allocated(dsendw) )then
     allocate(dsendw((JC)*kc*2))
     allocate(dsende((JC)*kc*2))
     allocate(drecve((JC)*kc*2))
@@ -1424,183 +1424,183 @@ Module Communicate_Ghost_Routines
     dsends = 0
     drecvn = 0
     drecvs = 0
-  ENDIF
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     ii = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDW(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II 
     
     ierr = 0
-    CALL MPI_SEND(dsendw, length_arg, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsendw, length_arg, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II 
 
     ierr = 0
-    CALL MPI_RECV(drecve, length_arg, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(drecve, length_arg, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = DRECVE(II)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
   Endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDE(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsende, length_arg, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsende, length_arg, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II   !  (jc-4)*2*KC
     
     ierr = 0
-    CALL MPI_RECV(DRECVW, length_arg, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW, length_arg, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = DRECVW(II)
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     ii = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDN(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsendn, length_arg, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsendn, length_arg, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south  /=  -1 )THEN
+  if( nbr_south  /=  -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(drecvs, length_arg, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvs, length_arg, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = DRECVS(II) 
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDS(II) = PARTEM(L,K)
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     LENGTH_ARG = II
     
     ierr = 0
-    CALL MPI_SEND(dsends, length_arg, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsends, length_arg, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north  /=  -1 )THEN
+  if( nbr_north  /=  -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     LENGTH_ARG = II
     
     ierr = 0
-    CALL MPI_RECV(drecvn, length_arg, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvn, length_arg, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = DRECVN(II)
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
   end subroutine Communicate_3d_Integer
 
@@ -1616,29 +1616,29 @@ Module Communicate_Ghost_Routines
   use variables_mpi
   use mpi
 
-  Implicit none
+  implicit none
 
   !***passed in variables
   !      dimension  partem(lcm,kcm)
-  Logical,intent(inout) ::partem(lcm, kcm)
+  logical,intent(inout) ::partem(lcm, kcm)
 
   !***local variables
-  Integer :: i, j, k, II, L
-  Integer :: length_arg
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
+  integer :: i, j, k, II, L
+  integer :: length_arg
+  integer(4) :: ierr, status_message(MPI_Status_Size)
 
-  Integer,save,allocatable,dimension(:)::dsendw
-  Integer,save,allocatable,dimension(:)::dsende
-  Integer,save,allocatable,dimension(:)::drecve
-  Integer,save,allocatable,dimension(:)::drecvw
-  Integer,save,allocatable,dimension(:)::dsendn
-  Integer,save,allocatable,dimension(:)::dsends
-  Integer,save,allocatable,dimension(:)::drecvn
-  Integer,save,allocatable,dimension(:)::drecvs
+  integer,save,allocatable,dimension(:)::dsendw
+  integer,save,allocatable,dimension(:)::dsende
+  integer,save,allocatable,dimension(:)::drecve
+  integer,save,allocatable,dimension(:)::drecvw
+  integer,save,allocatable,dimension(:)::dsendn
+  integer,save,allocatable,dimension(:)::dsends
+  integer,save,allocatable,dimension(:)::drecvn
+  integer,save,allocatable,dimension(:)::drecvs
 
   if( num_Processors == 1 ) return
 
-  IF(.not.allocated(dsendw))THEN
+  if(.not.allocated(dsendw) )then
     allocate(dsendw((JC)*kc*2))
     allocate(dsende((JC)*kc*2))
     allocate(drecve((JC)*kc*2))
@@ -1657,239 +1657,239 @@ Module Communicate_Ghost_Routines
     dsends = 0
     drecvn = 0
     drecvs = 0
-  ENDIF
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     ii = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDW(II) = 0
-        IF( PARTEM(L,K) ) DSENDW(II) = 1
-      ENDDO
-    ENDDO
+        if( PARTEM(L,K) ) DSENDW(II) = 1
+      enddo
+    enddo
     length_arg = II 
     
     ierr = 0
-    CALL MPI_SEND(dsendw, length_arg, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsendw, length_arg, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II 
 
     ierr = 0
-    CALL MPI_RECV(drecve, length_arg, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(drecve, length_arg, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = .FALSE.
-        IF( DRECVE(II) == 1 ) PARTEM(L,K) = .TRUE.
-      ENDDO
-    ENDDO
+        if( DRECVE(II) == 1 ) PARTEM(L,K) = .TRUE.
+      enddo
+    enddo
   Endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDE(II) = 0
-        IF( PARTEM(L,K) ) DSENDE(II) = 1
-      ENDDO
-    ENDDO
+        if( PARTEM(L,K) ) DSENDE(II) = 1
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsende, length_arg, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsende, length_arg, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II   !  (jc-4)*2*KC
     
     ierr = 0
-    CALL MPI_RECV(DRECVW, length_arg, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW, length_arg, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = .FALSE.
-        IF( DRECVW(II) == 1 ) PARTEM(L,K) = .TRUE.
-      ENDDO
-    ENDDO
-  ENDIF
+        if( DRECVW(II) == 1 ) PARTEM(L,K) = .TRUE.
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     ii = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDN(II) = 0
-        IF( PARTEM(L,K) ) DSENDN(II) = 1
-      ENDDO
-    ENDDO
+        if( PARTEM(L,K) ) DSENDN(II) = 1
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(dsendn, length_arg, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsendn, length_arg, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south  /=  -1 )THEN
+  if( nbr_south  /=  -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(drecvs, length_arg, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvs, length_arg, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = .FALSE.
-        IF( DRECVS(II) == 1 ) PARTEM(L,K) = .TRUE.
-      ENDDO
-    ENDDO
-  ENDIF
+        if( DRECVS(II) == 1 ) PARTEM(L,K) = .TRUE.
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         DSENDS(II) = 0
-        IF( PARTEM(L,K) ) DSENDS(II) = 1
-      ENDDO
-    ENDDO
+        if( PARTEM(L,K) ) DSENDS(II) = 1
+      enddo
+    enddo
     LENGTH_ARG = II
     
     ierr = 0
-    CALL MPI_SEND(dsends, length_arg, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(dsends, length_arg, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north  /=  -1 )THEN
+  if( nbr_north  /=  -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + (KC-KSZ(L)+1)
-    ENDDO
+    enddo
     LENGTH_ARG = II
     
     ierr = 0
-    CALL MPI_RECV(drecvn, length_arg, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(drecvn, length_arg, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
 
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      DO K = KSZ(L),KC
+      do K = KSZ(L),KC
         II = II + 1
         PARTEM(L,K) = .FALSE.
-        IF( DRECVN(II) == 1 ) PARTEM(L,K) = .TRUE.
-      ENDDO
-    ENDDO
-  ENDIF
+        if( DRECVN(II) == 1 ) PARTEM(L,K) = .TRUE.
+      enddo
+    enddo
+  endif
 
   end subroutine Communicate_3d_Logical
 
 
   SUBROUTINE Communicate_4D_Real(partem, ndim)
 
-  Use GLOBAL
-  Use MPI
-  Use Variables_MPI
+  use GLOBAL
+  use MPI
+  use Variables_MPI
 
-  Implicit None
+  implicit none
 
   !***Passed in variables
-  Integer, intent(in) :: ndim                         !< Dimension of the third array index
-  REAL(4),intent(inout)  :: PARTEM(lcm, kcm, ndim)
+  integer, intent(in) :: ndim                         !< Dimension of the third array index
+  real(4),intent(inout)  :: PARTEM(lcm, kcm, ndim)
 
   !***Local variables
-  Integer :: i, j, k, II, L, NW
-  Integer :: length_arg, NNS, NWE  !< LENGTH OF VECTOR TO BE Communicated
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
-  INTEGER,SAVE :: MAXLEN = -1
+  integer :: i, j, k, II, L, NW
+  integer :: length_arg, NNS, NWE  !< LENGTH OF VECTOR TO BE Communicated
+  integer(4) :: ierr, status_message(MPI_Status_Size)
+  integer,save :: MAXLEN = -1
   
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDW_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDE_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVE_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVW_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDN_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDS_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVN_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVS_4D
+  real,save,allocatable,dimension(:)::DSENDW_4D
+  real,save,allocatable,dimension(:)::DSENDE_4D
+  real,save,allocatable,dimension(:)::DRECVE_4D
+  real,save,allocatable,dimension(:)::DRECVW_4D
+  real,save,allocatable,dimension(:)::DSENDN_4D
+  real,save,allocatable,dimension(:)::DSENDS_4D
+  real,save,allocatable,dimension(:)::DRECVN_4D
+  real,save,allocatable,dimension(:)::DRECVS_4D
 
   if( num_Processors == 1 ) return
 
-  IF(.NOT.ALLOCATED(DSENDW_4D) .OR. ndim > MAXLEN )THEN
+  if(.not.ALLOCATED(DSENDW_4D) .or. ndim > MAXLEN )then
     NWE = JC*KC*2*ndim
-    IF( MAXLEN > -1 )THEN
-      DEALLOCATE(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
-      DEALLOCATE(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
-    ENDIF
-    ALLOCATE(DSENDW_4D(NWE))
-    ALLOCATE(DSENDE_4D(NWE))
-    ALLOCATE(DRECVE_4D(NWE))
-    ALLOCATE(DRECVW_4D(NWE))
+    if( MAXLEN > -1 )then
+      deallocate(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
+      deallocate(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
+    endif
+    allocate(DSENDW_4D(NWE))
+    allocate(DSENDE_4D(NWE))
+    allocate(DRECVE_4D(NWE))
+    allocate(DRECVW_4D(NWE))
     NNS = IC*KC*2*ndim
-    ALLOCATE(DSENDN_4D(NNS))
-    ALLOCATE(DSENDS_4D(NNS))
-    ALLOCATE(DRECVN_4D(NNS))
-    ALLOCATE(DRECVS_4D(NNS))
+    allocate(DSENDN_4D(NNS))
+    allocate(DSENDS_4D(NNS))
+    allocate(DRECVN_4D(NNS))
+    allocate(DRECVS_4D(NNS))
 
     DSENDW_4D = 0.0
     DSENDE_4D = 0.0
@@ -1900,198 +1900,198 @@ Module Communicate_Ghost_Routines
     DRECVN_4D = 0.0
     DRECVS_4D = 0.0
     MAXLEN = ndim
-  ENDIF
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDW_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(DSENDW_4D, length_arg, mpi_real, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDW_4D, length_arg, mpi_real, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVE_4D, length_arg, mpi_real, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, mpi_real, nbr_east, nbr_east, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVE_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDE_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II 
     
     ierr = 0
-    CALL MPI_SEND(DSENDE_4D, length_arg, mpi_real, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDE_4D, length_arg, mpi_real, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVW_4D, length_arg, mpi_real, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, mpi_real, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVW_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN 
+  if( nbr_north /= -1 )then 
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDN_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(DSENDN_4D, length_arg, mpi_real, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDN_4D, length_arg, mpi_real, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVS_4D, length_arg, mpi_real, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, mpi_real, nbr_south, nbr_south, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVS_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDS_4D(II) = PARTEM(L,K,NW) 
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II
 
     ierr = 0
-    CALL MPI_SEND(DSENDS_4D, length_arg, mpi_real, nbr_south, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDS_4D, length_arg, mpi_real, nbr_south, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVN_4D, length_arg, mpi_real, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, mpi_real, nbr_north, nbr_north, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVN_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   END SUBROUTINE Communicate_4D_Real
 
@@ -2099,48 +2099,48 @@ Module Communicate_Ghost_Routines
   
   SUBROUTINE Communicate_4D_Real8(partem, ndim)
 
-  Use GLOBAL
-  Use MPI
-  Use Variables_MPI
+  use GLOBAL
+  use MPI
+  use Variables_MPI
 
-  Implicit None
+  implicit none
 
   !***Passed in variables
-  REAL(8), intent(inout) :: PARTEM(lcm, kcm, ndim)   ! (NCELLS, NLAYERS, NUM_WQ_VARS=23)
-  Integer, intent(in)    :: ndim !< Dimension of the third array index
+  integer, intent(in)    :: ndim !< Dimension of the third array index
+  real(8), intent(inout) :: PARTEM(lcm, kcm, ndim)   ! (NCELLS, NLAYERS, NUM_WQ_VARS = 23)
 
   !***Local variables
-  Integer :: i, j, k, II, L, NW
-  Integer :: length_arg, NNS, NWE  !< LENGTH OF VECTOR TO BE Communicated
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
-  INTEGER,SAVE :: MAXLEN = -1
+  integer :: i, j, k, II, L, NW
+  integer :: length_arg, NNS, NWE  !< LENGTH OF VECTOR TO BE Communicated
+  integer(4) :: ierr, status_message(MPI_Status_Size)
+  integer,save :: MAXLEN = -1
   
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDW_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDE_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVE_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVW_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDN_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDS_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVN_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVS_4D
+  real,save,allocatable,dimension(:)::DSENDW_4D
+  real,save,allocatable,dimension(:)::DSENDE_4D
+  real,save,allocatable,dimension(:)::DRECVE_4D
+  real,save,allocatable,dimension(:)::DRECVW_4D
+  real,save,allocatable,dimension(:)::DSENDN_4D
+  real,save,allocatable,dimension(:)::DSENDS_4D
+  real,save,allocatable,dimension(:)::DRECVN_4D
+  real,save,allocatable,dimension(:)::DRECVS_4D
 
   if( num_Processors == 1 ) return
 
-  IF(.NOT.ALLOCATED(DSENDW_4D) .OR. ndim > MAXLEN )THEN
+  if(.not.ALLOCATED(DSENDW_4D) .or. ndim > MAXLEN )then
     NWE = JC*KC*2*ndim
-    IF( MAXLEN > -1 )THEN
-      DEALLOCATE(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
-      DEALLOCATE(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
-    ENDIF
-    ALLOCATE(DSENDW_4D(NWE))
-    ALLOCATE(DSENDE_4D(NWE))
-    ALLOCATE(DRECVE_4D(NWE))
-    ALLOCATE(DRECVW_4D(NWE))
+    if( MAXLEN > -1 )then
+      deallocate(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
+      deallocate(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
+    endif
+    allocate(DSENDW_4D(NWE))
+    allocate(DSENDE_4D(NWE))
+    allocate(DRECVE_4D(NWE))
+    allocate(DRECVW_4D(NWE))
     NNS = IC*KC*2*ndim
-    ALLOCATE(DSENDN_4D(NNS))
-    ALLOCATE(DSENDS_4D(NNS))
-    ALLOCATE(DRECVN_4D(NNS))
-    ALLOCATE(DRECVS_4D(NNS))
+    allocate(DSENDN_4D(NNS))
+    allocate(DSENDS_4D(NNS))
+    allocate(DRECVN_4D(NNS))
+    allocate(DRECVS_4D(NNS))
 
     DSENDW_4D = 0.0
     DSENDE_4D = 0.0
@@ -2151,198 +2151,198 @@ Module Communicate_Ghost_Routines
     DRECVN_4D = 0.0
     DRECVS_4D = 0.0
     MAXLEN = ndim
-  ENDIF
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDW_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(DSENDW_4D, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDW_4D, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVE_4D, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVE_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDE_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II 
     
     ierr = 0
-    CALL MPI_SEND(DSENDE_4D, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDE_4D, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVW_4D, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVW_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN 
+  if( nbr_north /= -1 )then 
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDN_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_SEND(DSENDN_4D, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDN_4D, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVS_4D, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVS_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDS_4D(II) = PARTEM(L,K,NW) 
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II
 
     ierr = 0
-    CALL MPI_SEND(DSENDS_4D, length_arg, mpi_real8, nbr_south, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDS_4D, length_arg, mpi_real8, nbr_south, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVN_4D, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVN_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   END SUBROUTINE Communicate_4D_Real8
 
@@ -2350,48 +2350,48 @@ Module Communicate_Ghost_Routines
 
   SUBROUTINE Communicate_4D_Integer(partem, ndim)
 
-  Use GLOBAL
-  Use MPI
-  Use Variables_MPI
+  use GLOBAL
+  use MPI
+  use Variables_MPI
 
-  Implicit None
+  implicit none
 
   !***Passed in variables
-  Integer,intent(inout)  :: PARTEM(lcm, kcm, ndim)   ! (NCELLS, NLAYERS, NUM_WQ_VARS=23)
-  Integer, intent(in)    :: ndim !< Dimension of the third array index
+  integer, intent(in)    :: ndim !< Dimension of the third array index
+  integer,intent(inout)  :: PARTEM(lcm, kcm, ndim)   ! (NCELLS, NLAYERS, NUM_WQ_VARS = 23)
 
   !***Local variables
-  Integer :: i, j, k, II, L, NW, NWE, NNS
-  Integer :: length_arg  !< LENGTH OF VECTOR TO BE COMMUNICATED
-  INTEGER,SAVE :: MAXLEN = -1
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
+  integer :: i, j, k, II, L, NW, NWE, NNS
+  integer :: length_arg  !< LENGTH OF VECTOR TO BE COMMUNICATED
+  integer,save :: MAXLEN = -1
+  integer(4) :: ierr, status_message(MPI_Status_Size)
 
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDW_4D
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDE_4D
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVE_4D
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVW_4D
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDN_4D
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDS_4D
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVN_4D
-  Integer,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVS_4D
+  integer,save,allocatable,dimension(:)::DSENDW_4D
+  integer,save,allocatable,dimension(:)::DSENDE_4D
+  integer,save,allocatable,dimension(:)::DRECVE_4D
+  integer,save,allocatable,dimension(:)::DRECVW_4D
+  integer,save,allocatable,dimension(:)::DSENDN_4D
+  integer,save,allocatable,dimension(:)::DSENDS_4D
+  integer,save,allocatable,dimension(:)::DRECVN_4D
+  integer,save,allocatable,dimension(:)::DRECVS_4D
 
   if( num_Processors == 1 ) return
 
-  IF(.NOT.ALLOCATED(DSENDW_4D) .OR. ndim > MAXLEN )THEN
+  if(.not.ALLOCATED(DSENDW_4D) .or. ndim > MAXLEN )then
     NWE = JC*KC*2*ndim
-    IF( MAXLEN > -1 )THEN
-      DEALLOCATE(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
-      DEALLOCATE(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
-    ENDIF
-    ALLOCATE(DSENDW_4D(NWE))
-    ALLOCATE(DSENDE_4D(NWE))
-    ALLOCATE(DRECVE_4D(NWE))
-    ALLOCATE(DRECVW_4D(NWE))
+    if( MAXLEN > -1 )then
+      deallocate(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
+      deallocate(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
+    endif
+    allocate(DSENDW_4D(NWE))
+    allocate(DSENDE_4D(NWE))
+    allocate(DRECVE_4D(NWE))
+    allocate(DRECVW_4D(NWE))
     NNS = IC*KC*2*ndim
-    ALLOCATE(DSENDN_4D(NNS))
-    ALLOCATE(DSENDS_4D(NNS))
-    ALLOCATE(DRECVN_4D(NNS))
-    ALLOCATE(DRECVS_4D(NNS))
+    allocate(DSENDN_4D(NNS))
+    allocate(DSENDS_4D(NNS))
+    allocate(DRECVN_4D(NNS))
+    allocate(DRECVS_4D(NNS))
 
     DSENDW_4D = 0
     DSENDE_4D = 0
@@ -2402,243 +2402,243 @@ Module Communicate_Ghost_Routines
     DRECVN_4D = 0
     DRECVS_4D = 0
     MAXLEN = ndim
-  ENDIF
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDW_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II     ! (jc-4)*2*KC*ndim    ! *** Length of vector for East-West Communication
     
     ierr = 0
-    CALL MPI_SEND(DSENDW_4D, length_arg, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDW_4D, length_arg, MPI_Integer, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II     ! (jc-4)*2*KC*ndim    ! *** Length of vector for East-West Communication
     ierr = 0
-    CALL MPI_RECV(DRECVE_4D, length_arg, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, MPI_Integer, nbr_east, nbr_east, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVE_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDE_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II 
     
     ierr = 0
-    CALL MPI_SEND(DSENDE_4D, length_arg, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDE_4D, length_arg, MPI_Integer, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     ierr = 0
-    CALL MPI_RECV(DRECVW_4D, length_arg, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, MPI_Integer, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVW_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN 
+  if( nbr_north /= -1 )then 
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDN_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II     ! IC*2*KC*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    CALL MPI_SEND(DSENDN_4D, length_arg, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDN_4D, length_arg, MPI_Integer, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVS_4D, length_arg, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, MPI_Integer, nbr_south, nbr_south, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVS_4D(II) ! unpack data from north
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           DSENDS_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II
 
     ierr = 0
-    CALL MPI_SEND(DSENDS_4D, length_arg, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDS_4D, length_arg, MPI_Integer, nbr_south, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + (KC-KSZ(L)+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVN_4D, length_arg, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, MPI_Integer, nbr_north, nbr_north, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      DO NW = 1,ndim
-        DO K = KSZ(L),KC
+      do NW = 1,ndim
+        do K = KSZ(L),KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVN_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   END SUBROUTINE Communicate_4D_Integer
 
   SUBROUTINE Communicate_4D0_Real(partem, ndim, istart)
 
-  Use GLOBAL
-  Use MPI
-  Use Variables_MPI
+  use GLOBAL
+  use MPI
+  use Variables_MPI
 
-  Implicit None
+  implicit none
 
   !***Passed in variables
-  Integer, intent(in) :: ndim                      !< Dimension of the third array index
-  Integer, intent(in) :: istart                    !< Starting index of KCM index
-  REAL(4),intent(inout)  :: PARTEM(lcm, istart:kcm, ndim)
+  integer, intent(in) :: ndim                      !< Dimension of the third array index
+  integer, intent(in) :: istart                    !< Starting index of KCM index
+  real(4),intent(inout)  :: PARTEM(lcm, istart:kcm, ndim)
 
   !***Local variables
-  Integer :: i, j, k, II, L, NW
-  Integer :: length_arg, NNS, NWE  !< LENGTH OF VECTOR TO BE Communicated
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
-  INTEGER,SAVE :: MAXLEN = -1
+  integer :: i, j, k, II, L, NW
+  integer :: length_arg, NNS, NWE  !< LENGTH OF VECTOR TO BE Communicated
+  integer(4) :: ierr, status_message(MPI_Status_Size)
+  integer,save :: MAXLEN = -1
   
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDW_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDE_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVE_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVW_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDN_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDS_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVN_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVS_4D
+  real,save,allocatable,dimension(:)::DSENDW_4D
+  real,save,allocatable,dimension(:)::DSENDE_4D
+  real,save,allocatable,dimension(:)::DRECVE_4D
+  real,save,allocatable,dimension(:)::DRECVW_4D
+  real,save,allocatable,dimension(:)::DSENDN_4D
+  real,save,allocatable,dimension(:)::DSENDS_4D
+  real,save,allocatable,dimension(:)::DRECVN_4D
+  real,save,allocatable,dimension(:)::DRECVS_4D
 
   if( num_Processors == 1 ) return
 
-  IF(.NOT.ALLOCATED(DSENDW_4D) .OR. ndim > MAXLEN )THEN
+  if(.not.ALLOCATED(DSENDW_4D) .or. ndim > MAXLEN )then
     NWE = JC*(KC+1)*2*ndim
-    IF( MAXLEN > -1 )THEN
-      DEALLOCATE(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
-      DEALLOCATE(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
-    ENDIF
-    ALLOCATE(DSENDW_4D(NWE))
-    ALLOCATE(DSENDE_4D(NWE))
-    ALLOCATE(DRECVE_4D(NWE))
-    ALLOCATE(DRECVW_4D(NWE))
+    if( MAXLEN > -1 )then
+      deallocate(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
+      deallocate(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
+    endif
+    allocate(DSENDW_4D(NWE))
+    allocate(DSENDE_4D(NWE))
+    allocate(DRECVE_4D(NWE))
+    allocate(DRECVW_4D(NWE))
     NNS = IC*(KC+1)*2*ndim
-    ALLOCATE(DSENDN_4D(NNS))
-    ALLOCATE(DSENDS_4D(NNS))
-    ALLOCATE(DRECVN_4D(NNS))
-    ALLOCATE(DRECVS_4D(NNS))
+    allocate(DSENDN_4D(NNS))
+    allocate(DSENDS_4D(NNS))
+    allocate(DRECVN_4D(NNS))
+    allocate(DRECVS_4D(NNS))
 
     DSENDW_4D = 0.0
     DSENDE_4D = 0.0
@@ -2649,246 +2649,246 @@ Module Communicate_Ghost_Routines
     DRECVN_4D = 0.0
     DRECVS_4D = 0.0
     MAXLEN = ndim
-  ENDIF
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           DSENDW_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II    ! (jc-4)*2*(KC+1)*ndim
 
     ierr = 0
-    CALL MPI_SEND(DSENDW_4D, length_arg, mpi_real, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDW_4D, length_arg, mpi_real, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + (KC+1)*ndim
-    ENDDO
+    enddo
     length_arg = II     !  (jc-4)*2*(KC+1)*ndim    ! *** Length of vector for East-West Communication
     
     ierr = 0
-    CALL MPI_RECV(DRECVE_4D, length_arg, mpi_real, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, mpi_real, nbr_east, nbr_east, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVE_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           DSENDE_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II 
     
     ierr = 0
-    CALL MPI_SEND(DSENDE_4D, length_arg, mpi_real, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDE_4D, length_arg, mpi_real, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + (KC+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVW_4D, length_arg, mpi_real, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, mpi_real, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVW_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN 
+  if( nbr_north /= -1 )then 
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           DSENDN_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II    ! IC*2*(KC+1)*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    CALL MPI_SEND(DSENDN_4D, length_arg, mpi_real, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDN_4D, length_arg, mpi_real, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + (KC+1)*ndim
-    ENDDO
+    enddo
     length_arg = II    ! IC*2*(KC+1)*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    CALL MPI_RECV(DRECVS_4D, length_arg, mpi_real, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, mpi_real, nbr_south, nbr_south, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVS_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           DSENDS_4D(II) = PARTEM(L,K,NW) 
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II
 
     ierr = 0
-    CALL MPI_SEND(DSENDS_4D, length_arg, mpi_real, nbr_south, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDS_4D, length_arg, mpi_real, nbr_south, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + (KC+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVN_4D, length_arg, mpi_real, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, mpi_real, nbr_north, nbr_north, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVN_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   END SUBROUTINE Communicate_4D0_Real
 
   SUBROUTINE Communicate_4D0_Real8(partem, ndim, istart)
 
-  Use GLOBAL
-  Use MPI
-  Use Variables_MPI
+  use GLOBAL
+  use MPI
+  use Variables_MPI
 
-  Implicit None
+  implicit none
 
   !***Passed in variables
-  Integer, intent(in) :: ndim                      !< Dimension of the third array index
-  Integer, intent(in) :: istart                    !< Starting index of KCM index
-  REAL(8),intent(inout)  :: PARTEM(lcm, istart:kcm, ndim)
+  integer, intent(in) :: ndim                      !< Dimension of the third array index
+  integer, intent(in) :: istart                    !< Starting index of KCM index
+  real(8),intent(inout)  :: PARTEM(lcm, istart:kcm, ndim)
 
   !***Local variables
-  Integer :: i, j, k, II, L, NW
-  Integer :: length_arg, NNS, NWE  !< LENGTH OF VECTOR TO BE Communicated
-  INTEGER(4) :: ierr, status_message(MPI_Status_Size)
-  INTEGER,SAVE :: MAXLEN = -1
+  integer :: i, j, k, II, L, NW
+  integer :: length_arg, NNS, NWE  !< LENGTH OF VECTOR TO BE Communicated
+  integer(4) :: ierr, status_message(MPI_Status_Size)
+  integer,save :: MAXLEN = -1
   
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDW_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDE_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVE_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVW_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDN_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DSENDS_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVN_4D
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:)::DRECVS_4D
+  real,save,allocatable,dimension(:)::DSENDW_4D
+  real,save,allocatable,dimension(:)::DSENDE_4D
+  real,save,allocatable,dimension(:)::DRECVE_4D
+  real,save,allocatable,dimension(:)::DRECVW_4D
+  real,save,allocatable,dimension(:)::DSENDN_4D
+  real,save,allocatable,dimension(:)::DSENDS_4D
+  real,save,allocatable,dimension(:)::DRECVN_4D
+  real,save,allocatable,dimension(:)::DRECVS_4D
 
   if( num_Processors == 1 ) return
 
-  IF(.NOT.ALLOCATED(DSENDW_4D) .OR. ndim > MAXLEN )THEN
+  if(.not.ALLOCATED(DSENDW_4D) .or. ndim > MAXLEN )then
     NWE = JC*(KC+1)*2*ndim
-    IF( MAXLEN > -1 )THEN
-      DEALLOCATE(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
-      DEALLOCATE(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
-    ENDIF
-    ALLOCATE(DSENDW_4D(NWE))
-    ALLOCATE(DSENDE_4D(NWE))
-    ALLOCATE(DRECVE_4D(NWE))
-    ALLOCATE(DRECVW_4D(NWE))
+    if( MAXLEN > -1 )then
+      deallocate(DSENDW_4D,DSENDE_4D,DRECVE_4D,DRECVW_4D)
+      deallocate(DSENDN_4D,DSENDS_4D,DRECVN_4D,DRECVS_4D)
+    endif
+    allocate(DSENDW_4D(NWE))
+    allocate(DSENDE_4D(NWE))
+    allocate(DRECVE_4D(NWE))
+    allocate(DRECVW_4D(NWE))
     NNS = IC*(KC+1)*2*ndim
-    ALLOCATE(DSENDN_4D(NNS))
-    ALLOCATE(DSENDS_4D(NNS))
-    ALLOCATE(DRECVN_4D(NNS))
-    ALLOCATE(DRECVS_4D(NNS))
+    allocate(DSENDN_4D(NNS))
+    allocate(DSENDS_4D(NNS))
+    allocate(DRECVN_4D(NNS))
+    allocate(DRECVS_4D(NNS))
 
     DSENDW_4D = 0.0
     DSENDE_4D = 0.0
@@ -2899,198 +2899,198 @@ Module Communicate_Ghost_Routines
     DRECVN_4D = 0.0
     DRECVS_4D = 0.0
     MAXLEN = ndim
-  ENDIF
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** West domain active: Gather west active cells to send to the west
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,1)
+    do I = 1,nComm_Cells(1,1)
       L = Comm_Cells(I,1,1)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           DSENDW_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II    ! (jc-4)*2*(KC+1)*ndim
 
     ierr = 0
-    CALL MPI_SEND(DSENDW_4D, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDW_4D, length_arg, mpi_real8, nbr_west, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate East ghost cells if East is active
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
       II = II + (KC+1)*ndim
-    ENDDO
+    enddo
     length_arg = II     !  (jc-4)*2*(KC+1)*ndim    ! *** Length of vector for East-West Communication
     
     ierr = 0
-    CALL MPI_RECV(DRECVE_4D, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVE_4D, length_arg, mpi_real8, nbr_east, nbr_east, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,2)
+    do I = 1,nComm_Cells(2,2)
       L = Comm_Cells(I,2,2)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVE_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** East domain active: Gather East active cells to send to the East
-  IF( nbr_east /= -1 )THEN
+  if( nbr_east /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,2)
+    do I = 1,nComm_Cells(1,2)
       L = Comm_Cells(I,1,2)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           DSENDE_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II 
     
     ierr = 0
-    CALL MPI_SEND(DSENDE_4D, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDE_4D, length_arg, mpi_real8, nbr_east, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate West ghost cells if West is active
-  IF( nbr_west /= -1 )THEN
+  if( nbr_west /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
       II = II + (KC+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVW_4D, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVW_4D, length_arg, mpi_real8, nbr_west, nbr_west, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,1)
+    do I = 1,nComm_Cells(2,1)
       L = Comm_Cells(I,2,1)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVW_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** North domain active: Gather North active cells to send to the North
-  IF( nbr_north /= -1 )THEN 
+  if( nbr_north /= -1 )then 
     II = 0
-    DO I = 1,nComm_Cells(1,4)
+    do I = 1,nComm_Cells(1,4)
       L = Comm_Cells(I,1,4)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           DSENDN_4D(II) = PARTEM(L,K,NW)
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II    ! IC*2*(KC+1)*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    CALL MPI_SEND(DSENDN_4D, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDN_4D, length_arg, mpi_real8, nbr_north, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate South ghost cells if South is active
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
       II = II + (KC+1)*ndim
-    ENDDO
+    enddo
     length_arg = II    ! IC*2*(KC+1)*ndim    ! *** Length of vector for North-South Communication
     
     ierr = 0
-    CALL MPI_RECV(DRECVS_4D, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVS_4D, length_arg, mpi_real8, nbr_south, nbr_south, comm_2d, status_message, ierr)
     
     ! *** Populate ghost cells
     II = 0
-    DO I = 1,nComm_Cells(2,3)
+    do I = 1,nComm_Cells(2,3)
       L = Comm_Cells(I,2,3)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVS_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
   
   ! ********************************************************************************************
   ! ********************************************************************************************
   ! *** South domain active: Gather South active cells to send to the South
-  IF( nbr_south /= -1 )THEN
+  if( nbr_south /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(1,3)
+    do I = 1,nComm_Cells(1,3)
       L = Comm_Cells(I,1,3)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           DSENDS_4D(II) = PARTEM(L,K,NW) 
-        ENDDO
-      ENDDO
-    ENDDO
+        enddo
+      enddo
+    enddo
     length_arg = II
 
     ierr = 0
-    CALL MPI_SEND(DSENDS_4D, length_arg, mpi_real8, nbr_south, process_id, comm_2d, ierr)
-  ENDIF
+    call MPI_SEND(DSENDS_4D, length_arg, mpi_real8, nbr_south, process_id, comm_2d, ierr)
+  endif
 
   ! *** Receive and populate North ghost cells if North is active
-  IF( nbr_north /= -1 )THEN
+  if( nbr_north /= -1 )then
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
       II = II + (KC+1)*ndim
-    ENDDO
+    enddo
     length_arg = II
     
     ierr = 0
-    CALL MPI_RECV(DRECVN_4D, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
+    call MPI_RECV(DRECVN_4D, length_arg, mpi_real8, nbr_north, nbr_north, comm_2d, status_message, ierr)
     
     II = 0
-    DO I = 1,nComm_Cells(2,4)
+    do I = 1,nComm_Cells(2,4)
       L = Comm_Cells(I,2,4)
       
-      DO NW = 1,ndim
-        DO K = 0,KC
+      do NW = 1,ndim
+        do K = 0,KC
           II = II + 1
           PARTEM(L,K,NW) = DRECVN_4D(II)
-        ENDDO
-      ENDDO
-    ENDDO
-  ENDIF
+        enddo
+      enddo
+    enddo
+  endif
 
   END SUBROUTINE Communicate_4D0_Real8
 

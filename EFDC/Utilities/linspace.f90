@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!
@@ -16,7 +16,7 @@
 !---------------------------------------------------------------------------!
 subroutine linspace(arr_size, lower, upper, evenly_space) 
 
-    Use Global, only : RKD
+    use GLOBAL, only : RKD
     
     implicit none
 
@@ -33,19 +33,19 @@ subroutine linspace(arr_size, lower, upper, evenly_space)
     range = upper - lower
 
     ! *** 
-    IF( arr_size == 0 )then 
+    if( arr_size == 0 )then 
         return
-    end if
+    endif
     ! *** Handle array of size 1
-    IF( arr_size == 1 )then
+    if( arr_size == 1 )then
         evenly_space(1) = lower
         return
-    end if
+    endif
 
     ! *** generate the array of evenly spaced values
     do i = 1, arr_size
         evenly_space(i) = lower + range * (i - 1) / (arr_size - 1)
-    end do
+    enddo
 
     return
 

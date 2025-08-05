@@ -3,16 +3,16 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 SUBROUTINE CALPUV2C 
 
   ! *** *******************************************************************C
   !
-  ! ** SUBROUTINE CALPUV2C CALCULATES THE EXTERNAL SOLUTION FOR P, UHDYE,
-  ! ** AND VHDXE, FOR FREE SURFACE FLOWS FOR THE 2TL SOLUTION.
-  ! ** WITH PROVISIONS FOR WETTING AND DRYING OF CELLS
+  ! *** SUBROUTINE CALPUV2C CALCULATES THE EXTERNAL SOLUTION FOR P, UHDYE,
+  ! *** AND VHDXE, FOR FREE SURFACE FLOWS FOR THE 2TL SOLUTION.
+  ! *** WITH PROVISIONS FOR WETTING AND DRYING OF CELLS
   !
   !----------------------------------------------------------------------C  
   ! CHANGE RECORD  
@@ -34,93 +34,78 @@ SUBROUTINE CALPUV2C
   !       for reducing depth of high/dry cells.  Also added concentration  
   !       adjustments. 
 
-  USE GLOBAL 
-  USE EFDCOUT
-  Use Variables_MPI
+  use GLOBAL
+  use Allocate_Initialize
+  use EFDCOUT
+  use Variables_MPI
 
-#ifdef _MPI
-  Use MPI
-  Use MPI_All_Reduce
-  Use Communicate_Ghost_Routines
-  Use Mod_Map_Write_EE_Binary
-#endif
+  use MPI
+  use MPI_All_Reduce
+  use Communicate_Ghost_Routines
+  use Mod_Map_Write_EE_Binary
 
-  IMPLICIT NONE
+  implicit none
 
-  INTEGER :: NMD, ITERHP, NCORDRY, ICORDRY, ND, LF, LL, L, LP, LS, LN, LW, LE, LHOST, LCHNU, LCHNV, LG
-  INTEGER :: IUW, IUE, IVS, IVN, IFACE, LMAX, LMIN, NTMP, IFLAG, IMAX, IMIN, JMAX, JMIN, I, J, K, NNEGFLG, KM
-  INTEGER, SAVE :: INOTICE, NCORDRYMAX, NCORDRYAVG, ITERMAX, ITERAVG, NITERAVG, NCOUNT
-  INTEGER, SAVE :: NOPTIMAL
-  INTEGER, SAVE :: LDMOPT
-  REAL :: DELTD2, RLAMN, RLAMO, TMPX, TMPY, C1, TMPVAL, HDRY2, BELVAVG, SVPW1
-  REAL :: SUBW, SUBE, SVBS, SVBN, DHPDT, DHPDT2, RDRY, CCMNM, CCMNMI, HDRY90
-  REAL :: RVAL, HOLDTMP, RNPORI, DIVEXMX, DIVEXMN, DIVEX, ETGWTMP, ETGWAVL, EL, EW, ES
-  REAL(RKD), SAVE :: DAYOLD, DAYOLD30
+  integer :: NMD, ITERHP, NCORDRY, ICORDRY, ND, LF, LL, L, LP, LS, LN, LW, LE, LHOST, LCHNU, LCHNV, LG
+  integer :: IUW, IUE, IVS, IVN, IFACE, LMAX, LMIN, NTMP, IFLAG, IMAX, IMIN, JMAX, JMIN, I, J, K, KM
+  integer, save :: INOTICE, NCORDRYMAX, NCORDRYAVG, ITERMAX, ITERAVG, NITERAVG, NCOUNT
+  real :: DELTD2, RLAMN, RLAMO, TMPX, TMPY, C1, TMPVAL, HDRY2, BELVAVG, SVPW1
+  real :: SUBW, SUBE, SVBS, SVBN, DHPDT, DHPDT2, RDRY, CCMNM, CCMNMI, HDRY90
+  real :: RVAL, HOLDTMP, RNPORI, DIVEXMX, DIVEXMN, DIVEX, ETGWTMP, ETGWAVL, EL, EW, ES
+  real(RKD), save :: DAYOLD, DAYOLD30
   
-  INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: IACTIVE  
-  INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: ICORDRYD
-  INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: NNATDRY
-  INTEGER,SAVE,ALLOCATABLE,DIMENSION(:,:) :: LNATDRY
+  integer,save,allocatable,dimension(:) :: IACTIVE  
+  integer,save,allocatable,dimension(:) :: ICORDRYD
+  integer,save,allocatable,dimension(:) :: NNATDRY
+  integer,save,allocatable,dimension(:,:) :: LNATDRY
 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: QCHANUT  
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: QCHANVT  
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: QSUMTMP 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: SUB1
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: SVB1
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: CCMNMD
+  real,save,allocatable,dimension(:) :: QCHANUT  
+  real,save,allocatable,dimension(:) :: QCHANVT  
+  real,save,allocatable,dimension(:) :: QSUMTMP 
+  real,save,allocatable,dimension(:) :: SUB1
+  real,save,allocatable,dimension(:) :: SVB1
+  real,save,allocatable,dimension(:) :: CCMNMD
 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: FSGZUDXYPI
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: FSGZVDXYPI
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: HPOLD
+  real,save,allocatable,dimension(:) :: FSGZUDXYPI
+  real,save,allocatable,dimension(:) :: FSGZVDXYPI
   
-  REAL(RKD), EXTERNAL :: DSTIME
-  REAL(RKD)           :: TTDS, TWAIT                 ! MODEL TIMING TEMPORARY VARIABLE
+  real(RKD), external :: DSTIME
+  real(RKD)           :: TTDS, TWAIT, TTCON, TTPUV                 ! *** Model timing variables
 
   ! *** New variables for MPI
-  Real    :: CCMNM_Local
-  Integer :: ICORDRY_GLobal !< Dry couunter for the entire domain, takes the sum from all processes
-  Integer :: ierr, IUPDATE, IUPDATE_Global
+  real    :: CCMNM_Local
+  integer :: ICORDRY_GLobal !< Dry couunter for the entire domain, takes the sum from all processes
+  integer :: ierr, IUPDATE, IUPDATE_Global
   
-  IF( .NOT. ALLOCATED(IACTIVE) )THEN
-    ! *** SET THE OPTIMAL NUMBER OF THREADS.  USE 100 CELLS PER THREAD AS GENERAL RULE
-    NOPTIMAL = MIN(NTHREADS,8,MAX(LA/1000,2))
-    LDMOPT   = INT(FLOAT(LA-1)/FLOAT(NOPTIMAL)) + 1
-    
-    if( process_id == master_id )then
-      WRITE(*,'(A,I5)')'FIRST CALL TO 2TL PRESSURE SOLUTION.  CALPUV THREADS:',NOPTIMAL
-    endif
+  ! *** Initialize timing
+  TTWAIT = 0.
+  TTPUV = DSTIME(0)
+  TTCON = TCONG
+  TMPITMP = 0.
+  
+  if( .not. allocated(IACTIVE) )then
+    call AllocateDSI(IACTIVE, NCHANM,   0) 
+    call AllocateDSI(QCHANUT, NCHANM, 0.0) 
+    call AllocateDSI(QCHANVT, NCHANM, 0.0) 
+    call AllocateDSI(FSGZUDXYPI, LCM, 0.0)
+    call AllocateDSI(FSGZVDXYPI, LCM, 0.0)
+    call AllocateDSI(QSUMTMP,    LCM, 0.0) 
+    call AllocateDSI(SUB1,       LCM, 0.0) 
+    call AllocateDSI(SVB1,       LCM, 0.0)
 
-    ALLOCATE(IACTIVE(NCHANM))  
-    ALLOCATE(QCHANUT(NCHANM))  
-    ALLOCATE(QCHANVT(NCHANM))  
-    ALLOCATE(QSUMTMP(LCM))  
-    ALLOCATE(SUB1(LCM))  
-    ALLOCATE(SVB1(LCM))
-    ALLOCATE(CCMNMD(NOPTIMAL))
-    ALLOCATE(ICORDRYD(NOPTIMAL))
-    ALLOCATE(FSGZUDXYPI(LCM))
-    ALLOCATE(FSGZVDXYPI(LCM))
-    ALLOCATE(HPOLD(LCM))
-    ALLOCATE(LNATDRY(NOPTIMAL,(INT(LCM/NOPTIMAL)+1)))
-    ALLOCATE(NNATDRY(NOPTIMAL))
+    call AllocateDSI(LNATDRY,  NTHREADS, LCM,  0)
+    call AllocateDSI(CCMNMD,   NTHREADS, 0.0)
+    call AllocateDSI(ICORDRYD, NTHREADS,   0)
+    call AllocateDSI(NNATDRY,  NTHREADS,   0)
     
-    IACTIVE = 0
-    QCHANUT = 0.
-    QCHANVT = 0.
-    QSUMTMP = 0.
     SUB1 = SUB
     SVB1 = SVB
-    ISCDRY = 0
-    CCMNMD = 0
-    ICORDRYD = 0
     RCX = 1.0
     RCY = 1.0
     RCX(1) = 0.  
     RCY(1) = 0.  
     RCX(LC) = 0.  
     RCY(LC) = 0.  
-    LNATDRY = 0
-    NNATDRY = 0
     INOTICE = -999
     NCORDRYMAX = 0
     NCORDRYAVG = 0
@@ -132,366 +117,346 @@ SUBROUTINE CALPUV2C
     DAYOLD30 = DAYOLD + 30.
     
     ! INITIALIZE DIAGONAL
-    CC=1.0
+    CC = 1.0
     
-    FSGZUDXYPI=1.
-    FSGZVDXYPI=1.
-    DO L=2,LA
+    FSGZUDXYPI = 1.
+    FSGZVDXYPI = 1.
+    do L = 2,LA
       FSGZUDXYPI(L) =  0.5/DXYU(L)
       FSGZVDXYPI(L) =  0.5/DXYV(L)
-    ENDDO
-    DO L=2,LA
-      HPOLD(L) = HP(L)
-    ENDDO
-    
-  ENDIF !***End allocation and initialization of various arrays
-  TTWAIT = 0.
+    enddo
+  endif !***End allocation and initialization of various arrays
 
   ! *** Select time step depending on whether a static or dynamic time step is used
-  IF( ISDYNSTP == 0 )THEN  
+  if( ISDYNSTP == 0 )then  
     DELT = DT  
     DELTD2 = 0.5*DT  
     DELTI = 1./DELT  
-  ELSE  
+  else  
     DELT = DTDYN  
     DELTD2 = 0.5*DTDYN  
     DELTI = 1./DELT  
-  ENDIF  
-  ISTL=2  
+  endif  
+  ISTL = 2  
   
   ! *** INITIALIZE SUBGRID SCALE CHANNEL INTERACTIONS  
-  IF( MDCHH >= 1 )THEN  
-    DO NMD=1,MDCHH  
+  if( MDCHH >= 1 )then  
+    do NMD = 1,MDCHH  
       QCHANUT(NMD) = QCHANU(NMD)  
       QCHANVT(NMD) = QCHANV(NMD)  
-    ENDDO  
-  ENDIF  
+    enddo  
+  endif  
 
   ! *** SET SWITCHES FOR DRYING AND WETTING
   HDRY90 = 0.9*HDRY
   ITERHP = 0  
   NCORDRY = 0  
-  NNEGFLG = 0
   ICORDRY_GLobal = 0
 
-  IF( ISDRY > 0 )THEN
-    DO LL=1,NBCSOP
+  if( ISDRY > 0 )then
+    do LL = 1,NBCSOP
       L = LOBCS(LL)
       LOPENBCDRY(L) = .FALSE.
-    ENDDO
-  ENDIF
+    enddo
+  endif
 
   ! ***************************************************************************
   ! *** CALCULATE EXTERNAL BUOYANCY INTEGRALS AT TIME LEVEL (N)
-  IF( BSC > 1.E-6 )Then
-    CALL CALEBI
-  End if
-
+  if( BSC > 1.E-6 )then
+    call CALEBI
+  endif
+      
   ! *** BEGIN DOMAIN LOOP
-  !$OMP PARALLEL DEFAULT(SHARED)
+  !$OMP PARALLEL DEFAULT(SHARED) NUM_THREADS(NOPTIMAL(1))
   
-  IF( ISDRY > 0 )THEN
+  if( ISDRY > 0 )then
     !$OMP DO PRIVATE(ND,LF,LL,L)
-    DO ND=1,NOPTIMAL  
-      LF=2+(ND-1)*LDMOPT  
-      LL=MIN(LF+LDMOPT-1,LA)
+    do ND = 1,NOPTIMAL(1)  
+      LF = 2+(ND-1)*LDMOPT(1)  
+      LL = MIN(LF+LDMOPT(1)-1,LA)
     
       ! *** SET SWITCHES FOR DRYING AND WETTING  
-      DO L=LF,LL  
+      do L = LF,LL  
         ISCDRY(L) = 0
         SUB1(L) = SUB(L)
         SVB1(L) = SVB(L)
         OLDMASK(L) = LMASKDRY(L)
-      ENDDO
+      enddo
   
       ! *** ZERO VOLUME WASTING ARRAY COUNTERS
-      IF( NDRYSTP > 0 )THEN
-        NNATDRY(ND)=0
-        IF( ISBAL > 0 )THEN
-          DO L=LF,LL  
-            QDWASTE(L) = 0.0
-          ENDDO
-        ENDIF
-      ENDIF
-    ENDDO
+      if( NDRYSTP > 0 )then
+        NNATDRY(ND) = 0
+      endif
+    enddo
     !$OMP END DO
-  ENDIF
+  endif
   
   !$OMP DO PRIVATE(ND,LF,LL,L,LS,LW,IFLAG,TMPX,TMPY)
-  DO ND=1,NOPTIMAL  
-    LF = 2+(ND-1)*LDMOPT  
-    LL = MIN(LF+LDMOPT-1,LA)
+  do ND = 1,NOPTIMAL(1)  
+    LF = 2+(ND-1)*LDMOPT(1)  
+    LL = MIN(LF+LDMOPT(1)-1,LA)
 
-    IF( BSC > 1.E-6 )THEN
+    if( BSC > 1.E-6 )then
       ! *** CALCULATE EXPLICIT EXTERNAL DENSITY GRADIENTS  
-      IF( IGRIDV == 0 )THEN
-        DO L = LF,LL  
-          LW=LWC(L) 
+      if( IGRIDV == 0 )then
+        do L = LF,LL  
+          LW = LWC(L) 
           FPGXE(L) = -SBX(L)*HU(L)*GP*((BI2W(L)+BI2W(LW))*(HP(L)-HP(LW))+2.0*HU(L)*(BI1W(L)-BI1W(LW))+(BEW(L)+BEW(LW))*(BELV(L)-BELV(LW)))  
 
           LS = LSC(L)  
           FPGYE(L) = -SBY(L)*HV(L)*GP*((BI2S(L)+BI2S(LS))*(HP(L)-HP(LS))+2.0*HV(L)*(BI1S(L)-BI1S(LS))+(BES(L)+BES(LS))*(BELV(L)-BELV(LS)))  
-        ENDDO  
-      ELSE
-        DO L=LF,LL  
+        enddo  
+      else
+        do L = LF,LL  
           LW = LWC(L) 
           FPGXE(L) = -SBX(L)*HU(L)*GP*( (BI2W(L)+BI2E(LW))*(HPW(L)-HPE(LW)) + 2.0*HU(L)*(BI1W(L)-BI1E(LW)) + (BEW(L)+BEE(LW))*(BELVW(L)-BELVE(LW)) )  
           
           LS = LSC(L)  
           FPGYE(L) = -SBY(L)*HV(L)*GP*( (BI2S(L)+BI2N(LS))*(HPS(L)-HPN(LS)) + 2.0*HV(L)*(BI1S(L)-BI1N(LS)) + (BES(L)+BEN(LS))*(BELVS(L)-BELVN(LS)) )  
-        ENDDO  
-      ENDIF
-    ENDIF
+        enddo  
+      endif
+    endif
     
     ! *** CALCULATE EXPLICIT EXTERNAL UHDYE AND VHDXE EQUATION TERMS  
-    DO L=LF,LL
+    do L = LF,LL
       LS = LSC(L)
       LW = LWC(L) 
       FUHDYE(L) = UHDYE(L) - DELTD2*SUB(L)*HRUO(L)*HU(L)*(P(L)-P(LW)) + SUB(L)*DELT*DXIU(L)*(DXYU(L)*(TSX(L)-RITB1*TBX(L)) + FCAXE(L) + FPGXE(L) - SNLT*FXE(L))   ! *** m3/s  
 
       FVHDXE(L) = VHDXE(L) - DELTD2*SVB(L)*HRVO(L)*HV(L)*(P(L)-P(LS)) + SVB(L)*DELT*DYIV(L)*(DXYV(L)*(TSY(L)-RITB1*TBY(L)) - FCAYE(L) + FPGYE(L) - SNLT*FYE(L))   ! *** m3/s 
-    ENDDO  
+    enddo  
 
     ! *** SET IMPLICIT BOTTOM AND VEGETATION DRAG AS APPROPRIATE  
     IFLAG = 0
-    IF( ISITB >= 1 )THEN  
+    if( ISITB >= 1 )then  
       ! *** IMPLICIT BOTTOM DRAG WITH VEGETATION  
-      DO L=LF,LL
+      do L = LF,LL
         TMPX = 1.0
         TMPY = 1.0
-        IF( UHE(L) /= 0.0) TMPX = U(L,KSZU(L))*HU(L)/UHE(L)
-        IF( VHE(L) /= 0.0) TMPY=V(L,KSZV(L))*HV(L)/VHE(L)
+        if( UHE(L) /= 0.0) TMPX = U(L,KSZU(L))*HU(L)/UHE(L)
+        if( VHE(L) /= 0.0) TMPY = V(L,KSZV(L))*HV(L)/VHE(L)
         RCX(L) = 1./( 1. + TMPX*RITB*DELT*HUI(L)*STBX(L)*SQRT(VU(L)*VU(L) + U(L,KSZU(L))*U(L,KSZU(L))) + DELT*FXVEGE(L) )
         RCY(L) = 1./( 1. + TMPY*RITB*DELT*HVI(L)*STBY(L)*SQRT(UV(L)*UV(L) + V(L,KSZV(L))*V(L,KSZV(L))) + DELT*FYVEGE(L) )
-      ENDDO
+      enddo
       IFLAG = 1
-    ELSEIF( ISVEG == 1 )THEN
+    elseif( ISVEG == 1 )then
       ! *** IMPLICIT VEGETATION DRAG ONLY.  REDUCE BY THE TOTAL OF ENERGY
-      DO L=LF,LL
+      do L = LF,LL
         !                    S    1/S
         RCX(L) = 1./( 1. + DELT*FXVEGE(L) )  ! *** dimensionless
         RCY(L) = 1./( 1. + DELT*FYVEGE(L) )  ! *** dimensionless
-      ENDDO
+      enddo
       IFLAG = 1
-    ENDIF
+    endif
 
     ! *** Apply implicit momentum adjustment
-    IF( IFLAG > 0 )THEN
+    if( IFLAG > 0 )then
 
-      DO L=LF,LL
+      do L = LF,LL
         FUHDYE(L) = FUHDYE(L)*RCX(L)
         FVHDXE(L) = FVHDXE(L)*RCY(L)
-      ENDDO
-    ENDIF
-  ENDDO
+      enddo
+    endif
+  enddo
   !$OMP END DO
   
   !$OMP DO PRIVATE(ND,LF,LL,L,LE,LS,LN,LW,RDRY,EL,EW,ES,K)
-  DO ND=1,NOPTIMAL  
-    LF = 2+(ND-1)*LDMOPT  
-    LL = MIN(LF+LDMOPT-1,LA)
+  do ND = 1,NOPTIMAL(1)  
+    LF = 2+(ND-1)*LDMOPT(1)  
+    LL = MIN(LF+LDMOPT(1)-1,LA)
 
     ! *** RESET BOUNDARY CONDITIONS SWITCHES
-    IF( ISDRY > 0 )THEN  
-#ifdef _MPI 
+    if( ISDRY > 0 )then  
       ! ****************************************************************************
-      IF( NITER < 100 .OR. MOD(NITER,50) == 0 .OR. ITERHPM == 0 )THEN
+      if( NITER < 100 .or. MOD(NITER,50) == 0 .or. ITERHPM == 0 )then
         ! *** FORCE A COMPLETE UPDATE EVERY 100 INTERATIONS
-        DO L=LF,LL
+        do L = LF,LL
           SUB(L) = SUBO(L)  
           SVB(L) = SVBO(L)  
           SBX(L) = SBXO(L)  
           SBY(L) = SBYO(L)  
-        ENDDO  
-      ELSE
+        enddo  
+      else
         ! *** UPDATED TO REDUCE MPI COMMUNICATIONS
-        DO L=LF,LL
+        do L = LF,LL
           LE = LEC(L)
           LN = LNC(L)
           RDRY = SUB1(L) + SUB1(LE) + SVB1(L) + SVB1(LN)
           
-          IF( RDRY < 0.5 )THEN
-            IF( HP(L) > HDRY )THEN
+          if( RDRY < 0.5 )then
+            if( HP(L) > HDRY )then
               ! *** ISOLATED CELL, CHECK ADJACENT CELLS
               EL = BELV(L)  + HP(L)                         ! *** WSEL OF CURRENT CELL
               
-              IF( EL > BELV(LWC(L)) )THEN                   ! *** WEST FACE
+              if( EL > BELV(LWC(L)) )then                   ! *** WEST FACE
                 SUB(LWC(L)) = SUBO(LWC(L))            
                 SBX(LWC(L)) = SBXO(LWC(L))
-              ENDIF
-              IF( EL > BELV(LEC(L)) )THEN                   ! *** EAST FACE
+              endif
+              if( EL > BELV(LEC(L)) )then                   ! *** EAST FACE
                 SUB(LEC(L)) = SUBO(LEC(L))            
                 SBX(LEC(L)) = SBXO(LEC(L))
-              ENDIF
-              IF( EL > BELV(LSC(L)) )THEN                   ! *** SOUTH FACE
+              endif
+              if( EL > BELV(LSC(L)) )then                   ! *** SOUTH FACE
                 SVB(L) = SVBO(L)            
                 SBY(L) = SBYO(L)
-              ENDIF
-              IF( EL > BELV(LNC(L)) )THEN                   ! *** NORTH FACE
+              endif
+              if( EL > BELV(LNC(L)) )then                   ! *** NORTH FACE
                 SVB(LNC(L)) = SVBO(LNC(L))            
                 SBY(LNC(L)) = SBYO(LNC(L))
-              ENDIF   
-            ENDIF
+              endif   
+            endif
             
-          ELSEIF( RDRY < 3.5 )THEN
-            IF( RDRY == (SUBO(L) + SUBO(LE) + SVBO(L) + SVBO(LN)) ) CYCLE  ! *** ALL FACES ACTIVE
+          elseif( RDRY < 3.5 )then
+            if( RDRY == (SUBO(L) + SUBO(LE) + SVBO(L) + SVBO(LN)) ) CYCLE  ! *** ALL FACES ACTIVE
             
             ! *** AT LEAST ONE FACE IS INACTIVE.  CHECK DEPTHS
             
             ! *** CHECK EAST/WEST FACES
-            IF( SUB1(L) < 0.5 .AND. SUBO(L) > 0.5 )THEN
+            if( SUB1(L) < 0.5 .and. SUBO(L) > 0.5 )then
               LW = LWC(L)
-              IF( LW > 1 )THEN
+              if( LW > 1 )then
                 EL = BELV(L)  + HP(L)                       ! *** WSEL OF CURRENT CELL
                 EW = BELV(LW) + HP(LW)                      ! *** WSEL OF WEST CELL
-                IF( HP(L) < HDRY .AND. HP(LW) < HDRY )THEN
+                if( HP(L) < HDRY .and. HP(LW) < HDRY )then
                   ! *** DO NOTHING
-                ELSEIF( HP(L) >= HDRY .AND. HP(LW) >= HDRY )THEN
+                elseif( HP(L) >= HDRY .and. HP(LW) >= HDRY )then
                   ! *** BOTH CELLS ARE WET, RESET CURRENT CELL
                   SUB(L) = SUBO(L)
                   SBX(L) = SBXO(L)
                   
-                ELSEIF( HP(LW) < HDRY .AND. EL > EW )THEN
+                elseif( HP(LW) < HDRY .and. EL > EW )then
                   ! *** RESET WEST CELL
                   SUB(L) = SUBO(L)
                   SBX(L) = SBXO(L)
                   
                   ! *** OPEN OTHER FACES IN WEST CELL
-                  IF( EW > BELV(LWC(LW)) )THEN               ! *** WEST FACE
+                  if( EW > BELV(LWC(LW)) )then               ! *** WEST FACE
                     SUB(LW) = SUBO(LW)            
                     SBX(LW) = SBXO(LW)
-                  ENDIF
-                  IF( EW > BELV(LSC(LW)) )THEN               ! *** SOUTH FACE
+                  endif
+                  if( EW > BELV(LSC(LW)) )then               ! *** SOUTH FACE
                     SVB(LW) = SVBO(LW)            
                     SBY(LW) = SBYO(LW)
-                  ENDIF
-                  IF( EW > BELV(LNC(LW)) )THEN               ! *** NORTH FACE
+                  endif
+                  if( EW > BELV(LNC(LW)) )then               ! *** NORTH FACE
                     SVB(LNC(LW)) = SVBO(LNC(LW))            
                     SBY(LNC(LW)) = SBYO(LNC(LW))
-                  ENDIF
+                  endif
                   
-                ELSEIF( HP(L) < HDRY .AND. EW >= EL )THEN
+                elseif( HP(L) < HDRY .and. EW >= EL )then
                   ! *** RESET CURRENT CELL
                   SUB(L) = SUBO(L)
                   SBX(L) = SBXO(L)
 
                   ! *** OPEN OTHER FACES IN CURRENT CELL
-                  IF( EL > BELV(LEC(L)) )THEN                ! *** EAST FACE
+                  if( EL > BELV(LEC(L)) )then                ! *** EAST FACE
                     SUB(LEC(L)) = SUBO(LEC(L))            
                     SBX(LEC(L)) = SBXO(LEC(L))
-                  ENDIF
-                  IF( EL > BELV(LSC(L)) )THEN                ! *** SOUTH FACE
+                  endif
+                  if( EL > BELV(LSC(L)) )then                ! *** SOUTH FACE
                     SVB(L) = SVBO(L)            
                     SBY(L) = SBYO(L)
-                  ENDIF
-                  IF( EL > BELV(LNC(L)) )THEN                ! *** NORTH FACE
+                  endif
+                  if( EL > BELV(LNC(L)) )then                ! *** NORTH FACE
                     SVB(LNC(L)) = SVBO(LNC(L))            
                     SBY(LNC(L)) = SBYO(LNC(L))
-                  ENDIF
+                  endif
 
-                ENDIF
-              ENDIF
-            ENDIF
+                endif
+              endif
+            endif
 
             ! *** CHECK NORTH/SOUTH FACES
-            IF( SVB1(L) < 0.5 .AND. SVBO(L) > 0.5 )THEN
+            if( SVB1(L) < 0.5 .and. SVBO(L) > 0.5 )then
               LS = LSC(L)
-              IF( LS > 1 )THEN
+              if( LS > 1 )then
                 EL = BELV(L)  + HP(L)
                 ES = BELV(LS) + HP(LS)
-                IF( HP(L) < HDRY .AND. HP(LS) < HDRY )THEN
+                if( HP(L) < HDRY .and. HP(LS) < HDRY )then
                   ! *** DO NOTHING
-                ELSEIF( HP(L) >= HDRY .AND. HP(LS) >= HDRY )THEN
+                elseif( HP(L) >= HDRY .and. HP(LS) >= HDRY )then
                   ! *** BOTH CELLS ARE WET, RESET CURRENT CELL
                   SVB(L) = SVBO(L)
                   SBY(L) = SBYO(L)
                   
-                ELSEIF( HP(LS) < HDRY .AND. EL > ES )THEN
+                elseif( HP(LS) < HDRY .and. EL > ES )then
                   SVB(L) = SVBO(L)
                   SBY(L) = SBYO(L)
                   
                   ! *** OPEN OTHER FACES IN SOUTH CELL
-                  IF( ES > BELV(LWC(LS)) )THEN               ! *** WEST FACE
+                  if( ES > BELV(LWC(LS)) )then               ! *** WEST FACE
                     SUB(LS) = SUBO(LS)            
                     SBX(LS) = SBXO(LS)
-                  ENDIF
-                  IF( ES > BELV(LEC(LS)) )THEN               ! *** EAST FACE
+                  endif
+                  if( ES > BELV(LEC(LS)) )then               ! *** EAST FACE
                     SUB(LEC(LS)) = SUBO(LEC(LS))            
                     SBX(LEC(LS)) = SBXO(LEC(LS))
-                  ENDIF
-                  IF( ES > BELV(LSC(LS)) )THEN               ! *** SOUTH FACE
+                  endif
+                  if( ES > BELV(LSC(LS)) )then               ! *** SOUTH FACE
                     SVB(LSC(LS)) = SVBO(LSC(LS))            
                     SBY(LSC(LS)) = SBYO(LSC(LS))
-                  ENDIF
+                  endif
                   
-                ELSEIF( HP(L) < HDRY .AND. ES >= EL )THEN
+                elseif( HP(L) < HDRY .and. ES >= EL )then
                   ! *** RESET CURRENT CELL
                   SVB(L) = SVBO(L)
                   SBY(L) = SBYO(L)
 
                   ! *** OPEN OTHER FACES IN CURRENT CELL
-                  IF( EL > BELV(LEC(L)) )THEN                ! *** EAST FACE
+                  if( EL > BELV(LEC(L)) )then                ! *** EAST FACE
                     SUB(LEC(L)) = SUBO(LEC(L))            
                     SBX(LEC(L)) = SBXO(LEC(L))
-                  ENDIF
-                  IF( EL > BELV(LWC(L)) )THEN                ! *** WEST FACE
+                  endif
+                  if( EL > BELV(LWC(L)) )then                ! *** WEST FACE
                     SUB(L) = SUBO(L)            
                     SBX(L) = SBXO(L)
-                  ENDIF
-                  IF( EL > BELV(LNC(L)) )THEN                ! *** NORTH FACE
+                  endif
+                  if( EL > BELV(LNC(L)) )then                ! *** NORTH FACE
                     SVB(LNC(L)) = SVBO(LNC(L))            
                     SBY(LNC(L)) = SBYO(LNC(L))
-                  ENDIF
+                  endif
 
-                ENDIF
-              ENDIF
-            ENDIF
-          ELSEIF( QSUME(L) > 0.0 )THEN
+                endif
+              endif
+            endif
+          elseif( QSUME(L) > 0.0 )then
             SUB(L) = SUBO(L)
             SVB(L) = SVBO(L)
             SBX(L) = SBXO(L)
             SBY(L) = SBYO(L)
-          ENDIF
-        ENDDO
+          endif
+        enddo
         
         ! *** ENSURE OPEN BC'S ARE "ON"
-        IF( ND == 1 )THEN
-          DO K = 1,NBCSOP
+        if( ND == 1 )then
+          do K = 1,NBCSOP
             L = LOBCS(K)
             SUB(L) = SUBO(L)
             SVB(L) = SVBO(L)
             SBX(L) = SBXO(L)
             SBY(L) = SBYO(L)
-          ENDDO
-          DO K=1,NBCSOP2
+          enddo
+          do K = 1,NBCSOP2
             L = LOBCS2(K)
             SUB(L) = SUBO(L)
             SVB(L) = SVBO(L)
             SBX(L) = SBXO(L)
             SBY(L) = SBYO(L)
-          ENDDO 
-        ENDIF
-      ENDIF
-#else     
-      DO L=LF,LL
-        SUB(L) = SUBO(L)  
-        SVB(L) = SVBO(L)  
-        SBX(L) = SBXO(L)  
-        SBY(L) = SBYO(L)  
-      ENDDO  
+          enddo 
+        endif
+      endif
       ! ****************************************************************************
-#   endif
-    ENDIF
-  ENDDO
+    endif
+  enddo
   !$OMP END DO
   
   !$OMP DO PRIVATE(ND,LF,LL,L,LE,LS,LN,LW,LG,K,TMPX,TMPY,C1,RDRY,EL,EW,ES)
-  DO ND=1,NOPTIMAL  
-    LF = 2+(ND-1)*LDMOPT  
-    LL = MIN(LF+LDMOPT-1,LA)
+  do ND = 1,NOPTIMAL(1)  
+    LF = 2+(ND-1)*LDMOPT(1)  
+    LL = MIN(LF+LDMOPT(1)-1,LA)
 
     ! *** ADVANCE EXTERNAL VARIABLES  
-    DO L=LF,LL  
+    do L = LF,LL  
       UHDY1E(L) = UHDYE(L)  
       VHDX1E(L) = VHDXE(L)  
       P1(L)   = P(L)  
@@ -501,69 +466,69 @@ SUBROUTINE CALPUV2C
       H1VI(L) = HVI(L)  
       H2P(L)  = H1P(L)
       H1P(L)  = HP(L)
-    ENDDO
+    enddo
 
-    DO K=1,KC  
-      DO L=LF,LL
+    do K = 1,KC  
+      do L = LF,LL
         UHDY1EK(L,K) = UHDYEK(L,K)
         VHDX1EK(L,K) = VHDXEK(L,K) 
-      ENDDO
-    ENDDO
-    DO K=1,KC  
-      DO L=LF,LL
+      enddo
+    enddo
+    do K = 1,KC  
+      do L = LF,LL
         H1PK(L,K) = HPK(L,K)   
-      ENDDO
-    ENDDO
+      enddo
+    enddo
 
-    IF( ISGWIE >= 1 )THEN
-      DO L=LF,LL  
-        AGWELV2(L)=AGWELV1(L)  
-        AGWELV1(L)=AGWELV(L)  
-      ENDDO
-    ENDIF  
+    if( ISGWIE >= 1 )then
+      do L = LF,LL  
+        AGWELV2(L) = AGWELV1(L)  
+        AGWELV1(L) = AGWELV(L)  
+      enddo
+    endif  
 
     ! *** SET OLD TIME LEVEL TERMS IN CONTINUITY EQUATION FOR NON BOUNDARY POINTS  
     ! *** DXYP = DXP*DYP (M^2),  G-9.82 (M/S^2), P (M2/S2), FP1 (M4/S3)
-    C1=0.5*G
-    DO L=LF,LL
+    C1 = 0.5*G
+    do L = LF,LL
       LE = LEC(L)
       LN = LNC(L)
       FP1(L) = DELTI*DXYP(L)*P(L) - C1*( UHDYE(LE)-UHDYE(L)+VHDXE(LN)-VHDXE(L) )
-    ENDDO  
+    enddo  
 
-  ENDDO   ! *** END OF DOMAIN LOOP
+  enddo   ! *** END OF DOMAIN LOOP
   !$OMP END DO
   !$OMP END PARALLEL
 
   ! *** LAYER FACE BLOCKING
-  IF( BSC > 0.0 .AND. NBLOCKED > 0 .AND. N > 1 )THEN
+  if( BSC > 0.0 .and. NBLOCKED > 0 .and. N > 1 )then
     ND = 1
-    C1=0.5*G
-    DO LP=1,NBLOCKED
+    C1 = 0.5*G
+    do LP = 1,NBLOCKED
       L = LBLOCKED(LP)
-      IF( KSZ(L) == KC ) CYCLE
+      if( KSZ(L) == KC ) CYCLE
       
       ! *** LAYER U BLOCKING
-      IF( SUB(L) > 0.0 .AND. (BLDRAFTU(LP)+BLSILLU(LP)) > 0.0 )THEN
-        LW=LWC(L) 
+      if( SUB(L) > 0.0 .and. (BLDRAFTU(LP)+BLSILLU(LP)) > 0.0 )then
+        LW = LWC(L) 
         FPGXE(L) = -SBX(L)*HU(L)*GP*( (BI2W(L)+BI2E(LW))*(HPW(L)-HPE(LW)) + 2.0*HU(L)*(BI1W(L)-BI1E(LW)) + (BEW(L)+BEE(LW))*(BELVW(L)-BELVE(LW)) )                  ! *** m3/s
 
         FUHDYE(L) = UHDYE(L) - DELTD2*SUB(L)*HRUO(L)*HU(L)*(P(L)-P(LW)) + SUB(L)*DELT*DXIU(L)*(DXYU(L)*(TSX(L)-RITB1*TBX(L)) + FCAXE(L) + FPGXE(L) - SNLT*FXE(L))   ! *** m3/s
-      ENDIF
+      endif
 
       ! *** LAYER V BLOCKING
-      IF( SVB(L) > 0.0 .AND. (BLDRAFTV(LP)+BLSILLV(LP)) > 0.0 )THEN
-        LS=LSC(L)  
+      if( SVB(L) > 0.0 .and. (BLDRAFTV(LP)+BLSILLV(LP)) > 0.0 )then
+        LS = LSC(L)  
         FPGYE(L) = -SBY(L)*HV(L)*GP*( (BI2S(L)+BI2N(LS))*(HPS(L)-HPN(LS)) + 2.0*HV(L)*(BI1S(L)-BI1N(LS)) + (BES(L)+BEN(LS))*(BELVS(L)-BELVN(LS)) )  
         
         FVHDXE(L) = VHDXE(L) - DELTD2*SVB(L)*HRVO(L)*HV(L)*(P(L)-P(LS)) + SVB(L)*DELT*DYIV(L)*(DXYV(L)*(TSY(L)-RITB1*TBY(L)) - FCAYE(L) + FPGYE(L) - SNLT*FYE(L)) 
-      ENDIF
+      endif
 
-      LE=LEC(L)
-      LN=LNC(L)
+      LE = LEC(L)
+      LN = LNC(L)
       FP1(L) = DELTI*DXYP(L)*P(L) - C1*( UHDYE(LE)-UHDYE(L)+VHDXE(LN)-VHDXE(L) )
-    ENDDO
-  ENDIF
+    enddo
+  endif
   
   ! *************************************************************************
   ! ***  SET NEW TIME LEVEL TERMS IN CONTINUITY EQUATION INCLUDING
@@ -572,96 +537,93 @@ SUBROUTINE CALPUV2C
   !----------------------------------------------------------------------C
   ! ***  REENTER AT 1000 FOR WETTING-DRYING CORRECTION AND CHANNEL 
   ! ***  INTERACTION
-  1000 CONTINUE  
+  1000 continue  
   !----------------------------------------------------------------------C
   
   ! *** SCALE COEFFICIENTS IN EXTERNAL MODEL LINEAR EQUATION SYSTEM  
   CCMNMD = 1.E+18 
   
   ! *** BEGIN DOMAIN LOOP
-  !$OMP PARALLEL DEFAULT(SHARED)
+  !$OMP PARALLEL DEFAULT(SHARED) NUM_THREADS(NOPTIMAL(1))
   !$OMP DO PRIVATE(ND,LF,LL,L,LE,LS,LN,C1) 
-  DO ND=1,NOPTIMAL  
-    LF = 2+(ND-1)*LDMOPT  
-    LL = MIN(LF+LDMOPT-1,LA)
+  do ND = 1,NOPTIMAL(1)  
+    LF = 2+(ND-1)*LDMOPT(1)  
+    LL = MIN(LF+LDMOPT(1)-1,LA)
 
     C1 = 0.5*G
-    DO L=LF,LL
+    do L = LF,LL
       LE = LEC(L)
       LN = LNC(L)
       ! ***  USE THE SUB & SVB SWITCHES FOR MOMENTUM FOR THE CURRENT WET/DRY ITERATION
       ! ***   m4/s3   m/s2            m3/s                 m3/s              m3/s               m3/s            m3/s
       FP(L) = FP1(L) - C1*( SUB(LE)*FUHDYE(LE) - SUB(L)*FUHDYE(L) + SVB(LN)*FVHDXE(LN) - SVB(L)*FVHDXE(L) - 2.0*QSUME(L) )    ! *** m4/s3
-    ENDDO  
+    enddo  
 
-    IF( ISGWIE >= 1 )THEN  
-      DO L=LF,LL  
+    if( ISGWIE >= 1 )then  
+      do L = LF,LL  
         !       m4/s3   m/s2             m3/s
         FP(L) = FP(L) - G*SPB(L)*(EVAPSW(L)-QGW(L))   ! *** 2018-10-24 PMC CHANGED SIGN CONVENTION FOR SEEPAGE +(IN), -(OUT) 
-      ENDDO  
-    ENDIF  
+      enddo  
+    endif  
 
     C1 = -0.5*DELTD2*G
-    DO L=LF,LL
+    do L = LF,LL
       CS(L) = C1*SVB(L)*HRVO(L)*RCY(L)*HV(L) 
       CW(L) = C1*SUB(L)*HRUO(L)*RCX(L)*HU(L)  
-    ENDDO
+    enddo
     !DIR$ NOFUSION
-    DO L=LF,LL
+    do L = LF,LL
       LE = LEC(L)
       LN = LNC(L) 
       CE(L) = C1*SUB(LE)*HRUO(LE)*RCX(LE)*HU(LE)  
       CN(L) = C1*SVB(LN)*HRVO(LN)*RCY(LN)*HV(LN) 
-    ENDDO
+    enddo
     !DIR$ NOFUSION
-    DO L=LF,LL
+    do L = LF,LL
       ! *** SET THE CENTROID
       CC(L) = DELTI*DXYP(L) - CS(L)-CW(L)-CE(L)-CN(L)  
-    ENDDO  
+    enddo  
 
-  ENDDO   ! *** END OF DOMAIN LOOP
+  enddo   ! *** END OF DOMAIN LOOP
   !$OMP END DO
   !$OMP SINGLE
   
   ! *** APPLY THE OPEN BOUNDARY CONDITIONS
-  IF( NBCSOP > 0 ) CALL SETOPENBC(DELTD2, HU, HV, NCORDRY)    
+  if( NBCSOP > 0 ) CALL SETOPENBC(DELTD2, HU, HV, NCORDRY)    
 
   ! *** INSERT IMPLICT SUB-GRID SCALE CHANNEL INTERACTIONS  
-  IF( MDCHH >= 1 )THEN
-    RLAMN=QCHERR  
-    RLAMO=1.-RLAMN  
-    CALL SUBCHAN(QCHANUT,QCHANVT,IACTIVE,DELT)  
-  ENDIF
+  if( MDCHH >= 1 )then
+    RLAMN = QCHERR  
+    RLAMO = 1.-RLAMN  
+    call SUBCHAN(QCHANUT,QCHANVT,IACTIVE,DELT)  
+  endif
   !$OMP END SINGLE
 
   ! *** SCALE COEFFICIENTS IN EXTERNAL MODEL LINEAR EQUATION SYSTEM
   !$OMP DO PRIVATE(ND,LF,LL,L) 
-  DO ND=1,NOPTIMAL  
-    LF=2+(ND-1)*LDMOPT  
-    LL=MIN(LF+LDMOPT-1,LA)
-    DO L=LF,LL
+  do ND = 1,NOPTIMAL(1)  
+    LF = 2+(ND-1)*LDMOPT(1)  
+    LL = MIN(LF+LDMOPT(1)-1,LA)
+    do L = LF,LL
       CCMNMD(ND) = MIN(CCMNMD(ND),CC(L))
       FPTMP(L)   = FP(L)  
-    ENDDO  
-  ENDDO   ! *** END OF DOMAIN LOOP
+    enddo  
+  enddo   ! *** END OF DOMAIN LOOP
   !$OMP END DO
 
   ! $OMP BARRIER
   !$OMP SINGLE
-  CCMNM_Local =1.E+18  ! ***  Modified to have a local copy
-  DO ND=1,NOPTIMAL
+  CCMNM_Local  = 1.E+18  ! ***  Modified to have a local copy
+  do ND = 1,NOPTIMAL(1)
     CCMNM_Local = MIN(CCMNM_Local, CCMNMD(ND))
-  ENDDO
+  enddo
+  CCMNM = CCMNM_Local
 
-#ifdef _MPI 
   ! ****************************************************************************
-  Call DSI_All_Reduce(CCMNM_Local, CCMNM, MPI_Min, TTDS, 1, TWAIT)
+  call DSI_All_Reduce(CCMNM_Local, CCMNM, MPI_Min, TTDS, 1, TWAIT)
   DSITIMING(11) = DSITIMING(11) + TTDS
   TTWAIT = TTWAIT + TWAIT
-#else
-  CCMNM = CCMNM_Local
   ! ****************************************************************************
-#endif
   CCMNMI = 1./CCMNM
 
   !$OMP END SINGLE  
@@ -669,10 +631,10 @@ SUBROUTINE CALPUV2C
 
   ! *** SCALE BY MINIMUM DIAGONAL  
   !$OMP DO PRIVATE(ND,LF,LL,L) 
-  DO ND=1,NOPTIMAL  
-    LF=2+(ND-1)*LDMOPT  
-    LL=MIN(LF+LDMOPT-1,LA)
-    DO L=LF,LL  
+  do ND = 1,NOPTIMAL(1)  
+    LF = 2+(ND-1)*LDMOPT(1)  
+    LL = MIN(LF+LDMOPT(1)-1,LA)
+    do L = LF,LL  
       CCS(L)   = CS(L)*CCMNMI  
       CCW(L)   = CW(L)*CCMNMI  
       CCE(L)   = CE(L)*CCMNMI  
@@ -680,32 +642,27 @@ SUBROUTINE CALPUV2C
       CCC(L)   = CC(L)*CCMNMI  
       FPTMP(L) = FPTMP(L)*CCMNMI  
       CCCI(L)  = 1./CCC(L)  
-    ENDDO  
-  ENDDO   ! *** END OF DOMAIN LOOP
+    enddo  
+  enddo   ! *** END OF DOMAIN LOOP
   !$OMP END DO
   !$OMP END PARALLEL
 
-  IF( MDCHH >= 1 )THEN
-    DO NMD=1,MDCHH
+  if( MDCHH >= 1 )then
+    do NMD = 1,MDCHH
       CCCCHH(NMD) = CCCCHH(NMD)*CCMNMI
-    ENDDO
-  ENDIF
+    enddo
+  endif
   
   ! *********************************************************************************************
   ! *** CALL THE PRECONDITIONED CONJUGATE GRADIENT SOLVER
-#ifdef _MPI
   ! ****************************************************************************
-  IF( num_processors > 1 )THEN
-    IF( MDCHH == 0 ) Call Congrad_MPI(NOPTIMAL,LDMOPT)   ! *** MSCHH>=1 not parallelized yet @todo
-  ELSE
-    IF( MDCHH == 0 ) CALL CONGRAD(NOPTIMAL,LDMOPT)
-    IF( MDCHH >= 1 ) CALL CONGRADC
-  ENDIF
-#else
-  IF( MDCHH == 0 ) CALL CONGRAD(NOPTIMAL,LDMOPT)
-  IF( MDCHH >= 1 ) CALL CONGRADC
+  if( num_processors > 1 )then
+    if( MDCHH == 0 ) Call Congrad_MPI   ! *** MSCHH> = 1 not parallelized yet @todo
+  else
+    if( MDCHH == 0 ) CALL CONGRAD
+    if( MDCHH >= 1 ) CALL CONGRADC
+  endif
   ! ****************************************************************************
-#endif  
   
   ITERMAX   = MAX(ITERMAX,ITER)
   ITERAVG   = ITERAVG + ITER
@@ -713,100 +670,100 @@ SUBROUTINE CALPUV2C
   
   !if( process_id == 0 ) write(6,'(I10,3i5)') niter, process_id, NCORDRY, ITER   ! delme
   
-  !$OMP PARALLEL DEFAULT(SHARED) 
+  !$OMP PARALLEL DEFAULT(SHARED) NUM_THREADS(NOPTIMAL(1))
   !$OMP DO PRIVATE(ND,LF,LL,L,LS,LW) 
-  DO ND=1,NOPTIMAL  
-    LF = 2+(ND-1)*LDMOPT  
-    LL = MIN(LF+LDMOPT-1,LA)
+  do ND = 1,NOPTIMAL(1)  
+    LF = 2+(ND-1)*LDMOPT(1)  
+    LL = MIN(LF+LDMOPT(1)-1,LA)
     
     ! *** CELL FACE DISCHARGE (M3/S)
-    DO L=LF,LL
+    do L = LF,LL
       LS = LSC(L)  
       LW = LWC(L) 
       UHDYE(L) = SUB(L)*( FUHDYE(L) - DELTD2*HRUO(L)*RCX(L)*HU(L)*(P(L)-P(LW)) )
       VHDXE(L) = SVB(L)*( FVHDXE(L) - DELTD2*HRVO(L)*RCY(L)*HV(L)*(P(L)-P(LS)) )  
-    ENDDO  
+    enddo  
     
     ! *** UNIT WIDTH DISCHARGE AT CELL FACE (M2/S)
     !DIR$ NOFUSION
-    DO L=LF,LL  
+    do L = LF,LL  
       UHE(L) = UHDYE(L)*DYIU(L)  
       VHE(L) = VHDXE(L)*DXIV(L)  
-    ENDDO  
+    enddo  
 
-  ENDDO   ! *** END OF DOMAIN LOOP
+  enddo   ! *** END OF DOMAIN LOOP
   !$OMP END DO
   
   ! *** CALCULATE NEW SUB-GRID SCALE CHANNEL EXCHANGE FLOWS  
   !$OMP SINGLE
-  IF( MDCHH >= 1 )THEN  
-    DO NMD=1,MDCHH  
-      IF( IACTIVE(NMD) > 0 )THEN  
-        LHOST=LMDCHH(NMD)  
-        LCHNU=LMDCHU(NMD)  
-        LCHNV=LMDCHV(NMD)  
-        IF( MDCHTYP(NMD) == 1 )THEN  
-          QCHANU(NMD)=CCCCHU(NMD)*QCHANUT(NMD)-RLAMN*CCCCHU(NMD)*CCCCHV(NMD)*(P(LHOST)-P(LCHNU))-RLAMO*CCCCHU(NMD)*CCCCHV(NMD)*(P1(LHOST)-P1(LCHNU))  
-          QCHANV(NMD)=0.  
-        ENDIF 
-        IF( MDCHTYP(NMD) == 2 )THEN  
-          QCHANU(NMD)=0.  
-          QCHANV(NMD)=CCCCHU(NMD)*QCHANVT(NMD)-RLAMN*CCCCHU(NMD)*CCCCHV(NMD)*(P(LHOST)-P(LCHNV))-RLAMO*CCCCHU(NMD)*CCCCHV(NMD)*(P1(LHOST)-P1(LCHNV))  
-        ENDIF  
-      ELSE  
-        QCHANV(NMD)=0.  
-        QCHANVN(NMD)=0.  
-        QCHANU(NMD)=0.  
-        QCHANUN(NMD)=0.  
-      ENDIF  
-    ENDDO  
-  ENDIF  
+  if( MDCHH >= 1 )then  
+    do NMD = 1,MDCHH  
+      if( IACTIVE(NMD) > 0 )then  
+        LHOST = LMDCHH(NMD)  
+        LCHNU = LMDCHU(NMD)  
+        LCHNV = LMDCHV(NMD)  
+        if( MDCHTYP(NMD) == 1 )then  
+          QCHANU(NMD) = CCCCHU(NMD)*QCHANUT(NMD)-RLAMN*CCCCHU(NMD)*CCCCHV(NMD)*(P(LHOST)-P(LCHNU))-RLAMO*CCCCHU(NMD)*CCCCHV(NMD)*(P1(LHOST)-P1(LCHNU))  
+          QCHANV(NMD) = 0.  
+        endif 
+        if( MDCHTYP(NMD) == 2 )then  
+          QCHANU(NMD) = 0.  
+          QCHANV(NMD) = CCCCHU(NMD)*QCHANVT(NMD)-RLAMN*CCCCHU(NMD)*CCCCHV(NMD)*(P(LHOST)-P(LCHNV))-RLAMO*CCCCHU(NMD)*CCCCHV(NMD)*(P1(LHOST)-P1(LCHNV))  
+        endif  
+      else  
+        QCHANV(NMD) = 0.  
+        QCHANVN(NMD) = 0.  
+        QCHANU(NMD) = 0.  
+        QCHANUN(NMD) = 0.  
+      endif  
+    enddo  
+  endif  
   !$OMP END SINGLE
   
-  ! **  CALCULATE REVISED CELL DEPTHS BASED ON NEW HORIZONTAL TRANSPORTS AT (N+1)
+  ! ***  CALCULATE REVISED CELL DEPTHS BASED ON NEW HORIZONTAL TRANSPORTS AT (N+1)
   !$OMP DO PRIVATE(ND,LF,LL,L,LE,LN) 
-  DO ND=1,NOPTIMAL  
-    LF = 2+(ND-1)*LDMOPT  
-    LL = MIN(LF+LDMOPT-1,LA)
+  do ND = 1,NOPTIMAL(1)  
+    LF = 2+(ND-1)*LDMOPT(1)  
+    LL = MIN(LF+LDMOPT(1)-1,LA)
 
     ! *** CALCULATE REVISED CELL DEPTHS BASED ON NEW HORIZONTAL TRANSPORTS AT (N+1)  
-    DO L=LF,LL  
+    do L = LF,LL  
       LE = LEC(L)
       LN = LNC(L)  
       HP(L) = H1P(L) + DELTD2*DXYIP(L)*( 2.*QSUME(L) - ( UHDYE(LE)+UHDY1E(LE)-UHDYE(L)-UHDY1E(L)  &
                                                        + VHDXE(LN)+VHDX1E(LN)-VHDXE(L)-VHDX1E(L) ) )  
-    ENDDO 
+    enddo  
 
-    IF( ISGWIE >= 1 )THEN
-      DO L=LF,LL  
+    if( ISGWIE >= 1 )then
+      do L = LF,LL  
         HP(L) = HP(L) - DELT*DXYIP(L)*(EVAPSW(L)-QGW(L))   ! *** 2018-10-24 PMC CHANGED SIGN CONVENTION FOR SEEPAGE +(IN), -(OUT) 
-      ENDDO  
-    ENDIF  
+      enddo  
+    endif  
 
-  ENDDO   ! *** END OF DOMAIN LOOP
+  enddo   ! *** END OF DOMAIN LOOP
   !$OMP END DO
   !$OMP END PARALLEL
   
   ! ***  APPLY OPEN BOUNDARYS
-  DO LL=1,NBCSOP
+  do LL = 1,NBCSOP
     L = LOBCS(LL)
     HP(L) = GI*P(L) - BELV(L)  
 
     ! *** CHECK FOR CONDITION OF PSERT<BELV
-    IF( ISDRY > 0 )THEN
+    if( ISDRY > 0 )then
 
       ! ***  HP CHECKING IS FOR RADIATION BC'S **
-      IF( (LOPENBCDRY(L) .OR. (H1P(L) < 0.9*HDRY .AND. HP(L) < H1P(L)) .OR. HP(L) < 0. ) .AND. ISCDRY(L) == 0 )THEN
-        IF( HP(L) <= 0. .AND. LOPENBCDRY(L) )THEN
+      if( (LOPENBCDRY(L) .or. (H1P(L) < 0.9*HDRY .and. HP(L) < H1P(L)) .or. HP(L) < 0. ) .and. ISCDRY(L) == 0 )then
+        if( HP(L) <= 0. .and. LOPENBCDRY(L) )then
           PRINT '(A,I5,3F10.4,F12.4)',' WARNING!  NEG DEPTH AT OPEN BC: L,HP,H1P,H2P,TIMEDAY', Map2Global(L).LG, HP(L), H1P(L), H2P(L), TIMEDAY
-          OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
-          WRITE(mpi_log_unit,'(A,I5,3F10.4,F12.4)')' WARNING!  NEG DEPTH AT OPEN BC: L,HP,H1P,H2P,TIMEDAY', Map2Global(L).LG, HP(L), H1P(L), H2P(L), TIMEDAY
-          CLOSE(mpi_log_unit)
+          open(mpi_efdc_out_unit,FILE = OUTDIR//mpi_efdc_out_file,POSITION = 'APPEND')
+          write(mpi_efdc_out_unit,'(A,I5,3F10.4,F12.4)')' WARNING!  NEG DEPTH AT OPEN BC: L,HP,H1P,H2P,TIMEDAY', Map2Global(L).LG, HP(L), H1P(L), H2P(L), TIMEDAY
+          close(mpi_efdc_out_unit)
 
           HP(L) = 0.2*HDRY
-        ELSE
+        else
           HP(L) = MIN(MAX(H1P(L),0.1*HDRY),0.9*HDRY)
-        ENDIF
+        endif
         
         ISCDRY(L) = 1  
 
@@ -830,58 +787,56 @@ SUBROUTINE CALPUV2C
         CC(L)  = DELTI*DXYP(L)
         P(L)   = (HP(L)+BELV(L))*G
         FP1(L) = DELTI*DXYP(L)*P(L)
-      ENDIF
-    ENDIF
-  ENDDO
+      endif
+    endif
+  enddo
 
   ! *** Exchange HP ghost values
-#ifdef _MPI
   ! ****************************************************************************
   TTDS = DSTIME(0)
-  Call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(MPI_Comm_World, ierr)
   TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
   
   TTDS = DSTIME(0)
-  Call communicate_ghost_cells(HP, 'HP')
+  call communicate_ghost_cells(HP, 'HP')
   TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
   ! ****************************************************************************
-#endif
 
   ! *** ADD CHANNEL INTERACTION EXCHANGES
-  IF( MDCHH >= 1 )THEN
-    DO NMD=1,MDCHH
-      IF( IACTIVE(NMD) > 0 )THEN
-        LHOST=LMDCHH(NMD)
-        LCHNU=LMDCHU(NMD)
-        LCHNV=LMDCHV(NMD)
-        IF( MDCHTYP(NMD) == 1 )THEN
-          TMPVAL=DELT*(RLAMN*QCHANU(NMD)+RLAMO*QCHANUT(NMD))
-          HP(LHOST)=HP(LHOST)+TMPVAL*DXYIP(LHOST)
-          HP(LCHNU)=HP(LCHNU)-TMPVAL*DXYIP(LCHNU)
-        ENDIF
-        IF( MDCHTYP(NMD) == 2 )THEN
-          TMPVAL=DELT*(RLAMN*QCHANV(NMD)+RLAMO*QCHANVT(NMD))
-          HP(LHOST)=HP(LHOST)+TMPVAL*DXYIP(LHOST)
-          HP(LCHNV)=HP(LCHNV)-TMPVAL*DXYIP(LCHNV)
-        ENDIF
-      ENDIF
-    ENDDO
-  ENDIF
+  if( MDCHH >= 1 )then
+    do NMD = 1,MDCHH
+      if( IACTIVE(NMD) > 0 )then
+        LHOST = LMDCHH(NMD)
+        LCHNU = LMDCHU(NMD)
+        LCHNV = LMDCHV(NMD)
+        if( MDCHTYP(NMD) == 1 )then
+          TMPVAL = DELT*(RLAMN*QCHANU(NMD)+RLAMO*QCHANUT(NMD))
+          HP(LHOST) = HP(LHOST)+TMPVAL*DXYIP(LHOST)
+          HP(LCHNU) = HP(LCHNU)-TMPVAL*DXYIP(LCHNU)
+        endif
+        if( MDCHTYP(NMD) == 2 )then
+          TMPVAL = DELT*(RLAMN*QCHANV(NMD)+RLAMO*QCHANVT(NMD))
+          HP(LHOST) = HP(LHOST)+TMPVAL*DXYIP(LHOST)
+          HP(LCHNV) = HP(LCHNV)-TMPVAL*DXYIP(LCHNV)
+        endif
+      endif
+    enddo
+  endif
 
   ! *** CHECK FOR DRYING AND RESOLVE EQUATIONS IF NECESSARY
-  IF( ISDRY > 0 .AND. ISDRY < 98 )THEN
+  if( ISDRY > 0 .and. ISDRY < 98 )then
     ICORDRYD = 0
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LN,LE) 
-    DO ND=1,NOPTIMAL  
-      LF = 2+(ND-1)*LDMOPT  
-      LL = MIN(LF+LDMOPT-1,LA)
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LN,LE) NUM_THREADS(NOPTIMAL(1))
+    do ND = 1,NOPTIMAL(1)  
+      LF = 2+(ND-1)*LDMOPT(1)  
+      LL = MIN(LF+LDMOPT(1)-1,LA)
 
-      DO L=LF,LL
-        IF( HP(L) <= HDRY )THEN  
-          IF( ISCDRY(L) == 0 )THEN  
+      do L = LF,LL
+        if( HP(L) <= HDRY )then  
+          if( ISCDRY(L) == 0 )then  
             ISCDRY(L) = 1  
             ICORDRYD(ND) = 1  
-          ENDIF  
+          endif  
           LE = LEC(L) 
           LN = LNC(L)  
           SUB(L)  = 0.  
@@ -892,24 +847,24 @@ SUBROUTINE CALPUV2C
           SBY(L)  = 0.  
           SBX(LE) = 0.  
           SBY(LN) = 0.  
-        ENDIF  
-      ENDDO
-    ENDDO
+        endif  
+      enddo
+    enddo
     !$OMP END PARALLEL DO
-  ENDIF
+  endif
 
   ! *** CHECK FOR DRYING AND RESOLVE EQUATIONS IF NECESSARY  
-  IF( ISDRY == 99 )THEN  
+  if( ISDRY == 99 )then  
     HDRY2  = 2.*HDRY  
     ICORDRYD = 0  
     !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LS,LN,LW,LE)  &
-    !$OMP             PRIVATE(SUBW,SUBE,SVBS,SVBN,DHPDT,DHPDT2,RDRY,TMPVAL)
-    DO ND=1,NOPTIMAL  
-      LF = 2+(ND-1)*LDMOPT  
-      LL = MIN(LF+LDMOPT-1,LA)
+    !$OMP             PRIVATE(SUBW,SUBE,SVBS,SVBN,DHPDT,DHPDT2,RDRY,TMPVAL) NUM_THREADS(NOPTIMAL(1))
+    do ND = 1,NOPTIMAL(1)  
+      LF = 2+(ND-1)*LDMOPT(1)  
+      LL = MIN(LF+LDMOPT(1)-1,LA)
 
-      DO L=LF,LL
-        IF( HP(L) <= HDRY )THEN
+      do L = LF,LL
+        if( HP(L) <= HDRY )then
           LE = LEC(L) 
           LN = LNC(L)  
           SUBW = SUB(L)  
@@ -919,7 +874,7 @@ SUBROUTINE CALPUV2C
           DHPDT = (HP(L) - H1P(L))
           
           ! *** ALLOW RE-WETTING
-          IF( DHPDT > 0.0 )THEN 
+          if( DHPDT > 0.0 )then 
             LW = LWC(L) 
             LS = LSC(L)  
             SUB(L)  = 0.0  
@@ -933,67 +888,67 @@ SUBROUTINE CALPUV2C
             
             ! *** RAISING WATER, IS IT FAST ENOUGH TO STAY WET
             DHPDT2 = (HDRY - H1P(L))*0.01
-            IF( DHPDT > DHPDT2 )THEN
-              IF( UHDYE(L) /= 0.0 )THEN
-                IF( HP(LW) > HDRY )THEN
+            if( DHPDT > DHPDT2 )then
+              if( UHDYE(L) /= 0.0 )then
+                if( HP(LW) > HDRY )then
                   SUB(L) = SUBO(L)
                   SBX(L) = SBXO(L)
-                ENDIF
-              ENDIF  
-              IF( UHDYE(LE) /= 0.0 )THEN
-                IF( HP(LE) > HDRY )THEN
+                endif
+              endif  
+              if( UHDYE(LE) /= 0.0 )then
+                if( HP(LE) > HDRY )then
                   SUB(LE) = SUBO(LE)
                   SBX(LE) = SBXO(LE)  
-                ENDIF  
-              ENDIF  
-              IF( VHDXE(L) /= 0.0 )THEN
-                IF( HP(LS) > HDRY )THEN
+                endif  
+              endif  
+              if( VHDXE(L) /= 0.0 )then
+                if( HP(LS) > HDRY )then
                   SVB(L) = SVBO(L)
                   SBY(L) = SBYO(L)
-                ENDIF  
-              ENDIF  
-              IF( VHDXE(LN) /= 0.0 )THEN
-                IF( HP(LN) > HDRY )THEN
+                endif  
+              endif  
+              if( VHDXE(LN) /= 0.0 )then
+                if( HP(LN) > HDRY )then
                   SVB(LN) = SVBO(LN)
                   SBY(LN) = SBYO(LN)
-                ENDIF  
-              ENDIF  
+                endif  
+              endif  
               
               RDRY = SUB(L) + SUB(LE) + SVB(L) + SVB(LN)  
-              IF( RDRY < 0.5 )THEN  
+              if( RDRY < 0.5 )then  
                 ISCDRY(L) = 1  
-              ELSE  
+              else  
                 ISCDRY(L) = 0  
-              ENDIF  
+              endif  
               
               TMPVAL = ABS(SUB(L) - SUBW)  
-              IF( TMPVAL > 0.5 )THEN
+              if( TMPVAL > 0.5 )then
                 ICORDRYD(ND) = 1  
-              ELSE
+              else
                 TMPVAL = ABS(SUB(LE) - SUBE)  
-                IF( TMPVAL > 0.5 )THEN
+                if( TMPVAL > 0.5 )then
                   ICORDRYD(ND) = 1  
-                ELSE
+                else
                   TMPVAL = ABS(SVB(L) - SVBS)  
-                  IF( TMPVAL > 0.5 )THEN
+                  if( TMPVAL > 0.5 )then
                     ICORDRYD(ND) = 1  
-                  ELSE
+                  else
                     TMPVAL = ABS(SVB(LN) - SVBN)  
-                    IF( TMPVAL > 0.5)THEN
+                    if( TMPVAL > 0.5 )then
                       ICORDRYD(ND) = 1  
-                    ENDIF
-                  ENDIF
-                ENDIF
-              ENDIF
-            ELSE
+                    endif
+                  endif
+                endif
+              endif
+            else
               ! *** CASE: HP < HDRY BUT RISING, JUST NOT FAST ENOUGH
-              IF( ISCDRY(L) == 0 )THEN
+              if( ISCDRY(L) == 0 )then
                 ISCDRY(L) = 1  
                 ICORDRYD(ND) = 1  
-              ENDIF  
-            ENDIF     ! *** END OF REWETTING SECTION, DHPDT > DHPDT2
+              endif  
+            endif     ! *** END OF REWETTING SECTION, DHPDT > DHPDT2
             
-          ELSEIF( HP(L) < HDRY90 .OR. H1P(L) < HDRY )THEN  
+          elseif( HP(L) < HDRY90 .or. H1P(L) < HDRY )then  
             ! *** HP < HDRY.  SET SWITCHES TO DRY
             SUB(L)  = 0.0
             SUB(LE) = 0.0  
@@ -1003,82 +958,77 @@ SUBROUTINE CALPUV2C
             SBX(LE) = 0.0  
             SBY(L)  = 0.0  
             SBY(LN) = 0.0  
-            IF( ISCDRY(L) == 0 )THEN  
-              ISCDRY(L)=1  
+            if( ISCDRY(L) == 0 )then  
+              ISCDRY(L) = 1  
               ICORDRYD(ND) = 1  
-            ENDIF  
-          ENDIF  
-        ENDIF  
+            endif  
+          endif  
+        endif  
         
-      ENDDO  
-    ENDDO    ! *** END OF DOMAIN LOOP
+      enddo  
+    enddo    ! *** END OF DOMAIN LOOP
     !$OMP END PARALLEL DO
-  End if !***End if on IDRY == 99
+  endif !***End if on IDRY == 99
 
   ! *** PERFORM UPDATE OF P
-  DO L=2,LA
+  do L = 2,LA
     P(L) = G*(HP(L) + BELV(L))
-  ENDDO
+  enddo
 
   ICORDRY = SUM(ICORDRYD(:))   ! *** OMP flag
+  ICORDRY_Global = ICORDRY
   
-#ifdef _MPI
   ! ****************************************************************************
   ! *** Now gather sum of ICCORDRY
   TTDS = DSTIME(0)
-  Call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(MPI_Comm_World, ierr)
   TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
   
   TTDS = DSTIME(0)
-  Call communicate_ghost_cells(P, 'P')
+  call communicate_ghost_cells(P, 'P')
   TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
 
-  Call DSI_All_Reduce(ICORDRY, ICORDRY_Global, MPI_SUM, TTDS, 1, TWAIT)
+  call DSI_All_Reduce(ICORDRY, ICORDRY_Global, MPI_SUM, TTDS, 1, TWAIT)
   DSITIMING(11) = DSITIMING(11) + TTDS
   TTWAIT = TTWAIT + TWAIT
   ! ****************************************************************************
-#else
-  ICORDRY_Global = ICORDRY
-#endif
 
   ! *** IF ANY NODE OR SUB-DOMAIN WET/DRY STATUS CHANGED THEN UPDATE VARIABLES AND REPEAT PRESSURE SOLUTION
-  IF( ICORDRY_Global > 0 )THEN
+  if( ICORDRY_Global > 0 )then
 
     NCORDRY = NCORDRY + 1
     
-    IF( NCORDRY < 500  )THEN
+    if( NCORDRY < 500  )then
       GOTO 1000
-    ELSE
-      ! *** WET/DRY MAXIMUM ITERATIONS EXCEEDED   
-      WRITE (6,*)'THE LATEST MODEL RESULTS HAVE BEEN SAVED TO THE EE LINKAGE'
+    else
+      ! *** WET/DRY maximum iterations exceeded   
 
-      ! *** SAVE A SNAPSHOT FOR EE
-      IF( ISPPH == 1 )THEN
-        Call Map_Write_EE_Binary
-        if( process_id == master_id )THEN
-          CALL EE_LINKAGE(-1)  
+      ! *** Save a snapshot for EE
+      if( ISPPH == 1 )then
+        WRITE (6,*)'THE LATEST MODEL RESULTS HAVE BEEN SAVED TO THE EE LINKAGE'
+        call Map_Write_EE_Binary
+        if( process_id == master_id )then
+          call EE_LINKAGE(-1)  
         endif
-      ENDIF
+      endif
         
-      CALL STOPP('*** NCORDRY > 500 WHEN ISDRY > 0')
+      call STOPP('*** NCORDRY > 500 WHEN ISDRY > 0')
       
-    ENDIF
+    endif
     
-  ELSEIF( ISDRY > 0 )THEN
+  elseif( ISDRY > 0 )then
     
-#ifdef _MPI
     ! ****************************************************************************
     ! ***  IF SUB/SVB CHANGED THEN COMMUNICATE TO OTHER NODES
     TTDS = DSTIME(0)
-    Call MPI_barrier(MPI_Comm_World, ierr)
+    call MPI_barrier(MPI_Comm_World, ierr)
     TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
     
     TTDS = DSTIME(0)
-    Call Communicate_PUV1
+    call Communicate_PUV1
     TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
     ! ****************************************************************************
-#endif
-  ENDIF    ! *** END OF CHECKING FOR ISDRY ITERATIONS
+  endif    ! *** END OF CHECKING FOR ISDRY ITERATIONS
 
   NCORDRYMAX = MAX(NCORDRY,NCORDRYMAX)
   NCORDRYAVG = NCORDRYAVG + NCORDRY
@@ -1086,18 +1036,19 @@ SUBROUTINE CALPUV2C
   
   ! *** *******************************************************************C
   ! *** FINISHED WITH WETTING/DRYING ITERATIONS
-  IF( INT(TIMEDAY) /= DAYOLD .OR. TIMEDAY >= (TIMEEND-DELT/86400.) )THEN
+  if( INT(TIMEDAY) /= DAYOLD .or. TIMEDAY >= (TIMEEND-DELT/86400.) )then
   
     ! *** Write CALPUV.LOG to every process log
-    OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
+    open(mpi_efdc_out_unit,FILE = OUTDIR//mpi_efdc_out_file,POSITION = 'APPEND')
     
-    IF( INT(TBEGIN) == DAYOLD .OR. INT(TIMEDAY) >= DAYOLD30 )THEN
-      WRITE(mpi_log_unit,'(A)') '              N     NITER     TIMEDAY             NPUVAVG   NPUVMAX            NCONGAVG  NCONGMAX' 
+    if( INT(TBEGIN) == DAYOLD .or. INT(TIMEDAY) >= DAYOLD30 )then
+      write(mpi_efdc_out_unit,'(A//)') ' *** CALPUV Interation summary'
+      write(mpi_efdc_out_unit,'(A)') '              N     NITER     TIMEDAY             NPUVAVG   NPUVMAX            NCONGAVG  NCONGMAX' 
       DAYOLD30 = DAYOLD + 30.
-    ENDIF
-    WRITE(mpi_log_unit, '(I15,I10,F12.3,3(10X,2I10))') N, NITER, TIMEDAY, NINT(FLOAT(NCORDRYAVG)/FLOAT(NCOUNT)), NCORDRYMAX, &
-                                                                          NINT(FLOAT(ITERAVG)/FLOAT(NITERAVG)),  ITERMAX
-    CLOSE(mpi_log_unit)
+    endif
+    write(mpi_efdc_out_unit, '(I15,I10,F12.3,3(10X,2I10))') N, NITER, TIMEDAY, NINT(FLOAT(NCORDRYAVG)/FLOAT(NCOUNT)), NCORDRYMAX, &
+                                                                               NINT(FLOAT(ITERAVG)/FLOAT(NITERAVG)),  ITERMAX
+    close(mpi_efdc_out_unit)
     
     NCORDRYAVG = 0
     ITERMAX = 0
@@ -1105,79 +1056,80 @@ SUBROUTINE CALPUV2C
     NITERAVG = 0
     NCOUNT = 0
     DAYOLD = INT(TIMEDAY)
-  ENDIF
+  endif
   
   ! *** REPORT CELLS THAT HAVE JUST REWETTED
-  IF( process_id == master_id .AND. ISDRY > 0 .AND. DEBUG )THEN
-    OPEN(8,FILE=OUTDIR//'EFDCLOG.OUT',POSITION='APPEND')  
-    DO L=2,LA
-      IF( .NOT. LMASKDRY(L) )THEN 
-        IF( HP(L) >= HDRY )THEN
+  if( ISDRY > 0 .and. DEBUG )then
+    open(mpi_efdc_out_unit,FILE = OUTDIR//mpi_efdc_out_file,POSITION = 'APPEND')
+    do L = 2,LA
+      if( .not. LMASKDRY(L) )then 
+        if( HP(L) >= HDRY )then
           ! *** PREVIOUSLY CELL WAS DRY, NOW IT IS WET
-          WRITE(8,'(A,2I5,F12.5,I5,L5,3F10.5)') 'REWETTED CELL: ',N,2,TIMEDAY,Map2Global(L).LG,LMASKDRY(L),H1P(L),HP(L)
-        ENDIF
-      ENDIF
-    ENDDO
-    CLOSE(8)
-  ENDIF
+          write(mpi_efdc_out_unit,'(A,2I5,F12.5,I5,L5,3F10.5)') 'REWETTED CELL: ',N,2,TIMEDAY,Map2Global(L).LG,LMASKDRY(L),H1P(L),HP(L)
+        endif
+      endif
+    enddo
+    close(mpi_efdc_out_unit)
+  endif
 
   ! *** CHECK IF ISOLATED CELL WATER NEEDS TO BE REMOVED
   IUPDATE = 0
-  IF( ISDRY > 0 .AND. NDRYSTP > 0 )THEN
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LS,LN,LE,LW,NTMP,IUW,IUE,IVS,IVN,IFACE,K)  &
-    !$OMP                             PRIVATE(RDRY,BELVAVG,RVAL,HOLDTMP,TMPVAL,SVPW1,RNPORI,ETGWTMP,ETGWAVL) REDUCTION(MAX:IUPDATE)
-    DO ND=1,NOPTIMAL
-      LF = 2+(ND-1)*LDMOPT
-      LL = MIN(LF+LDMOPT-1,LA)
+  if( ISDRY > 0 .and. NDRYSTP > 0 )then
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LS,LN,LE,LW,NTMP,IUW,IUE,IVS,IVN,IFACE,K)            &
+    !$OMP                             PRIVATE(RDRY,BELVAVG,RVAL,HOLDTMP,TMPVAL,SVPW1,RNPORI,ETGWTMP,ETGWAVL)  &
+    !$OMP                             REDUCTION(MAX:IUPDATE) NUM_THREADS(NOPTIMAL(1))
+    do ND = 1,NOPTIMAL(1)
+      LF = 2+(ND-1)*LDMOPT(1)
+      LL = MIN(LF+LDMOPT(1)-1,LA)
 
-      ! *** COUNT THE NUMBER TO TIME STEPS A CELL IS ISOLATED, AND IF IT HAS BEEN
-      ! *** ISOLATED FOR MORE THAN NDRYSTP, AND ITS BOTTOM ELEVATION IS HIGHER
-      ! *** THAN THE SURROUNDING DRY CELLS, THEN REDUCE ITS DEPTH BELOW THE
-      ! *** DRYING DEPTH IF NECESSARY.  SAVE VOLUME REDUCTION RATE AS QDWASTE
-      ! *** DEFINED AS POSITIVE OUT.
+      ! *** Count the number to time steps a cell is isolated, and if it has been
+      ! *** isolated for more than ndrystp, and its bottom elevation is higher
+      ! *** than the surrounding dry cells, then reduce its depth below the
+      ! *** drying depth if necessary.  Save volume reduction rate as qdwaste
+      ! *** defined as positive out.
       NTMP = NDRYSTP
-      DO L=LF,LL
-        IF( HP(L) >= HDRY )THEN
+      do L = LF,LL
+        if( HP(L) >= HDRY )then
           ! *** WET CELL, DETERMINE IF ISOLATED
           LE = LEC(L)
           LN = LNC(L)
           RDRY = SUB(L) + SUB(LE) + SVB(L) + SVB(LN)
-          IF( RDRY > 0.5 )THEN
+          if( RDRY > 0.5 )then
             NATDRY(L) = 0                         ! *** CELL IS NOT ISOLATED
-          ELSE
+          else
             NATDRY(L) = NATDRY(L) + 1             ! *** CELL IS ISOLATED
 
-            IF( NATDRY(L) > NTMP )THEN
+            if( NATDRY(L) > NTMP )then
               ! *** EXCEEDED THE NUMBER OF ISOLATED STEPS SO DETERMINE IF NEED TO DRY OUT THE CELL
               LW = LWC(L)
               LS = LSC(L)
               BELVAVG = 0.0
               RVAL = 0.0
-              IF( SUBO(LE) > 0.5 .AND. BELV(LE) < BELV(L) )THEN
+              if( SUBO(LE) > 0.5 .and. BELV(LE) < BELV(L) )then
                 RVAL = RVAL + 1.
-              ENDIF
-              IF( SUBO(L)  > 0.5 .AND. BELV(LW) < BELV(L) )THEN
+              endif
+              if( SUBO(L)  > 0.5 .and. BELV(LW) < BELV(L) )then
                 RVAL = RVAL + 1.
-              ENDIF
-              IF( SVBO(LN) > 0.5 .AND. BELV(LN) < BELV(L) )THEN
+              endif
+              if( SVBO(LN) > 0.5 .and. BELV(LN) < BELV(L) )then
                 RVAL = RVAL + 1.
-              ENDIF
-              IF( SVBO(L)  > 0.5 .AND. BELV(LS) < BELV(L) )THEN
+              endif
+              if( SVBO(L)  > 0.5 .and. BELV(LS) < BELV(L) )then
                 RVAL = RVAL + 1.
-              ENDIF
-              IF( RVAL > 0. .OR. HP(L) < HDRY*2. )THEN
+              endif
+              if( RVAL > 0. .or. HP(L) < HDRY*2. )then
                 
                 ! *** CHECK FOR OPEN BOUNDARY CELLS
-                IF( ANY(LOBCS == L) )THEN
+                if( ANY(LOBCS == L) )then
                   NATDRY(L) = 0
                   CYCLE
-                ENDIF
+                endif
                 
                 ! *** CHECK FOR FLOW BOUNDARY CELLS
-                IF( QSUME(L) > 0.0 )THEN
+                if( QSUME(L) > 0.0 )then
                   NATDRY(L) = 0
                   CYCLE
-                ENDIF
+                endif
                 
                 ! *** SUM VOLUME OF "WASTED" WATER
                 HOLDTMP = HP(L)
@@ -1186,9 +1138,9 @@ SUBROUTINE CALPUV2C
                 
                 ! *** UPDATE H1P/H1PK FOR THE DRY/WASTED CELL
                 H1P(L) = HP(L)
-                DO K=KSZ(L),KC
+                do K = KSZ(L),KC
                   H1PK(L,K) = H1P(L)*DZC(L,K)
-                ENDDO
+                enddo
                 
                 NATDRY(L) = 0
                 QDWASTE(L) = DELTI*DXYP(L)*(HOLDTMP-HP(L))
@@ -1196,364 +1148,373 @@ SUBROUTINE CALPUV2C
                 NNATDRY(ND) = NNATDRY(ND)+1
                 LNATDRY(ND,NNATDRY(ND)) = L
                 IUPDATE = 1
-              ENDIF
-            ENDIF
-          ENDIF
-        ENDIF  ! *** END OF WET CELL TEST
-      ENDDO
-    ENDDO      ! *** End of Domain loop
+              endif
+            endif
+          endif
+        endif  ! *** END OF WET CELL TEST
+      enddo
+    enddo      ! *** End of Domain loop
     !$OMP END PARALLEL DO
-  END IF
+  endif
 
-#ifdef _MPI 
   ! ****************************************************************************
-  Call DSI_All_Reduce(IUPDATE, IUPDATE_Global, MPI_SUM, TTDS, 1, TWAIT)
+  call DSI_All_Reduce(IUPDATE, IUPDATE_Global, MPI_SUM, TTDS, 1, TWAIT)
   DSITIMING(11) = DSITIMING(11) + TTDS
   TTWAIT = TTWAIT + TWAIT
   
-  IF( IUPDATE_Global > 0 )THEN
+  if( IUPDATE_Global > 0 )then
     TTDS = DSTIME(0)
-    Call communicate_1D2(P, HP)
+    call communicate_1D2(P, HP)
     TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
-  ENDIF
+  endif
   ! ****************************************************************************
-#endif
 
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LS,LN,LE,LW,IUW,IUE,IVS,IVN,IFACE,K)  &
-  !$OMP                             PRIVATE(RDRY,BELVAVG,RVAL,HOLDTMP,TMPVAL,SVPW1,RNPORI,ETGWTMP,ETGWAVL)
-  DO ND=1,NOPTIMAL
-    LF = 2+(ND-1)*LDMOPT
-    LL = MIN(LF+LDMOPT-1,LA)
+  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,LS,LN,LE,LW,IUW,IUE,IVS,IVN,IFACE,K)                 &
+  !$OMP                             PRIVATE(RDRY,BELVAVG,RVAL,HOLDTMP,TMPVAL,SVPW1,RNPORI,ETGWTMP,ETGWAVL)  &
+  !$OMP                             NUM_THREADS(NOPTIMAL(1))
+  do ND = 1,NOPTIMAL(1)
+    LF = 2+(ND-1)*LDMOPT(1)
+    LL = MIN(LF+LDMOPT(1)-1,LA)
     
     ! *** *******************************************************************C
     ! *** PERFORM FINAL UPDATES OF HU, AND HV FOR SIGMA STRETCH GRID
-    IF( IGRIDV == 0 )THEN
-      DO L=LF,LL  
+    if( IGRIDV == 0 )then
+      do L = LF,LL  
         LS = LSC(L)
         LW = LWC(L)
         HU(L) = ( DXYP(L)*HP(L) + DXYP(LW)*HP(LW) )*FSGZUDXYPI(L)
         HV(L) = ( DXYP(L)*HP(L) + DXYP(LS)*HP(LS) )*FSGZVDXYPI(L)
-      ENDDO  
+      enddo  
  
-    ENDIF
+    endif
 
     ! *** SET TRANSPORT MASK FOR DRY CELLS  
-    IF( ISDRY > 0 )THEN  
-      DO L=LF,LL  
-        LMASKDRY(L)=.TRUE.  
-      END DO  
-      DO L=LF,LL  
+    if( ISDRY > 0 )then  
+      do L = LF,LL  
+        LMASKDRY(L) = .TRUE.  
+      enddo  
+      do L = LF,LL  
         ! *** Bypass dry cells unless they are actively have boundary flows
-        IF( HP(L) < HDRY )THEN
-          IF( QSUME(L) /= 0.0 ) CYCLE        ! *** Check if cell is an active boundary
-          LE=LEC(L)
-          LN=LNC(L) 
-          IUW=0  
-          IUE=0  
-          IVS=0  
-          IVN=0  
+        if( HP(L) < HDRY )then
+          if( QSUME(L) /= 0.0 ) CYCLE        ! *** Check if cell is an active boundary
+          LE = LEC(L)
+          LN = LNC(L) 
+          IUW = 0  
+          IUE = 0  
+          IVS = 0  
+          IVN = 0  
           ! *** THIS REQUIRES THE CELL HAVE HP<HDRY FOR 2 ITERATIONS
-          IF( SUB1(L)   < 0.5 .AND. SUB(L)   < 0.5 ) IUE = 1  
-          IF( SUB1(LE)  < 0.5 .AND. SUB(LE)  < 0.5 ) IUW = 1  
-          IF( SVB1(L)   < 0.5 .AND. SVB(L)   < 0.5 ) IVS = 1  
-          IF( SVB1(LN)  < 0.5 .AND. SVB(LN)  < 0.5 ) IVN = 1  
+          if( SUB1(L)   < 0.5 .and. SUB(L)   < 0.5 ) IUE = 1  
+          if( SUB1(LE)  < 0.5 .and. SUB(LE)  < 0.5 ) IUW = 1  
+          if( SVB1(L)   < 0.5 .and. SVB(L)   < 0.5 ) IVS = 1  
+          if( SVB1(LN)  < 0.5 .and. SVB(LN)  < 0.5 ) IVN = 1  
           IFACE = IUW + IUE + IVS + IVN  
-          IF( IFACE == 4 )THEN  
+          if( IFACE == 4 )then  
             LMASKDRY(L) = .FALSE.  
-          END IF  
-        ENDIF
-      END DO  
-    END IF  
+          endif  
+        endif
+      enddo  
+    endif  
 
     ! *** PERFORM UPDATE ON GROUNDWATER ELEVATION  
-    IF( ISGWIE >= 1 )THEN
-      DO L=LF,LL  
+    if( ISGWIE >= 1 )then
+      do L = LF,LL  
         QSUM(L,KC)     = QSUM(L,KC)     - EVAPSW(L)  
         QSUM(L,KSZ(L)) = QSUM(L,KSZ(L)) + QGW(L)   ! *** 2018-10-24 PMC CHANGED SIGN CONVENTION FOR SEEPAGE +(IN), -(OUT) 
-      ENDDO  
+      enddo  
 
       ! *** INFILTRATION STEP  
-      RNPORI=1./RNPOR  
-      IF( ISTL == 3 )THEN  
-        DO L=LF,LL  
+      RNPORI = 1./RNPOR  
+      if( ISTL == 3 )then  
+        do L = LF,LL  
           AGWELV(L) = AGWELV2(L) - RNPORI*DELT*DXYIP(L)*QGW(L)  
-        ENDDO  
-      ELSE  
-        DO L=LF,LL  
+        enddo  
+      else  
+        do L = LF,LL  
           AGWELV(L) = AGWELV1(L) - RNPORI*DELT*DXYIP(L)*QGW(L)  
-        ENDDO  
-      ENDIF  
-      DO L=LF,LL  
-        AGWELV(L)=MIN(AGWELV(L),BELV(L))  
-      ENDDO  
+        enddo  
+      endif  
+      do L = LF,LL  
+        AGWELV(L) = MIN(AGWELV(L),BELV(L))  
+      enddo  
 
       ! *** ET STEP  
-      DO L=LF,LL  
-        IF( IEVAP > 1 )THEN  
+      do L = LF,LL  
+        if( IEVAP > 1 )then  
           SVPW1 = (10.**((0.7859+0.03477*TEM(L,KC))/(1.+0.00412*TEM(L,KC))))  
           EVAPT(L) = CLEVAP(L)*0.7464E-3*WINDST(L)*(SVPW1-VPAT(L))/PATMT(L)  
-        ENDIF  
+        endif  
         ETGWTMP = EVAPT(L)-EVAPSW(L)*DXYIP(L)        ! *** EXCESS EVAPORATION
         ETGWTMP = MAX(ETGWTMP,0.0)  
         ETGWAVL = RNPOR*DELTI*(AGWELV(L)-BELAGW(L))  
         ETGWAVL = MAX(ETGWAVL,0.0)  
         ETGWTMP = MIN(ETGWTMP,ETGWAVL)  
         EVAPGW(L) = ETGWTMP*DXYP(L)                  ! *** TRANSPIRATION
-      ENDDO  
-      DO L=LF,LL  
-        AGWELV(L)=AGWELV(L)-RNPORI*DELT*DXYIP(L)*EVAPGW(L)  
-      ENDDO  
-      DO L=LF,LL  
-        AGWELV(L)=MAX(AGWELV(L),BELAGW(L))  
-      ENDDO  
-    ENDIF  
+      enddo  
+      do L = LF,LL  
+        AGWELV(L) = AGWELV(L)-RNPORI*DELT*DXYIP(L)*EVAPGW(L)  
+      enddo  
+      do L = LF,LL  
+        AGWELV(L) = MAX(AGWELV(L),BELAGW(L))  
+      enddo  
+    endif  
 
-    IF( ISDRY > 0 )THEN
-      DO K=1,KC
-        DO L=LF,LL
+    if( ISDRY > 0 )then
+      do K = 1,KC
+        do L = LF,LL
           SUB3D(L,K) = SUB(L)*SUB3DO(L,K)
           SVB3D(L,K) = SVB(L)*SVB3DO(L,K)
-        ENDDO
-      ENDDO
-    ENDIF
+        enddo
+      enddo
+    endif
 
-  ENDDO   ! *** END OF DOMAIN LOOP
+  enddo   ! *** END OF DOMAIN LOOP
   !$OMP END PARALLEL DO
   
   ! *** IF ANY CELLS WASTED WATER THEN REPORT
   NTMP = SUM(NNATDRY)
-  IF( NTMP > 0 )THEN
-    IF( INOTICE /= INT(TIMEDAY) )THEN    ! *** ONLY DISPLAY WARNING ONCE PER DAY
-      PRINT '(A,F14.5,I6,I4)',' QDWASTED CELLS. SEE log_mpi_proc_xxx.log FOR DETAILS. [TIMEDAY, # OF CELLS, Process ID]: ',TIMEDAY,NTMP,process_id
+  if( NTMP > 0 )then
+    if( INOTICE /= INT(TIMEDAY) )then    ! *** ONLY DISPLAY WARNING ONCE PER DAY
+      PRINT '(A,F14.5,I6,i4)',' QDWASTED CELLS. SEE mpi_qdwaste_proc_xxx.log FOR DETAILS. [TIMEDAY, # OF CELLS, Process ID]: ', TIMEDAY, NTMP, process_id
       INOTICE = INT(TIMEDAY)
-    ENDIF
+    endif
 
-    OPEN(mpi_log_unit,FILE=OUTDIR//mpi_log_file,POSITION='APPEND')
-    DO ND=1,NOPTIMAL
-      DO I=1,NNATDRY(ND)
+    open(mpi_qdwaste_unit,FILE = OUTDIR//mpi_qdwaste,POSITION = 'APPEND')
+    do ND = 1,NOPTIMAL(1)
+      do I = 1,NNATDRY(ND)
         L = LNATDRY(ND,I)
-        
+
         TMPVAL = QDWASTE(L)/DXYP(L)
-        WRITE(mpi_log_unit,8888) TIMEDAY, ND, Map2Global(L).IG, Map2Global(L).JG, TIMEDAY, H1P(L), HP(L), QDWASTE(L), TMPVAL
-        
+        write(mpi_qdwaste_unit,8888) TIMEDAY, ND, Map2Global(L).IG, Map2Global(L).JG, TIMEDAY, H1P(L), HP(L), QDWASTE(L), TMPVAL
+
         ! *** ZERO QDWASTE IF NOT CONDUCTING MASS BALANCE
-        IF( ISBAL == 0 ) QDWASTE(L) = 0.0
-      ENDDO
-    ENDDO
-    CLOSE(mpi_log_unit)
+        QDWASTE(L) = 0.0
+      enddo
+    enddo
+    close(mpi_qdwaste_unit)
     8888 FORMAT(' QDWASTE ',F12.5,3I6,F12.4,2F10.4,E14.6,F10.4)
-  ENDIF
+  endif  
 
   ! *** CHECK FOR NEGATIVE DEPTHS  
-  CALL NEGDEP(NOPTIMAL, LDMOPT, QCHANUT, QCHANVT, 2, SUB1, SVB1, HPOLD, NNEGFLG)  
+  call NEGDEP(NOPTIMAL(1), LDMOPT(1), QCHANUT, QCHANVT, 2, SUB1, SVB1)  
   
   ! *** CALCULATE THE EXTERNAL DIVERGENCE  
-  IF( ISDIVEX > 0 )THEN  
-    DIVEXMX=0.  
-    DIVEXMN=1000000.  
-    DO L=2,LA  
-      IF( SPB(L) /= 0 )THEN  
-        LN=LNC(L)  
-        DIVEX=SPB(L)*(DXYP(L)*(HP(L)-H1P(L))*DELTI+0.5*(UHDYE(LEC(L))+UHDY1E(LEC(L))-UHDYE(L)-UHDY1E(L)+VHDXE(LN)+VHDX1E(LN)-VHDXE(L)-VHDX1E(L))-QSUME(L)-QGW(L)+EVAPSW(L))  
-        IF( ISDIVEX == 2 ) DIVEX = DIVEX*DXYIP(L)/HP(L)  !  *** RELATIVE DIVERGENCE
-        IF( DIVEX > DIVEXMX )THEN  
-          DIVEXMX=DIVEX  
-          LMAX=L  
-        ENDIF  
-        IF( DIVEX < DIVEXMN )THEN  
-          DIVEXMN=DIVEX  
-          LMIN=L  
-        ENDIF  
-      ENDIF  
-    ENDDO  
-    IMAX=IL(LMAX)  
-    JMAX=JL(LMAX)  
-    IMIN=IL(LMIN)  
-    JMIN=JL(LMIN)  
-    WRITE(6,6628)DIVEXMX,IMAX,JMAX  
-    WRITE(6,6629)DIVEXMN,IMIN,JMIN  
-    6628 FORMAT('  DIVEXMX=',E13.5,5X,2I10)  
-    6629 FORMAT('  DIVEXMN=',E13.5,5X,2I10)  
-  ENDIF  
+  if( ISDIVEX > 0 )then  
+    DIVEXMX = 0.  
+    DIVEXMN = 1000000.  
+    do L = 2,LA  
+      if( SPB(L) /= 0 )then  
+        LN = LNC(L)  
+        DIVEX = SPB(L)*(DXYP(L)*(HP(L)-H1P(L))*DELTI+0.5*(UHDYE(LEC(L))+UHDY1E(LEC(L))-UHDYE(L)-UHDY1E(L)+VHDXE(LN)+VHDX1E(LN)-VHDXE(L)-VHDX1E(L))-QSUME(L)-QGW(L)+EVAPSW(L))  
+        if( ISDIVEX == 2 ) DIVEX = DIVEX*DXYIP(L)/HP(L)  !  *** RELATIVE DIVERGENCE
+        if( DIVEX > DIVEXMX )then  
+          DIVEXMX = DIVEX  
+          LMAX = L  
+        endif  
+        if( DIVEX < DIVEXMN )then  
+          DIVEXMN = DIVEX  
+          LMIN = L  
+        endif  
+      endif  
+    enddo  
+    IMAX = IL(LMAX)  
+    JMAX = JL(LMAX)  
+    IMIN = IL(LMIN)  
+    JMIN = JL(LMIN)  
+    write(6,6628)DIVEXMX,IMAX,JMAX  
+    write(6,6629)DIVEXMN,IMIN,JMIN  
+    6628 FORMAT('  DIVEXMX = ',E13.5,5X,2I10)  
+    6629 FORMAT('  DIVEXMN = ',E13.5,5X,2I10)  
+  endif  
 
   ! *** DETERMINE THE WET AND DRY CELL LIST
-  IF( ISDRY == 0 )THEN
+  if( ISDRY == 0 )then
     LAWET = LA-1
     LADRY = 0
-  ELSE
+  else
     LAWET = 0
     LADRY = 0
-    DO L=2,LA
-      IF( LMASKDRY(L) )THEN
-        LAWET = LAWET+1
+    do L = 2,LA
+      if( LMASKDRY(L) )then
+        LAWET = LAWET + 1
         LWET(LAWET) = L
-      ELSEIF( OLDMASK(L) .OR. N < NTSTBC+1 )THEN
+        NWET(L) = NWET(L) + 1
+      elseif( OLDMASK(L) .or. N < NTSTBC+1 )then
         ! *** ONLY FLAG NEWLY DRY CELLS
         LADRY = LADRY + 1
         LDRY(LADRY) = L
         
+        ! *** Reset wet counter for adjacent cells
+        do LL = 1,9
+          NWET(LADJ(LL,L)) = 0
+        enddo
+        
         ! *** UPDATE DEPTHS FOR DRY CELLS
-        DO K=KSZ(L),KC
+        do K = KSZ(L),KC
           HPK(L,K)  = HP(L)*DZC(L,K)
-        ENDDO    
+        enddo    
         HU(L) = ( DXYP(L)*HP(L) + DXYP(LWC(L))*HP(LWC(L)) )*FSGZUDXYPI(L)
         HV(L) = ( DXYP(L)*HP(L) + DXYP(LSC(L))*HP(LSC(L)) )*FSGZVDXYPI(L)
-      ENDIF
-    ENDDO
-  ENDIF
-    
-  IF( ISTRAN(6) > 0 .OR. ISTRAN(7) > 0 )THEN
-    IF( ISBEDMAP > 0 )THEN
+      endif
+    enddo
+  endif
+  
+  if( ISTRAN(6) > 0 .or. ISTRAN(7) > 0 )then
+    if( ISBEDMAP > 0 )then
       LASED = 0
       LSED = 0
-      DO L=1,LAWET
-        IF( BEDMAP(LWET(L)) > 0 )THEN
+      do L = 1,LAWET
+        if( BEDMAP(LWET(L)) > 0 )then
           LASED = LASED + 1
           LSED(LASED) = LWET(L)
-        ENDIF
-      ENDDO
-    ELSE
+        endif
+      enddo
+    else
       LASED = LAWET
-      IF( ISDRY > 0 .OR. NITER < 5 ) LSED = LWET
-    ENDIF
-  ENDIF
+      if( ISDRY > 0 .or. NITER < 5 ) LSED = LWET
+    endif
+  endif
 
   LDMWET = INT(FLOAT(LAWET)/FLOAT(NDM))+1
   LDMDRY = INT(FLOAT(LADRY)/FLOAT(NDM))+1
   LDMSED = INT(FLOAT(LASED)/FLOAT(NDM))+1
 
   ! *** GET CELL LIST FOR ACTIVE LAYERS = 1
-  IF( IGRIDV > 0 .AND. KMINV == 1 )THEN
+  if( IGRIDV > 0 .and. KMINV == 1 )then
     LASGZ1 = 0
-    DO L=2,LA
-      IF( KSZ(L) == KC )THEN
-        IF( LMASKDRY(L) )THEN
+    do L = 2,LA
+      if( KSZ(L) == KC )then
+        if( LMASKDRY(L) )then
           LASGZ1 = LASGZ1+1
-          LSGZ1(LASGZ1)=L
-        ENDIF
-      ENDIF
-    ENDDO
+          LSGZ1(LASGZ1) = L
+        endif
+      endif
+    enddo
     LDMSGZ1 = INT(LASGZ1/NDM)+1
-  ENDIF
+  endif
   
   ! *** COMPUTATIONAL CELL LIST FOR EACH SUB-DOMAIN
-  IF( ISDRY > 0 )THEN
-    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,LDMWET,LAWET,LWET,LKSZ,LLWET,LKWET,KS,KC) PRIVATE(ND,LF,LL,K,LN,LP,L)
-    DO ND=1,NDM
+  if( ISDRY > 0 )then
+    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,LDMWET,LAWET,LWET,LKSZ,LLWET,LKWET,KS,KC) PRIVATE(ND,LF,LL,K,LN,LP,L) NUM_THREADS(NDM)
+    do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
       LL = MIN(LF+LDMWET-1,LAWET)
     
-      DO K=1,KC
+      do K = 1,KC
         LN = 0
-        DO LP=LF,LL
+        do LP = LF,LL
           L = LWET(LP)  
-          IF( LKSZ(L,K) )CYCLE
+          if( LKSZ(L,K) ) CYCLE
           LN = LN + 1
-          LKWET(LN,K,ND)=L
-        ENDDO
-        LLWET(K,ND)=LN    ! *** NUMBER OF WET CELLS FOR THE CURRENT LAYER
-      ENDDO
-    ENDDO
+          LKWET(LN,K,ND) = L
+        enddo
+        LLWET(K,ND) = LN    ! *** NUMBER OF WET CELLS FOR THE CURRENT LAYER
+      enddo
+    enddo
     !$OMP END PARALLEL DO
 
-    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,LLWET,LLWETZ,LKWET,LKWETZ,KS,KC) PRIVATE(ND,K,LP,L)
-    DO ND=1,NDM
-      DO K=1,KS
+    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,LLWET,LLWETZ,LKWET,LKWETZ,KS,KC) PRIVATE(ND,K,LP,L) NUM_THREADS(NDM)
+    do ND = 1,NDM
+      do K = 1,KS
         LLWETZ(K,ND) = LLWET(K,ND)
-        DO LP=1,LLWET(K,ND)
+        do LP = 1,LLWET(K,ND)
           LKWETZ(LP,K,ND) = LKWET(LP,K,ND)  
-        ENDDO 
-      ENDDO
+        enddo 
+      enddo
       
       LLWETZ(KC,ND) = LLWET(KS,ND)
-      DO LP=1,LLWET(KS,ND)
+      do LP = 1,LLWET(KS,ND)
         LKWETZ(LP,KC,ND) = LKWET(LP,KS,ND)  
-      ENDDO
-    ENDDO
+      enddo
+    enddo
     !$OMP END PARALLEL DO
 
-  ENDIF
+  endif
 
   ! *** THIRD PASS CELL CONSTANTS
-  IF( IGRIDV > 0 )THEN
-    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NOPTIMAL,LDMOPT,LA,KC,LWC,LSC,KSZ,DZC,HP,HPK,HPKI,HU,HV)  &
-    !$OMP                           SHARED(DXYP,FSGZUDXYPI,FSGZVDXYPI,LLWET,LKWET)                   &
-    !$OMP                           PRIVATE(ND,LF,LL,K,LP,L,LW,LS) 
-    DO ND=1,NOPTIMAL
-      LF=2+(ND-1)*LDMOPT
-      LL=MIN(LF+LDMOPT-1,LA)
+  if( IGRIDV > 0 )then
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,K,LP,L) NUM_THREADS(NDM)
+    do ND = 1,NDM
+      LF = (ND-1)*LDMWET+1
+      LL = MIN(LF+LDMWET-1,LAWET)
 
       ! *** GLOBAL UPDATE OF LAYER THICKNESSES
-      DO K=1,KC
-        DO LP=1,LLWET(K,ND)
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)
           HPK(L,K)  = HP(L)*DZC(L,K)
-        ENDDO
-      ENDDO
-
-      ! *** UPDATE HU & HV FOR ALL CELLS
-      DO L=LF,LL
+        enddo
+      enddo
+    enddo
+    !$OMP END PARALLEL DO
+      
+    ! *** UPDATE HU & HV FOR ALL CELLS
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,K,LP,L,LW,LS) NUM_THREADS(NOPTIMAL(1))
+    do ND = 1,NOPTIMAL(1)
+      LF = 2+(ND-1)*LDMOPT(1)
+      LL = MIN(LF+LDMOPT(1)-1,LA)
+      do L = LF,LL
         LW = LWC(L)
         LS = LSC(L)
 
-        IF( KSZ(LW) > KSZ(L) )THEN
+        if( KSZ(LW) > KSZ(L) )then
           HU(L) = MAX( 0.5*HPK(L,KSZ(LW)), HP(LW)*(1.+DZC(L,KSZ(LW))*0.1) )
-        ELSEIF( KSZ(LW) < KSZ(L) )THEN
+        elseif( KSZ(LW) < KSZ(L) )then
           HU(L) = MAX( 0.5*HPK(LW,KSZ(L)), HP(L)*(1.+DZC(LW,KSZ(L))*0.1) )
-        ELSE
+        else
           HU(L) = ( DXYP(L)*HP(L) + DXYP(LW)*HP(LW) )*FSGZUDXYPI(L)
-        ENDIF
+        endif
 
-        IF( KSZ(LS) > KSZ(L) )THEN
+        if( KSZ(LS) > KSZ(L) )then
           HV(L) = MAX( 0.5*HPK(L,KSZ(LS)), HP(LS)*(1.+DZC(L,KSZ(LS))*0.1) )
-        ELSEIF( KSZ(LS) < KSZ(L) )THEN
+        elseif( KSZ(LS) < KSZ(L) )then
           HV(L) = MAX( 0.5*HPK(LS,KSZ(L)), HP(L)*(1.+DZC(LS,KSZ(L))*0.1) )
-        ELSE
+        else
           HV(L) = ( DXYP(L)*HP(L) + DXYP(LS)*HP(LS) )*FSGZVDXYPI(L)
-        ENDIF
-      ENDDO
-  
-    ENDDO
+        endif
+      enddo
+
+    enddo
     !$OMP END PARALLEL DO
-  ENDIF
+  endif
 
   ! *** BLOCKED LAYER FACE OPTION
-  IF( NBLOCKED > 0 )THEN
-    DO LP=1,NBLOCKED
+  if( NBLOCKED > 0 )then
+    do LP = 1,NBLOCKED
       L = LBLOCKED(LP)
-      IF( KSZ(L) == KC ) CYCLE
+      if( KSZ(L) == KC ) CYCLE
       
       ! *** U FACE BLOCKING
-      IF( BLDRAFTUO(LP)+BLSILLU(LP) > 0.0 )THEN
-        IF( BLANCHORU(LP) /= 0. )THEN
+      if( BLDRAFTUO(LP)+BLSILLU(LP) > 0.0 )then
+        if( BLANCHORU(LP) /= 0. )then
           BLDRAFTU(LP) = BLDRAFTUO(LP) - (BLANCHORU(LP) - (BELV0(L) + HP(L)))
           BLDRAFTU(LP) = MAX(BLDRAFTU(LP),0.0)
-        ELSE
+        else
           BLDRAFTU(LP) = BLDRAFTUO(LP) 
-        ENDIF
+        endif
 
         ! *** RESET TO DEFAULT LAYER
         KSZU(L) = MAX(KSZ(L), KSZ(LWC(L)))      ! *** MINUMUM ACTIVE LAYERS FOR U FACE
-        DO K=1,KC
+        do K = 1,KC
           SUB3D(L,K) = 0.0
-          IF( K >= KSZU(L) )THEN
+          if( K >= KSZU(L) )then
             SUB3D(L,K)  = 1.0
             SUB3DO(L,K) = 1.0
-            IF( IGRIDV > 0 )THEN
-              IF( KSZ(LWC(L)) > KSZ(L) )THEN
+            if( IGRIDV > 0 )then
+              if( KSZ(LWC(L)) > KSZ(L) )then
                 SGZU(L,K)  = DZC(LSC(L),K)
-              ELSE
+              else
                 SGZU(L,K)  = DZC(L,K)
-              ENDIF
-            ELSE
+              endif
+            else
               SGZU(L,K)  = MAX(DZC(LWC(L),K),DZC(L,K))
-            ENDIF
-          ENDIF
-        ENDDO
+            endif
+          endif
+        enddo
       
         HU(L) = HU(L) - BLDRAFTU(LP) - BLSILLU(LP)
         
-        IF( HU(L) < 0.0 )THEN
+        if( HU(L) < 0.0 )then
           ! *** Flows fully blocked
           SUB(L)  = 0.0
           SUBO(L) = 0.0
@@ -1561,11 +1522,8 @@ SUBROUTINE CALPUV2C
           SUB3D(L,KSZ(L):KC)  = 0.0
           SUB3DO(L,KSZ(L):KC) = 0.0
           HU(L) = HDRY
-        ELSE
+        else
           ! *** Flows partially blocked
-          IF( TIMEDAY > 0.24 )THEN
-            TMPX = 0   ! DELME
-          ENDIF
           SUB(L)  = 1.0
           SUBO(L) = 1.0
           SAAX(L) = 1.0
@@ -1574,38 +1532,38 @@ SUBROUTINE CALPUV2C
           HUI(L) = 1./HU(L)
       
           ! *** BLOCK CELL FACES FROM TOP
-          IF( BLDRAFTU(LP) > 0.0 )THEN
+          if( BLDRAFTU(LP) > 0.0 )then
             TMPX = 0.
-            DO K=KC,KSZU(L)+1,-1
+            do K = KC,KSZU(L)+1,-1
               TMPX = TMPX + SGZU(L,K)*HP(L)
               KTBU(LP) = K - 1
               SUB3D(L,K) = 0.0
               SGZU(L,K) = 0.0
-              IF( TMPX > BLDRAFTU(LP) ) EXIT
-            ENDDO
+              if( TMPX > BLDRAFTU(LP) ) EXIT
+            enddo
             KTBU(LP) = MAX(KTBU(LP),KSZU(L))
-          ELSE
+          else
             KTBU(LP) = KC
-          ENDIF
+          endif
         
           ! *** BLOCK CELL FACES FROM BOTTOM
-          IF( BLSILLU(LP) > 0.0 )THEN
+          if( BLSILLU(LP) > 0.0 )then
             TMPX = 0.
-            DO K=KSZU(L),KC-1
+            do K = KSZU(L),KC-1
               TMPX = TMPX + SGZU(L,K)*HP(L)
               KBBU(LP) = K + 1
               SUB3D(L,K) = 0.0
               SGZU(L,K) = 0.0
-              IF( TMPX > BLSILLU(LP) ) EXIT
-            ENDDO
+              if( TMPX > BLSILLU(LP) ) EXIT
+            enddo
             KBBU(LP) = MIN(KBBU(LP),KTBU(LP))
-          ELSE
+          else
             KBBU(LP) = KSZU(L)
-          ENDIF
+          endif
           KSZU(L) = KBBU(LP)
         
           TMPX = SUM(SGZU(L,1:KC))
-          DO K=1,KC
+          do K = 1,KC
             SGZU(L,K) = SGZU(L,K) / TMPX
             DZGU(L,K) = 0.0
             CDZFU(L,K) = 0.0          ! *** USED FOR GLOBAL DU SHEAR
@@ -1614,61 +1572,61 @@ SUBROUTINE CALPUV2C
             CDZMU(L,K) = 0.0
             CDZRU(L,K) = 0.0
             CDZDU(L,K) = 0.0
-          ENDDO
+          enddo
       
-          DO K=KBBU(LP),KTBU(LP)-1
+          do K = KBBU(LP),KTBU(LP)-1
             DZGU(L,K) = 0.5*(SGZU(L,K)+SGZU(L,K+1))
             CDZFU(L,K) = SGZU(L,K)*SGZU(L,K+1)/(SGZU(L,K) + SGZU(L,K+1))
             CDZUU(L,K) = -SGZU(L,K)  /(SGZU(L,K) + SGZU(L,K+1))
             CDZLU(L,K) = -SGZU(L,K+1)/(SGZU(L,K) + SGZU(L,K+1))
-          ENDDO
+          enddo
         
           CDZRU(L,KBBU(LP)) = SGZU(L,KBBU(LP)) - 1.
           CDZDU(L,KBBU(LP)) = SGZU(L,KBBU(LP))
-          DO K=KBBU(LP)+1,KTBU(LP)-1
+          do K = KBBU(LP)+1,KTBU(LP)-1
             CDZRU(L,K) = CDZRU(L,K-1) + SGZU(L,K)
             CDZDU(L,K) = CDZDU(L,K-1) + SGZU(L,K)
-          ENDDO
+          enddo
           
-          DO K=KBBU(LP),KTBU(LP)-1
+          do K = KBBU(LP),KTBU(LP)-1
             CDZRU(L,K) = CDZRU(L,K)*DZGU(L,K)*CDZLU(L,KSZU(L))
             CDZMU(L,K) = 0.5*SGZU(L,K)*SGZU(L,K+1)
-          ENDDO
-        ENDIF
-      ENDIF
+          enddo
+        endif
+      endif
       
       ! *** V FACE BLOCKING
-      IF( BLDRAFTVO(LP)+BLSILLV(LP) > 0.0 )THEN
-        IF( BLANCHORV(LP) /= 0. )THEN
+      if( BLDRAFTVO(LP)+BLSILLV(LP) > 0.0 )then
+        if( BLANCHORV(LP) /= 0. )then
           BLDRAFTV(LP) = BLDRAFTVO(LP) - (BLANCHORV(LP) - (BELV0(L) + HP(L)))
           BLDRAFTV(LP) = MAX(BLDRAFTV(LP),0.0)
-        ELSE
+        else
           BLDRAFTV(LP) = BLDRAFTVO(LP) 
-        ENDIF
+        endif
 
         ! *** RESET TO DEFAULT LAYER
         KSZV(L) = MAX(KSZ(L), KSZ(LSC(L)))      ! *** MINUMUM ACTIVE LAYERS FOR V FACE
-        DO K=1,KC
+        do K = 1,KC
           SVB3D(L,K)  = 0.0
           SVB3DO(L,K) = 0.0
-          IF( K >= KSZV(L) )THEN
+          if( K >= KSZV(L) )then
             SVB3D(L,K)  = 1.0
             SVB3DO(L,K) = 1.0
-            IF( IGRIDV > 0 )THEN
-              IF( KSZ(LSC(L)) > KSZ(L) )THEN
+            if( IGRIDV > 0 )then
+              if( KSZ(LSC(L)) > KSZ(L) )then
                 SGZV(L,K)  = DZC(LSC(L),K)
-              ELSE
+              else
                 SGZV(L,K)  = DZC(L,K)
-              ENDIF
-            ELSE
+              endif
+            else
               SGZV(L,K)  = MAX(DZC(LSC(L),K),DZC(L,K))
-            ENDIF
-          ENDIF
-        ENDDO
+            endif
+          endif
+        enddo
       
         HV(L) = HV(L) - BLDRAFTV(LP) - BLSILLV(LP)
       
-        IF( HV(L) < 0.0 )THEN
+        if( HV(L) < 0.0 )then
           ! *** Flows fully blocked
           SVB(L)  = 0.0
           SVBO(L) = 0.0
@@ -1676,7 +1634,7 @@ SUBROUTINE CALPUV2C
           SVB3D(L,KSZ(L):KC)  = 0.0
           SVB3DO(L,KSZ(L):KC) = 0.0
           HV(L) = HDRY
-        ELSE
+        else
           ! *** Flows partially blocked
           SVB(L) = 1.0
           SVBO(L) = 1.0
@@ -1686,38 +1644,38 @@ SUBROUTINE CALPUV2C
           HVI(L) = 1./HV(L)
 
           ! *** BLOCK CELL FACES FROM TOP
-          IF( BLDRAFTV(LP) > 0.0 )THEN
+          if( BLDRAFTV(LP) > 0.0 )then
             TMPY = 0.
-            DO K=KC,KSZV(L)+1,-1
+            do K = KC,KSZV(L)+1,-1
               TMPY = TMPY + SGZV(L,K)*HP(L)
               KTBV(LP) = K - 1
               SVB3D(L,K) = 0.0
               SGZV(L,K) = 0.0
-              IF( TMPY > BLDRAFTV(LP) ) EXIT
-            ENDDO
+              if( TMPY > BLDRAFTV(LP) ) EXIT
+            enddo
             KTBV(LP) = MAX(KTBV(LP),KSZV(L))
-          ELSE
+          else
             KTBV(LP) = KC
-          ENDIF
+          endif
         
           ! *** BLOCK CELL FACES FROM BOTTOM
-          IF( BLSILLV(LP) > 0.0 )THEN
+          if( BLSILLV(LP) > 0.0 )then
             TMPX = 0.
-            DO K=KSZV(L),KC-1
+            do K = KSZV(L),KC-1
               TMPX = TMPX + SGZV(L,K)*HP(L)
               KBBV(LP) = K + 1
               SVB3D(L,K) = 0.0
               SGZV(L,K) = 0.0
-              IF( TMPX > BLSILLV(LP) ) EXIT
-            ENDDO
+              if( TMPX > BLSILLV(LP) ) EXIT
+            enddo
             KBBV(LP) = MIN(KBBV(LP),KTBV(LP))
-          ELSE
+          else
             KBBV(LP) = KSZV(L)
-          ENDIF
+          endif
           KSZV(L) = KBBV(LP)
         
           TMPY = SUM(SGZV(L,1:KC))
-          DO K=1,KC
+          do K = 1,KC
             SGZV(L,K) = SGZV(L,K) / TMPY
             DZGV(L,K) = 0.0
             CDZFV(L,K) = 0.0
@@ -1726,74 +1684,129 @@ SUBROUTINE CALPUV2C
             CDZRV(L,K) = 0.0
             CDZDV(L,K) = 0.0
             CDZMV(L,K) = 0.0
-          ENDDO
+          enddo
       
-          DO K=KBBV(LP),KTBV(LP)-1
+          do K = KBBV(LP),KTBV(LP)-1
             DZGV(L,K) = 0.5*(SGZV(L,K)+SGZV(L,K+1))
             CDZFV(L,K) = SGZV(L,K)*SGZV(L,K+1)/(SGZV(L,K)+SGZV(L,K+1))
             CDZUV(L,K) = -SGZV(L,K)  /(SGZV(L,K)+SGZV(L,K+1))
             CDZLV(L,K) = -SGZV(L,K+1)/(SGZV(L,K)+SGZV(L,K+1))
-          ENDDO
+          enddo
 
           CDZRV(L,KBBV(LP)) = SGZV(L,KBBV(LP))-1.
           CDZDV(L,KBBV(LP)) = SGZV(L,KBBV(LP))
-          DO K=KBBV(LP)+1,KTBV(LP)-1
+          do K = KBBV(LP)+1,KTBV(LP)-1
             CDZRV(L,K) = CDZRV(L,K-1)+SGZV(L,K)
             CDZDV(L,K) = CDZDV(L,K-1)+SGZV(L,K)
-          ENDDO
+          enddo
 
-          DO K=KBBV(LP),KTBV(LP)-1
+          do K = KBBV(LP),KTBV(LP)-1
             CDZRV(L,K) = CDZRV(L,K)*DZGV(L,K)*CDZLV(L,KSZV(L))
             CDZMV(L,K) = 0.5*SGZV(L,K)*SGZV(L,K+1)
-          ENDDO
-        ENDIF
-      ENDIF
-    ENDDO
-  ENDIF
+          enddo
+        endif
+      endif
+    enddo
+  endif
   
   ! *** COMPUTATIONAL CELL LIST FOR ENTIRE DOMAIN
-  IF( ISDRY > 0 )THEN
-    DO K=1,KC
-      LN=0
-      DO L=2,LA
-        IF( LKSZ(L,K) )CYCLE
-        IF( LMASKDRY(L) )THEN
+  if( ISDRY > 0 )then
+    do K = 1,KC
+      LN = 0
+      do L = 2,LA
+        if( LKSZ(L,K) ) CYCLE
+        if( LMASKDRY(L) )then
           LN = LN+1
           LKWET(LN,K,0) = L   ! *** Wet Cell for Layer K
-        ENDIF
-      ENDDO
+        endif
+      enddo
       LLWET(K,0) = LN         ! *** Total Wet Cells for Layer K
-    ENDDO
+    enddo
     
-  ENDIF
-  
-#ifdef _MPI
+  endif
+
   ! ****************************************************************************
   TTDS = DSTIME(0)
-  Call MPI_barrier(MPI_Comm_World, ierr)
+  call MPI_barrier(MPI_Comm_World, ierr)
   TTWAIT = TTWAIT + (DSTIME(0)- TTDS)
   
   TTDS = DSTIME(0)
-  Call Communicate_PUV3
+  call Communicate_PUV3
   TMPITMP = TMPITMP + (DSTIME(0)-TTDS)
   ! ****************************************************************************
-#endif
 
   ! *** Update variables that are dependent on MPI communicated values
-  !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NOPTIMAL, LDMOPT, LA, HP, HPI, HU, HUI, HV, HVI) PRIVATE(ND,LF,LL,L)
-  DO ND=1,NOPTIMAL
-    LF = 2+(ND-1)*LDMOPT
-    LL = MIN(LF+LDMOPT-1,LA)
+  !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NOPTIMAL, LDMOPT, LA, HP, HPI, HU, HUI, HV, HVI) PRIVATE(ND,LF,LL,L) NUM_THREADS(NOPTIMAL(1))
+
+  do ND = 1,NOPTIMAL(1)
+    LF = 2+(ND-1)*LDMOPT(1)
+    LL = MIN(LF+LDMOPT(1)-1,LA)
     
-    DO L=LF,LL  
+    do L = LF,LL  
       HPI(L) = 1./HP(L)  
       HUI(L) = 1./HU(L)  
       HVI(L) = 1./HV(L)  
-    ENDDO  
-  ENDDO
+    enddo  
+  enddo
   !$OMP END PARALLEL DO
 
-  RETURN
+  ! *** Find optimal number of threads
+  TTCON = TCONG - TTCON
+  call HYD_THREADS(0, TTCON)
+  
+  TTDS = DSTIME(0)
+  TTPUV = TTDS - TTPUV - TTCON
+  call HYD_THREADS(1, TTPUV)
+
+  return
 
 END  
 
+SUBROUTINE HYD_THREADS(ISUB, TTSUB)
+  ! *** Find the number of threads that produce the lowest runtime
+
+  use GLOBAL
+ use Variables_MPI
+
+  integer, intent(IN)   :: ISUB
+  real(RKD), intent(IN) :: TTSUB
+  real(RKD) :: TTIME
+  integer, save :: IFLAG(0:50) = 1
+  integer :: I, IUPDATE
+  
+  IUPDATE = 10000
+  if( MOD(NITER,IUPDATE) == 0 .or. IFLAG(ISUB) <= NTHREADS )then
+    !PRINT '(I10,2I5,F15.7,6i6)', NITER, ISUB, IFLAG(ISUB), TTSUB, NOPTIMAL(ISUB), ldmopt(isub), ldmopt(isub)*IFLAG(ISUB)  ! DELME
+    TIMES(ISUB,NOPTIMAL(ISUB)) = TTSUB
+    if( MOD(NITER,IUPDATE) == 0 )then
+      NOPTIMAL(ISUB) = 0
+      IFLAG(ISUB) = 0
+    endif
+    if( NOPTIMAL(ISUB) <=  NTHREADS )then
+      NOPTIMAL(ISUB) = NOPTIMAL(ISUB) + 1
+      IFLAG(ISUB) = IFLAG(ISUB) + 1
+      if( NOPTIMAL(ISUB) >  NTHREADS )then
+        ! *** Find minimum time
+        TTIME = TIMES(ISUB,1)
+        NOPTIMAL(ISUB) = 1
+        do I = 2,NTHREADS
+          if( TTIME > TIMES(ISUB,I) )then
+            NOPTIMAL(ISUB) = I
+            TTIME = TIMES(ISUB,I)
+          endif
+        enddo
+        if( process_id == master_id )then
+          if( ISUB == 0 )then
+            write(*,'(A,I5,A,I5)')'UPDATING OPTIMAL NUMBER OF THREADS USED FOR CONJUGATE GRADIENT: ', NOPTIMAL(ISUB), ' of ', NTHREADS 
+          else
+            write(*,'(A,I5,A,I5)')'UPDATING OPTIMAL NUMBER OF THREADS USED FOR PRESSURE SOLUTION:  ', NOPTIMAL(ISUB), ' of ', NTHREADS 
+          endif
+        endif
+        IFLAG(ISUB) = NTHREADS + 1
+      endif
+      
+      LDMOPT(ISUB) = INT(FLOAT(LA-1)/FLOAT(NOPTIMAL(ISUB))) + 1
+    endif
+  endif
+  
+END SUBROUTINE HYD_THREADS

@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!
@@ -14,7 +14,7 @@
 !---------------------------------------------------------------------------!
 module mod_mesh
     
-  Use GLOBAL, only : RKD, RK4
+  use GLOBAL, only : RKD, RK4
   use mod_position
     
   implicit none

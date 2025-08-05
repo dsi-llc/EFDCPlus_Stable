@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!
@@ -14,170 +14,181 @@
 ! @date 9/4/2018
 !---------------------------------------------------------------------------!
 
-SUBROUTINE CONGRAD_MPI(NOPTIMAL,LDMOPT)
+SUBROUTINE CONGRAD_MPI()  !NOPTIMAL(0),LDMOPT(0))
 
-  USE GLOBAL
-  USE EFDCOUT
+  use GLOBAL
+  use EFDCOUT
   
-  USE MPI
-  Use Variables_MPI
-  Use Communicate_Ghost_Routines
-  Use MPI_All_Reduce
-  Use Variables_MPI_Mapping
+  use MPI
+  use Variables_MPI
+  use Communicate_Ghost_Routines
+  use MPI_All_Reduce
+  use Variables_MPI_Mapping
+  use Mod_Map_Write_EE_Binary
   
-  IMPLICIT NONE
+  implicit none
 
-  INTEGER, INTENT(IN) :: NOPTIMAL, LDMOPT
+  !INTEGER, intent(IN) :: NOPTIMAL, LDMOPT
 
   ! *** Local Variables
-  INTEGER       :: ND, LL, LF, L, LE, LS, LN, LW, I, J
-  INTEGER       :: IERR
+  integer       :: ND, LL, LF, L, LE, LS, LN, LW, I, J
+  integer       :: IERR
 
-  Real  :: ALPHA, BETA
-  REAL  :: RPCGN, RPCG, PAPCG, RSQ
-  REAL(8) :: RPCGN_OUT, RPCG_OUT, PAPCG_OUT, RSQ_OUT, TWAIT
+  real  :: ALPHA, BETA
+  real  :: RPCGN, RPCG, PAPCG, RSQ
+  real(8) :: RPCGN_OUT, RPCG_OUT, PAPCG_OUT, RSQ_OUT, TWAIT
   
-  Real(RKD), EXTERNAL   :: DSTIME
-  REAL(RKD)             :: TTDS, TTDS1, TTDS2, TMPCOMM, TMPALLREDUCE         ! MODEL TIMING TEMPORARY VARIABLES
+  real(RKD), external :: DSTIME
+  real(RKD)           :: TTDS, TTDS1, TTDS2, TMPCOMM, TMPALLREDUCE         ! MODEL TIMING TEMPORARY VARIABLES
 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: PCG
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: RCG
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: TMPCG
+  real,save,allocatable,dimension(:) :: PCG
+  real,save,allocatable,dimension(:) :: RCG
+  real,save,allocatable,dimension(:) :: TMPCG
 
-  IF( .NOT. ALLOCATED(PCG) )THEN
-    ALLOCATE(PCG(LCM))
-    ALLOCATE(RCG(LCM))
-    ALLOCATE(TMPCG(LCM))
+  if( .not. allocated(PCG) )then
+    allocate(PCG(LCM))
+    allocate(RCG(LCM))
+    allocate(TMPCG(LCM))
 
     PCG   = 0.0
     RCG   = 0.0
     TMPCG = 0.0 
-  ENDIF
+  endif
 
   ! *** START THE TIMING
   TTDS1 = DSTIME(0)
   TMPCOMM = 0.
   TMPALLREDUCE = 0.
   
-  DO L=2,LA
+  do L = 2,LA
     RCG(L) = FPTMP(L) - CCC(L)*P(L) - CCN(L)*P(LNC(L)) - CCS(L)*P(LSC(L)) - CCW(L)*P(LWC(L)) - CCE(L)*P(LEC(L))
-  ENDDO
+  enddo
 
-  DO L=2,LA
+  do L = 2,LA
     PCG(L) = RCG(L)*CCCI(L)
-  ENDDO
+  enddo
 
   ! *** Exchange computed RCG ghost cells
   TTDS2 = DSTIME(0)
-  Call Communicate_1D2(RCG, PCG)
+  call Communicate_1D2(RCG, PCG)
   TMPCOMM = TMPCOMM + (DSTIME(0)-TTDS2)
   
   RPCG = 0.0
-  DO L=2,LA 
+  do L = 2,LA 
     RPCG = RPCG + GhostMask(L)*RCG(L)*PCG(L)  
-  ENDDO
+  enddo
 
   ! *** Sum PAPCG values across all processes
-  CALL DSI_All_Reduce(RPCG, RPCG_OUT, MPI_SUM, TTDS, 0, TWAIT)
+  call DSI_All_Reduce(RPCG, RPCG_OUT, MPI_SUM, TTDS, 0, TWAIT)
   TMPALLREDUCE = TMPALLREDUCE + TTDS
   RPCG = RPCG_OUT
   
-  IF( RPCG == 0.0 )RETURN   ! *** DSI SINGLE LINE
+  if( RPCG == 0.0 ) return   ! *** DSI SINGLE LINE
   
   !--------------------------------------------------------------------------------
   ! *** BEGIN THE ITERATIVE SOLUTION LOOP
-  DO ITER=1,ITERM
+  do ITER = 1,ITERM
 
     PAPCG = 0.
     RPCGN = 0.
     RSQ   = 0.
     
-    DO L=2,LA
+    do L = 2,LA
       APCG(L) = CCC(L)*PCG(L) + CCS(L)*PCG(LSC(L)) + CCN(L)*PCG(LNC(L)) + CCW(L)*PCG(LWC(L)) + CCE(L)*PCG(LEC(L))
-    ENDDO
+    enddo
 
-    DO L=2,LA
+    do L = 2,LA
       PAPCG = PAPCG + GhostMask(L)*APCG(L)*PCG(L)  
-    ENDDO    
+    enddo    
     
     ! *** Sum PAPCG values across all proceses
-    CALL DSI_All_Reduce(PAPCG, PAPCG_OUT, MPI_SUM, TTDS, 0, TWAIT)
+    call DSI_All_Reduce(PAPCG, PAPCG_OUT, MPI_SUM, TTDS, 0, TWAIT)
     TMPALLREDUCE = TMPALLREDUCE + TTDS
     PAPCG = PAPCG_OUT
     
     ALPHA = RPCG/PAPCG
 
     ! *** RPCGN and RSQ
-    DO L=2,LA
+    do L = 2,LA
       P(L)     = P(L) + ALPHA*PCG(L)
       RCG(L)   = RCG(L) - ALPHA*APCG(L)
       TMPCG(L) = CCCI(L)*RCG(L)
-    ENDDO
+    enddo
 
-    DO L=2,LA
+    do L = 2,LA
       RPCGN = RPCGN + GhostMask(L)*RCG(L)*TMPCG(L)  
-    ENDDO  
+    enddo  
     
-    DO L=2,LA
+    do L = 2,LA
       RSQ   = RSQ   + GhostMask(L)*RCG(L)*RCG(L)  
-    ENDDO  
+    enddo  
     
     ! *** Sum all values across RPCGN and RSQ_DBL
-    CALL DSI_All_Reduce(RPCGN, RPCGN_OUT, MPI_SUM, TTDS, 0, TWAIT)
+    call DSI_All_Reduce(RPCGN, RPCGN_OUT, MPI_SUM, TTDS, 0, TWAIT)
     TMPALLREDUCE = TMPALLREDUCE + TTDS
     RPCGN = RPCGN_OUT
 
-    CALL DSI_All_Reduce(RSQ, RSQ_OUT, MPI_SUM, TTDS, 0, TWAIT)
+    call DSI_All_Reduce(RSQ, RSQ_OUT, MPI_SUM, TTDS, 0, TWAIT)
     TMPALLREDUCE = TMPALLREDUCE + TTDS
     RSQ  = RSQ_OUT
 
     BETA = RPCGN/RPCG
     RPCG = RPCGN
     
-    IF( RSQ > RSQM )THEN
+    if( RSQ > RSQM )then
       ! *** PREPARE THE NEXT ITERATION
-      DO L=2,LA
+      do L = 2,LA
         PCG(L) = TMPCG(L) + BETA*PCG(L)
-      ENDDO
-    ENDIF
+      enddo
+    endif
 
     ! *** IF the tolerance on the residual has been met then exit the iteration loop
-    IF( RSQ <= RSQM )THEN
+    if( RSQ <= RSQM )then
       EXIT
-    ENDIF
+    endif
 
-    Call MPI_barrier(MPI_Comm_World, IERR)
+    call MPI_barrier(MPI_Comm_World, IERR)
     TTDS2 = DSTIME(0)
-    CALL Communicate_Ghost_Cells(PCG, 'PCG')
+    call Communicate_Ghost_Cells(PCG, 'PCG')
     TMPCOMM = TMPCOMM + (DSTIME(0)-TTDS2)
 
-  ENDDO  ! *** END OF ITERATION LOOP
+  enddo  ! *** END OF ITERATION LOOP
 
-  IF( RSQ > RSQM )THEN
-    L = MAXLOC(RCG,DIM=1 )
-    WRITE(6,600) Map2Global(L).LG, process_id
+  if( RSQ > RSQM )then
+    L = MAXLOC(RCG,DIM = 1 )
+    write(6,600) Map2Global(L).LG, process_id
  
     ! *** Write to unique log per process 
-    Open(unit_efdc_out, FILE=OUTDIR//filename_out,STATUS='OLD')
-    WRITE(unit_efdc_out,610)
+    Open(mpi_error_unit, FILE = OUTDIR//mpi_error_file,STATUS = 'OLD')
+    write(mpi_error_unit,600) Map2Global(L).LG, process_id
+    
+    write(mpi_error_unit,610)
+    do L = 2,LA  
+      write(mpi_error_unit,800) Map2Global(L).LG, L, IL(L), JL(L), CCS(L), CCW(L), CCC(L), CCE(L), CCN(L), FPTMP(L), RCG(L)
+    enddo
+    close(mpi_error_unit)
 
-    DO L=2,LA  
-      WRITE(unit_efdc_out,800) L, IL(L), JL(L), CCS(L), CCW(L), CCC(L), CCE(L), CCN(L), FPTMP(L), RCG(L)
-    ENDDO
-    CLOSE(unit_efdc_out)
-
-    CALL STOPP('')
+    ! *** save A SNAPSHOT FOR EE
+    if( ISPPH == 1 )then
+      write(6,*) ' The latest model results have been saved to the EE linkage files.'
+      call Map_Write_EE_Binary
+      if( process_id == master_id )then
+        call EE_LINKAGE(-1)  
+      endif
+    endif
+    
+    call STOPP('')
 
 600 FORMAT('  MAXIMUM ITERATIONS EXCEEDED IN EXTERNAL SOLUTION.  MAX ERROR AT L = ',I6,', PROCESS ID = ',I4)
-610 FORMAT('     L     I     J          CCS          CCW          CCC          CCE          CCN       FPTMP          RCG')
-800 FORMAT(3I6,8E13.4)
+610 FORMAT('    LG    L     I     J          CCS          CCW          CCC          CCE          CCN       FPTMP          RCG')
+800 FORMAT(4I6,8E13.4)
 
-  ENDIF
+  endif
 
   TCONG = TCONG + (DSTIME(0)-TTDS1) - TMPCOMM - TMPALLREDUCE
   DSITIMING(1)  = DSITIMING(1)  + TMPCOMM
   DSITIMING(12) = DSITIMING(12) + TMPALLREDUCE
 
-  RETURN
+  return
 
 End Subroutine Congrad_MPI

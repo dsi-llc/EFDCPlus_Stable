@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
   SUBROUTINE CALSTEPD
@@ -19,105 +19,102 @@
   !    2015-06       PAUL M. CRAIG     IMPLEMENTED SIGMA-Z (SGZ) IN EE7.3
   !    2011-03       Paul M. Craig     Rewritten to F90 and added OMP
 
-  Use GLOBAL
-  Use Allocate_Initialize
+  use GLOBAL
+  use Allocate_Initialize
   
-#ifdef _MPI  
-  Use Variables_MPI
-  USE MPI
-  Use Variables_MPI_Mapping
-  Use MPI_All_Reduce
-#endif
+  use Variables_MPI
+  use MPI
+  use Variables_MPI_Mapping
+  use MPI_All_Reduce
 
-  IMPLICIT NONE
+  implicit none
 
-  INTEGER :: ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX
-  INTEGER :: NMD, LMDCHHT, LMDCHUT, LMDCHVT, ITMPR, LLOCOLD,  MINTYPE
-  INTEGER,SAVE :: NUP
-  !INTEGER,SAVE,ALLOCATABLE,DIMENSION(:) :: LDYN
+  integer :: ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX
+  integer :: NMD, LMDCHHT, LMDCHUT, LMDCHVT, ITMPR, LLOCOLD,  MINTYPE
+  integer,save :: NUP
+  !INTEGER,save,allocatable,dimension(:) :: LDYN
   
-  REAL      :: QUKTMP, QVKTMP, RTMPR, TESTTEMP, DTMAXX
-  REAL      :: TMPUUU, DTTMP, TMPVVV, TMPVAL, THP1, THP2
-  REAL      :: TOP, QXPLUS, QYPLUS, QZPLUS, QXMINS, QYMINS, QZMINS, QTOTAL, QSRC, BOT
-  REAL      :: DTCOMP, DTWARN, DTDYNP
-  REAL,SAVE :: HPLIM, HPLIMOLD
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: DTL1
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: DTL2
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: DTL3
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: DTL4
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: QSUBINN
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:,:) :: QSUBOUT
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: DTHISTORY
+  real(RKD)      :: QUKTMP, QVKTMP, RTMPR, TESTTEMP, DTMAXX
+  real(RKD)      :: TMPUUU, DTTMP, TMPVVV, TMPVAL, THP1, THP2
+  real(RKD)      :: TOP, QXPLUS, QYPLUS, QZPLUS, QXMINS, QYMINS, QZMINS, QTOTAL, QSRC, BOT
+  real(RKD)      :: DTCOMP, DTWARN, DTDYNP
+  real(RKD),save :: HPLIM, HPLIMOLD
+  real(RKD),save,allocatable,dimension(:) :: DTL1
+  real(RKD),save,allocatable,dimension(:) :: DTL2
+  real(RKD),save,allocatable,dimension(:) :: DTL3
+  real(RKD),save,allocatable,dimension(:) :: DTL4
+  real(RKD),save,allocatable,dimension(:,:) :: QSUBINN
+  real(RKD),save,allocatable,dimension(:,:) :: QSUBOUT
+  real(RKD),save,allocatable,dimension(:) :: DTHISTORY
 
-  REAL(RKD), EXTERNAL :: DSTIME
-  REAL(RKD)           :: TTDS, TWAIT                 ! MODEL TIMING TEMPORARY VARIABLE
+  real(RKD), external :: DSTIME
+  real(RKD)           :: TTDS, TWAIT                 ! MODEL TIMING TEMPORARY VARIABLE
   
-  IF( .NOT. ALLOCATED(DTL1) )THEN
-    Call AllocateDSI(DTL1,    LCM,  2.*TIDALP)
-    Call AllocateDSI(DTL2,    LCM,  2.*TIDALP)
-    Call AllocateDSI(DTL3,    LCM,  2.*TIDALP)
-    Call AllocateDSI(DTL4,    LCM,  2.*TIDALP)
-    Call AllocateDSI(QSUBINN, LCM,  KCM,  0.0)
-    Call AllocateDSI(QSUBOUT, LCM,  KCM,  0.0)
+  if( .not. allocated(DTL1) )then
+    call AllocateDSI(DTL1,    LCM,  2.*TIDALP)
+    call AllocateDSI(DTL2,    LCM,  2.*TIDALP)
+    call AllocateDSI(DTL3,    LCM,  2.*TIDALP)
+    call AllocateDSI(DTL4,    LCM,  2.*TIDALP)
+    call AllocateDSI(QSUBINN, LCM,  KCM,  0.0)
+    call AllocateDSI(QSUBOUT, LCM,  KCM,  0.0)
 
-    ALLOCATE(DTHISTORY(10))
+    allocate(DTHISTORY(10))
    
     DTHISTORY = DT
     NUP = 0
-  ENDIF
+  endif
 
   ! ********************************************************************************
   
   ! *** SET WATER COLUMN CONSTITUENT TRANSPORT FLAG
   ITRNTMP = SUM(ISTRAN)
   
-  IF( NITER <= 1 ) DTDYN = DT
+  if( NITER <= 1 ) DTDYN = DT
 
   DTMIN = DT
   DTMAXX = TIDALP
 
   ! *** DETERMINE SOURCE/SINKS FOR SUBGRID SCALE CHANNEL EXCHANGES
-  IF( MDCHH >= 1 )THEN
-    DO K=1,KC
-      DO L=2,LA
-        QSUBOUT(L,K)=0.0
-        QSUBINN(L,K)=0.0
-      ENDDO
-      
-    ENDDO
+  if( MDCHH >= 1 )then
+    do K = 1,KC
+      do L = 2,LA
+        QSUBOUT(L,K) = 0.0
+        QSUBINN(L,K) = 0.0
+      enddo
+    enddo
 
-    DO K = 1,KC
-      DO NMD = 1,MDCHH
-        IF( LKSZ(L,K) )CYCLE
+    do K = 1,KC
+      do NMD = 1,MDCHH
+        if( LKSZ(L,K) ) CYCLE
         LMDCHHT = LMDCHH(NMD)
         LMDCHUT = LMDCHU(NMD)
         LMDCHVT = LMDCHV(NMD)
-        IF( MDCHTYP(NMD) == 1 )THEN
+        if( MDCHTYP(NMD) == 1 )then
           QUKTMP = QCHANU(NMD)*DZC(LMDCHUT,K)
           QVKTMP = 0.
-        ENDIF
-        IF( MDCHTYP(NMD) == 2 )THEN
+        endif
+        if( MDCHTYP(NMD) == 2 )then
           QVKTMP = QCHANV(NMD)*DZC(LMDCHVT,K)
           QUKTMP = 0.
-        ENDIF
-        IF( MDCHTYP(NMD) == 3 )THEN
+        endif
+        if( MDCHTYP(NMD) == 3 )then
           QUKTMP = QCHANU(NMD)*DZC(LMDCHUT,K)
           QVKTMP = QCHANV(NMD)*DZC(LMDCHVT,K)
-        ENDIF
+        endif
         QSUBOUT(LMDCHHT,K) = QSUBOUT(LMDCHHT,K) + MIN(QUKTMP,0.) + MIN(QVKTMP,0.)
         QSUBINN(LMDCHHT,K) = QSUBINN(LMDCHHT,K) + MAX(QUKTMP,0.) + MAX(QVKTMP,0.)
         QSUBOUT(LMDCHUT,K) = QSUBOUT(LMDCHUT,K) - MAX(QUKTMP,0.)
         QSUBINN(LMDCHUT,K) = QSUBINN(LMDCHUT,K) - MIN(QUKTMP,0.)
         QSUBOUT(LMDCHVT,K) = QSUBOUT(LMDCHVT,K) - MAX(QVKTMP,0.)
         QSUBINN(LMDCHVT,K) = QSUBINN(LMDCHVT,K) - MIN(QVKTMP,0.)
-      ENDDO
-    ENDDO
-  ENDIF
+      enddo
+    enddo
+  endif
 
   ! *** Initialize
   DTL1 = DTMAXX
-  IF( ITRNTMP > 0 )   DTL2 = DTMAXX
-  IF( DTSSDHDT > 0. ) DTL4 = DTMAXX
+  if( ITRNTMP > 0 )   DTL2 = DTMAXX
+  if( DTSSDHDT > 0. ) DTL4 = DTMAXX
   
   !$OMP PARALLEL DO DEFAULT(NONE)                                                               &
   !$OMP  SHARED(NDM, LDM, LA, LAWET, LWET, KC, ITRNTMP, LLWET, LKWET, LEC, LNC, IsGhost)        &
@@ -126,26 +123,26 @@
   !$OMP  PRIVATE(ND, L, K, LF, LL, LP, LE, LN, KM)                                              &
   !$OMP  PRIVATE(TMPUUU, DTTMP, TMPVVV, TMPVAL, TESTTEMP, TOP, QXPLUS, QYPLUS, QZPLUS)          &
   !$OMP  PRIVATE(QXMINS, QYMINS, QZMINS, QTOTAL, QSRC, BOT, THP1, THP2)
-  DO ND=1,NDM
+  do ND = 1,NDM
     LF = 2+(ND-1)*LDM
     LL = MIN(LF+LDM-1,LA)
 
     ! *** METHOD 1: COURANT–FRIEDRICHS–LEWY
-    DO LP = 1,LAWET
+    do LP = 1,LAWET
       L = LWET(LP)   
       TMPVAL = 1.E-16
       TMPUUU = ABS(UHE(L))*HUI(L)*DXIU(L)
       TMPVVV = ABS(VHE(L))*HVI(L)*DYIV(L)
       TMPVAL = TMPUUU + TMPVVV
-      IF( TMPVAL > 0.  ) DTL1(L)  = 1./TMPVAL
-    ENDDO
+      if( TMPVAL > 0.  ) DTL1(L)  = 1./TMPVAL
+    enddo
 
     ! *** METHOD 2: POSITIVITY OF ADVECTED MATERIAL, DTL2
-    IF( ITRNTMP >= 1 )THEN
-      DO K=1,KC
-        DO LP = 1,LLWET(K,ND)
+    if( ITRNTMP >= 1 )then
+      do K = 1,KC
+        do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)  
-          IF( IsGhost(L) ) CYCLE     ! *** Do not use ghost cells to set min DT
+          if( IsGhost(L) ) CYCLE     ! *** Do not use ghost cells to set min DT
           
           LE = LEC(L)
           LN = LNC(L)
@@ -174,108 +171,108 @@
           QSRC   = -MIN(QTOTAL,0.0)
           BOT = QXPLUS + QYPLUS + QZPLUS + QXMINS + QYMINS + QZMINS + QSRC
           
-          IF( BOT > 1.E-12 )THEN
+          if( BOT > 1.E-12 )then
             DTTMP = TOP/BOT
             DTL2(L) = MIN(DTL2(L),DTTMP)
-          ENDIF
-        ENDDO
-      ENDDO
-    ENDIF
+          endif
+        enddo
+      enddo
+    endif
 
     ! *** METHOD 3: IMPLICIT BOTTOM FRICTION AND ROTATIONAL ACCELERATION DAMPING
-    !DO L=LF,LL
-    !  IF( LACTIVE(L) )THEN
-    !    TMPVAL=SUB(L)+SUB(LEC(L))+SVB(L)+SVB(LNC(L))
-    !    IF( TMPVAL > 0.5 )THEN
-    !      LN=LNC(L)
-    !      TAUBC=QQ(L,0)/CTURB2
-    !      UCTR=0.5*(U(L,1)+U(LEC(L),1))
-    !      VCTR=0.5*(V(L,1)+V(LN,1))
-    !      UHMAG=HP(L)*SQRT(UCTR*UCTR+VCTR*VCTR)
-    !      IF( UHMAG > 0.0 )THEN
-    !        FRIFRE=TAUBC/UHMAG
-    !        FRIFRE2=FRIFRE*FRIFRE
-    !        ACACTMP=(CAC(L,KC)*HPI(L)*DXYIP(L))**2
-    !        IF( ACACTMP > FRIFRE2 )THEN
-    !          DTTMP=2.*FRIFRE/(ACACTMP-FRIFRE2)
-    !          DTL3(L)=MIN(DTL3(L),DTTMP)
-    !        ENDIF
-    !      ENDIF
-    !    ENDIF
-    !  ENDIF
+    !DO L = LF,LL
+    !  if( LACTIVE(L) )then
+    !    TMPVAL = SUB(L)+SUB(LEC(L))+SVB(L)+SVB(LNC(L))
+    !    if( TMPVAL > 0.5 )then
+    !      LN = LNC(L)
+    !      TAUBC = QQ(L,0)/CTURB2
+    !      UCTR = 0.5*(U(L,1)+U(LEC(L),1))
+    !      VCTR = 0.5*(V(L,1)+V(LN,1))
+    !      UHMAG = HP(L)*SQRT(UCTR*UCTR+VCTR*VCTR)
+    !      if( UHMAG > 0.0 )then
+    !        FRIFRE = TAUBC/UHMAG
+    !        FRIFRE2 = FRIFRE*FRIFRE
+    !        ACACTMP = (CAC(L,KC)*HPI(L)*DXYIP(L))**2
+    !        if( ACACTMP > FRIFRE2 )then
+    !          DTTMP = 2.*FRIFRE/(ACACTMP-FRIFRE2)
+    !          DTL3(L) = MIN(DTL3(L),DTTMP)
+    !        endif
+    !      endif
+    !    endif
+    !  endif
     !ENDDO
 
     ! ***  METHOD 4: LIMIT RATE OF DEPTH CHANGE
-    IF( DTSSDHDT > 0. )THEN
-      DO LP = 1,LLWET(KC,ND)
+    if( DTSSDHDT > 0. )then
+      do LP = 1,LLWET(KC,ND)
         L = LKWET(LP,KC,ND)  
-        IF( IsGhost(L) ) CYCLE     ! *** Do not use ghost cells to set min DT
+        if( IsGhost(L) ) CYCLE     ! *** Do not use ghost cells to set min DT
         
         THP1 = HP(L) 
-        IF( THP1 < HDRY/10.) THP1 = HDRY/10.
+        if( THP1 < HDRY/10.) THP1 = HDRY/10.
         THP2 = H1P(L) 
-        IF( THP2 < HDRY/10.) THP2 = HDRY/10.
+        if( THP2 < HDRY/10.) THP2 = HDRY/10.
         TESTTEMP = MAX(ABS(THP1-THP2),1.E-06)
         TMPVAL   = DTDYN*HP(L)/TESTTEMP
         DTL4(L)  = DTSSDHDT*TMPVAL
-      ENDDO
-    ENDIF
-  ENDDO   ! *** END OF DOMAIN
+      enddo
+    endif
+  enddo   ! *** END OF DOMAIN
   !$OMP END PARALLEL DO
 
   ! *** CHOOSE THE MINIMUM OF THE THREE METHODS
   MINTYPE = 0
 
-  L1LOC = MINLOC(DTL1,DIM=1)
+  L1LOC = MINLOC(DTL1,DIM = 1)
   DTL1MN = DTL1(L1LOC)
 
-  IF( ITRNTMP >= 1 )THEN
-    L2LOC = MINLOC(DTL2,DIM=1)
+  if( ITRNTMP >= 1 )then
+    L2LOC = MINLOC(DTL2,DIM = 1)
     DTL2MN = DTL2(L2LOC)
-  ENDIF
+  endif
 
   !DTL3MN = 2.*DTMAXX
-  !DO L=2,LA
-  !  IF( DTL3MN > DTL3(L) )THEN
+  !DO L = 2,LA
+  !  if( DTL3MN > DTL3(L) )then
   !    DTL3MN = DTL3(L)
   !    L3LOC = L
-  !  ENDIF
+  !  endif
   !ENDDO
 
   DTL4MN = 2.*DTMAXX
-  IF( DTSSDHDT > 0. )THEN
-    L4LOC = MINLOC(DTL4,DIM=1)
+  if( DTSSDHDT > 0. )then
+    L4LOC = MINLOC(DTL4,DIM = 1)
     DTL4MN = DTL4(L4LOC)
-  ENDIF
+  endif
 
   ! *** FIND MINIMUM & APPLY A SAFETY FACTOR
   DTL1MN = DTL1MN*DTSSFAC
   DTTMP  = 2.*DTMAXX               ! *** DTTMP - MINIMUM TIME STEP WITHOUT SAFETY FACTOR
-  IF( DTTMP > DTL1MN )THEN
+  if( DTTMP > DTL1MN )then
     DTTMP  = DTL1MN
     DTCOMP = 1./DTSSFAC
     LLOC   = L1LOC
     MINTYPE = 1
-  ENDIF
+  endif
 
-  IF( ITRNTMP >= 1 )THEN
+  if( ITRNTMP >= 1 )then
     DTL2MN = DTL2MN*0.5             ! *** FIXED SAFETY FACTOR FOR ADVECTION OF 0.5
-    IF( DTTMP > DTL2MN )THEN
+    if( DTTMP > DTL2MN )then
       DTTMP  = DTL2MN
       DTCOMP = 2.
       LLOC   = L2LOC
       MINTYPE = 2
-    ENDIF
-  ENDIF
+    endif
+  endif
   
-  IF( DTSSDHDT > 0. )THEN
-    IF( DTTMP > DTL4MN )THEN
+  if( DTSSDHDT > 0. )then
+    if( DTTMP > DTL4MN )then
       DTTMP  = DTL4MN
       DTCOMP = 1.0
       LLOC   = L4LOC
       MINTYPE = 4
-    ENDIF
-  ENDIF
+    endif
+  endif
   
   LLOCOLD = LMINSTEP              ! *** Global Old LMINSTEP
 
@@ -283,78 +280,76 @@
   TMPVAL = MIN(DTTMP,DTMAX)
   LL = MAP2GLOBAL(LLOC).LG        ! *** Global LMINSTEP for current process
 
-  CALL DSI_All_Reduce(TMPVAL, LL, DTTMP, LMINSTEP, MPI_MIN, TTDS, 1, TWAIT)
+  call DSI_All_Reduce(TMPVAL, LL, DTTMP, LMINSTEP, MPI_MIN, TTDS, 1, TWAIT)
   DSITIMING(11) = DSITIMING(11) + TTDS
 
   DTCOMP = DTTMP*DTCOMP           ! *** Minimum delta T without any safety factors
-  IF( DTCOMP < DTMIN )THEN
-    WRITE(6,800) TIMEDAY, DTTMP, DTMIN, Map2Global(LLOC).IG, Map2Global(LLOC).JG, HP(LLOC)
-    WRITE(6,801) Map2Global(L1LOC).IG, Map2Global(L1LOC).JG, DTL1MN, HP(L1LOC)
-    WRITE(6,802) Map2Global(L2LOC).IG, Map2Global(L2LOC).JG, DTL2MN, HP(L2LOC)
-    IF( DTSSDHDT > 0. )THEN
-      WRITE(6,804) Map2Global(L4LOC).IG, Map2Global(L4LOC).JG, DTL4MN
-    ENDIF
+  if( DTCOMP < DTMIN )then
+    write(6,800) TIMEDAY, DTTMP, DTMIN, Map2Global(LLOC).IG, Map2Global(LLOC).JG, HP(LLOC)
+    write(6,801) Map2Global(L1LOC).IG, Map2Global(L1LOC).JG, DTL1MN, HP(L1LOC)
+    write(6,802) Map2Global(L2LOC).IG, Map2Global(L2LOC).JG, DTL2MN, HP(L2LOC)
+    if( DTSSDHDT > 0. )then
+      write(6,804) Map2Global(L4LOC).IG, Map2Global(L4LOC).JG, DTL4MN
+    endif
 
-    if( process_id == master_id )THEN
-      OPEN(8,FILE=OUTDIR//'EFDCLOG.OUT',POSITION='APPEND')
-      WRITE(8,800) TIMEDAY, DTTMP, DTMIN, Map2Global(LLOC).IG, Map2Global(LLOC).JG, HP(LLOC)
-      WRITE(8,801) Map2Global(L1LOC).IG, Map2Global(L1LOC).JG, DTL1MN, HP(L1LOC)
-      WRITE(8,802) Map2Global(L2LOC).IG, Map2Global(L2LOC).JG, DTL2MN, HP(L2LOC)
-      !WRITE(8,803)IL(L3LOC),JL(L3LOC),DTL3MN,HP(L3LOC)
-      !WRITE(6,803)IL(L3LOC),JL(L3LOC),DTL3MN,HP(L3LOC)
-      IF( DTSSDHDT > 0. )THEN
-        WRITE(8,804) Map2Global(L4LOC).IG, Map2Global(L4LOC).JG, DTL4MN
-      ENDIF
-      CLOSE(8)
-    End if !***End calculation on master process
+    open(mpi_log_unit,FILE = OUTDIR//mpi_log_file,POSITION = 'APPEND')
+    write(mpi_log_unit,800) TIMEDAY, DTTMP, DTMIN, Map2Global(LLOC).IG, Map2Global(LLOC).JG, HP(LLOC)
+    write(mpi_log_unit,801) Map2Global(L1LOC).IG, Map2Global(L1LOC).JG, DTL1MN, HP(L1LOC)
+    write(mpi_log_unit,802) Map2Global(L2LOC).IG, Map2Global(L2LOC).JG, DTL2MN, HP(L2LOC)
+    !WRITE(mpi_log_unit,803)IL(L3LOC),JL(L3LOC),DTL3MN,HP(L3LOC)
+    !WRITE(6,803)IL(L3LOC),JL(L3LOC),DTL3MN,HP(L3LOC)
+    if( DTSSDHDT > 0. )then
+      write(mpi_log_unit,804) Map2Global(L4LOC).IG, Map2Global(L4LOC).JG, DTL4MN
+    endif
+    close(mpi_log_unit)
     DTTMP = DTMIN
 
-  ELSEIF( DTTMP < DTMIN )THEN
+  elseif( DTTMP < DTMIN )then
     DTWARN = DTTMP
     DTTMP  = DTMIN
-  ELSE
+  else
     TMPVAL = DTTMP/DTMIN
     ITMPR = NINT(TMPVAL)
     RTMPR = FLOAT(ITMPR)
-    IF( RTMPR < TMPVAL )THEN
+    if( RTMPR < TMPVAL )then
       DTTMP = RTMPR*DTMIN
-    ELSE
+    else
       DTTMP = (RTMPR-1.)*DTMIN
-    ENDIF
-  ENDIF
+    endif
+  endif
 
   ! *** FORCE TO MINIMUM TIME STEP ON STARTUP
-  IF( NITER < 2 ) DTTMP = DTMIN
+  if( NITER < 2 ) DTTMP = DTMIN
 
   ! *** RESTRICT INCREASE IN TIME STEP TO DTMIN
   !DTDYNP = DTHISTORY(10) + DTMIN
   DTDYNP = DTDYN + DTMIN               ! *** AT THIS POINT DTDYN IS THE PREVIOUS ITERATIONS TIME STEP
-  IF( DTTMP > DTDYNP )THEN
+  if( DTTMP > DTDYNP )then
     NUP = NUP + 1
-    IF( NUP >= NUPSTEP )THEN
+    if( NUP >= NUPSTEP )then
       DTTMP = DTDYNP
       NUP = 0
-    ELSE
+    else
       DTTMP = DTDYN
-    ENDIF
-  ELSEIF( DTTMP < DTDYN )THEN
-    IF( (NUPSTEP >= 25 .AND. TIMEDAY > TBEGIN+1.) .OR. 2.*DTTMP < DTDYN )THEN
-      if( process_id == master_id )THEN
+    endif
+  elseif( DTTMP < DTDYN )then
+    if( (NUPSTEP >= 25 .and. TIMEDAY > TBEGIN+1.) .or. 1.2*DTTMP < DTDYN )then
+      if( process_id == master_id )then
         ! *** REPORT WHEN THERE IS A DECREASE
-        IF( 2.*DTTMP < DTDYN )THEN
-          WRITE(6,'(A,I10,F14.5,2(A,F10.4,I7))') 'DTDYN REDUCED',NITER,TIMEDAY,'     [DT,L]   OLD: ',DTDYN,LLOCOLD,'     NEW: ',DTTMP,LMINSTEP
-        ENDIF
+        if( 2.*DTTMP < DTDYN )then
+          write(6,'(A,I10,F14.5,2(A,F10.4,I7))') 'DTDYN REDUCED',NITER,TIMEDAY,'     [DT,L]   OLD: ',DTDYN,LLOCOLD,'     NEW: ',DTTMP,LMINSTEP
+        endif
         
-        OPEN(9,FILE=OUTDIR//'TIME.LOG',POSITION='APPEND')
-        WRITE(9,'(A,I10,F14.5,2(A,F10.4,I7,F8.3))') 'DYNAMIC STEP DOWN',NITER,TIMEDAY,'     [DT,L,HP]   OLD: ',DTDYN,LLOCOLD,-99.99,'     NEW: ',DTTMP,LMINSTEP,-99.99
-        CLOSE(9)
-      end if
-    ENDIF
+        open(9,FILE = OUTDIR//'TIME.LOG',POSITION = 'APPEND')
+        write(9,'(A,I10,F14.5,2(A,F10.4,I7,F8.3))') 'DYNAMIC STEP DOWN',NITER,TIMEDAY,'     [DT,L,HP]   OLD: ',DTDYN,LLOCOLD,-99.99,'     NEW: ',DTTMP,LMINSTEP,-99.99
+        close(9)
+      endif
+    endif
 
     NUP = 0
-  ELSE
+  else
     DTTMP = DTDYN
-  ENDIF
+  endif
   DTDYN = MIN(DTTMP,DTMAX)
 
   ! *** SET INCREMENTAL INCREASE IN OUTPUT COUNTER
@@ -373,11 +368,11 @@
 880 FORMAT(3I5,8E13.4)
 8899 FORMAT(' DT3 ERROR ',2I5,6E13.5)
 
-  !DO K=10,2,-1
+  !DO K = 10,2,-1
   !  DTHISTORY(K) = DTHISTORY(K-1)
   !ENDDO
   !DTHISTORY(1) = DTDYN
      
   ! *** *******************************************************************C
-  RETURN
+  return
 END

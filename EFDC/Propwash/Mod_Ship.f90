@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 !---------------------------------------------------------------------------!
@@ -16,7 +16,7 @@
 !---------------------------------------------------------------------------!
 Module Mod_Ship
 
-  Use GLOBAL, only : rkd, rk4, ik4
+  use GLOBAL, only : rkd, rk4, ik4
 
   implicit none
     
@@ -27,34 +27,34 @@ Module Mod_Ship
   ! *** 
   type :: ship_type    
     integer                :: mmsi               = 0        !< Identifier of the ship
-    character(len=100)     :: name               = ' '      !< Name of the ship
-    Integer (kind = ik4)   :: power_source       = 0        !< Type of power source to use: 0 - Horsepower, 1 - Propeller RPM
+    character(len = 100)     :: name               = ' '      !< Name of the ship
+    integer (kind = ik4)   :: power_source       = 0        !< Type of power source to use: 0 - Horsepower, 1 - Propeller RPM
     real    (kind = rkd)   :: length             = 0.0      !< Length of the ship  [meters]
     real    (kind = rkd)   :: beam               = 0.0      !< Max width of the ship  [meters]
     real    (kind = rkd)   :: max_draft          = 0.0      !< Max draught of the ship [meters]
     real    (kind = rkd)   :: min_draft          = 0.0      !< Min draught of the ship [meters]
     real    (kind = rkd)   :: max_power          = 0.0      !< Max power of the ship [horsepower]
-    Real    (kind = rkd)   :: max_rps            = 0.0      !< Max revolutions per second
+    real    (kind = rkd)   :: max_rps            = 0.0      !< Max revolutions per second
     real    (kind = rkd)   :: ais_to_stern       = 0.0      !< Distance from AIS antenna to stern of ship [meters]
-    Real    (kind = rkd)   :: dist_between_props = 0.0      !< Distance between propellers [meters]
-    Real    (kind = rkd)   :: dist_from_stern    = 0.0      !< Horizontal distance from the stern to the propeller(s) [meters]
+    real    (kind = rkd)   :: dist_between_props = 0.0      !< Distance between propellers [meters]
+    real    (kind = rkd)   :: dist_from_stern    = 0.0      !< Horizontal distance from the stern to the propeller(s) [meters]
     real    (kind = rkd)   :: prop_offset        = 0.0      !< Distance of propeller shaft from draft [meters]
                                                             
-    Integer (kind = ik4)   :: num_props          = 0        !< Number of propellers   
-    Integer (kind = ik4)   :: num_blades         = 0        !< z   : Number of blades
-    Integer (kind = ik4)   :: ducted             = 0        !< Flag for propeller nozzles, 0-None, 1-Ducted
-    Real    (kind = rkd)   :: thrust_coeff       = 0.0      !< Ct  : Propeller Thrust Coefficient
-    Real    (kind = rkd)   :: prop_diam          = 0.0      !< D   : Propeller diameter [meters]
-    Real    (kind = rkd)   :: prop_hub_diam      = 0.0      !< Dh  : Propeller hub diameter [meters]
-    Real    (kind = rkd)   :: blade_area_ratio   = 0.0      !< BAR : Blade area ratio
-    Real    (kind = rkd)   :: pitch_ratio        = 0.0      !< PD  : Blade pitch ratio
+    integer (kind = ik4)   :: num_props          = 0        !< Number of propellers   
+    integer (kind = ik4)   :: num_blades         = 0        !< z   : Number of blades
+    integer (kind = ik4)   :: ducted             = 0        !< Flag for propeller nozzles, 0-None, 1-Ducted
+    real    (kind = rkd)   :: thrust_coeff       = 0.0      !< Ct  : Propeller Thrust Coefficient
+    real    (kind = rkd)   :: prop_diam          = 0.0      !< D   : Propeller diameter [meters]
+    real    (kind = rkd)   :: prop_hub_diam      = 0.0      !< Dh  : Propeller hub diameter [meters]
+    real    (kind = rkd)   :: blade_area_ratio   = 0.0      !< BAR : Blade area ratio
+    real    (kind = rkd)   :: pitch_ratio        = 0.0      !< PD  : Blade pitch ratio
 
     real    (kind = rkd)   :: freq_out           = 0.0      !< Subgrid mesh output frequncy [minutes]
     
-    Integer (kind = ik4), allocatable :: mesh_count(:)       !< Count of number of subgrid cells are in a model cell
+    integer (kind = ik4), allocatable :: mesh_count(:)       !< Count of number of subgrid cells are in a model cell
 
-    Integer (kind = ik4)   :: num_fixed_cells     = 0        !< Fix number and cells for test cases  
-    Integer (kind = ik4), allocatable :: fixed_cells(:)      !< Cell ID for fixed cells
+    integer (kind = ik4)   :: num_fixed_cells     = 0        !< Fix number and cells for test cases  
+    integer (kind = ik4), allocatable :: fixed_cells(:)      !< Cell ID for fixed cells
     real    (kind = RK4), allocatable :: fixed_frac(:)       !< Fraction of energy per cell
 
   contains 

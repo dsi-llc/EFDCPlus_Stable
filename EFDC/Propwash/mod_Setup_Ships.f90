@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 module Mod_Setup_Ships
@@ -16,13 +16,13 @@ contains
 !---------------------------------------------------------------------------!
 subroutine Setup_Ships(test_on)
 
-  Use GLOBAL, only : timeday
-  Use Variables_Propwash
-  Use Variables_Ship
+  use GLOBAL, only : timeday
+  use Variables_Propwash
+  use Variables_Ship
 
-  Use Mod_Active_Ship
-  Use Mod_All_Tracks
-  Use Mod_Read_Propwash
+  use Mod_Active_Ship
+  use Mod_All_Tracks
+  use Mod_Read_Propwash
 
   implicit none
 
@@ -31,6 +31,7 @@ subroutine Setup_Ships(test_on)
 
   ! *** Local variables
   integer :: i, j, ip, m
+  integer :: L, NS, NT
   integer :: total_tracks
   type(position_cell) :: start_position
   type(position_cell) :: new_position
@@ -39,7 +40,58 @@ subroutine Setup_Ships(test_on)
   real(rkd)           :: diam, dtime, dxx, dyy, distance, sternx, sterny
 
   allocate(all_ships(total_ships))
+    
+  ! *** Build the lookup tables for fast class mass erosion
+  IFASTCLASS = 0
+  NSEDS2 = NSEDS
+  if( fraction_fast > 0 .and. fast_multiplier > 0. )then
+    do NS = 1,NSEDS
+      if( WSEDO(NS) > 0.0 .and. SEDDIA(NS) < 65./1e6 )then   ! *** "Fast" settling classes due to mass erosion of cohesives.  Ignore washload.
+        NSEDS2 = NSEDS2 + 1
+        IWC2BED(NSEDS2) = NS                         ! *** Map WC class to Bed class
+        IBED2WC(NS) = NSEDS2                         ! *** Map bed class to WC class
+        WSEDO(NSEDS2) = WSEDO(NS)*fast_multiplier
+        if( LSEDZLJ ) DWS(NSEDS2) = DWS(NS)*fast_multiplier
+      else
+        IWC2BED(NS) = NS                            ! *** Map WC class to Bed class
+        IBED2WC(NS) = NS                            ! *** Map bed class to WC class
+      endif
+    enddo
+      
+    ! *** Trim the active constituent list from unneeded fast classes
+    NACTIVEWC = NACTIVEWC - (NSED2 - NSEDS2 - NSND)
+      
+    ! *** Chemical Fate and Transport Parameters
+    if( ISTRAN(5) > 0 .and. NTOX > 0 )then
+      ! *** Set the new fast class CFT variables based on the source sediment class
+      ! *** ITXPARW(NS,NT),TOXPARW(NS,NT),CONPARW(NS,NT),ITXPARB(NS,NT),TOXPARB(NS,NT),CONPARB(NS,NT), STFPOCB, STFPOCW
+      do NT = 1,NTOX
+        do NS = NSEDS+1,NSEDS2
+          ITXPARW(NS,NT) = ITXPARW(IWC2BED(NS),NT)
+          CONPARW(NS,NT) = CONPARW(IWC2BED(NS),NT)
+          TOXPARW(2:LA,NS,NT) = TOXPARW(2:LA,IWC2BED(NS),NT)
+          TOXPARB(2:LA,NS,NT) = TOXPARB(2:LA,IWC2BED(NS),NT)
+            
+          ! *** SPATIALLY VARIABLE parameterS
+          do L = 2,LA
+            STFPOCW(L,:,NS) = STFPOCW(L,:,IWC2BED(NS))
+            STFPOCB(L,:,NS) = STFPOCB(L,:,IWC2BED(NS))
+          enddo
+        enddo
+          
+        ! *** Update each solids class for each toxic: NSP2
+        NSP2(NT) = NSEDS2                              ! *** Kd  Approach ISTOC(NT) = 0
+        if( ISTOC(NT) == 1 ) NSP2(NT) = NSP2(NT) + 2  ! *** DOC and POC (POC non-sediment related)  (3 Phase)
+        if( ISTOC(NT) == 2 ) NSP2(NT) = NSP2(NT) + 1  ! *** DOC and POC fractionally distributed    (3 Phase)
+        ! *** ISTOC(NT) = 0 and ISTOC(NT) = 3                   POC fOC*SED/SND BASED ONLY              (2 Phase)
+      enddo
+        
+    endif
+      
+  endif
+  NSED2 = NSEDS2 - NSND           ! *** Mass eroded classes are added at the end of the NSED + NSND (original) or NSEDS (SEDZLJ)
 
+    
   do i = 1, total_ships
     if( all_read_tracks(i).num_tracks < 1 ) cycle
     
@@ -55,7 +107,7 @@ subroutine Setup_Ships(test_on)
       start_position = position_cell (all_read_tracks(i).all_ship_tracks(1).track_pos(1).x_pos, &
                                       all_read_tracks(i).all_ship_tracks(1).track_pos(1).y_pos, &
                                       all_read_tracks(i).all_ship_tracks(1).track_pos(1).time )
-    end if
+    endif
 
     ! *** get the propeller object from the list of all ships
     inp_ship = all_new_ships(i)
@@ -172,13 +224,13 @@ subroutine Setup_Ships(test_on)
     new_ship.prop_area   = PI*(0.5*diam)**2                                                          ! *** Single propeller area of effective diameter
     new_ship.prop_area   = new_ship.prop_area * new_ship.ship.num_props                              ! *** Total propeller area
     
-    Allocate(new_ship.mesh_count(0:LCM))
+    allocate(new_ship.mesh_count(0:LCM))
     new_ship.mesh_count = 0
     
     ! *** Add to array of all ships
     all_ships(i) = new_ship
 
-  end do
+  enddo
 
 
   ! *** No longer need data containing all ship tracks or all prop info

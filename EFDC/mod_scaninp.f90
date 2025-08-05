@@ -3,319 +3,319 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 MODULE SCANINPMOD
   
-  USE GLOBAL
-  USE INFOMOD, ONLY:SKIPCOM,READSTR
-  Use Allocate_Initialize
-  Use Variables_WQ
-  USE HYDSTRUCMOD
-  Use Variables_Propwash
+  use GLOBAL
+  use INFOMOD, only:SKIPCOM,READSTR
+  use Allocate_Initialize
+  use Variables_WQ
+  use HYDSTRUCMOD
+  use Variables_Propwash
 
-  Use Variables_MPI
-  Use Variables_MPI_Write_Out
-  Use Broadcast_Routines
+  use Variables_MPI
+  use Variables_MPI_Write_Out
+  use Broadcast_Routines
   
-  IMPLICIT NONE
+  implicit none
 
-  INTEGER :: NSER(8)
-  CHARACTER(*) :: STR*200 ,CFILE*15
-  CHARACTER( * ), PRIVATE, PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
-  CHARACTER( * ), PRIVATE, PARAMETER :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  integer :: NSER(8)
+  character(*) :: STR*200 ,CFILE*15
+  character( * ), PRIVATE, parameter :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
+  character( * ), PRIVATE, parameter :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-  CONTAINS
+  contains
 
-SUBROUTINE SCANEFDC(NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
+SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
 
-  INTEGER, INTENT(OUT) :: NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7
+  integer, intent(OUT) :: NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7
 
   !INTEGER :: K, NT, I, M, M1, NN
   !INTEGER :: NDUM, ISTOCNT, ISO, ITIDASM, NPFOR, NDATAPTS, ISTYP
-  INTEGER :: K, NT, I, M, M1, NN, ITYPE
-  INTEGER :: NDUM, ISTOCNT, ISO, ITIDASM, NPFOR, NDATAPTS
-  INTEGER :: ITMPPMX, ITSSS, NS, IS, IITMP, IJTMP, NPMXZ, NPMXPTS
-  INTEGER :: ISBEDTEMI  ! *** DEPRECATED VARIABLE
-  REAL    :: DIFTOXNT, DIFTOXSNT
-  REAL    :: PDIFTOXNT, DPDIFTOXNT, R, TC1, TAV1
-  REAL    :: R1TMP, R2TMP, R3TMP, R4TMP, R5TMP, PMIXSF
+  integer :: K, NT, I, M, M1, NN, ITYPE
+  integer :: LDUM, NDUM, ISTOCNT, ISO, ITIDASM, NPFOR, NDATAPTS
+  integer :: ITMPPMX, ITSSS, NS, IS, IITMP, IJTMP, NPMXZ, NPMXPTS
+  integer :: ISBEDTEMI  ! *** DEPRECATED VARIABLE
+  real    :: DIFTOXNT, DIFTOXSNT
+  real    :: PDIFTOXNT, DPDIFTOXNT, R, TC1, TAV1, TMP
+  real    :: R1TMP, R2TMP, R3TMP, R4TMP, R5TMP, PMIXSF
 
   ! *** ********************************************
-  if( process_id == master_id )THEN
-    CALL OPENFILE('EFDC.INP')
+  if( process_id == master_id )then
+    call OPENFILE('EFDC.INP')
 
-    CALL SEEK('C1')
-    READ(1,'(A100)') RUNTITLE
+    call SEEK('C1',1)
+    read(1,'(A100)') RUNTITLE
 
-    CALL SEEK('C1A')
-    READ(1,*,ERR=10) IS2TIM,IGRIDH,IGRIDV,KMINV,SGZHPDELTA
-  end if
+    call SEEK('C1A',1)
+    read(1,*,err = 10) IS2TIM,IGRIDH,IGRIDV,KMINV,SGZHPDELTA
+  endif
 
-  Call Broadcast_Scalar(IS2TIM,     master_id)
-  Call Broadcast_Scalar(IGRIDH,     master_id)
-  Call Broadcast_Scalar(IGRIDV,     master_id)
-  Call Broadcast_Scalar(KMINV,      master_id)
-  Call Broadcast_Scalar(SGZHPDELTA, master_id)
+  call Broadcast_Scalar(IS2TIM,     master_id)
+  call Broadcast_Scalar(IGRIDH,     master_id)
+  call Broadcast_Scalar(IGRIDV,     master_id)
+  call Broadcast_Scalar(KMINV,      master_id)
+  call Broadcast_Scalar(SGZHPDELTA, master_id)
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C2')
-    READ(1,*,ERR=10) ISRESTI,ISRESTO,ISRESTR,ISGREGOR,ISLOG,ISDIVEX,ISNEGH,ISMMC,ISBAL,ICONTINUE,ISHOW
-  end if
+  if( process_id == master_id )then
+    call SEEK('C2',1)
+    read(1,*,err = 10) ISRESTI, ISRESTO, ISRESTR, ISGREGOR, ISLOG, ISDIVEX, ISNEGH, ISMMC, ldum, ICONTINUE, ISHOW
+  endif
 
-  Call Broadcast_Scalar(ISRESTI,  master_id)
-  Call Broadcast_Scalar(ISRESTO,  master_id)
-  Call Broadcast_Scalar(ISRESTR,  master_id)
-  Call Broadcast_Scalar(ISGREGOR, master_id)
-  Call Broadcast_Scalar(ISLOG,    master_id)
-  Call Broadcast_Scalar(ISDIVEX,  master_id)
-  Call Broadcast_Scalar(ISNEGH,   master_id)
-  Call Broadcast_Scalar(ISMMC,    master_id)
-  Call Broadcast_Scalar(ISBAL,    master_id)
-  Call Broadcast_Scalar(ICONTINUE,master_id)
-  Call Broadcast_Scalar(ISHOW, master_id)
+  call Broadcast_Scalar(ISRESTI,  master_id)
+  call Broadcast_Scalar(ISRESTO,  master_id)
+  call Broadcast_Scalar(ISRESTR,  master_id)
+  call Broadcast_Scalar(ISGREGOR, master_id)
+  call Broadcast_Scalar(ISLOG,    master_id)
+  call Broadcast_Scalar(ISDIVEX,  master_id)
+  call Broadcast_Scalar(ISNEGH,   master_id)
+  call Broadcast_Scalar(ISMMC,    master_id)
+  call Broadcast_Scalar(ICONTINUE,master_id)
+  call Broadcast_Scalar(ISHOW, master_id)
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C4')
-    READ(1,*,ERR=10) ISLTMT,ISSSMMT,RESSTEP
-  end if
+  if( process_id == master_id )then
+    call SEEK('C4',1)
+    read(1,*,err = 10) ISLTMT,ISSSMMT,RESSTEP
+  endif
 
-  Call Broadcast_Scalar(ISLTMT, master_id)
-  Call Broadcast_Scalar(ISSSMMT,master_id)
-  Call Broadcast_Scalar(RESSTEP,master_id)
+  call Broadcast_Scalar(ISLTMT, master_id)
+  call Broadcast_Scalar(ISSSMMT,master_id)
+  call Broadcast_Scalar(RESSTEP,master_id)
 
-  IF( ISLTMT > 0 )THEN
-    CALL STOPP('ISLTMT LONG TERM SIMULATION DISABLED!')
-  ENDIF
+  if( ISLTMT > 0 )then
+    call STOPP('ISLTMT LONG TERM SIMULATION DISABLED!')
+  endif
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C5')
-    READ(1,*,ERR=10) ISCDMA,ISHDMF,ISDISP,ISWASP,ISDRY,ICALTB,ISRLID,ISVEG,ISVEGL,ISITB,IHMDSUB,IINTPG
-  end if
+  if( process_id == master_id )then
+    call SEEK('C5',1)
+    read(1,*,err = 10) ISCDMA, ISHDMF, ldum, ISWASP, ISDRY, ICALTB, ISRLID, ISVEG, ISVEGL, ISITB, IHMDSUB, IINTPG
+  endif
 
-  Call Broadcast_Scalar(ISCDMA,  master_id)
-  Call Broadcast_Scalar(ISHDMF,  master_id)
-  Call Broadcast_Scalar(ISDISP,  master_id)
-  Call Broadcast_Scalar(ISWASP,  master_id)
-  Call Broadcast_Scalar(ISDRY,   master_id)
-  Call Broadcast_Scalar(ICALTB,  master_id)
-  Call Broadcast_Scalar(ISRLID,  master_id)
-  Call Broadcast_Scalar(ISVEG,   master_id)
-  Call Broadcast_Scalar(ISVEGL,  master_id)
-  Call Broadcast_Scalar(ISITB,   master_id)
-  Call Broadcast_Scalar(IHMDSUB, master_id)
-  Call Broadcast_Scalar(IINTPG,  master_id)
+  call Broadcast_Scalar(ISCDMA,  master_id)
+  call Broadcast_Scalar(ISHDMF,  master_id)
+  call Broadcast_Scalar(ISWASP,  master_id)
+  call Broadcast_Scalar(ISDRY,   master_id)
+  call Broadcast_Scalar(ICALTB,  master_id)
+  call Broadcast_Scalar(ISRLID,  master_id)
+  call Broadcast_Scalar(ISVEG,   master_id)
+  call Broadcast_Scalar(ISVEGL,  master_id)
+  call Broadcast_Scalar(ISITB,   master_id)
+  call Broadcast_Scalar(IHMDSUB, master_id)
+  call Broadcast_Scalar(IINTPG,  master_id)
 
-  IF( ISCDMA == 10 )THEN
-    CALL STOPP('EFDC 1D CHANNEL MODE IS DISABLED IN THIS VERSION OF EFDC')
-  ENDIF
-  IF( ISCDMA > 2 )THEN
-    CALL STOPP('EXPERIMENTAL MOMENTUM OPTIONs ARE ARE DISABLED IN THIS VERSION OF EFDC')
-  ENDIF
+  if( ISCDMA == 10 )then
+    call STOPP('EFDC 1D CHANNEL MODE IS DISABLED IN THIS VERSION OF EFDC')
+  endif
+  if( ISCDMA > 2 )then
+    call STOPP('EXPERIMENTAL MOMENTUM OPTIONs ARE ARE DISABLED IN THIS VERSION OF EFDC')
+  endif
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C6')
-    DO NN=0,8
-      READ(1,*,ERR=10) ISTRAN(NN),ISTOPT(NN),ISCDCA(NN),ISADAC(NN),ISFCT(NN),ISPLIT(NN),ISADAH(NN),ISADAV(NN),ISCI(NN),ISCO(NN)
-    ENDDO
-  end if
+  if( process_id == master_id )then
+    call SEEK('C6',1)
+    do NN = 0,8
+      read(1,*,err = 10) ISTRAN(NN), ISTOPT(NN), ldum, ISADAC(NN), ISFCT(NN), ldum, ldum, ldum, ISCI(NN), ISCO(NN)
+    enddo
+  endif
 
-  Call Broadcast_Array(ISTRAN, master_id)
-  Call Broadcast_Array(ISTOPT, master_id)
-  Call Broadcast_Array(ISCDCA, master_id)
-  Call Broadcast_Array(ISADAC, master_id)
-  Call Broadcast_Array(ISFCT , master_id)
-  Call Broadcast_Array(ISPLIT, master_id)
-  Call Broadcast_Array(ISADAH, master_id)
-  Call Broadcast_Array(ISADAV, master_id)
-  Call Broadcast_Array(ISCI  , master_id)
-  Call Broadcast_Array(ISCO  , master_id)
+  call Broadcast_Array(ISTRAN, master_id)
+  call Broadcast_Array(ISTOPT, master_id)
+  call Broadcast_Array(ISADAC, master_id)
+  call Broadcast_Array(ISFCT , master_id)
+  call Broadcast_Array(ISCI  , master_id)
+  call Broadcast_Array(ISCO  , master_id)
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C7')
-    READ(1,*,ERR=10) NTC,NTSPTC,NLTC,NTTC,NTCPP,NTSTBC,NTCNB,NTCVB,NTSMMT,NFLTMT,NDRYSTP
-  end if
+  if( process_id == master_id )then
+    call SEEK('C7',1)
+    read(1,*,err = 10) NTC, NTSPTC, NLTC, NTTC, ldum, NTSTBC, ldum, NTCVB, NTSMMT, ldum, NDRYSTP
+  endif
 
-  Call Broadcast_Scalar(NTC,     master_id)
-  Call Broadcast_Scalar(NTSPTC,  master_id)
-  Call Broadcast_Scalar(NLTC,    master_id)
-  Call Broadcast_Scalar(NTTC,    master_id)
-  Call Broadcast_Scalar(NTCPP,   master_id)
-  Call Broadcast_Scalar(NTSTBC,  master_id)
-  Call Broadcast_Scalar(NTCNB,   master_id)
-  Call Broadcast_Scalar(NTCVB,   master_id)
-  Call Broadcast_Scalar(NTSMMT,  master_id)
-  Call Broadcast_Scalar(NFLTMT,  master_id)
-  Call Broadcast_Scalar(NDRYSTP, master_id)
+  call Broadcast_Scalar(NTC,     master_id)
+  call Broadcast_Scalar(NTSPTC,  master_id)
+  call Broadcast_Scalar(NLTC,    master_id)
+  call Broadcast_Scalar(NTTC,    master_id)
+  call Broadcast_Scalar(NTSTBC,  master_id)
+  call Broadcast_Scalar(NTCVB,   master_id)
+  call Broadcast_Scalar(NTSMMT,  master_id)
+  call Broadcast_Scalar(NDRYSTP, master_id)
 
-  NDDAM=NTC
+  if( process_id == master_id )then
+    call SEEK('C9',1)
+    read(1,*,err = 10,end = 30) IC, JC, LC, LVC, ldum, NDM, LDM, ISMASK, NBLOCKED, ISCONNECT, ldum, ldum, tmp, tmp
+  endif
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C9')
-    READ(1,*,ERR=10,END=30)IC,JC,LC,LVC,ISCLO,NDM,LDM,ISMASK,NBLOCKED,ISCONNECT,NSHMAX,NSBMAX,WSMH,WSMB
-  end if
-
-  Call Broadcast_Scalar(IC,       master_id)
-  Call Broadcast_Scalar(JC,       master_id)
-  Call Broadcast_Scalar(LC,       master_id)
-  Call Broadcast_Scalar(LVC,      master_id)
-  Call Broadcast_Scalar(ISCLO,    master_id)
-  Call Broadcast_Scalar(NDM,      master_id)
-  Call Broadcast_Scalar(LDM,      master_id)
-  Call Broadcast_Scalar(ISMASK,   master_id)
-  Call Broadcast_Scalar(NBLOCKED, master_id)
-  Call Broadcast_Scalar(ISCONNECT,master_id)
-  Call Broadcast_Scalar(NSHMAX, master_id)
-  Call Broadcast_Scalar(NSBMAX, master_id)
-  Call Broadcast_Scalar(WSMH,   master_id)
-  Call Broadcast_Scalar(WSMB,   master_id)
+  call Broadcast_Scalar(IC,       master_id)
+  call Broadcast_Scalar(JC,       master_id)
+  call Broadcast_Scalar(LC,       master_id)
+  call Broadcast_Scalar(LVC,      master_id)
+  call Broadcast_Scalar(NDM,      master_id)
+  call Broadcast_Scalar(LDM,      master_id)
+  call Broadcast_Scalar(ISMASK,   master_id)
+  call Broadcast_Scalar(NBLOCKED, master_id)
+  call Broadcast_Scalar(ISCONNECT,master_id)
 
   ! *** TO ENSURE CONSISTENCY OF DECLARATIONS BETWEEN SUB-DOMAINS
   ISBLOCKED = 0
-  IF( NBLOCKED > 0 ) ISBLOCKED = 1
+  if( NBLOCKED > 0 ) ISBLOCKED = 1
   
-  IF( IC >= 3 )THEN
+  if( IC >= 3 )then
     ICM = IC + 1
     ICM_Global = ICM
-  ELSE
-    CALL STOPP('IC MUST BE AT LEAST 3')
-  ENDIF
-  IF( JC >= 3 )THEN
+  else
+    call STOPP('IC MUST BE AT LEAST 3')
+  endif
+  if( JC >= 3 )then
     JCM = JC + 1
     JCM_Global = JCM
-  ELSE
-    CALL STOPP('IJ MUST BE AT LEAST 3')
-  ENDIF
-  IF( LC >= 3 )THEN
+  else
+    call STOPP('IJ MUST BE AT LEAST 3')
+  endif
+  if( LC >= 3 )then
     LCM = LC + 1
     LCM_Global = LCM !***Save the 'true' global LCM value based on what was read in from the input
     LC_Global = LC
-  ELSE
-    CALL STOPP('LC MUST BE AT LEAST 3')
-  ENDIF
+  else
+    call STOPP('LC MUST BE AT LEAST 3')
+  endif
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C9A')
-    READ(1,*,IOSTAT=ISO)KC,KSIG,ISETGVC,SELVREF,BELVREF,ISGVCCK
-  end if
+  if( process_id == master_id )then
+    call SEEK('C9A',1)
+    read(1,*,IOSTAT = ISO) KC, ldum, ldum, tmp, tmp, ldum
+  endif
 
-  Call Broadcast_Scalar(KC,      master_id)
-  Call Broadcast_Scalar(KSIG,    master_id)
-  Call Broadcast_Scalar(ISETGVC, master_id)
-  Call Broadcast_Scalar(SELVREF, master_id)
-  Call Broadcast_Scalar(BELVREF, master_id)
-  Call Broadcast_Scalar(ISGVCCK, master_id)
+  call Broadcast_Scalar(KC,      master_id)
 
-  KC=ABS(KC)
-  IF( KC >= 1 )THEN
-    KCM=KC+1
-  ELSE
-    CALL STOPP('KC MUST BE AT LEAST 1')
-  ENDIF
+  KC = ABS(KC)
+  if( KC >= 1 )then
+    KCM = KC+1
+  else
+    call STOPP('KC MUST BE AT LEAST 1')
+  endif
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C12A')
-    READ(1,*,IOSTAT=ISO)ISTOPT(0),ISSQL,ISAVBMX,ISFAVB,ISINWV,ISLLIM,IFPROX,ISVTURB,BC_EDGEFACTOR
-  end if
+  if( process_id == master_id )then
+    call SEEK('C12A',1)
+    read(1,*,IOSTAT = ISO) ISTOPT(0), ISSQL, ISAVBMX, ISFAVB, ISINWV, ISLLIM, IFPROX, ISVTURB, BC_EDGEFACTOR
+  endif
 
-  Call Broadcast_Scalar(ISTOPT(0),     master_id)
-  Call Broadcast_Scalar(ISSQL,         master_id)
-  Call Broadcast_Scalar(ISAVBMX,       master_id)
-  Call Broadcast_Scalar(ISFAVB,        master_id)
-  Call Broadcast_Scalar(ISINWV,        master_id)
-  Call Broadcast_Scalar(ISLLIM,        master_id)
-  Call Broadcast_Scalar(IFPROX,        master_id)
-  Call Broadcast_Scalar(ISVTURB,       master_id)
-  Call Broadcast_Scalar(BC_EDGEFACTOR, master_id)
+  call Broadcast_Scalar(ISTOPT(0),     master_id)
+  call Broadcast_Scalar(ISSQL,         master_id)
+  call Broadcast_Scalar(ISAVBMX,       master_id)
+  call Broadcast_Scalar(ISFAVB,        master_id)
+  call Broadcast_Scalar(ISINWV,        master_id)
+  call Broadcast_Scalar(ISLLIM,        master_id)
+  call Broadcast_Scalar(IFPROX,        master_id)
+  call Broadcast_Scalar(ISVTURB,       master_id)
+  call Broadcast_Scalar(BC_EDGEFACTOR, master_id)
+  
+  if( process_id == master_id )then
+    call SEEK('C12B',1)
+    read(1,*,IOSTAT = ISO) ISGOTM, IFRICTION, ICALNN, ICALSS, CHARNOCK
+  endif
+  call Broadcast_Scalar(ISGOTM,        master_id)
+  call Broadcast_Scalar(IFRICTION,     master_id)
+  call Broadcast_Scalar(ICALNN,        master_id)
+  call Broadcast_Scalar(ICALSS,        master_id)
+  call Broadcast_Scalar(CHARNOCK,      master_id)
+  
+  if( process_id == master_id )then
+    call SEEK('C14',1)
+    read(1,*,err = 10,end = 30) MTIDE, NWSER, NASER, ISGWIT, ISCHAN, ISWAVE, ITIDASM, ISPERC, ISBODYF, ISPNHYDS, ISPROPWASH
+  endif
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C14')
-    READ(1,*,ERR=10,END=30) MTIDE, NWSER, NASER, ISGWIT, ISCHAN, ISWAVE, ITIDASM, ISPERC, ISBODYF, ISPNHYDS, ISPROPWASH
-  end if
+  call Broadcast_Scalar(MTIDE,      master_id)
+  call Broadcast_Scalar(NWSER,      master_id)
+  call Broadcast_Scalar(NASER,      master_id)
+  call Broadcast_Scalar(ISGWIT,     master_id)
+  call Broadcast_Scalar(ISCHAN,     master_id)
+  call Broadcast_Scalar(ISWAVE,     master_id)
+  call Broadcast_Scalar(ITIDASM,    master_id)
+  call Broadcast_Scalar(ISPERC,     master_id)
+  call Broadcast_Scalar(ISBODYF,    master_id)
+  call Broadcast_Scalar(ISPNHYDS,   master_id)
+  call Broadcast_Scalar(ISPROPWASH, master_id)
 
-  Call Broadcast_Scalar(MTIDE,      master_id)
-  Call Broadcast_Scalar(NWSER,      master_id)
-  Call Broadcast_Scalar(NASER,      master_id)
-  Call Broadcast_Scalar(ISGWIT,     master_id)
-  Call Broadcast_Scalar(ISCHAN,     master_id)
-  Call Broadcast_Scalar(ISWAVE,     master_id)
-  Call Broadcast_Scalar(ITIDASM,    master_id)
-  Call Broadcast_Scalar(ISPERC,     master_id)
-  Call Broadcast_Scalar(ISBODYF,    master_id)
-  Call Broadcast_Scalar(ISPNHYDS,   master_id)
-  Call Broadcast_Scalar(ISPROPWASH, master_id)
+  MTM = MAX(1,MTIDE)+1
+  NWSERM = MAX(1,NWSER)
+  NASERM = MAX(1,NASER)
+  NGWSERM = 1
+  NDASER = 1
+  NDGWSER = 1
 
-  MTM=MAX(1,MTIDE)+1
-  NWSERM=MAX(1,NWSER)
-  NASERM=MAX(1,NASER)
-  NGWSERM=1
-  NDASER=1
-  NDGWSER=1
+  if( process_id == master_id )then
+    call SEEK('C16',1)
+    read(1,*,err = 10,end = 30) NPBS, NPBW, NPBE, NPBN, NPFOR, NPFORT, NPSER, PDGINIT
+  endif
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C16')
-    READ(1,*,ERR=10,END=30)NPBS,NPBW,NPBE,NPBN,NPFOR,NPFORT,NPSER,PDGINIT
-  end if
+  call Broadcast_Scalar(NPBS,   master_id)
+  call Broadcast_Scalar(NPBW,   master_id)
+  call Broadcast_Scalar(NPBE,   master_id)
+  call Broadcast_Scalar(NPBN,   master_id)
+  call Broadcast_Scalar(NPFOR,  master_id)
+  call Broadcast_Scalar(NPFORT, master_id)
+  call Broadcast_Scalar(NPSER,  master_id)
+  call Broadcast_Scalar(PDGINIT,master_id)
 
-  Call Broadcast_Scalar(NPBS,   master_id)
-  Call Broadcast_Scalar(NPBW,   master_id)
-  Call Broadcast_Scalar(NPBE,   master_id)
-  Call Broadcast_Scalar(NPBN,   master_id)
-  Call Broadcast_Scalar(NPFOR,  master_id)
-  Call Broadcast_Scalar(NPFORT, master_id)
-  Call Broadcast_Scalar(NPSER,  master_id)
-  Call Broadcast_Scalar(PDGINIT,master_id)
+  NPBSM = MAX(1,NPBS)
+  NPBWM = MAX(1,NPBW)
+  NPBEM = MAX(1,NPBE)
+  NPBNM = MAX(1,NPBN)
+  NPSERM = MAX(1,NPSER)
+  NPFORM = MAX(1,NPFOR,NPSER)
+  NDPSER = 1
 
-  NPBSM=MAX(1,NPBS)
-  NPBWM=MAX(1,NPBW)
-  NPBEM=MAX(1,NPBE)
-  NPBNM=MAX(1,NPBN)
-  NPSERM=MAX(1,NPSER)
-  NPFORM=MAX(1,NPFOR,NPSER)
-  NDPSER=1
+  ! *** Allocate structures
+  allocate(TSPS(NPSERM))
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C22')
-    READ(1,*,ERR=10,END=30)NDYE,NTOX,NSED,NSND,NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7,ISSBAL
+  if( process_id == master_id )then
+    call SEEK('C22',1)
+    read(1,*,err = 10,end = 30) NDYE, NTOX, NSED, NSND, NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7, ldum
 
     NDYE = MAX(1,NDYE)
     NDYM = MAX(1,NDYE)
     NTXM = MAX(1,NTOX)
     NSCM = MAX(1,NSED)
     NSNM = MAX(1,NSND)
+    NSEDS = MAX(1,NSED + NSND)
     
     NCSERM = MAX(1,NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
 
-  end if!***End on master process
+  endif   ! *** End on master process
 
-  NDCSER=1
+  NDCSER = 1
 
-  Call Broadcast_Scalar(JC, master_id)
-  Call Broadcast_Scalar(IC, master_id)
-  Call Broadcast_Scalar(JCM, master_id)
-  Call Broadcast_Scalar(ICM, master_id)
+  call Broadcast_Scalar(JC, master_id)
+  call Broadcast_Scalar(IC, master_id)
+  call Broadcast_Scalar(JCM, master_id)
+  call Broadcast_Scalar(ICM, master_id)
 
-  Call Broadcast_Scalar(NDYE, master_id)
-  Call Broadcast_Scalar(NTOX, master_id)
-  Call Broadcast_Scalar(NSED, master_id)
-  Call Broadcast_Scalar(NSND, master_id)
-  Call Broadcast_Scalar(NDYE, master_id)
-  Call Broadcast_Scalar(NDYM, master_id)
-  Call Broadcast_Scalar(NTXM, master_id)
-  Call Broadcast_Scalar(NSCM, master_id)
-  Call Broadcast_Scalar(NSNM, master_id)
-  Call Broadcast_Scalar(NCSERM, master_id)
-  Call Broadcast_Scalar(NCSER1, master_id)
-  Call Broadcast_Scalar(NCSER2, master_id)
-  Call Broadcast_Scalar(NCSER3, master_id)
-  Call Broadcast_Scalar(NCSER4, master_id)
-  Call Broadcast_Scalar(NCSER5, master_id)
-  Call Broadcast_Scalar(NCSER6, master_id)
-  Call Broadcast_Scalar(NCSER7, master_id)
+  call Broadcast_Scalar(NDYE, master_id)
+  call Broadcast_Scalar(NTOX, master_id)
+  call Broadcast_Scalar(NSED, master_id)
+  call Broadcast_Scalar(NSND, master_id)
+  call Broadcast_Scalar(NDYE, master_id)
+  call Broadcast_Scalar(NDYM, master_id)
+  call Broadcast_Scalar(NTXM, master_id)
+  call Broadcast_Scalar(NSCM, master_id)
+  call Broadcast_Scalar(NSNM, master_id)
+  call Broadcast_Scalar(NSEDS,  master_id)
+  call Broadcast_Scalar(NCSERM, master_id)
+  call Broadcast_Scalar(NCSER1, master_id)
+  call Broadcast_Scalar(NCSER2, master_id)
+  call Broadcast_Scalar(NCSER3, master_id)
+  call Broadcast_Scalar(NCSER4, master_id)
+  call Broadcast_Scalar(NCSER5, master_id)
+  call Broadcast_Scalar(NCSER6, master_id)
+  call Broadcast_Scalar(NCSER7, master_id)
 
-  ALLOCATE(TSSAL(NCSER1),TSTEM(NCSER2),TSDYE(NCSER3,NDYE),TSSFL(NCSER4))
-  ALLOCATE(TSTOX(NCSER5,NTOX),TSSED(NCSER6,NSED),TSSND(NCSER7,NSND))
+  ! *** Allocate structures
+  allocate(TSSAL(NCSER1))
+  allocate(TSTEM(NCSER2))
+  allocate(TSDYE(NCSER3,NDYE))
+  allocate(TSSFL(NCSER4))
+  allocate(TSTOX(NCSER5,NTOX))
+  allocate(TSSED(NCSER6,NSED))
+  allocate(TSSND(NCSER7,NSND))
 
   NSER(1) = NCSER1
   NSER(2) = NCSER2
@@ -325,190 +325,187 @@ SUBROUTINE SCANEFDC(NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
   NSER(6) = NCSER6
   NSER(7) = NCSER7
 
-  ALLOCATE(TOXDEP(NTXM))
+  allocate(TOXDEP(NTXM))
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C23')
-    READ(1,*,ERR=10,END=30) NQSIJ, NQJPIJ, NQSER, NQCTL, NQCTLT, NHYDST, NQWR, NQWRSR, ISDIQ, NQCTLSER, NQCTRULES
-  end if
+  if( process_id == master_id )then
+    call SEEK('C23',1)
+    read(1,*,err = 10,end = 30) NQSIJ, NQJPIJ, NQSER, NQCTL, NQCTLT, NHYDST, NQWR, NQWRSR, ISDIQ, NQCTLSER, NQCTRULES
+  endif
 
-  Call Broadcast_Scalar(NQSIJ,    master_id)
-  Call Broadcast_Scalar(NQJPIJ,   master_id)
-  Call Broadcast_Scalar(NQSER,    master_id)
-  Call Broadcast_Scalar(NQCTL,    master_id)
-  Call Broadcast_Scalar(NQCTLT,   master_id)
-  Call Broadcast_Scalar(NHYDST,   master_id)
-  Call Broadcast_Scalar(NQWR,     master_id)
-  Call Broadcast_Scalar(NQWRSR,   master_id)
-  Call Broadcast_Scalar(ISDIQ,    master_id)
-  Call Broadcast_Scalar(NQCTLSER, master_id)
-  Call Broadcast_Scalar(NQCTRULES, master_id)
+  call Broadcast_Scalar(NQSIJ,    master_id)
+  call Broadcast_Scalar(NQJPIJ,   master_id)
+  call Broadcast_Scalar(NQSER,    master_id)
+  call Broadcast_Scalar(NQCTL,    master_id)
+  call Broadcast_Scalar(NQCTLT,   master_id)
+  call Broadcast_Scalar(NHYDST,   master_id)
+  call Broadcast_Scalar(NQWR,     master_id)
+  call Broadcast_Scalar(NQWRSR,   master_id)
+  call Broadcast_Scalar(ISDIQ,    master_id)
+  call Broadcast_Scalar(NQCTLSER, master_id)
+  call Broadcast_Scalar(NQCTRULES, master_id)
 
-  NQSIJM=MAX(1,NQSIJ)
-  NJPSM=MAX(1,NQJPIJ)
-  NQSERM=MAX(1,NQSER)
-  NQCTLM=MAX(1,NQCTL)
-  NQCTTM=MAX(1,NQCTLT)
-  NQWRM=MAX(1,NQWR)
-  NQWRSRM=MAX(1,NQWRSR)
-  NDQSER=1   ! *** Flow              : Maximum number of  points in a series
-  NDQWRSR=1  ! *** Withdrawal/Return : Maximum number of  points in a series
+  NQSIJM = MAX(1,NQSIJ)
+  NJPSM = MAX(1,NQJPIJ)
+  NQSERM = MAX(1,NQSER)
+  NQCTLM = MAX(1,NQCTL)
+  NQCTTM = MAX(1,NQCTLT)
+  NQWRM = MAX(1,NQWR)
+  NQWRSRM = MAX(1,NQWRSR)
+  NDQSER = 1   ! *** Flow              : Maximum number of  points in a series
+  NDQWRSR = 1  ! *** Withdrawal/Return : Maximum number of  points in a series
 
-  ! *** SET KB AND CHECK FOR SEDZLJ USEAGE
+  ! *** SET KB AND CHECK FOR SEDZLJ USAGE
   NSEDFLUME = 0
   NWARNING = 0
   LSEDZLJ = .FALSE.
-  IF( NSED > 0 .OR. NSND > 0 )THEN
-    if( process_id == master_id )THEN
-      CALL SEEK('C36')
-      READ(1,*,ERR=10,END=30)ISEDINT,ISEDBINT,NSEDFLUME,ISMUD,ISBEDMAP,ISEDVW,ISNDVW,KB,ISDTXBUG
-    end if
+  if( NSED > 0 .or. NSND > 0 )then
+    if( process_id == master_id )then
+      call SEEK('C36',1)
+      read(1,*,err = 10,end = 30) ISEDINT, ISEDBINT, NSEDFLUME, ISMUD, ISBEDMAP, ISEDVW, ISNDVW, KB, ISDTXBUG
+    endif
 
-    Call Broadcast_Scalar(ISEDINT,   master_id)
-    Call Broadcast_Scalar(ISEDBINT,  master_id)
-    Call Broadcast_Scalar(NSEDFLUME, master_id)
-    Call Broadcast_Scalar(ISMUD,     master_id)
-    Call Broadcast_Scalar(ISBEDMAP,  master_id)
-    Call Broadcast_Scalar(ISEDVW,    master_id)
-    Call Broadcast_Scalar(ISNDVW,    master_id)
-    Call Broadcast_Scalar(KB,        master_id)
-    Call Broadcast_Scalar(ISDTXBUG,  master_id)
+    call Broadcast_Scalar(ISEDINT,   master_id)
+    call Broadcast_Scalar(ISEDBINT,  master_id)
+    call Broadcast_Scalar(NSEDFLUME, master_id)
+    call Broadcast_Scalar(ISMUD,     master_id)
+    call Broadcast_Scalar(ISBEDMAP,  master_id)
+    call Broadcast_Scalar(ISEDVW,    master_id)
+    call Broadcast_Scalar(ISNDVW,    master_id)
+    call Broadcast_Scalar(KB,        master_id)
+    call Broadcast_Scalar(ISDTXBUG,  master_id)
 
-    IF( KB >= 1 )THEN
-      KBM=KB+1
-    ELSE
-      CALL STOPP('KB MUST BE AT LEAST 1')
-    ENDIF
-    IF( ISTRAN(6) > 0 )THEN
-      IF( NSEDFLUME == 98 .OR. NSEDFLUME == 99 )THEN
+    if( KB >= 1 )then
+      KBM = KB+1
+    else
+      call STOPP('KB MUST BE AT LEAST 1')
+    endif
+    if( ISTRAN(6) > 0 )then
+      if( NSEDFLUME == 98 .or. NSEDFLUME == 99 )then
         LSEDZLJ = .TRUE.
         NSEDFLUME = 1
-      ELSEIF( NSEDFLUME > 0 )THEN
+      elseif( NSEDFLUME > 0 )then
         LSEDZLJ = .TRUE.
-      ENDIF
-    ENDIF
+      endif
+    endif
 
-    ! *** LOOK FOR LEGACY APPROACH TO SET SEDZLJ, I.E. IWRSP(1)=98
-    IF( .NOT. LSEDZLJ .AND. ISTRAN(6) > 0 )THEN
-      ISDTXBUG=0
-      !C40*  READ COHESIVE SEDIMENT PARAMETER SET 2 REPEAT DATA LINE NSED TIMES
-      if( process_id == master_id )THEN
-        CALL SEEK('C40')
-        READ(1,*,ERR=10,END=30)ISDTXBUG
-      end if
+    ! *** LOOK FOR LEGACY APPROACH TO SET SEDZLJ, I.E. IWRSP(1) = 98
+    if( .not. LSEDZLJ .and. ISTRAN(6) > 0 )then
+      ISDTXBUG = 0
+      !C40*  READ COHESIVE SEDIMENT parameter SET 2 REPEAT DATA LINE NSED TIMES
+      if( process_id == master_id )then
+        call SEEK('C40',1)
+        read(1,*,err = 10,end = 30)ISDTXBUG
+      endif
 
-      Call Broadcast_Scalar(ISDTXBUG, master_id)
+      call Broadcast_Scalar(ISDTXBUG, master_id)
 
-      IF( ISDTXBUG == 98 )THEN
+      if( ISDTXBUG == 98 )then
         LSEDZLJ = .TRUE.
-        NSEDFLUME=1
-      ENDIF
-    ENDIF
+        NSEDFLUME = 1
+      endif
+    endif
     
-    IF( .NOT. LSEDZLJ .AND. ISTRAN(7) > 0 .AND. NSND > 0 )THEN
-      if( process_id == master_id )THEN
-        CALL SEEK('C42A')
-        DO NS=1,1
-          READ(1,*,IOSTAT=ISO) ICALC_BL, R, R, R, R, R, R, R, R, R
-        ENDDO
+    if( .not. LSEDZLJ .and. ISTRAN(7) > 0 .and. NSND > 0 )then
+      if( process_id == master_id )then
+        call SEEK('C42A',1)
+        do NS = 1,1
+          read(1,*,IOSTAT = ISO) ICALC_BL, R, R, R, R, R, R, R, R, R
+        enddo
       endif
       
-      Call Broadcast_Scalar(ICALC_BL , master_id)
-    ENDIF
+      call Broadcast_Scalar(ICALC_BL , master_id)
+    endif
     
-    IF( .NOT. LSEDZLJ )THEN
-      ! *** SET NSCM TO THE MAXIMUM NUMBER OF SEDIMENT CLASSES
-      NSCM = MAX(NSCM, NSED+NSND)
-    ENDIF
-  ELSE
-    KBM=1
-  ENDIF
+    !IF( .not. LSEDZLJ )then
+    !  ! *** SET NSCM TO THE MAXIMUM NUMBER OF SEDIMENT CLASSES
+    !  NSCM = MAX(NSCM, NSED+NSND)   delme
+    !ENDIF
+    
+  else
+    KBM = 1
+  endif
   
-  ITMPPMX=0
-  IF( NTOX > 0 )THEN
+  ITMPPMX = 0
+  if( NTOX > 0 )then
   
     !C43C*  READ TOXIC TIMING AND VOLATILIZATION SWITCHES
-    if(process_id == master_id)THEN
-        CALL SEEK('C43C')
-        READ(1,*,IOSTAT=ISO) TOXSTEPW, TOXSTEPB, TOX_VEL_MAX, TOX_DEP_MAX, ITOXTEMP, TOXTEMP
+    if(process_id == master_id )then
+        call SEEK('C43C',1)
+        read(1,*,IOSTAT = ISO) TOXSTEPW, TOXSTEPB
     endif
     
-    Call Broadcast_Scalar(TOXSTEPW, master_id)
-    Call Broadcast_Scalar(TOXSTEPB, master_id)
-    Call Broadcast_Scalar(TOX_VEL_MAX, master_id)
-    Call Broadcast_Scalar(TOX_DEP_MAX, master_id)
-    Call Broadcast_Scalar(ITOXTEMP, master_id)
-    Call Broadcast_Scalar(TOXTEMP, master_id)
+    call Broadcast_Scalar(TOXSTEPW, master_id)
+    call Broadcast_Scalar(TOXSTEPB, master_id)
     
-    if( process_id == master_id )THEN
-      CALL SEEK('C44')
+    if( process_id == master_id )then
+      call SEEK('C44',1)
     endif
     ! *** NEED TO READ EVEN IF SEDZLJ IS BEING USED
-    DO NT=1,NTOX
-      if( process_id == master_id )THEN
-        READ(1,*,ERR=10)NDUM,ISTOCNT,DIFTOXNT,DIFTOXSNT,PDIFTOXNT,DPDIFTOXNT
-      end if
+    do NT = 1,NTOX
+      if( process_id == master_id )then
+        read(1,*,err = 10) NDUM, ISTOCNT, DIFTOXNT, DIFTOXSNT, PDIFTOXNT, DPDIFTOXNT
+      endif
 
-      Call Broadcast_Scalar(ISTOCNT,   master_id)
-      Call Broadcast_Scalar(DIFTOXNT,  master_id)
-      Call Broadcast_Scalar(DIFTOXSNT, master_id)
-      Call Broadcast_Scalar(PDIFTOXNT, master_id)
-      Call Broadcast_Scalar(DPDIFTOXNT,master_id)
+      call Broadcast_Scalar(ISTOCNT,   master_id)
+      call Broadcast_Scalar(DIFTOXNT,  master_id)
+      call Broadcast_Scalar(DIFTOXSNT, master_id)
+      call Broadcast_Scalar(PDIFTOXNT, master_id)
+      call Broadcast_Scalar(DPDIFTOXNT,master_id)
 
-      IF( PDIFTOXNT < 0. )ITMPPMX=1
-    ENDDO
+      if( PDIFTOXNT < 0. )ITMPPMX = 1
+    enddo
 
-    if( process_id == master_id )THEN
-      CALL SEEK('C45A')
-      READ(1,*,ERR=10)ISTDOCW,ISTPOCW,ISTDOCB,ISTPOCB,STDOCWC,STPOCWC,STDOCBC,STPOCBC
-    end if
+    if( process_id == master_id )then
+      call SEEK('C45A',1)
+      read(1,*,err = 10) ISTDOCW, ISTPOCW, ISTDOCB, ISTPOCB, STDOCWC, STPOCWC, STDOCBC, STPOCBC
+    endif
 
-    Call Broadcast_Scalar(ISTDOCW, master_id)
-    Call Broadcast_Scalar(ISTPOCW, master_id)
-    Call Broadcast_Scalar(ISTDOCB, master_id)
-    Call Broadcast_Scalar(ISTPOCB, master_id)
-    Call Broadcast_Scalar(STDOCWC, master_id)
-    Call Broadcast_Scalar(STPOCWC, master_id)
-    Call Broadcast_Scalar(STDOCBC, master_id)
-    Call Broadcast_Scalar(STPOCBC, master_id)
+    call Broadcast_Scalar(ISTDOCW, master_id)
+    call Broadcast_Scalar(ISTPOCW, master_id)
+    call Broadcast_Scalar(ISTDOCB, master_id)
+    call Broadcast_Scalar(ISTPOCB, master_id)
+    call Broadcast_Scalar(STDOCWC, master_id)
+    call Broadcast_Scalar(STPOCWC, master_id)
+    call Broadcast_Scalar(STDOCBC, master_id)
+    call Broadcast_Scalar(STPOCBC, master_id)
 
-    if( process_id == master_id )THEN
-      CALL SEEK('C45E')
-    end if
+    if( process_id == master_id )then
+      call SEEK('C45E',1)
+    endif
 
-    DO NT=1,NTOX
-      if( process_id == master_id )THEN
-        READ(1,*,ERR=10) NDUM, TOXDEP(NT).ITXDRY, TOXDEP(NT).TXDRY, TOXDEP(NT).ITXWET, TOXDEP(NT).TXWET
-      end if
+    do NT = 1,NTOX
+      if( process_id == master_id )then
+        read(1,*,err = 10) NDUM, TOXDEP(NT).ITXDRY, TOXDEP(NT).TXDRY, TOXDEP(NT).ITXWET, TOXDEP(NT).TXWET
+      endif
 
-      Call Broadcast_Scalar(TOXDEP(NT).ITXDRY, master_id)
-      Call Broadcast_Scalar(TOXDEP(NT).ITXWET, master_id)
-    ENDDO
-  ENDIF
+      call Broadcast_Scalar(TOXDEP(NT).ITXDRY, master_id)
+      call Broadcast_Scalar(TOXDEP(NT).ITXWET, master_id)
+    enddo
+  endif
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C46')
-    READ(1,*,ERR=10,END=30) BSC,TEMO,HEQT,RKDYE,NCBS,NCBW,NCBE,NCBN
-  end if
+  if( process_id == master_id )then
+    call SEEK('C46',1)
+    read(1,*,ERR = 10,END = 30) BSC, IBSC, TEMO, tmp, tmp, NCBS, NCBW, NCBE, NCBN, IVOLTEMP, VOL_VEL_MAX, VOL_DEP_MIN
+  endif
 
-  Call Broadcast_Scalar(BSC,       master_id)
-  Call Broadcast_Scalar(TEMO,      master_id)
-  Call Broadcast_Scalar(HEQT,      master_id)
-  Call Broadcast_Scalar(RKDYE,     master_id)
-  Call Broadcast_Scalar(NCBS,      master_id)
-  Call Broadcast_Scalar(NCBW,      master_id)
-  Call Broadcast_Scalar(NCBE,      master_id)
-  Call Broadcast_Scalar(NCBN,      master_id)
+  call Broadcast_Scalar(BSC,      master_id)
+  call Broadcast_Scalar(IBSC,     master_id)
+  call Broadcast_Scalar(TEMO,     master_id)
+  call Broadcast_Scalar(NCBS,     master_id)
+  call Broadcast_Scalar(NCBW,     master_id)
+  call Broadcast_Scalar(NCBE,     master_id)
+  call Broadcast_Scalar(NCBN,     master_id)
+  call Broadcast_Scalar(IVOLTEMP, master_id)
 
-  NBBSM=MAX(1,NCBS)
-  NBBWM=MAX(1,NCBW)
-  NBBEM=MAX(1,NCBE)
-  NBBNM=MAX(1,NCBN)
+  NBBSM = MAX(1,NCBS)
+  NBBWM = MAX(1,NCBW)
+  NBBEM = MAX(1,NCBE)
+  NBBNM = MAX(1,NCBN)
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C46A')
-    READ(1,*,ERR=10,END=30)ISICE,NISER,TEMPICE,CDICE,ICETHMX,RICETHK0
-  end if
+  if( process_id == master_id )then
+    call SEEK('C46A',1)
+    read(1,*,err = 10,end = 30) ISICE, NISER, TEMPICE, CDICE, ICETHMX, RICETHK0
+  endif
 
   call Broadcast_Scalar(ISICE,    master_id)
   call Broadcast_Scalar(NISER,    master_id)
@@ -517,11 +514,11 @@ SUBROUTINE SCANEFDC(NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
   call Broadcast_Scalar(ICETHMX,  master_id)
   call Broadcast_Scalar(RICETHK0, master_id)
 
-  IF(  NASER > 0  )THEN
-    if( process_id == master_id )THEN
-      CALL SEEK('C46D')
-      READ(1,*,IOSTAT=ISO) IASWRAD,REVC,RCHC,ISVHEAT,SWRATNF,SWRATNS,FSWRATF,TEMTHKO,TEMBO,HTBED1,HTBED2
-    end if
+  if( NASER > 0  )then
+    if( process_id == master_id )then
+      call SEEK('C46D',1)
+      read(1,*,IOSTAT = ISO) IASWRAD, REVC, RCHC, ISVHEAT, SWRATNF, SWRATNS, FSWRATF, TEMTHKO, TEMBO, HTBED1, HTBED2
+    endif
 
     call Broadcast_Scalar(IASWRAD, master_id)
     call Broadcast_Scalar(REVC,    master_id)
@@ -535,1116 +532,1102 @@ SUBROUTINE SCANEFDC(NCSER1,NCSER2,NCSER3,NCSER4,NCSER5,NCSER6,NCSER7)
     call Broadcast_Scalar(HTBED1,  master_id)
     call Broadcast_Scalar(HTBED2,  master_id)
 
-  ENDIF
+  endif
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C66A')
-    READ(1,*,ERR=10) NLCDA,TSCDA,(ISCDA(K),K=1,7)
-  end if
+  if( process_id == master_id )then
+    call SEEK('C67',1)
+    read(1,*,err = 10) ISPD
+  endif
 
-  Call Broadcast_Scalar(NLCDA, master_id)
-  Call Broadcast_Scalar(TSCDA, master_id)
-  Call Broadcast_Array (ISCDA, master_id)
-  NLDAM=NLCDA
+  call Broadcast_Scalar(ISPD,   master_id)
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C67')
-    READ(1,*,ERR=10) ISPD
-  end if
+  NPDM = MAX(1,NPD)
 
-  Call Broadcast_Scalar(ISPD,   master_id)
+  if( process_id == master_id )then
+    call SEEK('C84',1)
+    read(1,*,err = 10,end = 30)ISTMSR,MLTMSR,ldum,ldum,NWTMSR,NTSSTSP,TCTMSR
+  endif
 
-  NPDM=MAX(1,NPD)
+  call Broadcast_Scalar(ISTMSR, master_id)
+  call Broadcast_Scalar(MLTMSR, master_id)
+  call Broadcast_Scalar(NWTMSR, master_id)
+  call Broadcast_Scalar(NTSSTSP,master_id)
+  call Broadcast_Scalar(TCTMSR, master_id)
 
-  if( process_id == master_id )THEN
-    CALL SEEK('C80')
-    READ(1,*,ERR=10,END=30)IS3DO,ISR3DO,NP3DO,KPC,NWGG,I3DMIN,I3DMAX,J3DMIN,J3DMAX,I3DRW,SELVMAX,BELVMIN
-  end if
-
-  Call Broadcast_Scalar(IS3DO,  master_id)
-  Call Broadcast_Scalar(ISR3DO, master_id)
-  Call Broadcast_Scalar(NP3DO,  master_id)
-  Call Broadcast_Scalar(KPC,    master_id)
-  Call Broadcast_Scalar(NWGG,   master_id)
-  Call Broadcast_Scalar(I3DMIN, master_id)
-  Call Broadcast_Scalar(I3DMAX, master_id)
-  Call Broadcast_Scalar(J3DMIN, master_id)
-  Call Broadcast_Scalar(J3DMAX, master_id)
-  Call Broadcast_Scalar(I3DRW,  master_id)
-  Call Broadcast_Scalar(SELVMAX,master_id)
-  Call Broadcast_Scalar(BELVMIN,master_id)
-
-  KPCM=MAX(1,KPC)
-
-  if( process_id == master_id )THEN
-    CALL SEEK('C82')
-    READ(1,*,ERR=10,END=30)ISLSHA,MLLSHA,NTCLSHA,ISLSTR,ISHTA
-  end if
-
-  Call Broadcast_Scalar(ISLSHA, master_id)
-  Call Broadcast_Scalar(MLLSHA, master_id)
-  Call Broadcast_Scalar(NTCLSHA,master_id)
-  Call Broadcast_Scalar(ISLSTR, master_id)
-  Call Broadcast_Scalar(ISHTA,  master_id)
-
-  MLM=MAX(1,MLLSHA)
-
-  if( process_id == master_id )THEN
-    CALL SEEK('C84')
-    READ(1,*,ERR=10,END=30)ISTMSR,MLTMSR,NBTMSR,NSTMSR,NWTMSR,NTSSTSP,TCTMSR
-  end if
-
-  Call Broadcast_Scalar(ISTMSR, master_id)
-  Call Broadcast_Scalar(MLTMSR, master_id)
-  Call Broadcast_Scalar(NBTMSR, master_id)
-  Call Broadcast_Scalar(NSTMSR, master_id)
-  Call Broadcast_Scalar(NWTMSR, master_id)
-  Call Broadcast_Scalar(NTSSTSP,master_id)
-  Call Broadcast_Scalar(TCTMSR, master_id)
-
-  MLTMSRM=MAX(1,MLTMSR)
-  NTSSTSPM=MAX(1,NTSSTSP)
-  MTSSTSPM=1
-  if( process_id == master_id )THEN
-    IF( NTSSTSP > 0 )THEN
-      CALL SEEK('C85')
-      DO ITSSS=1,NTSSTSP
-        READ(1,*,ERR=10,END=30)I,M
-        MTSSTSPM=MAX(MTSSTSPM,M)
-      ENDDO
-    ENDIF
-
-  end if
-
-  Call Broadcast_Scalar(MTSSTSPM, master_id)
-
-  ! ***    
-  if( process_id == master_id )THEN
-    CALL SEEK('C91')
-    !                                       NOT      NOT
-    READ(1,*,ERR=10,END=30) NCDFOUT,DEFLEV,ROTA,BLK,UTMZ,HREST,BASEDATE,BASETIME,PROJ
-    ! *** close efdc.inp
-    CLOSE(1)
-  end if
-  
-  Call Broadcast_Scalar(NCDFOUT, master_id)
-  Call Broadcast_Scalar(DEFLEV,master_id)
-  Call Broadcast_Scalar(ROTA,master_id)
-  Call Broadcast_Scalar(BLK,master_id)
-  Call Broadcast_Scalar(UTMZ,master_id)
-  Call Broadcast_Scalar(HREST,master_id)
-  Call Broadcast_Scalar(BASEDATE,master_id)
-  Call Broadcast_Scalar(BASETIME,master_id)
-  Call Broadcast_Scalar(PROJ,master_id)
-  ! *** END OF EFDC.INP SCANNING
-
-
-  IF( ISVEG >= 1 )THEN
-
-    if( process_id == master_id )THEN
-      CALL OPENFILE('VEGE.INP')
-      STR=READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
-      READ(1,*,ERR=10,END=30) MVEGTYP, MVEGOW, NVEGSER, UVEGSCL
+  MLTMSRM = MAX(1,MLTMSR)
+  NTSSTSPM = MAX(1,NTSSTSP)
+  MTSSTSPM = 1
+  if( process_id == master_id )then
+    if( NTSSTSP > 0 )then
+      call SEEK('C85',1)
+      do ITSSS = 1,NTSSTSP
+        read(1,*,err = 10,end = 30)I,M
+        MTSSTSPM = MAX(MTSSTSPM,M)
+      enddo
     endif
 
-    Call Broadcast_Scalar(MVEGTYP,master_id)
-    Call Broadcast_Scalar(MVEGOW, master_id)
-    Call Broadcast_Scalar(NVEGSER,master_id)
-    Call Broadcast_Scalar(UVEGSCL,master_id)
+  endif
+
+  call Broadcast_Scalar(MTSSTSPM, master_id)
+
+  ! ***    
+  if( process_id == master_id )then
+    call SEEK('C91',1)
+    read(1,*,ERR = 10,END = 30) NCDFOUT, DEFLEV, ROTA, BLK, UTMZ, HREST, BASEDATE, BASETIME, PROJ
+    ! *** close efdc.inp
+    close(1)
+  endif
+  
+  call Broadcast_Scalar(NCDFOUT  , master_id)
+  call Broadcast_Scalar(DEFLEV   , master_id)
+  call Broadcast_Scalar(ROTA     , master_id)
+  call Broadcast_Scalar(BLK      , master_id)
+  call Broadcast_Scalar(UTMZ     , master_id)
+  call Broadcast_Scalar(HREST    , master_id)
+  call Broadcast_Scalar(BASEDATE , master_id)
+  call Broadcast_Scalar(BASETIME , master_id)
+  call Broadcast_Scalar(PROJ     , master_id)
+  
+  ! ***********************************************************************************************
+  ! *** END OF EFDC.INP SCANNING
+  ! ***********************************************************************************************
+
+  if( ISVEG >= 1 )then
+
+    if( process_id == master_id )then
+      call OPENFILE('VEGE.INP')
+      STR = READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
+      read(1,*,err = 10,end = 30) MVEGTYP, MVEGOW, NVEGSER, UVEGSCL
+    endif
+
+    call Broadcast_Scalar(MVEGTYP,master_id)
+    call Broadcast_Scalar(MVEGOW, master_id)
+    call Broadcast_Scalar(NVEGSER,master_id)
+    call Broadcast_Scalar(UVEGSCL,master_id)
 
     NVEGTPM = MAX(NVEGTPM,MVEGTYP)
     NVEGSERM = MAX(NVEGSERM,NVEGSER)
 
-    if( process_id == master_id )THEN
-      CLOSE(1)
+    if( process_id == master_id )then
+      close(1)
     endif
 
-    IF( NVEGSER >= 1 )THEN
-      if( process_id == master_id )THEN
-        CALL OPENFILE('VEGSER.INP')
-        STR=READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
+    if( NVEGSER >= 1 )then
+      if( process_id == master_id )then
+        call OPENFILE('VEGSER.INP')
+        STR = READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
       endif
 
-      DO NS=1,NVEGSER
-        if( process_id == master_id )THEN
-          READ(1,*,ERR=10,END=30) M1,TC1,TAV1
+      do NS = 1,NVEGSER
+        if( process_id == master_id )then
+          read(1,*,err = 10,end = 30) M1,TC1,TAV1
         endif
 
-        Call Broadcast_Scalar(M1, master_id)
+        call Broadcast_Scalar(M1, master_id)
 
-        NDVEGSER=MAX(NDVEGSER,M1)
+        NDVEGSER = MAX(NDVEGSER,M1)
 
-        if( process_id == master_id )THEN
-          DO M=1,M1
-            READ(1,*)
-          ENDDO
+        if( process_id == master_id )then
+          do M = 1,M1
+            read(1,*)
+          enddo
         endif
-      ENDDO
-      if( process_id == master_id )THEN
-        CLOSE(1)
+      enddo
+      if( process_id == master_id )then
+        close(1)
       endif
 
-    ENDIF
+    endif
 
     ! *** DETERMINE IF MHK IS USED
-    LMHK=.FALSE.
-    if( process_id == master_id )THEN
-      CALL OPENFILE('DXDY.INP')
-      STR=READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
+    LMHK = .FALSE.
+    if( process_id == master_id )then
+      call OPENFILE('DXDY.INP')
+      STR = READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
     endif
 
     write(mpi_log_unit,'(a,i6)') 'LVC: ', LVC
 
-    Call Broadcast_Scalar(LVC, master_id)
+    call Broadcast_Scalar(LVC, master_id)
 
-    TCOUNT=0
-    DO I=1,LVC
-      if( process_id == master_id )THEN
-        READ(1,*)IITMP,IITMP,R1TMP,R2TMP,R3TMP,R4TMP,R5TMP,IJTMP
+    TCOUNT = 0
+    do I = 1,LVC
+      if( process_id == master_id )then
+        read(1,*)IITMP,IITMP,R1TMP,R2TMP,R3TMP,R4TMP,R5TMP,IJTMP
       endif
 
-      Call Broadcast_Scalar(IJTMP, master_id)
+      call Broadcast_Scalar(IJTMP, master_id)
 
-      IF( IJTMP > 90 )THEN
-        LMHK=.TRUE.
-        TCOUNT=TCOUNT+1
-      ENDIF
-    ENDDO
+      if( IJTMP > 90 )then
+        LMHK = .TRUE.
+        TCOUNT = TCOUNT+1
+      endif
+    enddo
 
-    if( process_id == master_id )THEN
-      CLOSE(1)
+    if( process_id == master_id )then
+      close(1)
     endif
 
-    IF( LMHK )THEN
-      if( process_id == master_id )THEN
-        CALL OPENFILE('MHK.INP')
-        CALL SKIPCOM(1,'*')  ! *** SKIP OVER TITLE AND AND HEADER LINES
-        READ(1,*,ERR=10,END=30)MHKTYP
-        CLOSE(1)
+    if( LMHK )then
+      if( process_id == master_id )then
+        call OPENFILE('MHK.INP')
+        call SKIPCOM(1,'*')  ! *** SKIP OVER TITLE AND AND HEADER LINES
+        read(1,*,err = 10,end = 30)MHKTYP
+        close(1)
       endif
 
-      Call Broadcast_Scalar(MHKTYP, master_id)
+      call Broadcast_Scalar(MHKTYP, master_id)
 
-    ENDIF
-  ENDIF
+    endif
+  endif
 
   ! *** BANK EROSION
-  IF( ISBKERO >= 1 )THEN
-    if( process_id == master_id )THEN
-      CALL OPENFILE('BEMAP.INP')
-      STR=READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
-      READ(1,*,ERR=10,END=30)NBEPAIR,NBESER
+  if( ISBKERO >= 1 )then
+    if( process_id == master_id )then
+      call OPENFILE('BEMAP.INP')
+      STR = READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
+      read(1,*,err = 10,end = 30)NBEPAIR,NBESER
     endif
 
-    Call Broadcast_Scalar(NBEPAIR, master_id)
-    Call Broadcast_Scalar(NBESER,  master_id)
+    call Broadcast_Scalar(NBEPAIR, master_id)
+    call Broadcast_Scalar(NBESER,  master_id)
 
-    NBEPAIRM=NBEPAIR
-    NBESERM=NBESER
+    NBEPAIRM = NBEPAIR
+    NBESERM = NBESER
 
-    if( process_id == master_id )THEN
-      CLOSE(1)
-    end if
+    if( process_id == master_id )then
+      close(1)
+    endif
 
-    NDBESER=1
-    IF( NBESER > 0 )THEN
-      if( process_id == master_id )THEN
-        CALL OPENFILE('BESER.INP')
-      end if
-
-      DO NS=1,NBESER
-        if( process_id == master_id )THEN
-100       READ(1,*,ERR=100,END=30)M,R,R,R,R
-        endif
-
-        Call Broadcast_Scalar(M, master_id)
-
-        NDBESER=MAX(NDBESER,M)
-        DO I=1,M
-          if( process_id == master_id )THEN
-            READ(1,*,ERR=10,END=30)R,R,R
-          endif
-        ENDDO
-      ENDDO
-
-      if( process_id == master_id )THEN
-        CLOSE(1)
+    NDBESER = 1
+    if( NBESER > 0 )then
+      if( process_id == master_id )then
+        call OPENFILE('BESER.INP')
       endif
 
-    ENDIF
-  ENDIF
+      do NS = 1,NBESER
+        if( process_id == master_id )then
+100       read(1,*,err = 100,end = 30)M,R,R,R,R
+        endif
+
+        call Broadcast_Scalar(M, master_id)
+
+        NDBESER = MAX(NDBESER,M)
+        do I = 1,M
+          if( process_id == master_id )then
+            read(1,*,err = 10,end = 30)R,R,R
+          endif
+        enddo
+      enddo
+
+      if( process_id == master_id )then
+        close(1)
+      endif
+
+    endif
+  endif
 
   ! *** TOXIC SIMULATION FILES
-  NPMXPTSM=1
-  NPMXZM=1
-  IF( ISTRAN(5) > 0 .AND. NTOX > 0 )THEN
+  NPMXPTSM = 1
+  NPMXZM = 1
+  if( ISTRAN(5) > 0 .and. NTOX > 0 )then
     ! *** SEDIMENT MIXING
-    IF( ITMPPMX == 1 )THEN
-      CALL OPENFILE('PARTMIX.INP')
+    if( ITMPPMX == 1 )then
+      call OPENFILE('PARTMIX.INP')
 
       STR = READSTR(1)             ! *** SKIP OVER TITLE AND AND HEADER LINES
-      READ(1,*)NPMXZ,NPMXPTS,PMIXSF
-      NPMXPTSM=NPMXPTS
-      NPMXZM=NPMXZ
-      CLOSE(1)
-    ENDIF
+      read(1,*)NPMXZ,NPMXPTS,PMIXSF
+      NPMXPTSM = NPMXPTS
+      NPMXZM = NPMXZ
+      close(1)
+    endif
 
     ! *** TIME SERIES DRY DEPOSITION BEING USED
-    IF( SUM(TOXDEP(:).ITXDRY) > 0 )THEN
-      CALL OPENFILE('TXDRY.INP')
+    if( SUM(TOXDEP(:).ITXDRY) > 0 )then
+      call OPENFILE('TXDRY.INP')
 
       STR = READSTR(1)             ! *** SKIP OVER TITLE AND AND HEADER LINES
-      READ(1,*) ITYPE, NDATAPTS
+      read(1,*) ITYPE, NDATAPTS
       TXDRYSER(1).NREC = NDATAPTS
 
-      ALLOCATE(TXDRYSER(1).TIM(NDATAPTS), TXDRYSER(1).VAL(NDATAPTS,NTXM))
-      CLOSE(1)
-    ENDIF
+      allocate(TXDRYSER(1).TIM(NDATAPTS), TXDRYSER(1).VAL(NDATAPTS,NTXM))
+      close(1)
+    endif
 
     ! *** TIME SERIES WET DEPOSITION BEING USED
-    IF( SUM(TOXDEP(:).ITXWET) > 0 )THEN
-      CALL OPENFILE('TXWET.INP')
+    if( SUM(TOXDEP(:).ITXWET) > 0 )then
+      call OPENFILE('TXWET.INP')
 
       STR = READSTR(1)             ! *** SKIP OVER TITLE AND AND HEADER LINES
-      READ(1,*) ITYPE, NDATAPTS
+      read(1,*) ITYPE, NDATAPTS
       TXWETSER(1).NREC = NDATAPTS
 
-      ALLOCATE(TXWETSER(1).TIM(NDATAPTS), TXWETSER(1).VAL(NDATAPTS,NTXM))
-      CLOSE(1)
-    ENDIF
-  ENDIF
+      allocate(TXWETSER(1).TIM(NDATAPTS), TXWETSER(1).VAL(NDATAPTS,NTXM))
+      close(1)
+    endif
+  endif
 
-  IF( ISCONNECT >= 2 )THEN
-    CALL OPENFILE('MAPPGEW.INP')
-
-    ! *** SKIP OVER TITLE AND AND HEADER LINES
-    STR=READSTR(1)
-    READ(1,*,IOSTAT=ISO) NPEWBP
-    CLOSE(1)
-  ENDIF
-
-  IF( ISCONNECT == 1 .OR. ISCONNECT == 3 )THEN
-    CALL OPENFILE('MAPPGNS.INP')
+  if( ISCONNECT >= 2 )then
+    call OPENFILE('MAPPGEW.INP')
 
     ! *** SKIP OVER TITLE AND AND HEADER LINES
-    STR=READSTR(1)
-    READ(1,*,IOSTAT=ISO) NPNSBP ! global value for now
-    CLOSE(1)
-  ENDIF
+    STR = READSTR(1)
+    read(1,*,IOSTAT = ISO) NPEWBP
+    close(1)
+  endif
+
+  if( ISCONNECT == 1 .or. ISCONNECT == 3 )then
+    call OPENFILE('MAPPGNS.INP')
+
+    ! *** SKIP OVER TITLE AND AND HEADER LINES
+    STR = READSTR(1)
+    read(1,*,IOSTAT = ISO) NPNSBP ! global value for now
+    close(1)
+  endif
 
   MDCHH = 0
-  IF( ISCHAN > 0 )THEN
-    if( process_id == master_id )THEN
-      CALL OPENFILE('MODCHAN.INP')
+  if( ISCHAN > 0 )then
+    if( process_id == master_id )then
+      call OPENFILE('MODCHAN.INP')
 
-      STR=READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
-      READ(1,*) MDCHH,MDCHHD,MDCHHD2
-      CLOSE(1)
-    ENDIF
-    Call Broadcast_Scalar(MDCHH, master_id)
-  ENDIF
+      STR = READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
+      read(1,*) MDCHH,MDCHHD,MDCHHD2
+      close(1)
+    endif
+    call Broadcast_Scalar(MDCHH, master_id)
+  endif
 
   !end if !***End on master process
 
-  IF( NWSER > 1 )THEN
+  if( NWSER > 1 )then
     ! *** ****************************
-    if( process_id == master_id )THEN
-      CALL OPENFILE('WNDMAP.INP')
-      STR=READSTR(1)
-      READ(1,*,IOSTAT=ISO) NWNDMAP
-      IF( ISO /= 0) CALL STOPP(' *** WNDMAP.INP: READING ERROR!')
-      CLOSE(1)
-    end if!***End on master process
+    if( process_id == master_id )then
+      call OPENFILE('WNDMAP.INP')
+      STR = READSTR(1)
+      read(1,*,IOSTAT = ISO) NWNDMAP
+      if( ISO /= 0) CALL STOPP(' *** WNDMAP.INP: READING ERROR!')
+      close(1)
+    endif   ! *** End on master process
 
-    Call Broadcast_Scalar(NWSER, master_id)
-    Call Broadcast_Scalar(NWNDMAP, master_id)
+    call Broadcast_Scalar(NWSER, master_id)
+    call Broadcast_Scalar(NWNDMAP, master_id)
 
-    ALLOCATE(TWNDMAPBEG(NWNDMAP),TWNDMAPEND(NWNDMAP))
-    ALLOCATE(WNDWHT(NWSER,LCM,NWNDMAP))
-    ALLOCATE(WNDWHT_TEMP(NWSER))
+    allocate(TWNDMAPBEG(NWNDMAP),TWNDMAPEND(NWNDMAP))
+    allocate(WNDWHT(NWSER,LCM,NWNDMAP))
+    allocate(WNDWHT_TEMP(NWSER))
 
-  ENDIF
+  endif
 
-  Call Broadcast_Scalar(NASER, master_id)
+  call Broadcast_Scalar(NASER, master_id)
 
-  IF( NASER > 1 )THEN
+  if( NASER > 1 )then
     ! *** ****************************
-    if( process_id == master_id )THEN
-      CALL OPENFILE('ATMMAP.INP')
-      STR=READSTR(1)
-      READ(1,*,IOSTAT=ISO) NATMMAP
-      IF( ISO /= 0) CALL STOPP(' *** ATMMAP.INP: READING ERROR!')
-      CLOSE(1)
-    end if!***End on master process
+    if( process_id == master_id )then
+      call OPENFILE('ATMMAP.INP')
+      STR = READSTR(1)
+      read(1,*,IOSTAT = ISO) NATMMAP
+      if( ISO /= 0) CALL STOPP(' *** ATMMAP.INP: READING ERROR!')
+      close(1)
+    endif   ! *** End on master process
 
-    Call Broadcast_Scalar(NATMMAP, master_id)
+    call Broadcast_Scalar(NATMMAP, master_id)
 
-    ALLOCATE(TATMMAPBEG(NATMMAP),TATMMAPEND(NATMMAP))
-    ALLOCATE(ATMWHT(NASER,LCM,NATMMAP))
-    ALLOCATE(ATMWHT_TEMP(NASER))     ! Temporary storage for remapping in input.f90 because of domain decomposition
-  ENDIF
+    allocate(TATMMAPBEG(NATMMAP),TATMMAPEND(NATMMAP))
+    allocate(ATMWHT(NASER,LCM,NATMMAP))
+    allocate(ATMWHT_TEMP(NASER))     ! Temporary storage for remapping in input.f90 because of domain decomposition
+  endif
 
-  IF( ISICE == 1 .AND. NISER > 1 )THEN
+  if( ISICE == 1 .and. NISER > 1 )then
     ! *** ****************************
-    if( process_id == master_id )THEN
-      CALL OPENFILE('ICEMAP.INP')
+    if( process_id == master_id )then
+      call OPENFILE('ICEMAP.INP')
 
-      STR=READSTR(1)
-      READ(1,*,IOSTAT=ISO) NICEMAP
-      IF( ISO /= 0) CALL STOPP(' *** ICEMAP.INP: READING ERROR!')
-      CLOSE(1)
-    end if!***End on master process
+      STR = READSTR(1)
+      read(1,*,IOSTAT = ISO) NICEMAP
+      if( ISO /= 0) CALL STOPP(' *** ICEMAP.INP: READING ERROR!')
+      close(1)
+    endif   ! *** End on master process
 
-    Call Broadcast_Scalar(NICEMAP, master_id)
-    Call Broadcast_Scalar(NISER,   master_id)
+    call Broadcast_Scalar(NICEMAP, master_id)
+    call Broadcast_Scalar(NISER,   master_id)
 
-    ALLOCATE(TICEMAPBEG(NICEMAP),TICEMAPEND(NICEMAP))
-    ALLOCATE(RICEWHT(NICEMAP,LCM,NISER))
-    ALLOCATE(RICEWHT_Global(NICEMAP,LCM_Global,NISER))
-  ENDIF
+    allocate(TICEMAPBEG(NICEMAP),TICEMAPEND(NICEMAP))
+    allocate(RICEWHT(NICEMAP,LCM,NISER))
+    allocate(RICEWHT_Global(NICEMAP,LCM_Global,NISER))
+  endif
 
-  RETURN
-
+  return
   ! *** ERROR MESSAGES
 10 WRITE(6,'(A)') '  READ ERROR '//CARDNO//' IN INPUT FILE: '//TRIM(CFILE)
-  WRITE(8,'(A)') '  READ ERROR '//CARDNO//' IN INPUT FILE: '//TRIM(CFILE)
-  CALL STOPP('.')
+  write(mpi_error_unit,'(A)') '  READ ERROR '//CARDNO//' IN INPUT FILE: '//TRIM(CFILE)
+  call STOPP('.')
 
 30 WRITE(6,'(A)') '  READ ERROR '//CARDNO//': UNEXPECTED END OF INPUT FILE: '//TRIM(CFILE)
-  WRITE(8,'(A)') '  READ ERROR '//CARDNO//': UNEXPECTED END OF INPUT FILE: '//TRIM(CFILE)
-  CALL STOPP('.')
+  write(mpi_error_unit,'(A)') '  READ ERROR '//CARDNO//': UNEXPECTED END OF INPUT FILE: '//TRIM(CFILE)
+  call STOPP('.')
 
 END SUBROUTINE
 
 SUBROUTINE SCANMODC
-  INTEGER :: M,I
-  REAL    :: R
+  integer :: M,I
+  real    :: R
 
-  CALL OPENFILE('MODCHAN.INP')
+  call OPENFILE('MODCHAN.INP')
 
-10 READ(1,*,ERR=10,END=40)M,I,I
-  NCHANM=MAX(1,M)
-  READ(1,*,ERR=20,END=40)I,I,R
-  CLOSE(1)
-  RETURN
-
+10 READ(1,*,err = 10,end = 40)M,I,I
+  NCHANM = MAX(1,M)
+  read(1,*,err = 20,end = 40)I,I,R
+  close(1)
+  return
 20 WRITE(6,'(A)') '  READ ERROR IN INPUT FILE: MODCHAN.INP'
-  WRITE(8,'(A)') '  READ ERROR IN INPUT FILE: MODCHAN.INP'
-  CALL STOPP('.')
+  write(mpi_error_unit,'(A)') '  READ ERROR IN INPUT FILE: MODCHAN.INP'
+  call STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: MODCHAN.INP'
-  WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: MODCHAN.INP'
-  CALL STOPP('.')
+  write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: MODCHAN.INP'
+  call STOPP('.')
 
 END SUBROUTINE
 
 SUBROUTINE SCANGWSR
-  INTEGER :: I,J,M,NS
-  REAL    :: R,T,F
+  integer :: I,J,M,NS
+  real    :: R,T,F
 
-  if( process_id == master_id )THEN
-    CALL OPENFILE('GWSER.INP')
+  if( process_id == master_id )then
+    call OPENFILE('GWSER.INP')
 
-  10 READ(1,*,ERR=10,END=40) NGWSER
+  10 READ(1,*,err = 10,end = 40) NGWSER
     NGWSERM = MAX(1,NGWSER)
-    DO NS=1,NGWSER
-      READ(1,*,ERR=20,END=40)M,R,R,R,R,I
+    do NS = 1,NGWSER
+      read(1,*,err = 20,end = 40)M,R,R,R,R,I
       NDGWSER = MAX(NDGWSER,M)
-      DO I=1,M
-        READ(1,*,ERR=20,END=40)T,F,(R,J=1,3+NDYE+NSED+NSND+NTOX)   ! DELME - WQ
-      ENDDO
-    ENDDO
-    CLOSE(1)
+      do I = 1,M
+        read(1,*,err = 20,end = 40)T,F,(R,J = 1,3+NDYE+NSED+NSND+NTOX)   ! DELME - WQ
+      enddo
+    enddo
+    close(1)
   endif
   
-  Call Broadcast_Scalar(NGWSERM, master_id)
-  Call Broadcast_Scalar(NGWSER, master_id)
-  Call Broadcast_Scalar(NDGWSER, master_id)
+  call Broadcast_Scalar(NGWSERM, master_id)
+  call Broadcast_Scalar(NGWSER, master_id)
+  call Broadcast_Scalar(NDGWSER, master_id)
   
-  RETURN
-
+  return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: GWSER.INP IN SERIES:',NS,', POINT:',I
-   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: GWSER.INP IN SERIES:',NS,', POINT:',I
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: GWSER.INP IN SERIES:',NS,', POINT:',I
+   call STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: GWSER.INP'
-   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: GWSER.INP'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: GWSER.INP'
+   call STOPP('.')
    
 END SUBROUTINE
 
 SUBROUTINE SCANASER
-  USE INFOMOD,ONLY:SKIPCOM
-  INTEGER :: M,I,NS
-  REAL    :: R
-  CHARACTER*120 LIN,STR*200
+  use INFOMOD,ONLY:SKIPCOM
+  integer :: M,I,NA,NS
+  real    :: R
+  character*120 LIN,STR*200
 
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CALL OPENFILE('ASER.INP')
-  end if!***End on master process
+  if( process_id == master_id )then
+    call OPENFILE('ASER.INP')
+  endif   ! *** End on master process
 
-  Call Broadcast_Scalar(NASER, master_id)
+  call Broadcast_Scalar(NASER, master_id)
 
-  ALLOCATE(TSATM(NASER))
+  ! *** Allocate structures
+  allocate(TSATM(NASER))
 
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CALL SKIPCOM(1,'*')
-    READ(1,'(A)') STR
-    STR=READSTR(1)
+  if( process_id == master_id )then
+    call SKIPCOM(1,'*')
+    read(1,'(A)') STR
+    STR = READSTR(1)
   endif
 
-  DO NS=1,NASER
+  do NA = 1,NASER
+    ! *** ****************************
+    if( process_id == master_id )then
+      read(1,*,end = 40)M,R,R,I,R,R,R,R
+    endif   ! *** End on master process
+
+    call Broadcast_Scalar(M, master_id)
+
+    NDASER = MAX(NDASER,M)
+    allocate(TSATM(NA).TIM(M))
+    allocate(TSATM(NA).VAL(M,7))
+    
+    TSATM(NA).NREC= M
+    TSATM(NA).TIM = 0.0
+    TSATM(NA).VAL = 0.0
 
     ! *** ****************************
-    if( process_id == master_id)then
-      READ(1,*,END=40)M,R,R,I,R,R,R,R
-    end if!***End on master process
+    if( process_id == master_id )then
+      do I = 1,M
+        read(1,*,err = 20,end = 40)R,R,R,R,R,R,R,R
+      enddo
+    endif   ! *** End on master process
 
-    Call Broadcast_Scalar(M, master_id)
-
-    NDASER=MAX(NDASER,M)
-    ALLOCATE(TSATM(NS).TIM(M),TSATM(NS).VAL(M,7))
-    TSATM(NS).NREC= M
-    TSATM(NS).TIM = 0
-    TSATM(NS).VAL = 0
-
-    ! *** ****************************
-    if( process_id == master_id )THEN
-      DO I=1,M
-        READ(1,*,ERR=20,END=40)R,R,R,R,R,R,R,R
-      ENDDO
-    endif!***End on master process
-
-  ENDDO
+  enddo
+  
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CLOSE(1)
-  End if!***End on master process
+  if( process_id == master_id )then
+    close(1)
+  endif   ! *** End on master process
 
   ! *** ****************************
-  if( process_id == master_id )THEN
-    IF( ISTRAN(8) > 0 )THEN
-      IF( IWQSUN == 1 )THEN
-        CALL OPENFILE('SUNDAY.INP')
+  if( process_id == master_id )then
+    if( ISTRAN(8) > 0 )then
+      if( IWQSUN == 1 )then
+        call OPENFILE('SUNDAY.INP')
 
-        M=0
-        CALL SKIPCOM(1,'*')  ! *** SKIP OVER TITLE AND AND HEADER LINES
+        M = 0
+        call SKIPCOM(1,'*')  ! *** SKIP OVER TITLE AND AND HEADER LINES
         !DO I = 1,7
-        !  READ(1,'(A120)',ERR=30,END=40)LIN
+        !  read(1,'(A120)',err = 30,end = 40)LIN
         !END DO
-        READ(1,*,ERR=30,END=40)M,R,R,R,R
-        CLOSE(1)
-        NDASER=MAX(NDASER,M)
-      ENDIF
-    ENDIF
-  end if!***End on master process
+        read(1,*,err = 30,end = 40)M,R,R,R,R
+        close(1)
+        NDASER = MAX(NDASER,M)
+      endif
+    endif
+  endif   ! *** End on master process
 
-  RETURN
-
+  return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: ASER.INP IN SERIES:',NS,', POINT:',I
-   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: ASER.INP IN SERIES:',NS,', POINT:',I
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: ASER.INP IN SERIES:',NS,', POINT:',I
+   call STOPP('.')
   
 30 WRITE(6,'(A)') '  READ ERROR IN INPUT FILE'
-   WRITE(8,'(A)') '  READ ERROR IN INPUT FILE'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  READ ERROR IN INPUT FILE'
+   call STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE'
-   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE'
+   call STOPP('.')
 
 END SUBROUTINE
 
 SUBROUTINE SCANSSER
-  INTEGER :: NS,I,J,M,K
-  REAL   :: R
+  integer :: NS,I,J,M,K
+  real   :: R
 
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CALL OPENFILE('SSER.INP')
-  endif!***End on master process
+  if( process_id == master_id )then
+    call OPENFILE('SSER.INP')
+  endif   ! *** End on master process
 
-  DO NS=1,NSER(1)
+  do NS = 1,NSER(1)
     ! *** ****************************
-    if( process_id == master_id )THEN
-10    READ(1,*,ERR=10,END=40)I,M,R,R,R,R
-    endif!***End on master process
+    if( process_id == master_id )then
+10    read(1,*,err = 10,end = 40)I,M,R,R,R,R
+    endif   ! *** End on master process
 
-    Call Broadcast_Scalar(M, master_id)
+    call Broadcast_Scalar(M, master_id)
 
-    NDCSER=MAX(NDCSER,M)
+    NDCSER = MAX(NDCSER,M)
 
-    ALLOCATE(TSSAL(NS).VAL(M,KCM),TSSAL(NS).TIM(M))
-    TSSAL(NS).NREC=M
-    TSSAL(NS).VAL(:,:)=0
-    TSSAL(NS).TIM(:)=0
+    allocate(TSSAL(NS).VAL(M,KCM),TSSAL(NS).TIM(M))
+    TSSAL(NS).NREC = M
+    TSSAL(NS).VAL(:,:) = 0
+    TSSAL(NS).TIM(:) = 0
 
     ! *** ****************************
-    if( process_id == master_id )THEN
-      IF( I == 1 )THEN
-        READ(1,*,ERR=20,END=40)(R,K=1,KC)
-        DO J=1,M
-          READ(1,*,ERR=20,END=40)R,R
-        ENDDO
-      ELSE
-        DO J=1,M
-          READ(1,*,ERR=20,END=40)R,(R,K=1,KC)
-        ENDDO
-      ENDIF
-    endif!***End on master process
+    if( process_id == master_id )then
+      if( I == 1 )then
+        read(1,*,err = 20,end = 40)(R,K = 1,KC)
+        do J = 1,M
+          read(1,*,err = 20,end = 40)R,R
+        enddo
+      else
+        do J = 1,M
+          read(1,*,err = 20,end = 40)R,(R,K = 1,KC)
+        enddo
+      endif
+    endif   ! *** End on master process
 
-  ENDDO
+  enddo
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CLOSE(1)
-  endif!***End on master process
+  if( process_id == master_id )then
+    close(1)
+  endif   ! *** End on master process
 
-  RETURN
-  
+  return  
    ! *** ****************************
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SSER.INP IN SERIES:',NS,', POINT:',J
-   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SSER.INP IN SERIES:',NS,', POINT:',J
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SSER.INP IN SERIES:',NS,', POINT:',J
+   call STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: SSER.INP'
-   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: SSER.INP'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: SSER.INP'
+   call STOPP('.')
 
 END SUBROUTINE
 
 SUBROUTINE SCANTSER
-  INTEGER   :: NS,I,J,K,M,NN
-  REAL      :: R
-  CHARACTER(200) :: STR
+  integer   :: NS,I,J,K,M,NN
+  real      :: R
+  character(200) :: STR
 
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CALL OPENFILE('TSER.INP')
-    STR=READSTR(1)
+  if( process_id == master_id )then
+    call OPENFILE('TSER.INP')
+    STR = READSTR(1)
   endif
 
-  Call Broadcast_Scalar(NSER(2), master_id)
+  call Broadcast_Scalar(NSER(2), master_id)
 
-  DO NS=1,NSER(2)
+  do NS = 1,NSER(2)
     ! *** ****************************
-    if( process_id == master_id )THEN
-      READ(1,*,ERR=991) I,M,R,R,R,R
-    endif!***End on master process
+    if( process_id == master_id )then
+      read(1,*,err = 991) I, M, R, R, R, R
+    endif
 
-    Call Broadcast_Scalar(M, master_id)
+    call Broadcast_Scalar(M, master_id)
 
-    NDCSER=MAX(NDCSER,M)
+    NDCSER = MAX(NDCSER,M)
 
-    ALLOCATE(TSTEM(NS).VAL(M,KCM),TSTEM(NS).TIM(M))
-    TSTEM(NS).NREC=M
-    TSTEM(NS).VAL(:,:)=0
-    TSTEM(NS).TIM(:)=0
+    allocate(TSTEM(NS).VAL(M,KCM),TSTEM(NS).TIM(M))
+    TSTEM(NS).NREC = M
+    TSTEM(NS).VAL(:,:) = 0
+    TSTEM(NS).TIM(:) = 0
     ! *** ****************************
-    if( process_id == master_id )THEN
-      IF( I == 1 )THEN
-        READ(1,*,ERR=991) (R,K=1,KC)
-        DO J=1,M
-          READ(1,*,ERR=991) R,R
-        ENDDO
-      ELSE
-        DO J=1,M
-          READ(1,*,ERR=991) R,(R,K=1,KC)
-        ENDDO
-      ENDIF
-    endif!***End on master process
-
-  ENDDO
-  ! *** ****************************
-  if( process_id == master_id )THEN
-    CLOSE(1)
-  endif!***End on master process
-
-  IF( ISICE == 1 .AND. NISER >= 1 )THEN
-
-    ! *** ****************************
-    if( process_id == master_id )THEN
-      CALL OPENFILE('ISER.INP')
-      STR=READSTR(1)
-    endif!***End on master process
-
-    ALLOCATE(TSICE(NISER))
-
-
-    DO NS=1,NISER
-      ! *** ****************************
-      if( process_id == master_id )THEN
-        READ(1,*,ERR=992) M,R,R,R
+    if( process_id == master_id )then
+      if( I == 1 )then
+        read(1,*,err = 991) (R,K = 1,KC)
+        do J = 1,M
+          read(1,*,err = 991) R, R
+        enddo
+      else
+        do J = 1,M
+          read(1,*,err = 991) R, (R,K = 1,KC)
+        enddo
       endif
+    endif   ! *** End on master process
 
-      Call Broadcast_Scalar(M, master_id)
+  enddo
+  
+  ! *** ****************************
+  if( process_id == master_id )then
+    close(1)
+  endif 
 
-      ALLOCATE(TSICE(NS).VAL(M,2),TSICE(NS).TIM(M))  ! ** VAL(M,1): ICE THICKNESS; VAL(M,2): ICE COVER
+  if( ISICE == 1 .and. NISER >= 1 )then
+
+    ! *** ****************************
+    if( process_id == master_id )then
+      call OPENFILE('ISER.INP')
+      STR = READSTR(1)
+    endif   ! *** End on master process
+
+    allocate(TSICE(NISER))
+
+    do NS = 1,NISER
+      ! *** ****************************
+      if( process_id == master_id )then
+        read(1,*,err = 992) M,R,R,R
+      endif
+      
+      call Broadcast_Scalar(M, master_id)
+
+      allocate(TSICE(NS).VAL(M,2),TSICE(NS).TIM(M))  ! *** VAL(M,1): ICE THICKNESS; VAL(M,2): ICE COVER
       TSICE(NS).NREC= M
       TSICE(NS).VAL = 0
       TSICE(NS).TIM = 0
       ! *** ****************************
-      if( process_id == master_id )THEN
-        DO J=1,M
-          READ(1,*,ERR=992)
-        ENDDO
-      endif!***End on master process
+      if( process_id == master_id )then
+        do J = 1,M
+          read(1,*,err = 992)
+        enddo
+      endif  ! *** End on master process
 
-    ENDDO
+    enddo
 
     ! *** ****************************
-    if( process_id == master_id )THEN
-      CLOSE(1)
-    endif!***End on master process
+    if( process_id == master_id )then
+      close(1)
+    endif   ! *** End on master process
 
-  ELSEIF( ISICE == 2 )THEN
+  elseif( ISICE == 2 )then
     ! *** ****************************
-    if( process_id == master_id )THEN
-      CALL OPENFILE('ISTAT.INP')
-      STR=READSTR(1)
-      READ(1,*,ERR=993) M,R,R   !MISER(NN),TCISER(NN),TAISER(NN)
-    endif!***End on master process
+    if( process_id == master_id )then
+      call OPENFILE('ISTAT.INP')
+      STR = READSTR(1)
+      read(1,*,err = 993) M,R,R   !MISER(NN),TCISER(NN),TAISER(NN)
+    endif   ! *** End on master process
 
-    Call Broadcast_Scalar(M, master_id)
-    NN=1
+    call Broadcast_Scalar(M, master_id)
+    NN = 1
 
-    ALLOCATE(TSICE(NN))
-    ALLOCATE(TSICE(NN).VAL(M,2),TSICE(NN).TIM(M))  ! ** VAL(M,1): ICE THICKNESS; VAL(M,2): ICE COVER
+    allocate(TSICE(NN))
+    allocate(TSICE(NN).VAL(M,2),TSICE(NN).TIM(M))  ! *** VAL(M,1): ICE THICKNESS; VAL(M,2): ICE COVER
     TSICE(NN).NREC= M
     TSICE(NN).VAL = 0
     TSICE(NN).TIM = 0
 
     ! *** ****************************
-    if( process_id == master_id )THEN
-      CLOSE(1)
-    endif!***End on master process
+    if( process_id == master_id )then
+      close(1)
+    endif   ! *** End on master process
 
-  ENDIF
+  endif
 
-  RETURN
-991 CALL STOPP('TSER.INP: READING ERROR')
-992 CALL STOPP('ISER.INP: READING ERROR')
-993 CALL STOPP('ISTAT.INP: READING ERROR')
+  return
+  
+991 call STOPP('TSER.INP: READING ERROR')
+992 call STOPP('ISER.INP: READING ERROR')
+993 call STOPP('ISTAT.INP: READING ERROR')
 END SUBROUTINE
 
 SUBROUTINE SCANDSER
-  INTEGER :: NS,I,K,M,MD,ISTYP
-  REAL   :: R
-  CHARACTER*120 SKIP
-  CHARACTER(*) :: STR*200
+  integer :: NS,I,K,M,MD,ISTYP
+  real   :: R
+  character*120 SKIP
+  character(*) :: STR*200
 
-  CALL OPENFILE('DSER.INP')
+  ! *** ****************************
+  if( process_id == master_id )then
+    call OPENFILE('DSER.INP')
+    ! *** SKIP HEADER
+    STR = READSTR(1)
+  endif
+  
 
-  ! *** SKIP HEADER
-  STR=READSTR(1)
+  do NS = 1,NSER(3)
+    ! *** ****************************
+    if( process_id == master_id )then
+      read(1,*,err = 20,end = 40)ISTYP,M
+    endif
+    
+    call Broadcast_Scalar(M, master_id)
 
-  DO NS=1,NSER(3)
-    READ(1,*,ERR=20,END=40)ISTYP,M
-    NDCSER=MAX(NDCSER,M)
+    NDCSER = MAX(NDCSER,M)
 
-    DO MD=1,NDYE
-      ALLOCATE(TSDYE(NS,MD).VAL(M,KCM),TSDYE(NS,MD).TIM(M))
-      TSDYE(NS,MD).NREC=M
-      TSDYE(NS,MD).VAL(:,:)=0.
-      TSDYE(NS,MD).TIM(:)=0.
-    ENDDO
+    ! *** Allocate structure
+    do MD = 1,NDYE
+      allocate(TSDYE(NS,MD).VAL(M,KCM),TSDYE(NS,MD).TIM(M))
+      TSDYE(NS,MD).NREC = M
+      TSDYE(NS,MD).VAL(:,:) = 0.
+      TSDYE(NS,MD).TIM(:) = 0.
+    enddo
 
-    IF( ISTYP == 1 )THEN
-      READ(1,*,ERR=20,END=40)(R,K=1,KC)
-    ENDIF
+    if( ISTYP == 1 )then
+      read(1,*,err = 20,end = 40)(R,K = 1,KC)
+    endif
 
     ! *** SKIP TO THE NEXT SERIES
-    DO I=1,M
-      DO MD=1,NDYE
-        READ(1,'(A)') SKIP
-      ENDDO
-    ENDDO
-  ENDDO
-  CLOSE(1)
-  RETURN
-
+    do I = 1,M
+      do MD = 1,NDYE
+        read(1,'(A)') SKIP
+      enddo
+    enddo
+  enddo
+  close(1)
+  return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: DSER.INP IN SERIES:',NS,', POINT:',I
-   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: DSER.INP IN SERIES:',NS,', POINT:',I
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: DSER.INP IN SERIES:',NS,', POINT:',I
+   call STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: DSER.INP'
-   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: DSER.INP'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: DSER.INP'
+   call STOPP('.')
    
 END SUBROUTINE
 
 SUBROUTINE SCANSFSR
-  INTEGER :: NS,I,J,K,M
-  REAL   :: R
+  integer :: NS,I,J,K,M
+  real   :: R
 
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CALL OPENFILE('SFSER.INP')
+  if( process_id == master_id )then
+    call OPENFILE('SFSER.INP')
   endif
 
-  DO NS=1,NSER(4)
+  do NS = 1,NSER(4)
     ! *** ****************************
-    if( process_id == master_id )THEN
-10    READ(1,*,ERR=10,END=40)I,M,R,R,R,R
+    if( process_id == master_id )then
+10    read(1,*,err = 10,end = 40)I,M,R,R,R,R
     endif
-    Call Broadcast_Scalar(M, master_id)
+    call Broadcast_Scalar(M, master_id)
 
-    NDCSER=MAX(NDCSER,M)
+    NDCSER = MAX(NDCSER,M)
 
-    ALLOCATE(TSSFL(NS).VAL(M,KCM),TSSFL(NS).TIM(M))
-    TSSFL(NS).NREC=M
-    TSSFL(NS).VAL(:,:)=0
-    TSSFL(NS).TIM(:)=0
+    allocate(TSSFL(NS).VAL(M,KCM),TSSFL(NS).TIM(M))
+    TSSFL(NS).NREC = M
+    TSSFL(NS).VAL(:,:) = 0
+    TSSFL(NS).TIM(:) = 0
     ! *** ****************************
-    if( process_id == master_id )THEN
-      IF( I == 1 )THEN
-        READ(1,*,ERR=20,END=40)(R,K=1,KC)
-        DO J=1,M
-          READ(1,*,ERR=20,END=40)R,R
-        ENDDO
-      ELSE
-        DO J=1,M
-          READ(1,*,ERR=20,END=40)R,(R,K=1,KC)
-        ENDDO
-      ENDIF
-    endif!***End on master process
+    if( process_id == master_id )then
+      if( I == 1 )then
+        read(1,*,err = 20,end = 40)(R,K = 1,KC)
+        do J = 1,M
+          read(1,*,err = 20,end = 40)R,R
+        enddo
+      else
+        do J = 1,M
+          read(1,*,err = 20,end = 40)R,(R,K = 1,KC)
+        enddo
+      endif
+    endif   ! *** End on master process
 
-  ENDDO
+  enddo
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CLOSE(1)
-  endif!***End on master process
+  if( process_id == master_id )then
+    close(1)
+  endif   ! *** End on master process
 
-  RETURN
-
+  return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SFSER.INP IN SERIES:',NS,', POINT:',J
-   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SFSER.INP IN SERIES:',NS,', POINT:',J
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SFSER.INP IN SERIES:',NS,', POINT:',J
+   call STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: SFSER.INP'
-   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: SFSER.INP'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: SFSER.INP'
+   call STOPP('.')
    
 END SUBROUTINE
 
 SUBROUTINE SCANQSER
-  INTEGER :: NS,I,J,M,K
-  REAL    :: R,T,Q
+  integer :: NS,I,J,M,K
+  real    :: R,T,Q
 
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CALL OPENFILE('QSER.INP')
+  if( process_id == master_id )then
+    call OPENFILE('QSER.INP')
   endif
 
-  ALLOCATE(QSER(NQSER))
+  allocate(TSFL(NQSER))
 
-  DO NS=1,NQSER
+  do NS = 1,NQSER
     ! *** ****************************
-    if( process_id == master_id )THEN
-10    READ(1,*,ERR=10,END=40)I,M,R,R,R,R,J
+    if( process_id == master_id )then
+10    read(1,*,err = 10,end = 40)I,M,R,R,R,R,J
     endif
 
-    Call Broadcast_Scalar(M, master_id)
+    call Broadcast_Scalar(M, master_id)
 
-    ALLOCATE(QSER(NS).VAL(M,KCM),QSER(NS).TIM(M))
-    QSER(NS).NREC = M
-    QSER(NS).VAL(:,:) = 0.0
-    QSER(NS).TIM(:) = 0.0
-    ! *** ****************************
-    if( process_id == master_id )THEN
-      !NDQSER=MAX(NDQSER,M)
-      IF( I == 1 )THEN
-        READ(1,*,ERR=20,END=40)(R,K=1,KC)
-        DO J=1,M
-          READ(1,*,ERR=20,END=40)T,Q
-        ENDDO
-      ELSE
-        DO J=1,M
-          READ(1,*,ERR=20,END=40)T,(Q,K=1,KC)
-        ENDDO
-      ENDIF
-    endif!***End on master process
+    ! *** Allocate structure
+    allocate( TSFL(NS).VAL(M,KCM) )
+    allocate( TSFL(NS).TIM(M) )
+    TSFL(NS).NREC = M
+    TSFL(NS).VAL(:,:) = 0.0
+    TSFL(NS).TIM(:) = 0.0
+    ! *******************************
+    
+    if( process_id == master_id )then
+      if( I == 1 )then
+        read(1,*,err = 20,end = 40)(R,K = 1,KC)
+        do J = 1,M
+          read(1,*,err = 20,end = 40)T,Q
+        enddo
+      else
+        do J = 1,M
+          read(1,*,err = 20,end = 40)T,(Q,K = 1,KC)
+        enddo
+      endif
+    endif   ! *** End on master process
 
-  ENDDO
+  enddo
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CLOSE(1)
-  endif!***End on master process
+  if( process_id == master_id )then
+    close(1)
+  endif   ! *** End on master process
 
-  RETURN
-
+  return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QSER.INP IN SERIES:',NS,', POINT:',J
-   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QSER.INP IN SERIES:',NS,', POINT:',J
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QSER.INP IN SERIES:',NS,', POINT:',J
+   call STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: QSER.INP'
-   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: QSER.INP'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: QSER.INP'
+   call STOPP('.')
    
 END SUBROUTINE
 
-SUBROUTINE SCANQWSER
-  Use fson
-  Use mod_fson_value, Only: fson_value_count, fson_value_get
-  INTEGER :: NTMP,I,J,M,NV,NS
-  REAL(RKD)   :: R,T,Q
-  Type(fson_value), Pointer :: json_data
+SUBROUTINE SCANWRSER
+  use fson
+  use mod_fson_value, only: fson_value_count, fson_value_get
+  integer :: NTMP,I,J,M,NV,NS
+  real(RKD)   :: R,T,Q
+  type(fson_value), Pointer :: json_data
   
   ! *** ****************************
-  if( process_id == master_id )THEN
+    ! *** Allocate time series of Withdrawal/Return structure type
+  allocate(TSWR(NQWRSR))
+  
+  if( process_id == master_id )then
 
     ! *** SETTING NUMBER OF CONSTITUENTS (NTMP)
     NTMP = 3 + NDYM + NSED + NSND + NTOX
+    
     ! *** Handle Water Quality variables, if needed
-    IF( ISTRAN(8) > 0 )THEN
-      !CALL OPENFILE('WQ_3DWC.INP')
-      !
-      !CALL SEEK('C02')
-      !READ(1,*) ISWQLVL,NWQV,NWQZ,NWQPS,NWQTD,NWQTS,NTSWQV,NSMG,NSMZ,NTSSMV,NSMTS,WQKINUPT
-      !CLOSE(1)
-      !
-      !NTMP = NTMP + NWQV   ! *** NTMP INCLUDES WQ
+    if( ISTRAN(8) > 0 )then
       json_data => fson_parse("wq_3dwc.jnp")
     
-      Call fson_get(json_data, "number_of_algae_groups",                          NALGAE)
-      Call fson_get(json_data, "number_of_zooplankton_groups",                    NZOOPL)
+      call fson_get(json_data, "number_of_algae_groups",       NALGAE)
+      call fson_get(json_data, "number_of_zooplankton_groups", NZOOPL)
       NTMP = NTMP + 19 + NALGAE + NZOOPL
-    ENDIF
+    endif
 
-    CALL OPENFILE('QWRS.INP')
-
-    DO NS=1,NQWRSR
-10    READ(1,*,ERR=10,END=40)I,M,R,R,R,R
+    call OPENFILE('QWRS.INP')
+    
+    do NS = 1,NQWRSR
+10    read(1,*,err = 10,end = 40) I ,M, R, R, R, R
       NDQWRSR = MAX(NDQWRSR,M,1)
-      IF( I == 0 )THEN
+    
+      if( I == 0 )then
         ! *** Flow Only
-        DO J=1,M
-          READ(1,*,ERR=20,END=40)T,Q
-        ENDDO
-      ELSE
+        do J = 1,M
+          read(1,*,err = 20,end = 40)T,Q
+        enddo
+      else
         ! *** Flow with Rise/Fall
-        DO J=1,M
-          READ(1,*,ERR=20,END=40)T,Q,(R,NV=1,NTMP)
-        ENDDO
-      ENDIF
-    ENDDO
+        do J = 1,M
+          read(1,*,err = 20,end = 40)T,Q,(R,NV = 1,NTMP)
+        enddo
+      endif
+    enddo
 
-    CLOSE(1)
-  End if !*** Writing on master
+    close(1)
+  endif !*** Writing on master
 
-  Call Broadcast_Scalar(NDQWRSR, master_id)
+  call Broadcast_Scalar(NTMP, master_id)
+  call Broadcast_Scalar(NDQWRSR, master_id)
+        
+  ! *** Allocate structure
+  do NS = 1,NQWRSR
+    allocate(TSWR(NS).TIM(NDQWRSR))
+    allocate(TSWR(NS).VAL(NDQWRSR,0:NTMP))
+    TSWR(NS).NREC = NDQWRSR
+    TSWR(NS).VAL(:,:) = 0.0
+    TSWR(NS).TIM(:) = 0.0
+  enddo
   
-  RETURN
+  return
 
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QWRS.INP IN SERIES:',NS,', POINT:',J
-   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QWRS.INP IN SERIES:',NS,', POINT:',J
+   write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QWRS.INP IN SERIES:',NS,', POINT:',J
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: QWRS.INP'
-   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: QWRS.INP'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: QWRS.INP'
+   call STOPP('.')
 
 END SUBROUTINE
 
 SUBROUTINE SCANPSER
-  INTEGER :: NS,M,I,I1
-  REAL   :: R,T,E
+  integer :: NS,M,I,I1
+  real   :: R,T,E
 
   ! *** ****************************
-  if( process_id == master_id )THEN
+  if( process_id == master_id )then
+    call OPENFILE('PSER.INP')
+  endif
 
-    CALL OPENFILE('PSER.INP')
-    DO NS=1,NPSER
-10    READ(1,*,ERR=10,END=40)I1,M,R,R,R,R
-      NDPSER=MAX(NDPSER,M)
-      IF( I1 == 1)READ(1,*)R,R,R
-      DO I=1,M
-        IF( I1 == 0 )THEN
-          READ(1,*,ERR=20,END=40)T,E
-        ELSEIF( I1 == 1 )THEN
-          READ(1,*,ERR=20,END=40)T,E,R
-        ENDIF
-      ENDDO
-    ENDDO
-    CLOSE(1)
-  end if!***End on master process
+  do NS = 1,NPSER
+    if( process_id == master_id )then
+  10  read(1,*,err = 10,end = 40) I1, M, R, R, R, R
+      NDPSER = MAX(NDPSER,M)
+    endif
 
-  Call Broadcast_Scalar(NDPSER, master_id)
+    call Broadcast_Scalar(M, master_id)
 
-  RETURN
+    ! *** Allocate structure
+    allocate( TSPS(NS).VAL(M,2) )
+    allocate( TSPS(NS).TIM(M) )
+    TSPS(NS).NREC = M
+    TSPS(NS).VAL(:,:) = 0.0
+    TSPS(NS).TIM(:) = 0.0
+    ! *******************************
 
+    if( process_id == master_id )then
+      if( I1 == 1)READ(1,*) R, R, R
+      do I = 1,M
+        if( I1 == 0 )then
+          read(1,*,err = 20,end = 40) T, E
+        elseif( I1 == 1 )then
+          read(1,*,err = 20,end = 40) T, E, R
+        endif
+      enddo
+    endif   ! *** End on master process
+
+  enddo
+
+  if( process_id == master_id )then
+    close(1)
+  endif   ! *** End on master process
+
+  call Broadcast_Scalar(NDPSER, master_id)
+
+  return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: PSER.INP IN SERIES:',NS,', POINT:',I
-   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: PSER.INP IN SERIES:',NS,', POINT:',I
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: PSER.INP IN SERIES:',NS,', POINT:',I
+   call STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: PSER.INP'
-   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: PSER.INP'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: PSER.INP'
+   call STOPP('.')
    
 END SUBROUTINE
 
 SUBROUTINE SCANWSER
-  INTEGER :: I,M,NS
-  REAL    :: R
+  integer :: I,M,NS
+  real    :: R
 
   ! *** ****************************
 
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CALL OPENFILE('WSER.INP')
-  endif!***End on master process
+  if( process_id == master_id )then
+    call OPENFILE('WSER.INP')
+  endif   ! *** End on master process
 
-  ALLOCATE(TSWND(NWSER))
+  allocate(TSWND(NWSER))
 
-  DO NS=1,NWSER
+  do NS = 1,NWSER
     ! *** ****************************
-    if( process_id == master_id )THEN
-10    READ(1,*,ERR=10,END=40)M,R,R,R,I
+    if( process_id == master_id )then
+10    read(1,*,err = 10,end = 40)M,R,R,R,I
     endif
 
-    Call Broadcast_Scalar(M, master_id)
+    call Broadcast_Scalar(M, master_id)
 
-    ALLOCATE(TSWND(NS).TIM(M),TSWND(NS).VAL(M,2))
+    allocate(TSWND(NS).TIM(M))
+    allocate(TSWND(NS).VAL(M,2))
     TSWND(NS).NREC= M
-    TSWND(NS).VAL = 0
-    TSWND(NS).TIM = 0
+    TSWND(NS).VAL = 0.0
+    TSWND(NS).TIM = 0.0
 
     ! *** ****************************
-    if( process_id == master_id )THEN
-      DO I=1,M
-        READ(1,*,ERR=20,END=40)R,R,R
-      ENDDO
-    endif!***End on master process
+    if( process_id == master_id )then
+      do I = 1,M
+        read(1,*,err = 20,end = 40)R,R,R
+      enddo
+    endif   ! *** End on master process
 
-  ENDDO
+  enddo
 
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CLOSE(1)
-  endif!***End on master process
+  if( process_id == master_id )then
+    close(1)
+  endif   ! *** End on master process
 
-  RETURN
-
+  return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: WSER.INP IN SERIES:',NS,', POINT:',I
-   WRITE(8,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: WSER.INP IN SERIES:',NS,', POINT:',I
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: WSER.INP IN SERIES:',NS,', POINT:',I
+   call STOPP('.')
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: WSER.INP'
-   WRITE(8,'(A)') '  UNEXPECTED END OF INPUT FILE: WSER.INP'
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: WSER.INP'
+   call STOPP('.')
    
 END SUBROUTINE
 
 SUBROUTINE SCANQCTL
-  CHARACTER*80 STR*200
-  CHARACTER*80 :: SKIP
+  character*80 STR*200
+  character*80 :: SKIP
 
-  INTEGER :: M, M1, M2, MP, IS, NS, ISO, ISTYP
-  REAL    :: HUA, HUM, HDA, HDM, R, A, A1
+  integer :: M, M1, M2, MP, IS, NS, ISO, ISTYP
+  real    :: HUA, HUM, HDA, HDM, R, A, A1
 
   if( process_id == master_id )then
   
-    CALL OPENFILE('QCTL.INP')
+    call OPENFILE('QCTL.INP')
 
     ! *** FIND THE MAXIMUM NUMBER OF TABLE DATA POINTS
-    NDQCLT=0
-    STR=READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
-    DO NS=1,NQCTLT
-      READ(1,*,IOSTAT=ISO) ISTYP, MP, HUA, HUM, HDA, HDM, R, A, A1
+    NDQCLT = 0
+    STR = READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
+    do NS = 1,NQCTLT
+      read(1,*,IOSTAT = ISO) ISTYP, MP, HUA, HUM, HDA, HDM, R, A, A1
       NDQCLT = MAX(NDQCLT,MP)
-      IF( ISO > 0 )GOTO 20
+      if( ISO > 0 )GOTO 20
 
-      IF( ISTYP == 0 )THEN
-        DO M=1,MP
-          READ(1,'(A)')SKIP
-        ENDDO
-      ELSEIF( ISTYP == 1 )THEN
-        READ(1,'(A)')SKIP
-        DO M=1,MP
-          READ(1,'(A)')SKIP
-        ENDDO
-      ELSEIF( ISTYP == 2 )THEN
-        DO M1=1,MP
-          DO M2=1,MP
-            READ(1,'(A)')SKIP
-          ENDDO
-        ENDDO
-      ELSEIF( ISTYP == 3 )THEN
-        READ(1,'(A)')SKIP
-        DO M1=1,MP
-          DO M2=1,MP
-            READ(1,'(A)')SKIP
-          ENDDO
-        ENDDO
-      ENDIF
-    ENDDO
+      if( ISTYP == 0 )then
+        do M = 1,MP
+          read(1,'(A)')SKIP
+        enddo
+      elseif( ISTYP == 1 )then
+        read(1,'(A)')SKIP
+        do M = 1,MP
+          read(1,'(A)')SKIP
+        enddo
+      elseif( ISTYP == 2 )then
+        do M1 = 1,MP
+          do M2 = 1,MP
+            read(1,'(A)')SKIP
+          enddo
+        enddo
+      elseif( ISTYP == 3 )then
+        read(1,'(A)')SKIP
+        do M1 = 1,MP
+          do M2 = 1,MP
+            read(1,'(A)')SKIP
+          enddo
+        enddo
+      endif
+    enddo
 
-    CLOSE(1)
+    close(1)
   endif
-  Call Broadcast_Scalar(NDQCLT, master_id)
+  call Broadcast_Scalar(NDQCLT, master_id)
   
-  NDQCLT2 = NDQCLT
-
-  RETURN
-
+  return
 20 WRITE(6,'(A)') ' READ ERROR IN FILE: '//TRIM(CFILE)
-   WRITE(8,'(A)') ' READ ERROR IN FILE: '//TRIM(CFILE)
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)') ' READ ERROR IN FILE: '//TRIM(CFILE)
+   call STOPP('.')
 
 END SUBROUTINE
 
 SUBROUTINE SCANWQ
 
-  Use SHELLFISHMOD
-  Use WQ_RPEM_MODULE
-  Use fson
-  Use mod_fson_value, Only: fson_value_count, fson_value_get
-  Use INFOMOD, Only:SKIPCOM 
+  use SHELLFISHMOD
+  use WQ_RPEM_MODULE
+  use fson
+  use mod_fson_value, only: fson_value_count, fson_value_get
+  use INFOMOD, only:SKIPCOM 
   
-  Character(len=2)   :: SNUM 
-  Character(len=15)  :: FNWQSR(40)
-  Character(len=15)  :: FNWQSRALGAE(40)
-  Character(len=100) :: ERRSTR
-  Character(len=120) :: LINE
+  Character(len = 2)   :: SNUM 
+  Character(len = 15)  :: FNWQSR(40)
+  Character(len = 15)  :: FNWQSRALGAE(40)
+  Character(len = 100) :: ERRSTR
+  Character(len = 120) :: LINE
   
-  Integer :: NW, NPS, I, J, K, IDRAG, ITMP, M, NS, ISTYP, NAL, NDWQCSR
-  Real    :: XPSQ, TM, TA, RMULADJ, ADDADJ, T1, T2, TSMTSB, TSMTSE, SMTSDT
-  LOGICAL :: BFLAG
+  integer :: NW, NPS, I, J, K, IDRAG, ITMP, M, NS, ISTYP, NAL, NDWQCSR
+  real    :: XPSQ, TM, TA, RMULADJ, ADDADJ, T1, T2, TSMTSB, TSMTSE, SMTSDT
+  logical :: BFLAG
 
-  Type(fson_value), Pointer :: json_data, item, pointsource, algaegroups
+  type(fson_value), Pointer :: json_data, item, pointsource, algaegroups
 
   ! *** ****************************
-  if( process_id == master_id )THEN 
+  if( process_id == master_id )then 
     write(*,'(A)') 'SCANNING EUTROPHICATION CONTROL FILE'
     
     json_data => fson_parse("wq_3dwc.jnp")
     
-    Call fson_get(json_data, "kinetics_option",                                  ISWQLVL)
-    Call fson_get(json_data, "number_of_kinetic_zones",                          NWQZ)
-    Call fson_get(json_data, "temperature_lookup_table_size",                    NWQTD)
-    Call fson_get(json_data, "number_of_time_series_output_locations",           NWQTS)
-    Call fson_get(json_data, "number_of_time_series_output_variables",           NTSWQV)
-    Call fson_get(json_data, "number_of_sediment_zones",                         NSMZ)
-    Call fson_get(json_data, "number_of_sediment_time_series_output_variables",  NTSSMV)
-    Call fson_get(json_data, "max_number_of_time_series_output_locations",       NSMTS)
+    call fson_get(json_data, "kinetics_option",                                  ISWQLVL)
+    call fson_get(json_data, "number_of_kinetic_zones",                          NWQZ)
+    call fson_get(json_data, "temperature_lookup_table_size",                    NWQTD)
+    call fson_get(json_data, "number_of_time_series_output_locations",           NWQTS)
+    call fson_get(json_data, "number_of_time_series_output_variables",           NTSWQV)
+    call fson_get(json_data, "number_of_sediment_zones",                         NSMZ)
+    call fson_get(json_data, "max_number_of_time_series_output_locations",       NSMTS)
 
-    Call fson_get(json_data, "point_source_load_option",                         IWQPSL)
-    Call fson_get(json_data, "mass_loading_point_sources.number_of_point_sources",NWQPS) 
-    Call fson_get(json_data, "mass_loading_point_sources.number_of_time_series", NPSTMSR) 
+    call fson_get(json_data, "point_source_load_option",                         IWQPSL)
+    call fson_get(json_data, "mass_loading_point_sources.number_of_point_sources",NWQPS) 
+    call fson_get(json_data, "mass_loading_point_sources.number_of_time_series", NPSTMSR) 
     
-    Call fson_get(json_data, "number_of_algae_groups",                           NALGAE)
+    call fson_get(json_data, "number_of_algae_groups",                           NALGAE)
                                                                                  
-    Call fson_get(json_data, "zooplankton_activate",                             IWQZPL)
-    Call fson_get(json_data, "number_of_zooplankton_groups",                     NZOOPL)
+    call fson_get(json_data, "zooplankton_activate",                             IWQZPL)
+    call fson_get(json_data, "number_of_zooplankton_groups",                     NZOOPL)
                                                                                  
-    Call fson_get(json_data, "shellfish_farm_activate",                          ISFFARM)
-    Call fson_get(json_data, "number_of_shellfish_species",                      NSF)
+    call fson_get(json_data, "shellfish_farm_activate",                          ISFFARM)
+    call fson_get(json_data, "number_of_shellfish_species",                      NSF)
     
     ! *** Update number of WQ components
     NWQV = 19 + NALGAE + NZOOPL
     
     ! *** Set constituent index based on kinetic option
-    IF( ISWQLVL == 0 )THEN
+    if( ISWQLVL == 0 )then
       ICHC = 1
       ICHD = 2
       ICHG = 3
@@ -1667,7 +1650,7 @@ SUBROUTINE SCANWQ
       ITAM = 20
       IFCB = 21
       ICO2 = 22
-    ELSE
+    else
       IROC = 1
       ILOC = 2
       IDOC = 3
@@ -1687,7 +1670,7 @@ SUBROUTINE SCANWQ
       ITAM = 17
       IFCB = 18
       ICO2 = 19
-    ENDIF
+    endif
     
     ! *** Nutrient components name
     WQCONSTIT(IROC) = 'ROC'
@@ -1710,125 +1693,133 @@ SUBROUTINE SCANWQ
     WQCONSTIT(IFCB) = 'FCB'
     WQCONSTIT(ICO2) = 'CO2' 
     
-    IF( ISWQLVL == 0 )THEN
+    if( ISWQLVL == 0 )then
       ! *** Algae names if WQSKE0
       WQCONSTIT(ICHC) = 'CHC'
       WQCONSTIT(ICHD) = 'CHD'
       WQCONSTIT(ICHG) = 'CHG'
-    ELSE
+    else
     ! *** Algae names if WQSKE1
-      DO NW = 1,NALGAE
-        WRITE(SNUM,'(I1)') NW
-        WQCONSTIT(19+NW) = 'ALG'//SNUM
-      ENDDO
-    ENDIF
+      do NW = 1,NALGAE
+        if( NW < 10 )then
+          write(SNUM,'(I1)') NW
+          WQCONSTIT(19+NW) = 'ALG'//SNUM
+        else
+          write(SNUM,'(I2)') NW
+          WQCONSTIT(19+NW) = 'ALG'//SNUM  
+        endif
+      enddo
+    endif
     ! *** Zooplankton name
-    IF( IWQZPL > 0 )THEN
-      DO NW = 1,NZOOPL
-        WRITE(SNUM,'(I1)') NW
-        WQCONSTIT(19+NALGAE+NW) = 'ZOO'//SNUM
-      ENDDO
-    ENDIF
+    if( IWQZPL > 0 )then
+      do NW = 1,NZOOPL
+        if( NW < 10 )then
+          write(SNUM,'(I1)') NW
+          WQCONSTIT(19+NALGAE+NW) = 'ZOO'//SNUM
+        else
+          write(SNUM,'(I2)') NW
+          WQCONSTIT(19+NALGAE+NW) = 'ZOO'//SNUM 
+        endif
+      enddo
+    endif
     
-    Call fson_get(json_data, "active_constituents.ROC",                          ISKINETICS(IROC))
-    Call fson_get(json_data, "active_constituents.LOC",                          ISKINETICS(ILOC))
-    Call fson_get(json_data, "active_constituents.DOC",                          ISKINETICS(IDOC))
-    Call fson_get(json_data, "active_constituents.ROP",                          ISKINETICS(IROP))
-    Call fson_get(json_data, "active_constituents.LOP",                          ISKINETICS(ILOP))
-    Call fson_get(json_data, "active_constituents.DOP",                          ISKINETICS(IDOP))
-    Call fson_get(json_data, "active_constituents.P4D",                          ISKINETICS(IP4D))
-    Call fson_get(json_data, "active_constituents.RON",                          ISKINETICS(IRON))
-    Call fson_get(json_data, "active_constituents.LON",                          ISKINETICS(ILON))
-    Call fson_get(json_data, "active_constituents.DON",                          ISKINETICS(IDON))
-    Call fson_get(json_data, "active_constituents.NHX",                          ISKINETICS(INHX))
-    Call fson_get(json_data, "active_constituents.NOX",                          ISKINETICS(INOX))
-    Call fson_get(json_data, "active_constituents.SUU",                          ISKINETICS(ISUU))
-    Call fson_get(json_data, "active_constituents.SAA",                          ISKINETICS(ISAA))
-    Call fson_get(json_data, "active_constituents.COD",                          ISKINETICS(ICOD))
-    Call fson_get(json_data, "active_constituents.DOX",                          ISKINETICS(IDOX))
-    Call fson_get(json_data, "active_constituents.TAM",                          ISKINETICS(ITAM))
-    Call fson_get(json_data, "active_constituents.FCB",                          ISKINETICS(IFCB))
-    Call fson_get(json_data, "active_constituents.CO2",                          ISKINETICS(ICO2))
+    call fson_get(json_data, "active_constituents.ROC",                          ISKINETICS(IROC))
+    call fson_get(json_data, "active_constituents.LOC",                          ISKINETICS(ILOC))
+    call fson_get(json_data, "active_constituents.DOC",                          ISKINETICS(IDOC))
+    call fson_get(json_data, "active_constituents.ROP",                          ISKINETICS(IROP))
+    call fson_get(json_data, "active_constituents.LOP",                          ISKINETICS(ILOP))
+    call fson_get(json_data, "active_constituents.DOP",                          ISKINETICS(IDOP))
+    call fson_get(json_data, "active_constituents.P4D",                          ISKINETICS(IP4D))
+    call fson_get(json_data, "active_constituents.RON",                          ISKINETICS(IRON))
+    call fson_get(json_data, "active_constituents.LON",                          ISKINETICS(ILON))
+    call fson_get(json_data, "active_constituents.DON",                          ISKINETICS(IDON))
+    call fson_get(json_data, "active_constituents.NHX",                          ISKINETICS(INHX))
+    call fson_get(json_data, "active_constituents.NOX",                          ISKINETICS(INOX))
+    call fson_get(json_data, "active_constituents.SUU",                          ISKINETICS(ISUU))
+    call fson_get(json_data, "active_constituents.SAA",                          ISKINETICS(ISAA))
+    call fson_get(json_data, "active_constituents.COD",                          ISKINETICS(ICOD))
+    call fson_get(json_data, "active_constituents.DOX",                          ISKINETICS(IDOX))
+    call fson_get(json_data, "active_constituents.TAM",                          ISKINETICS(ITAM))
+    call fson_get(json_data, "active_constituents.FCB",                          ISKINETICS(IFCB))
+    call fson_get(json_data, "active_constituents.CO2",                          ISKINETICS(ICO2))
     If( ISWQLVL == 0  )then                                                      
-      Call fson_get(json_data, "active_constituents.CHC",                        ISKINETICS(ICHC))
-      Call fson_get(json_data, "active_constituents.CHD",                        ISKINETICS(ICHD))
-      Call fson_get(json_data, "active_constituents.CHG",                        ISKINETICS(ICHG))
-    End if
+      call fson_get(json_data, "active_constituents.CHC",                        ISKINETICS(ICHC))
+      call fson_get(json_data, "active_constituents.CHD",                        ISKINETICS(ICHD))
+      call fson_get(json_data, "active_constituents.CHG",                        ISKINETICS(ICHG))
+    endif
     
-    Call fson_get(json_data, "sediment_diagenesis.benthic_flux_option",          IWQBEN)
-    Call fson_get(json_data, "sediment_diagenesis.number_of_reactive_classes",   NSMG)
-    Call fson_get(json_data, "rpem_activate",                                    ISRPEM)
+    call fson_get(json_data, "sediment_diagenesis.benthic_flux_option",          IWQBEN)
+    call fson_get(json_data, "sediment_diagenesis.number_of_reactive_classes",   NSMG)
+    call fson_get(json_data, "rpem_activate",                                    ISRPEM)
 
-    Do NW = 1,NWQV
-      Call fson_get(json_data,'number_of_time_series.'//WQCONSTIT(NW),           NWQCSR(NW))
+    do NW = 1,NWQV
+      call fson_get(json_data,'number_of_time_series.'//WQCONSTIT(NW),           NWQCSR(NW))
     Enddo
     
-    IF( IWQPSL == 2 )THEN
+    if( IWQPSL == 2 )then
       ! *** Mass loading point source options
-      Call fson_get(json_data, "mass_loading_point_sources.constant_point_sources",   pointsource)
-      DO NPS = 1, fson_value_count(pointsource)
+      call fson_get(json_data, "mass_loading_point_sources.constant_point_sources",   pointsource)
+      do NPS = 1, fson_value_count(pointsource)
         item => fson_value_get(pointsource, NPS)
-        Call fson_get(item, "I", I)
-        Call fson_get(item, "J", J)
-        Call fson_get(item, "K", K)
-        Call fson_get(item, "NSR", ITMP)
-        Call fson_get(item, "PSQ", XPSQ)
+        call fson_get(item, "I", I)
+        call fson_get(item, "J", J)
+        call fson_get(item, "K", K)
+        call fson_get(item, "NSR", ITMP)
+        call fson_get(item, "PSQ", XPSQ)
         NCSERM = MAX(1,NCSERM,ITMP)
-      ENDDO
-    ENDIF
+      enddo
+    endif
   endif   ! *** End on master process
   
-  Call Broadcast_Scalar(ISWQLVL, master_id)
-  Call Broadcast_Scalar(NWQZ,    master_id)
-  Call Broadcast_Scalar(NWQTD,   master_id)
-  Call Broadcast_Scalar(NWQTS,   master_id)
-  Call Broadcast_Scalar(NTSWQV,  master_id)
-  Call Broadcast_Scalar(NSMZ,    master_id)
-  Call Broadcast_Scalar(NTSSMV,  master_id)
-  Call Broadcast_Scalar(NSMTS,   master_id)
+  call Broadcast_Scalar(ISWQLVL, master_id)
+  call Broadcast_Scalar(NWQZ,    master_id)
+  call Broadcast_Scalar(NWQTD,   master_id)
+  call Broadcast_Scalar(NWQTS,   master_id)
+  call Broadcast_Scalar(NTSWQV,  master_id)
+  call Broadcast_Scalar(NSMZ,    master_id)
+  call Broadcast_Scalar(NSMTS,   master_id)
 
-  Call Broadcast_Scalar(IWQPSL,  master_id)  
-  Call Broadcast_Scalar(NWQPS,   master_id)
-  Call Broadcast_Scalar(NPSTMSR, master_id)
+  call Broadcast_Scalar(IWQPSL,  master_id)  
+  call Broadcast_Scalar(NWQPS,   master_id)
+  call Broadcast_Scalar(NPSTMSR, master_id)
   
-  Call Broadcast_Scalar(NALGAE,  master_id)
-  Call Broadcast_Scalar(IWQZPL,  master_id)
-  Call Broadcast_Scalar(NZOOPL,  master_id)
+  call Broadcast_Scalar(NALGAE,  master_id)
+  call Broadcast_Scalar(IWQZPL,  master_id)
+  call Broadcast_Scalar(NZOOPL,  master_id)
   
-  Call Broadcast_Scalar(ISFFARM, master_id)
-  Call Broadcast_Scalar(NSF,     master_id)
-  Call Broadcast_Scalar(NWQV,    master_id)
+  call Broadcast_Scalar(ISFFARM, master_id)
+  call Broadcast_Scalar(NSF,     master_id)
+  call Broadcast_Scalar(NWQV,    master_id)
   
-  Call Broadcast_Scalar(IROC,    master_id)
-  Call Broadcast_Scalar(ILOC,    master_id)
-  Call Broadcast_Scalar(IDOC,    master_id)
-  Call Broadcast_Scalar(IROP,    master_id)
-  Call Broadcast_Scalar(ILOP,    master_id)
-  Call Broadcast_Scalar(IDOP,    master_id)
-  Call Broadcast_Scalar(IP4D,    master_id)
-  Call Broadcast_Scalar(IRON,    master_id)
-  Call Broadcast_Scalar(ILON,    master_id)
-  Call Broadcast_Scalar(IDON,    master_id)
-  Call Broadcast_Scalar(INHX,    master_id)
-  Call Broadcast_Scalar(INOX,    master_id)
-  Call Broadcast_Scalar(ISUU,    master_id)
-  Call Broadcast_Scalar(ISAA,    master_id)
-  Call Broadcast_Scalar(ICOD,    master_id)
-  Call Broadcast_Scalar(IDOX,    master_id)
-  Call Broadcast_Scalar(ITAM,    master_id)
-  Call Broadcast_Scalar(IFCB,    master_id)
-  Call Broadcast_Scalar(ICO2,    master_id)
+  call Broadcast_Scalar(IROC,    master_id)
+  call Broadcast_Scalar(ILOC,    master_id)
+  call Broadcast_Scalar(IDOC,    master_id)
+  call Broadcast_Scalar(IROP,    master_id)
+  call Broadcast_Scalar(ILOP,    master_id)
+  call Broadcast_Scalar(IDOP,    master_id)
+  call Broadcast_Scalar(IP4D,    master_id)
+  call Broadcast_Scalar(IRON,    master_id)
+  call Broadcast_Scalar(ILON,    master_id)
+  call Broadcast_Scalar(IDON,    master_id)
+  call Broadcast_Scalar(INHX,    master_id)
+  call Broadcast_Scalar(INOX,    master_id)
+  call Broadcast_Scalar(ISUU,    master_id)
+  call Broadcast_Scalar(ISAA,    master_id)
+  call Broadcast_Scalar(ICOD,    master_id)
+  call Broadcast_Scalar(IDOX,    master_id)
+  call Broadcast_Scalar(ITAM,    master_id)
+  call Broadcast_Scalar(IFCB,    master_id)
+  call Broadcast_Scalar(ICO2,    master_id)
   
-  Call Broadcast_Scalar(IWQBEN,  master_id)
-  Call Broadcast_Scalar(NSMG,    master_id)
-  Call Broadcast_Scalar(ISRPEM,  master_id)
+  call Broadcast_Scalar(IWQBEN,  master_id)
+  call Broadcast_Scalar(NSMG,    master_id)
+  call Broadcast_Scalar(ISRPEM,  master_id)
   
-  Call Broadcast_Scalar(IWQTS,   master_id)
-  Call Broadcast_Scalar(WQTSDT,  master_id)
-  Call Broadcast_Scalar(ISCOMP,  master_id)
+  call Broadcast_Scalar(IWQTS,   master_id)
+  call Broadcast_Scalar(WQTSDT,  master_id)
 
-  Call Broadcast_Array(ISKINETICS, master_id)
-  Call Broadcast_Array(NWQCSR,     master_id)
+  call Broadcast_Array(ISKINETICS, master_id)
+  call Broadcast_Array(NWQCSR,     master_id)
 
   NWQZM   = MAX(1,NWQZ)
   NWQPSM  = MAX(1,NWQPS)
@@ -1836,213 +1827,222 @@ SUBROUTINE SCANWQ
   NWQTSM  = MAX(1,NWQTS)
   NSMGM   = MAX(1,NSMG)
   NSMZM   = MAX(1,NSMZ)
-  NTSSMVM = MAX(1,NTSSMV)
   NSMTSM  = MAX(1,NSMTS)
   NALGAEM = MAX(1,NALGAE)
   ! NTSWQVM = MAX(1,NTSWQV)
-        
-  ! *** Update kinetics bypass flag for alage + zooplankton
-  IF( NALGAE > 0 .OR. NZOOPL > 0 )then
-    Do NW = 20,NWQV
-      ISKINETICS(NW) = 1
-    Enddo
-  End if
   NWQVM = NWQV
     
   !If (ISFFARM > 0) NWQV = NWQV + NSF
     
   NWQPSRM = MAX(1,NPSTMSR)
-  DO NW = 1,NWQV
+  do NW = 1,NWQV
     NWQCSRM = MAX(NWQCSRM,NWQCSR(NW))
-  ENDDO
+  enddo
   NCSERM = MAX(NCSERM,NWQCSRM)
 
   ISMOB = 0
   MACDRAG = 0
-  if( process_id == master_id .and. NALGAE > 0 )THEN  ! *** Only read wq_biota when model simulates algae - DKT
+  IVARSETL = 0
+  if( process_id == master_id .and. NALGAE > 0 )then  ! *** Only read wq_biota when model simulates algae - DKT
     ! *** SCAN WQ_BIOTA.JNP FILE
     write(*,'(A)') 'SCANNING EUTROPHICATION BIOTA CONFIGURATION'
 
     json_data => fson_parse("wq_biota.jnp")
-    CALL fson_get(json_data, "groups", algaegroups)
-    DO NAL = 1, fson_value_count(algaegroups)
+    call fson_get(json_data, "groups", algaegroups)
+    do NAL = 1, fson_value_count(algaegroups)
       item => fson_value_get(algaegroups, NAL)
-      CALL fson_get(item, "mobility_flag", ISMOB(NAL)) 
+      call fson_get(item, "mobility_flag", ISMOB(NAL)) 
 
-      Call fson_get(item, "use_hydro_feedback", IDRAG)
-      IF( IDRAG > 0 .AND. ISVEG == 0 )THEN
+      call fson_get(item, "use_hydro_feedback", IDRAG)
+      if( IDRAG > 0 .and. ISVEG == 0 )then
         MACDRAG = 1
         ISVEG = 2                                   ! *** Gets overwritten in INPUT but used to flag allocation of vegetation arrays
-      ENDIF
-    ENDDO
+      endif
+      
+      call fson_get(item, "variable_settling", NW) 
+      if( NW == 3 )then
+        IVARSETL = 3
+      endif
+    enddo
   endif   ! *** End on master process
     
-  Call Broadcast_Array( ISMOB,    master_id)
+  call Broadcast_Array( ISMOB,     master_id)
+  call Broadcast_Scalar( IVARSETL, master_id)
+  
   NFIXED = 0
   
-  DO NW = 1, 19
+  do NW = 1, 19
     ISTRWQ(NW) = ISKINETICS(NW)       ! *** Transport flag for nutrients
-  ENDDO
+  enddo
   
-  DO NAL = 1,NALGAE
-    ISKINETICS(NAL+19) = 1            ! *** Kinetics Flag
-    ISTRWQ(NAL+19) = 1                ! *** Transport Flag
-    IF( ISMOB(NAL) == 0 )THEN 
-      NFIXED = NFIXED + 1
-      ISTRWQ(NAL+19) = 0              ! *** Do not transport this constituent
-    ENDIF
-  ENDDO
-  Call Broadcast_Scalar(NFIXED,  master_id) 
+  if( NALGAE > 0 )then
+    do NAL = 1,NALGAE
+      ISKINETICS(NAL+19) = 1            ! *** Kinetics Flag
+      ISTRWQ(NAL+19) = 1                ! *** Transport Flag
+      if( ISMOB(NAL) == 0 )then
+        NFIXED = NFIXED + 1
+        ISTRWQ(NAL+19) = 0              ! *** Do not transport this constituent
+      endif
+    enddo
+  endif
+  
+  if( NZOOPL > 0 )then
+    do NW = 1,NZOOPL
+      ISKINETICS(NW+NALGAE+19) = 1      ! *** Kinetics Flag
+      ISTRWQ(NW+NALGAE+19) = 1          ! *** Transport Flag
+    enddo
+  endif
+  
+  call Broadcast_Scalar(NFIXED,  master_id) 
 
-  if( process_id == master_id )THEN 
+  if( process_id == master_id )then 
     ! *** SCAN THE TIME SERIES
-    IF( NPSTMSR >= 1 .AND. IWQPSL /= 2 )THEN
-      CALL OPENFILE('WQPSL.INP')
-      CALL SKIPCOM(1,'*')
+    if( NPSTMSR >= 1 .and. IWQPSL /= 2 )then
+      call OPENFILE('WQPSL.INP')
+      call SKIPCOM(1,'*')
       ERRSTR = 'READING WPQSL.INP'
-      DO NS = 1,NPSTMSR
-        READ(1,*,ERR=999,END=20) M, TM, TA, RMULADJ, ADDADJ
+      do NS = 1,NPSTMSR
+        read(1,*,err = 999,end = 20) M, TM, TA, RMULADJ, ADDADJ
         NDWQPSR = MAX(NDWQPSR,M)
-        DO J = 1,M
-          DO K = 1,3
-            READ(1,'(A120)')LINE
-          ENDDO
-        ENDDO
-      ENDDO
-      20 CLOSE(1)
-    ENDIF
+        do J = 1,M
+          do K = 1,3
+            read(1,'(A120)')LINE
+          enddo
+        enddo
+      enddo
+      20 close(1)
+    endif
   endif   ! *** End on master process
 
-  Call Broadcast_Scalar(NDWQPSR,  master_id) 
+  call Broadcast_Scalar(NDWQPSR,  master_id) 
     
   ! *** SCAN THE OPEN BC TIME SERIES
-  ! **  READ IN OPEN BOUNDARY OR VOLUMETRIC SOURCE WQ CONCENTRATION
-  ! **  TIME SERIES FROM THE FILES WQCSRNN.INP
+  ! ***  READ IN OPEN BOUNDARY OR VOLUMETRIC SOURCE WQ CONCENTRATION
+  ! ***  TIME SERIES FROM THE FILES WQCSRNN.INP
   ! *** SCAN FOR NUMBER OF SERIES   
-  !IF (ISWQLVL == 0 )THEN
-  !  DO NW = 1,40
-  !    WRITE(SNUM,'(I2.2)')NW
-  !    FNWQSR(NW) ='wqcsr'//SNUM//'.inp' 
-  !  ENDDO
-  !  WRITE(6,'(A)')'SCANNING INPUT FILE: WQCSRXX.INP'
+  !IF (ISWQLVL == 0 )then
+  !  do NW = 1,40
+  !    write(SNUM,'(I2.2)')NW
+  !    FNWQSR(NW)  = 'wqcsr'//SNUM//'.inp' 
+  !  enddo
+  !  write(6,'(A)')'SCANNING INPUT FILE: WQCSRXX.INP'
   !ENDIF
     
-  if( process_id == master_id )THEN 
-    IF( ISWQLVL == 1  )THEN  
+  if( process_id == master_id )then 
+    if( ISWQLVL == 1  )then  
       ! *** Nutrient
-      DO NW = 1,19
-        WRITE(SNUM,'(I2.2)') NW
+      do NW = 1,19
+        write(SNUM,'(I2.2)') NW
         FNWQSR(NW) = 'wqcsr'//SNUM//'.inp'
-      ENDDO
+      enddo
       ! *** Algae
-      DO NW = 1,NALGAE
-        WRITE(SNUM,'(I2.2)')NW
-        FNWQSR(NW+19)='wqalgsr'//SNUM//'.inp'
-      ENDDO
+      do NW = 1,NALGAE
+        write(SNUM,'(I2.2)')NW
+        FNWQSR(NW+19) = 'wqalgsr'//SNUM//'.inp'
+      enddo
       ! *** Zooplankton
-      DO NW = 1,NZOOPL
-         WRITE(SNUM,'(I2.2)')NW
-         FNWQSR(NW+19+NALGAE)='wqzoosr'//SNUM//'.inp'
-      ENDDO
+      do NW = 1,NZOOPL
+         write(SNUM,'(I2.2)')NW
+         FNWQSR(NW+19+NALGAE) = 'wqzoosr'//SNUM//'.inp'
+      enddo
       
-      WRITE(6,'(A)')'SCANNING WQ CONCENTRATION TIME SERIES INPUT FILES'
-    ENDIF
+      write(6,'(A)')'SCANNING WQ CONCENTRATION TIME SERIES INPUT FILES'
+    endif
         
     NSER(8) = 0
-    DO NW = 1,NWQV
-      INQUIRE(FILE=FNWQSR(NW),EXIST=BFLAG)
-      IF( BFLAG )THEN
-        OPEN(1,FILE=FNWQSR(NW))
+    do NW = 1,NWQV
+      INQUIRE(FILE = FNWQSR(NW),EXIST = BFLAG)
+      if( BFLAG )then
+        open(1,FILE = FNWQSR(NW))
         
         ERRSTR = 'READING '//TRIM(FNWQSR(NW))
-        CALL SKIPCOM(1,'*')
-        DO NS = 1,1000
-          READ(1,*,ERR=999,END=40)ISTYP,M,T1,T2,RMULADJ,ADDADJ
-          IF( ISTYP == 1 ) M = M + 1   ! *** SKIP THE LAYER SPLITS
-          DO J = 1,M
-            READ(1,'(A120)')LINE
-          ENDDO
-        ENDDO
-        40 CLOSE(1)
+        call SKIPCOM(1,'*')
+        do NS = 1,1000
+          read(1,*,err = 999,end = 40)ISTYP,M,T1,T2,RMULADJ,ADDADJ
+          if( ISTYP == 1 ) M = M + 1   ! *** SKIP THE LAYER SPLITS
+          do J = 1,M
+            read(1,'(A120)')LINE
+          enddo
+        enddo
+        40 close(1)
         NSER(8) = MAX(NSER(8),NS-1)
-      ENDIF
-    ENDDO
+      endif
+    enddo
   endif   ! *** End on master process
     
-  Call Broadcast_Scalar(NSER(8),  master_id) 
+  call Broadcast_Scalar(NSER(8),  master_id) 
   
-  Allocate(TSWQ(NSER(8),NWQV))
+  allocate(TSWQ(NSER(8),NWQV))
 
   ! *** SCAN FOR NUMBER OF POINTS IN EACH SERIES
-  if( process_id == master_id )THEN
-    DO NW=1,NWQV
+  if( process_id == master_id )then
+    do NW = 1,NWQV
       ! *** ****************************
-      INQUIRE(FILE=FNWQSR(NW),EXIST=BFLAG)
-      IF( BFLAG )THEN
+      INQUIRE(FILE = FNWQSR(NW),EXIST = BFLAG)
+      if( BFLAG )then
         ! *** ****************************
-        CALL OPENFILE(FNWQSR(NW))
-        CALL SKIPCOM(1,'*')
+        call OPENFILE(FNWQSR(NW))
+        call SKIPCOM(1,'*')
 
-        DO NS=1,NSER(8)
+        do NS = 1,NSER(8)
           ! *** ****************************
-          READ(1,*,END=45) ISTYP, M, T1, T2, RMULADJ, ADDADJ
+          read(1,*,end = 45) ISTYP, M, T1, T2, RMULADJ, ADDADJ
           TSWQ(NS,NW).NREC = M
           
-          IF( ISTYP == 1 ) M = M+1   ! *** SKIP THE LAYER SPLITS
+          if( ISTYP == 1 ) M = M+1   ! *** SKIP THE LAYER SPLITS
           ! *** ****************************
-          DO J=1,M
-            READ(1,'(A120)')LINE
-          ENDDO
-        ENDDO
-      ENDIF
-45    CLOSE(1)
-    ENDDO
+          do J = 1,M
+            read(1,'(A120)')LINE
+          enddo
+        enddo
+      endif
+45    close(1)
+    enddo
   endif ! *** End on master process
   
   NDWQCSR = 1
-  DO NW=1,NWQV
-    DO NS=1,NSER(8)
-      Call Broadcast_Scalar(TSWQ(NS,NW).NREC, master_id)
+  do NW = 1,NWQV
+    do NS = 1,NSER(8)
+      call Broadcast_Scalar(TSWQ(NS,NW).NREC, master_id)
       M = TSWQ(NS,NW).NREC
       NDWQCSR = MAX(NDWQCSR,M)
 
-      ALLOCATE(TSWQ(NS,NW).VAL(M,KCM), TSWQ(NS,NW).TIM(M))
+      allocate(TSWQ(NS,NW).VAL(M,KCM), TSWQ(NS,NW).TIM(M))
       TSWQ(NS,NW).VAL = 0.
       TSWQ(NS,NW).TIM = 0.
-    ENDDO
-  ENDDO
+    enddo
+  enddo
   
   NDCSER = MAX(NDCSER,NDWQCSR)
   
   ! *** ****************************
   ! *** Sediment Diagenesis
-  IF( IWQBEN == 1 )THEN
-    if( process_id == master_id )THEN
+  if( IWQBEN == 1 )then
+    if( process_id == master_id )then
       write(*,'(A)') 'SCANNING SEDIMENT DIAGENESIS CONFIGURATION'
       json_data => fson_parse("wq_3dsd.jnp")
 
-      Call fson_get(json_data, "initial_condition_option", ISMICI)
-      Call fson_get(json_data, "number_of_spatial_zones", ISMZ)
-      Call fson_get(json_data, "write_restart_option", ISMRST)
-      Call fson_get(json_data, "benthic_stress.activate_hysteresis_in_benthic_mixing", ISMHYST)
-      Call fson_get(json_data, "activate_diagnostic_output", ISMZB)
+      call fson_get(json_data, "initial_condition_option", ISMICI)
+      call fson_get(json_data, "number_of_spatial_zones", ISMZ)
+      call fson_get(json_data, "write_restart_option", ISMRST)
+      call fson_get(json_data, "benthic_stress.activate_hysteresis_in_benthic_mixing", ISMHYST)
+      call fson_get(json_data, "activate_diagnostic_output", ISMZB)
       
-      Call fson_get(json_data, "time_series_output.number_of_locations", ISMTS)
+      call fson_get(json_data, "time_series_output.number_of_locations", ISMTS)
     endif  ! *** End on master process
 
-    Call Broadcast_Scalar(ISMICI,  master_id)
-    Call Broadcast_Scalar(ISMZ,    master_id)
-    Call Broadcast_Scalar(ISMRST,  master_id)
-    Call Broadcast_Scalar(ISMHYST, master_id)
-    Call Broadcast_Scalar(ISMZB,   master_id)
-    Call Broadcast_Scalar(ISMTS,   master_id)
+    call Broadcast_Scalar(ISMICI,  master_id)
+    call Broadcast_Scalar(ISMZ,    master_id)
+    call Broadcast_Scalar(ISMRST,  master_id)
+    call Broadcast_Scalar(ISMHYST, master_id)
+    call Broadcast_Scalar(ISMZB,   master_id)
+    call Broadcast_Scalar(ISMTS,   master_id)
 
     NSMTSM = MAX(ISMTS,NSMTS)
 
-  ENDIF
+  endif
 
-  RETURN
-
+  return
 999 PRINT*,ERRSTR
   STOP
 
@@ -2054,172 +2054,171 @@ SUBROUTINE SCANSEDZLJ
   !  REVISION DATE :  May 24, 2006
   !  Craig Jones and Scott James
   ! *** ************************************************************
-  INTEGER :: IDUMMY,ERROR
+  integer :: IDUMMY,ERROR
   ! *** ****************************
-  if( process_id == master_id )THEN
-    CALL OPENFILE('BED.SDF')
-    READ(1,*,IOSTAT=ERROR) !SKIP THIS LINE
-    IF( ERROR == 1 )THEN
-      WRITE(*,'("READ ERROR IN SEDZLJ INPUT FILE")')
-      WRITE(8,'("READ ERROR IN SEDZLJ INPUT FILE")')
+  if( process_id == master_id )then
+    call OPENFILE('BED.SDF')
+    read(1,*,IOSTAT = ERROR) !SKIP THIS LINE
+    if( ERROR == 1 )then
+      write(*,'("READ ERROR IN SEDZLJ INPUT FILE")')
+      write(mpi_error_unit,'("READ ERROR IN SEDZLJ INPUT FILE")')
       STOP
-    ENDIF
-    READ(1,*,IOSTAT=ERROR) IDUMMY, KB, ICALC_BL, SEDSTEP, SEDSTART, IHTSTRT, IMORPH, ISWNWAVE, MAXDEPLIMIT, HPMIN
-    IF( ERROR == 1 )THEN
-      WRITE(*,'("READ ERROR IN SEDZLJ INPUT FILE")')
-      WRITE(8,'("READ ERROR IN SEDZLJ INPUT FILE")')
+    endif
+    read(1,*,IOSTAT = ERROR) IDUMMY, KB, ICALC_BL, SEDSTEP, SEDSTART, IHTSTRT, IMORPH, ISWNWAVE, MAXDEPLIMIT, HPMIN
+    if( ERROR == 1 )then
+      write(*,'("READ ERROR IN SEDZLJ INPUT FILE")')
+      write(mpi_error_unit,'("READ ERROR IN SEDZLJ INPUT FILE")')
       STOP
-    ENDIF
-    READ(1,*,IOSTAT=ERROR) !SKIP THIS LINE
-    IF( ERROR == 1 )THEN
-      WRITE(*,'("READ ERROR IN SEDZLJ INPUT FILE")')
-      WRITE(8,'("READ ERROR IN SEDZLJ INPUT FILE")')
+    endif
+    read(1,*,IOSTAT = ERROR) !SKIP THIS LINE
+    if( ERROR == 1 )then
+      write(*,'("READ ERROR IN SEDZLJ INPUT FILE")')
+      write(mpi_error_unit,'("READ ERROR IN SEDZLJ INPUT FILE")')
       STOP
-    ENDIF
-    READ(1,*,IOSTAT=ERROR) ITBM,NSICM
-    IF( ERROR == 1 )THEN
-      WRITE(*,'("READ ERROR IN SEDZLJ INPUT FILE")')
-      WRITE(8,'("READ ERROR IN SEDZLJ INPUT FILE")')
+    endif
+    read(1,*,IOSTAT = ERROR) ITBM,NSICM
+    if( ERROR == 1 )then
+      write(*,'("READ ERROR IN SEDZLJ INPUT FILE")')
+      write(mpi_error_unit,'("READ ERROR IN SEDZLJ INPUT FILE")')
       STOP
-    ENDIF
-    CLOSE(1)
-  endif!***End on master process
+    endif
+    close(1)
+  endif   ! *** End on master process
 
-  Call Broadcast_Scalar(KB,       master_id)
-  Call Broadcast_Scalar(ICALC_BL, master_id)
-  Call Broadcast_Scalar(ITBM,     master_id)
-  Call Broadcast_Scalar(NSICM,    master_id)
+  call Broadcast_Scalar(KB,       master_id)
+  call Broadcast_Scalar(ICALC_BL, master_id)
+  call Broadcast_Scalar(ITBM,     master_id)
+  call Broadcast_Scalar(NSICM,    master_id)
 
 END SUBROUTINE SCANSEDZLJ
 
 SUBROUTINE SCNTXSED
 
-  INTEGER :: NCSERNC,NLOOP,IS,NS,ISTYP,NDATAPTS,NN,NT,M
-  CHARACTER*120 SKIP
-  CHARACTER*10 INFILE
-  CHARACTER*80 STR*200
+  integer :: NCSERNC,NLOOP,IS,NS,ISTYP,NDATAPTS,NN,NT,M
+  character*120 SKIP
+  character*10 INFILE
+  character*80 STR*200
 
 
   ! *** NOW FIND MAX FOR TOXICS AND SEDIMENTS
-  DO NN=1,3
+  do NN = 1,3
     NCSERNC = 0
     ! *** ****************************
-    if( process_id == master_id )THEN
-      IF( NN == 1 )THEN
-        IF( NTOX > 0 .AND. NSER(5) > 0 .AND. ISTRAN(5) > 0 )THEN
-          CALL OPENFILE('TXSER.INP')
+    if( process_id == master_id )then
+      if( NN == 1 )then
+        if( NTOX > 0 .and. NSER(5) > 0 .and. ISTRAN(5) > 0 )then
+          call OPENFILE('TXSER.INP')
           NLOOP = NTOX
           NCSERNC = NSER(5)
-        ENDIF
-      ELSEIF( NN == 2 )THEN
-        IF( NSED > 0 .AND. NSER(6) > 0 .AND. ISTRAN(6) > 0 )THEN
-          CALL OPENFILE('SDSER.INP')
-          NLOOP=NSED
-          NCSERNC=NSER(6)
-        ENDIF
-      ELSEIF( NN == 3 )THEN
-        IF( NSND > 0 .AND. NSER(7) > 0 .AND. ISTRAN(7) > 0 )THEN
-          CALL OPENFILE('SNSER.INP')
-          NLOOP=NSND
-          NCSERNC=NSER(7)
-        ENDIF
-      ENDIF
+        endif
+      elseif( NN == 2 )then
+        if( NSED > 0 .and. NSER(6) > 0 .and. ISTRAN(6) > 0 )then
+          call OPENFILE('SDSER.INP')
+          NLOOP = NSED
+          NCSERNC = NSER(6)
+        endif
+      elseif( NN == 3 )then
+        if( NSND > 0 .and. NSER(7) > 0 .and. ISTRAN(7) > 0 )then
+          call OPENFILE('SNSER.INP')
+          NLOOP = NSND
+          NCSERNC = NSER(7)
+        endif
+      endif
     endif
 
-    Call Broadcast_Scalar(NLOOP, master_id)
-    Call Broadcast_Scalar(NCSERNC, master_id)
+    call Broadcast_Scalar(NLOOP, master_id)
+    call Broadcast_Scalar(NCSERNC, master_id)
 
-    IF( NCSERNC > 0 )THEN
+    if( NCSERNC > 0 )then
       ! *** ****************************
-      if( process_id == master_id )THEN
-        STR=READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
-      endif!***End on master process
+      if( process_id == master_id )then
+        STR = READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES
+      endif   ! *** End on master process
 
       ! *** LOOP OVER THE NUMBER OF SERIES
-      DO NS=1,NSER(NN+4)  !NCSERNC
+      do NS = 1,NSER(NN+4)  !NCSERNC
         ! *** ****************************
-        if( process_id == master_id )THEN
-          READ(1,*,ERR=20,END=40)ISTYP,NDATAPTS   !,X1,X2,X3,X4
-        endif!***End on master process
+        if( process_id == master_id )then
+          read(1,*,err = 20,end = 40)ISTYP,NDATAPTS   !,X1,X2,X3,X4
+        endif   ! *** End on master process
 
-        Call Broadcast_Scalar(ISTYP, master_id)
-        Call Broadcast_Scalar(NDATAPTS, master_id)
+        call Broadcast_Scalar(ISTYP, master_id)
+        call Broadcast_Scalar(NDATAPTS, master_id)
 
-        IF( NN == 1 .AND. NTOX > 0 .AND. NSER(5) > 0 )THEN
-          DO NT=1,NTOX
-            ALLOCATE(TSTOX(NS,NT).VAL(NDATAPTS,KCM),TSTOX(NS,NT).TIM(NDATAPTS))
-            TSTOX(NS,NT).NREC=NDATAPTS
-            TSTOX(NS,NT).VAL=0
-            TSTOX(NS,NT).TIM=0
-          ENDDO
+        if( NN == 1 .and. NTOX > 0 .and. NSER(5) > 0 )then
+          do NT = 1,NTOX
+            allocate(TSTOX(NS,NT).VAL(NDATAPTS,KCM),TSTOX(NS,NT).TIM(NDATAPTS))
+            TSTOX(NS,NT).NREC = NDATAPTS
+            TSTOX(NS,NT).VAL = 0
+            TSTOX(NS,NT).TIM = 0
+          enddo
 
-        ELSEIF( NN == 2 .AND. NSED > 0 .AND. NSER(6) > 0 )THEN
-          DO NT=1,NSED
-            ALLOCATE(TSSED(NS,NT).VAL(NDATAPTS,KCM),TSSED(NS,NT).TIM(NDATAPTS))
-            TSSED(NS,NT).NREC=NDATAPTS
-            TSSED(NS,NT).VAL=0
-            TSSED(NS,NT).TIM=0
-          ENDDO
-        ELSEIF( NN == 3 .AND. NSND > 0 .AND. NSER(7) > 0 )THEN
-          DO NT=1,NSND
-            ALLOCATE(TSSND(NS,NT).VAL(NDATAPTS,KCM),TSSND(NS,NT).TIM(NDATAPTS))
-            TSSND(NS,NT).NREC=NDATAPTS
-            TSSND(NS,NT).VAL=0
-            TSSND(NS,NT).TIM=0
-          ENDDO
-        ENDIF
+        elseif( NN == 2 .and. NSED > 0 .and. NSER(6) > 0 )then
+          do NT = 1,NSED
+            allocate(TSSED(NS,NT).VAL(NDATAPTS,KCM),TSSED(NS,NT).TIM(NDATAPTS))
+            TSSED(NS,NT).NREC = NDATAPTS
+            TSSED(NS,NT).VAL = 0
+            TSSED(NS,NT).TIM = 0
+          enddo
+        elseif( NN == 3 .and. NSND > 0 .and. NSER(7) > 0 )then
+          do NT = 1,NSND
+            allocate(TSSND(NS,NT).VAL(NDATAPTS,KCM),TSSND(NS,NT).TIM(NDATAPTS))
+            TSSND(NS,NT).NREC = NDATAPTS
+            TSSND(NS,NT).VAL = 0
+            TSSND(NS,NT).TIM = 0
+          enddo
+        endif
         ! *** ****************************
-        if( process_id == master_id )THEN
+        if( process_id == master_id )then
           ! *** SKIP THE CONVERSIONS
-          IF( NN /= 1 )THEN
-            DO NT=2,NLOOP
-              READ(1,'(A)') SKIP
-            ENDDO
-          ENDIF
+          if( NN /= 1 )then
+            do NT = 2,NLOOP
+              read(1,'(A)') SKIP
+            enddo
+          endif
 
-          NDCSER=MAX(NDCSER,NDATAPTS)
-          IF( ISTYP == 1 )THEN
+          NDCSER = MAX(NDCSER,NDATAPTS)
+          if( ISTYP == 1 )then
             ! *** SKIP THE SPLITS
-            READ(1,'(A)') SKIP
-          ENDIF
+            read(1,'(A)') SKIP
+          endif
           ! *** SKIP TO THE NEXT SERIES
-          DO M=1,NDATAPTS
-            DO NT=1,NLOOP
-              READ(1,'(A)') SKIP
-            ENDDO
-          ENDDO
-        endif!***End on master process
+          do M = 1,NDATAPTS
+            do NT = 1,NLOOP
+              read(1,'(A)') SKIP
+            enddo
+          enddo
+        endif   ! *** End on master process
 
-      ENDDO
+      enddo
       ! *** ****************************
-      if( process_id == master_id )THEN
-        CLOSE(1)
-      endif!***End on master process
+      if( process_id == master_id )then
+        close(1)
+      endif   ! *** End on master process
 
-    ENDIF
-  ENDDO
-  RETURN
-
+    endif
+  enddo
+  return
    ! *** ****************************
 20 WRITE(6,'(A)') '*** READ ERROR IN FILE: '//CFILE
-   WRITE(8,'(A)')    '*** READ ERROR IN FILE: '//CFILE
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)')    '*** READ ERROR IN FILE: '//CFILE
+   call STOPP('.')
 
 40 WRITE(6,'(A)') '*** UNEXPECTED END OF FILE: '//CFILE
-   WRITE(8,'(A)')    '*** UNEXPECTED END OF FILE: '//CFILE
-   CALL STOPP('.')
+   write(mpi_error_unit,'(A)')    '*** UNEXPECTED END OF FILE: '//CFILE
+   call STOPP('.')
 
 END SUBROUTINE SCNTXSED
 
 SUBROUTINE SCANPROPWASH
 
-  Use fson
-  Use mod_fson_value, Only: fson_value_count, fson_value_get
+  use fson
+  use mod_fson_value, only: fson_value_count, fson_value_get
 
-  Type(fson_value), Pointer :: json_data
+  type(fson_value), Pointer :: json_data
   
   ! *** ****************************
-  IF( process_id == master_id )THEN
+  if( process_id == master_id )then
     ! *** Scan the propwash config file
     write(*,'(A)') 'SCANNING PROPWASH CONFIGURATION'
 
@@ -2229,67 +2228,66 @@ SUBROUTINE SCANPROPWASH
     ! *** Fast Settling Classes
     call fson_get(json_data, "parms.fraction_fast",   fraction_fast)
     call fson_get(json_data, "parms.fast_multiplier", fast_multiplier)
-  ENDIF
+  endif
 
-  Call Broadcast_Scalar(fraction_fast,   master_id)
-  Call Broadcast_Scalar(fast_multiplier, master_id)
+  call Broadcast_Scalar(fraction_fast,   master_id)
+  call Broadcast_Scalar(fast_multiplier, master_id)
 
 END SUBROUTINE SCANPROPWASH
 
 SUBROUTINE OPENFILE(INFILE)
 
-  CHARACTER(*), INTENT(IN) :: INFILE
+  character(*), intent(IN) :: INFILE
   CFILE = StrUpCase(INFILE)
 
-  WRITE(6,'(A)')'SCANNING INPUT FILE: '//CFILE
+  write(6,'(A)')'SCANNING INPUT FILE: '//CFILE
 
   CFILE = StrLowCase(INFILE)
-  OPEN(1,FILE=CFILE,STATUS='OLD',ERR=200)
+  open(1,FILE = CFILE,STATUS = 'OLD',err = 200)
 
-  RETURN
-
+  return
 200 WRITE(6,'(A)') '  FILE DOES NOT EXIST:  '//TRIM(CFILE)
-  WRITE(8,'(A)') '  FILE DOES NOT EXIST:  '//TRIM(CFILE)
-  CALL STOPP('.')
+  write(mpi_error_unit,'(A)') '  FILE DOES NOT EXIST:  '//TRIM(CFILE)
+  call STOPP('.')
 
 END SUBROUTINE
 
 FUNCTION StrUpCase ( Input_String ) RESULT ( Output_String )
   ! FROM "String_Utility" BY Paul van Delst
   ! -- Argument and result
-  CHARACTER( * ), INTENT( IN )     :: Input_String
-  CHARACTER( LEN( Input_String ) ) :: Output_String
+  character( * ), intent( IN )     :: Input_String
+  character( LEN( Input_String ) ) :: Output_String
   ! -- Local variables
-  INTEGER :: i, n
+  integer :: i, n
 
   ! -- Copy input string
   Output_String = Input_String
   ! -- Loop over string elements
-  DO i = 1, LEN( Output_String )
+  do i = 1, LEN( Output_String )
     ! -- Find location of letter in lower case constant string
     n = INDEX( LOWER_CASE, Output_String( i:i ) )
     ! -- If current substring is a lower case letter, make it upper case
-    IF(  n /= 0 ) Output_String( i:i ) = UPPER_CASE( n:n )
-  END DO
+    if( n /= 0 ) Output_String( i:i ) = UPPER_CASE( n:n )
+  enddo
 END FUNCTION StrUpCase
 
 FUNCTION StrLowCase ( Input_String ) RESULT ( Output_String )
   ! FROM "String_Utility" BY Paul van Delst
   ! -- Argument and result
-  CHARACTER( * ), INTENT( IN )     :: Input_String
-  CHARACTER( LEN( Input_String ) ) :: Output_String
+  character( * ), intent( IN )     :: Input_String
+  character( LEN( Input_String ) ) :: Output_String
   ! -- Local variables
-  INTEGER :: i, n
+  integer :: i, n
 
   ! -- Copy input string
   Output_String = Input_String
   ! -- Loop over string elements
-  DO i = 1, LEN( Output_String )
+  do i = 1, LEN( Output_String )
     ! -- Find location of letter in upper case constant string
     n = INDEX( UPPER_CASE, Output_String( i:i ) )
     ! -- If current substring is an upper case letter, make it lower case
-    IF(  n /= 0 ) Output_String( i:i ) = LOWER_CASE( n:n )
-  END DO
+    if( n /= 0 ) Output_String( i:i ) = LOWER_CASE( n:n )
+  enddo
 END FUNCTION StrLowCase
 
 END MODULE

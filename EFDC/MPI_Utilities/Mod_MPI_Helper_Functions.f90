@@ -3,16 +3,16 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
   Module Mod_MPI_Helper_Functions
 
-  Use Variables_MPI
-  Use Variables_MPI_Mapping
-  Use Variables_Propwash
-  Use Global, only : KC, ISDRY, HDRY, HP
-  Use XYIJCONV
+  use Variables_MPI
+  use Variables_MPI_Mapping
+  use Variables_Propwash
+  use GLOBAL, only : KC, ISDRY, HDRY, HP
+  use XYIJCONV
 
   implicit none
 
@@ -40,11 +40,11 @@
     real(kind = RKD), intent(in) :: y_position
 
     ! *** Local variables
-    Real(kind = RKD), Allocatable, Dimension(:) :: Distance_to_Cells
-    Integer :: Min_L_loc_index(1)
-    Integer :: cell_index
+    real(kind = RKD), Allocatable, Dimension(:) :: Distance_to_Cells
+    integer :: Min_L_loc_index(1)
+    integer :: cell_index
 
-    Allocate(Distance_to_Cells(LA_Global))
+    allocate(Distance_to_Cells(LA_Global))
     Distance_to_Cells = 0.0
 
     !   can constrain the movemet of a ship to only going to the adjacet cells
@@ -58,11 +58,11 @@
     cell_index = Map2Local(Min_L_loc_index(1)).LL
 
     ! *** Check if there is water in this cell
-    if( ISDRY > 0 .AND. HP(cell_index) < HDRY  )then
+    if( ISDRY > 0 .and. HP(cell_index) < HDRY  )then
       call STOPP("***WARNING*** the ship has entered a cell that has gone dry")
-    end if
+    endif
 
-    Deallocate(Distance_to_Cells)
+    deallocate(Distance_to_Cells)
 
   end function
 
@@ -139,23 +139,23 @@
     !
     !  Special cases:
     !
-    IF(  x == 0.0D+00  )then
+    if( x == 0.0D+00  )then
 
-      IF(  0.0D+00 < y  )then
+      if( 0.0D+00 < y  )then
         value = r8_pi / 2.0D+00
-      else IF(  y < 0.0D+00  )then
+      elseif(  y < 0.0D+00  )then
         value = 3.0D+00 * r8_pi / 2.0D+00
-      else IF(  y == 0.0D+00  )then
+      elseif(  y == 0.0D+00  )then
         value = 0.0D+00
-      end if
+      endif
 
-    else IF(  y == 0.0D+00  )then
+    elseif(  y == 0.0D+00  )then
 
-      IF(  0.0D+00 < x  )then
+      if( 0.0D+00 < x  )then
         value = 0.0D+00
-      else IF(  x < 0.0D+00  )then
+      elseif(  x < 0.0D+00  )then
         value = r8_pi
-      end if
+      endif
       !
       !  We assume that ATAN2 is correct when both arguments are positive.
       !
@@ -166,17 +166,17 @@
 
       theta_0 = atan2 ( abs_y, abs_x )
 
-      IF(  0.0D+00 < x .and. 0.0D+00 < y  )then
+      if( 0.0D+00 < x .and. 0.0D+00 < y  )then
         value = theta_0
-      else IF(  x < 0.0D+00 .and. 0.0D+00 < y  )then
+      elseif(  x < 0.0D+00 .and. 0.0D+00 < y  )then
         value = r8_pi - theta_0
-      else IF(  x < 0.0D+00 .and. y < 0.0D+00  )then
+      elseif(  x < 0.0D+00 .and. y < 0.0D+00  )then
         value = r8_pi + theta_0
-      else IF(  0.0D+00 < x .and. y < 0.0D+00  )then
+      elseif(  0.0D+00 < x .and. y < 0.0D+00  )then
         value = 2.0D+00 * r8_pi - theta_0
-      end if
+      endif
 
-    end if
+    endif
 
     r8_atan = value
 

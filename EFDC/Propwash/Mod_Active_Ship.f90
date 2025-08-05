@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
   !---------------------------------------------------------------------------!
@@ -13,7 +13,7 @@
   !---------------------------------------------------------------------------!
 Module Mod_Active_Ship
 
-Use GLOBAL, only : RKD, RK4, PI
+use GLOBAL, only : RKD, RK4, PI
 
 Use Mod_Position
 Use Mod_Position_Cell
@@ -28,7 +28,7 @@ implicit none
 type ::active_ship
 
   integer (kind = RK4) :: mmsi       = 0        !< MMSI identifier of the ship
-  character(len=100)   :: name       = ' '      !< Name of the ship
+  character(len = 100)   :: name       = ' '      !< Name of the ship
   type(position_cell)  :: pos                   !< Current position of the ship's propeller (x,y,z) coordinates
   type(position)       :: stern                 !< Current position of the ship's stern (x,y,z) coordinates
   type(position)       :: antenna               !< Current position of the ship AIS anntena (x,y,z) coordinates
@@ -90,7 +90,7 @@ type(active_ship) function constructor_active_ship(inp_id, inp_name, inp_pos, in
 
   ! *** Dummy variables
   integer  , intent(in) :: inp_id
-  character(len=*)      , intent(in) :: inp_name
+  character(len = *)      , intent(in) :: inp_name
   type(position_cell)   , intent(in) :: inp_pos
   type(ship_type)       , intent(in) :: inp_prop
   type(all_tracks), Allocatable, Dimension(:), intent(in) :: inp_tracks !< Array of all track positions for the ship
@@ -116,9 +116,9 @@ type(active_ship) function constructor_active_ship(inp_id, inp_name, inp_pos, in
 
   allocate(self.subgrid_mesh(num_radial_elems, num_axial_elems))
 
-  do i=1,num_axial_elems
-    do j=1,num_radial_elems
-      allocate(self.subgrid_mesh(j,i).ero(nscm))
+  do i = 1,num_axial_elems
+    do j = 1,num_radial_elems
+      allocate(self.subgrid_mesh(j,i).ero(NSEDS))
       self.subgrid_mesh(j,i).ero(:) = 0.0
     enddo
   enddo
@@ -131,42 +131,51 @@ end function constructor_active_ship
 !< @param[in] prev_id
 !< @param[in] next_id
 !---------------------------------------------------------------------------!
-subroutine interp_track(self, track_id, prev_pos_id, next_pos_id, debug)
+subroutine interp_track(self, track_id, prev_pos_id, next_pos_id, debug_)
 
-  Use Variables_MPI, only : mpi_log_unit
+  use Variables_MPI, only : mpi_efdc_out_unit, mpi_efdc_out_file
 
   implicit none
 
   ! *** Dummy variables
-  class(active_ship), intent(inout) :: self
+  class(active_ship), intent(inout),target :: self
   integer, intent(in)               :: track_id
   integer, intent(in)               :: prev_pos_id
   integer, intent(in)               :: next_pos_id
-  logical, optional, intent(in)     :: debug
+  logical, optional, intent(in)     :: debug_
 
   ! *** Local variables
-  real(kind=rkd) :: dx, dy              !< Delta x and delta y (meters)
-  real(kind=rkd) :: delta_t             !< time difference between two track positions
-  real(kind=rkd) :: curr_delta_t        !< time difference between two track positions
-  real(kind=rkd) :: x_0, y_0, x_1, y_1  !< Current and previous locations (meters)
-  real(kind=rkd) :: x_b, y_b            !< Current bow location (meters)
-  real(kind=rkd) :: radius, ratio       !< Radius from axial line to final point and ratio of distance between track points
-  real(kind=rkd) :: p1, p2              !< Temporary power variables
+  real(kind = rkd) :: dx, dy              !< Delta x and delta y (meters)
+  real(kind = rkd) :: delta_t             !< time difference between two track positions
+  real(kind = rkd) :: curr_delta_t        !< time difference between two track positions
+  real(kind = rkd) :: x_0, y_0, x_1, y_1  !< Current and previous locations (meters)
+  real(kind = rkd) :: x_b, y_b            !< Current bow location (meters)
+  real(kind = rkd) :: radius, ratio       !< Radius from axial line to final point and ratio of distance between track points
+  real(kind = rkd) :: p1, p2              !< Temporary power variables
   logical        :: no_heading_available
+  type(all_tracks),target :: trk
+  type(ship_type), pointer :: ship 
+  type(position_cell), pointer :: pt,prev_pos, next_pos
 
+  ship => self.ship
+  pt => self.pos
+  trk = self.tracks(track_id)
+  prev_pos => trk.track_pos(prev_pos_id)
+  next_pos => trk.track_pos(next_pos_id)
+  
   ! *** Determine delta t between tracks (days)
-  delta_t = (self.tracks(track_id).track_pos(next_pos_id).time) - (self.tracks(track_id).track_pos(prev_pos_id).time)
+  delta_t = (next_pos.time) - (prev_pos.time)
   delta_t = max(delta_t,1.15741E-05)    !*** 1.15741E-05 = 1/86400, one sec
 
   ! ***
-  curr_delta_t = self.pos.time - self.tracks(track_id).track_pos(prev_pos_id).time
+  curr_delta_t = pt.time - prev_pos.time
 
   ! *** x_0, y_0 are the previous ship position
-  x_0 = self.tracks(track_id).track_pos(prev_pos_id).x_pos
-  y_0 = self.tracks(track_id).track_pos(prev_pos_id).y_pos
+  x_0 = prev_pos.x_pos
+  y_0 = prev_pos.y_pos
 
-  x_1 = self.tracks(track_id).track_pos(next_pos_id).x_pos
-  y_1 = self.tracks(track_id).track_pos(next_pos_id).y_pos
+  x_1 = next_pos.x_pos
+  y_1 = next_pos.y_pos
 
   ! *** x_1,y_1 are the next ship positions
   ! *** Get changex,y directions
@@ -175,26 +184,21 @@ subroutine interp_track(self, track_id, prev_pos_id, next_pos_id, debug)
   ratio = curr_delta_t/delta_t
 
   ! *** Interpolate locations
-  self.pos.x_pos = dx*ratio + x_0
-  self.pos.y_pos = dy*ratio + y_0
+  pt.x_pos = dx*ratio + x_0
+  pt.y_pos = dy*ratio + y_0
 
   ! *** Cell Index.  For now, all propellers are assumed to be in the same cell
-  self.pos.cell = get_cell(self.pos.cell, self.pos.x_pos, self.pos.y_pos)
+  pt.cell = get_cell(pt.cell, pt.x_pos, pt.y_pos)
 
-  self.draft   = interp_value(self.tracks(track_id).track_pos(prev_pos_id).draft, &
-                              self.tracks(track_id).track_pos(next_pos_id).draft, ratio)
+  self.draft   = interp_value(prev_pos.draft, next_pos.draft, ratio)
 
-  self.power   = interp_value(self.tracks(track_id).track_pos(prev_pos_id).power, &
-                              self.tracks(track_id).track_pos(next_pos_id).power, ratio)
+  self.power   = interp_value(prev_pos.power, next_pos.power, ratio)
 
-  self.speed   = interp_value(self.tracks(track_id).track_pos(prev_pos_id).speed, &
-                              self.tracks(track_id).track_pos(next_pos_id).speed, ratio)
+  self.speed   = interp_value(prev_pos.speed, next_pos.speed, ratio)
 
-  self.heading = interp_angle(self.tracks(track_id).track_pos(prev_pos_id).heading, &
-                              self.tracks(track_id).track_pos(next_pos_id).heading, ratio)
+  self.heading = interp_angle(prev_pos.heading, next_pos.heading, ratio)
 
-  self.course  =  interp_angle(self.tracks(track_id).track_pos(prev_pos_id).course, &
-                               self.tracks(track_id).track_pos(next_pos_id).course, ratio)
+  self.course  =  interp_angle(prev_pos.course, next_pos.course, ratio)
 
   ! *** Deceleration
   if( self.power < 0.0 )then
@@ -202,55 +206,55 @@ subroutine interp_track(self, track_id, prev_pos_id, next_pos_id, debug)
     self.power = abs(self.power)
   endif
   
-  if( self.ship.power_source == 0 )then
-    self.power = self.power*self.ship.max_power              !< Fraction of max HP
+  if( ship.power_source == 0 )then
+    self.power = self.power*ship.max_power              !< Fraction of max HP
     self.rps   = -1.                                         !< Set to inactive
-  elseif( self.ship.power_source == 1 )then
-    self.rps   = self.power*self.ship.max_rps                !< Fraction of max RPS
+  elseif( ship.power_source == 1 )then
+    self.rps   = self.power*ship.max_rps                !< Fraction of max RPS
     self.power = -1.                                         !< Set to inactive
   else
     self.power =  0.                                         !< Power off
     self.rps   =  0.                                         !< Power off
   endif
 
-  if( self.tracks(track_id).track_pos(prev_pos_id).freq_out > 0. )then
-    self.freq_out = self.tracks(track_id).track_pos(prev_pos_id).freq_out
+  if( prev_pos.freq_out > 0. )then
+    self.freq_out = prev_pos.freq_out
   else
-    self.freq_out = self.ship.freq_out
+    self.freq_out = ship.freq_out
   endif
 
   if( ispropwash == 2 )then
     ! *** Get bow cell
-    x_b = self.pos.x_pos + self.ship.length*cos(self.heading)
-    y_b = self.pos.y_pos + self.ship.length*sin(self.heading)
+    x_b = pt.x_pos + ship.length*cos(self.heading)
+    y_b = pt.y_pos + ship.length*sin(self.heading)
     self.bowcell = get_cell(self.bowcell, x_b, y_b)
   endif
 
   ! *** optional debug write statements
-  if(present( debug) )then
-    write(mpi_log_unit, '(a,f15.5)') 'dx       ', dx
-    write(mpi_log_unit, '(a,f15.5)') 'dy       ', dy
-    write(mpi_log_unit, '(a,f15.5)') 'delta t  ', delta_t
-    write(mpi_log_unit, '(a,f15.5)') 'curr dt  ', curr_delta_t
-    write(mpi_log_unit, '(a,f15.5)') 'heading  ', self.heading
-    write(mpi_log_unit, '(a,f15.5)') 'speed    ', self.speed
-  end if
+  if( present(debug_) )then
+    write(mpi_efdc_out_unit, '(a,f15.5)') 'dx       ', dx
+    write(mpi_efdc_out_unit, '(a,f15.5)') 'dy       ', dy
+    write(mpi_efdc_out_unit, '(a,f15.5)') 'delta t  ', delta_t
+    write(mpi_efdc_out_unit, '(a,f15.5)') 'curr dt  ', curr_delta_t
+    write(mpi_efdc_out_unit, '(a,f15.5)') 'heading  ', self.heading
+    write(mpi_efdc_out_unit, '(a,f15.5)') 'speed    ', self.speed
+  endif
 
 end subroutine interp_track
 
-real(kind=rkd) function interp_value(value1, value2, factor)
+real(kind = rkd) function interp_value(value1, value2, factor)
 
   implicit none
-  real(kind=rkd), intent(in)  :: value1,value2, factor
+  real(kind = rkd), intent(in)  :: value1,value2, factor
 
   interp_value =  value1 + factor*(value2 - value1)
   end function interp_value
 
-  real(kind=rkd) function interp_angle(angle1, angle2, factor)
+  real(kind = rkd) function interp_angle(angle1, angle2, factor)
 
   implicit none
-  real(kind=rkd), intent(in)  :: angle1, angle2, factor
-  real(kind=rkd) :: sina, cosa
+  real(kind = rkd), intent(in)  :: angle1, angle2, factor
+  real(kind = rkd) :: sina, cosa
 
   sina = interp_value(sin(angle1), sin(angle2), factor)
   cosa = interp_value(cos(angle1), cos(angle2), factor)
@@ -266,7 +270,7 @@ subroutine det_if_in_track(self, track_id, in_track)
   implicit none
 
   ! *** Dummy variables
-  class(active_ship), intent(inout) :: self
+  class(active_ship), intent(inout),target :: self
   integer, intent(inout) :: track_id
   logical, intent(inout) :: in_track
 
@@ -274,7 +278,10 @@ subroutine det_if_in_track(self, track_id, in_track)
   integer :: i, j
   real(kind = RKD) :: start_time, end_time
   real(kind = RKD) :: prev_time, next_time
-
+  type(position_cell), pointer :: pt
+  
+  pt => self.pos
+  
   ! *** Determine if the current time liesthe time region for a given track
   do i = 1, self.num_tracks
 
@@ -284,14 +291,14 @@ subroutine det_if_in_track(self, track_id, in_track)
     call self.tracks(i).get_end_time(end_time)
 
     ! *** Check if we are within this track, if so leave the loop
-    if( start_time < self.pos.time .and. end_time > self.pos.time )then
+    if( start_time < pt.time .and. end_time > pt.time )then
       track_id = i
       in_track = .TRUE.
       return
     else
       in_track = .FALSE.
-    end if
-  end do
+    endif
+  enddo
 
 end subroutine det_if_in_track
 
@@ -304,34 +311,39 @@ subroutine det_pos_in_track(self, track_id, prev_pos_id, next_pos_id)
   implicit none
 
   ! *** Dummy variables
-  class(active_ship), intent(inout) :: self
+  class(active_ship), intent(inout),target :: self
   integer, intent(in)    :: track_id
   integer, intent(inout) :: prev_pos_id
   integer, intent(inout) :: next_pos_id
   ! *** Local variables
   integer :: j
   real(kind = RKD) :: prev_time, next_time
-
+  type(all_tracks),target :: trk
+  type(position_cell), pointer :: pt
+  
+  trk = self.tracks(track_id)
+  pt => self.pos
+  
   self.ipos = 0
   self.itrack = 0
 
   ! *** loop over the number of positions in the track
-  do j = prev_pos_id, self.tracks(track_id).num_positions - 1
+  do j = prev_pos_id, trk.num_positions - 1
 
     ! *** Check if we are between ship tracks
-    prev_time = self.tracks(track_id).track_pos(j).time
-    next_time = self.tracks(track_id).track_pos(j + 1).time
+    prev_time = trk.track_pos(j).time
+    next_time = trk.track_pos(j + 1).time
 
-    if( prev_time < self.pos.time .and. next_time >= self.pos.time  )then
+    if( prev_time < pt.time .and. next_time >= pt.time  )then
       ! *** set the track and position indices
       prev_pos_id = j
       next_pos_id = j + 1
       self.ipos = j
       self.itrack = track_id
       exit
-    end if
+    endif
 
-  end do
+  enddo
 
 end subroutine det_pos_in_track
 
@@ -341,15 +353,15 @@ end subroutine det_pos_in_track
 !< @param[in] self
 !< @param[in] debug
 !---------------------------------------------------------------------------!
-subroutine setup_mesh(self, debug)
+subroutine setup_mesh(self, debug_)
 
   use Variables_Propwash
   use XYIJCONV, only : BLOCKED
 
   implicit none
   ! *** Dummy variables
-  class(active_ship), intent(inout) :: self
-  logical, intent(in), optional :: debug !< prints out mesh for debugging
+  class(active_ship), intent(inout),target :: self
+  logical, intent(in), optional :: debug_ !< prints out mesh for debugging
   character(30) :: filename
 
   ! *** Local variables
@@ -362,31 +374,36 @@ subroutine setup_mesh(self, debug)
 
   real (kind = RKD) :: lower_rad, upper_rad, range_rad
   real (kind = RKD) :: lower_ax, upper_ax, range_ax
-  real (kind = RKD) :: area, width_propellers, tan13, cone_max
+  real (kind = RKD) :: area_, width_propellers, tan13, cone_max
   real (kind = RKD) :: width, length
   integer :: last_nodes(num_radial_elems), first_axial(num_radial_elems)
-
+  type(ship_type), pointer :: ship 
+  type(position_cell), pointer :: pt
+  
+  ship => self.ship
+  pt => self.pos
+  
   ! *** Ignore track points outside domain
-  if( self.pos.cell < 2 ) return
+  if( pt.cell < 2 ) return
 
-  width_propellers = real(self.ship.num_props-1)*self.ship.dist_between_props     ! *** Total width of all props between shafts
+  width_propellers = real(ship.num_props-1)*ship.dist_between_props     ! *** Total width of all props between shafts
 
-  lower_rad = -0.5*mesh_width*(self.ship.prop_diam + 0.5*width_propellers)        ! *** Width of mesh below ship centerline
-  upper_rad =  0.5*mesh_width*(self.ship.prop_diam + 0.5*width_propellers)        ! *** Width of mesh above ship centerline
+  lower_rad = -0.5*mesh_width*(ship.prop_diam + 0.5*width_propellers)        ! *** Width of mesh below ship centerline
+  upper_rad =  0.5*mesh_width*(ship.prop_diam + 0.5*width_propellers)        ! *** Width of mesh above ship centerline
   range_rad = upper_rad - lower_rad
 
-  lower_ax =  0.5*efflux_zone_mult*self.ship.prop_diam
-  upper_ax =  mesh_length*self.ship.prop_diam
+  lower_ax =  0.5*efflux_zone_mult*ship.prop_diam
+  upper_ax =  mesh_length*ship.prop_diam
   range_ax = upper_ax - lower_ax
 
   width  = range_rad / num_radial_elems
   length = range_ax / num_axial_elems
   if( LSEDZLJ )then
-    area = width*length*10000.                                                    ! *** Area in cm^2
+    area_ = width*length*10000.                                                    ! *** Area in cm^2
   else                                                                            
-    area = width*length                                                           ! *** Area in m^2
+    area_ = width*length                                                           ! *** Area in m^2
   endif
-  width_propellers = 0.5*(self.ship.prop_diam + width_propellers)                 ! *** Half of the width of all props
+  width_propellers = 0.5*(ship.prop_diam + width_propellers)                 ! *** Half of the width of all props
   tan13 = 0.23087                                                                 ! *** Tan(13) velocity zone
 
   last_nodes = num_axial_elems
@@ -394,7 +411,7 @@ subroutine setup_mesh(self, debug)
   self.mesh_count = 0                                                             ! *** Zero subgrid cell count
   
   ! *** These loops are faster without OMP
-  !print '(a,i12,a,f12.4,a,i6)', 'Mesh setup for MMSI = ', self.mmsi, ' @ ', timeday, ' L = ', self.pos.cell   ! delme
+  !print '(a,i12,a,f12.4,a,i6)', 'Mesh setup for MMSI = ', self.mmsi, ' @ ', timeday, ' L = ', pt.cell   ! delme
   
   ! *** Create x,y mesh
   do i = 1, num_axial_elems
@@ -404,7 +421,7 @@ subroutine setup_mesh(self, debug)
       self.subgrid_mesh(j,i).x_pos = lower_rad + range_rad * (j - 1) / (num_radial_elems - 1)
       self.subgrid_mesh(j,i).y_pos = lower_ax +  range_ax * (i - 1) / (num_axial_elems - 1)
       ! *** constant area
-      self.subgrid_mesh(j,i).area   = area
+      self.subgrid_mesh(j,i).area   = area_
       self.subgrid_mesh(j,i).width  = width
       self.subgrid_mesh(j,i).length = length
       
@@ -416,8 +433,8 @@ subroutine setup_mesh(self, debug)
         self.subgrid_mesh(j,i).x_pos = -9999.
         self.subgrid_mesh(j,i).area  = 0.
       endif
-    end do
-  end do
+    enddo
+  enddo
 
   ! *** Get index of first valid axial point for each radial
   do j = 1,num_radial_elems
@@ -435,8 +452,8 @@ subroutine setup_mesh(self, debug)
     x_o = self.axial_mesh(i).x_pos
     y_o = self.axial_mesh(i).y_pos
 
-    self.axial_mesh(i).x_pos = x_o*sin(self.heading) - y_o*cos(self.heading) + self.pos.x_pos
-    self.axial_mesh(i).y_pos = x_o*cos(self.heading) + y_o*sin(self.heading) + self.pos.y_pos
+    self.axial_mesh(i).x_pos = x_o*sin(self.heading) - y_o*cos(self.heading) + pt.x_pos
+    self.axial_mesh(i).y_pos = x_o*cos(self.heading) + y_o*sin(self.heading) + pt.y_pos
 
     ! *** Rotate the radial components
     do j = 1,num_radial_elems
@@ -447,16 +464,16 @@ subroutine setup_mesh(self, debug)
         y_o = self.subgrid_mesh(j,i).y_pos
 
         ! *** x rotation + translation about starting point
-        self.subgrid_mesh(j,i).x_pos = x_o*sin(self.heading) - y_o*cos(self.heading) + self.pos.x_pos
+        self.subgrid_mesh(j,i).x_pos = x_o*sin(self.heading) - y_o*cos(self.heading) + pt.x_pos
         ! *** y rotation + translation about starting point
-        self.subgrid_mesh(j,i).y_pos = x_o*cos(self.heading) + y_o*sin(self.heading) + self.pos.y_pos
+        self.subgrid_mesh(j,i).y_pos = x_o*cos(self.heading) + y_o*sin(self.heading) + pt.y_pos
       else
         self.subgrid_mesh(j,i).x_pos = -9999.
         self.subgrid_mesh(j,i).y_pos = -9999.
         self.subgrid_mesh(j,i).cell  = 0
       endif
-    end do
-  end do
+    enddo
+  enddo
 
   ! *** Assign L Index (OMP of LA loop in get_cell)
   do i = 1, num_axial_elems
@@ -466,13 +483,13 @@ subroutine setup_mesh(self, debug)
       self.subgrid_mesh(j,i).cell = get_cell(Llast, self.subgrid_mesh(j,i).x_pos, self.subgrid_mesh(j,i).y_pos)
       
       self.mesh_count(self.subgrid_mesh(j,i).cell) = self.mesh_count(self.subgrid_mesh(j,i).cell) + 1
-    end do
+    enddo
   enddo
 
   ! *** 2021-04-27, NTL: Check blocking by dry land or cell masks
   do j = 1,num_radial_elems
     do i = 1, num_axial_elems - 1
-      if( abs(self.subgrid_mesh(j,i).x_pos + 9999.) > 1.0 .and. abs(self.subgrid_mesh(j,i+1).x_pos + 9999.) > 1.0 ) then
+      if( abs(self.subgrid_mesh(j,i).x_pos + 9999.) > 1.0 .and. abs(self.subgrid_mesh(j,i+1).x_pos + 9999.) > 1.0 )then
         ! *** Check if the ray is blocked by dry land
         if( self.subgrid_mesh(j,i+1).cell == 0 )then
           last_nodes(j) = i
@@ -511,13 +528,13 @@ subroutine setup_mesh(self, debug)
   enddo
 
   ! *** Check for missing radials
-  if( debug )then
+  if( debug_ )then
     do j = 1,num_radial_elems
       i = first_axial(j)              ! *** First point in axial
       if( i < 1 .or. i > num_axial_elems )then
         write(901,'(a,i4,a,i10,f10.4, a,i12, a,2i5,2f12.2,f6.1)') 'No Valid Points for Radial: ', j, '  @ ', niter, timeday,   &
                                                                   '  for MMSI: ', self.mmsi,                                   &
-                                                                  '  Track, Pt, X, Y Heading: ', self.itrack, self.ipos, self.pos.x_pos, self.pos.y_pos, self.heading
+                                                                  '  Track, Pt, X, Y Heading: ', self.itrack, self.ipos, pt.x_pos, pt.y_pos, self.heading
       endif
     enddo
   endif
@@ -553,13 +570,13 @@ subroutine setup_mesh(self, debug)
     endif
   enddo
   
-  if( debug .and. (niter == 1 .or. mod(niter,100) == 0) )then
+  if( debug_ .and. (niter == 1 .or. mod(niter,100) == 0) )then
     do i = 1, num_axial_elems
       do j = 1, num_radial_elems
         call self.subgrid_mesh(j,i).write_out(800,self.subgrid_mesh(j,i).cell)
-      end do
-    end do
-  end if
+      enddo
+    enddo
+  endif
 
 end subroutine setup_mesh
 
@@ -568,14 +585,14 @@ end subroutine setup_mesh
 !
 !< @param[inout]  self
 !---------------------------------------------------------------------------!
-subroutine interp_depth_elev(self, cell, x_pos, y_pos, bed_elev, w_depth)
+subroutine interp_depth_elev(self, cell_, x_pos, y_pos, bed_elev, w_depth)
 
-  Use Variables_Propwash
+  use Variables_Propwash
 
-  Implicit None
+  implicit none
   ! *** Dummy variables
   class(active_ship), intent(in)  :: self
-  integer         , intent(in)    :: cell
+  integer         , intent(in)    :: cell_
   real(kind = rkd), intent(in)    :: x_pos
   real(kind = rkd), intent(in)    :: y_pos
   real(kind = rkd), intent(inout) :: bed_elev
@@ -596,10 +613,10 @@ subroutine interp_depth_elev(self, cell, x_pos, y_pos, bed_elev, w_depth)
     ! *** get the adjacent cell value
     !< @todo right now this assumes all propwash field liesa single cell based on the current ship position
     !! should modify to return the cell based on the x,y locations that are passed in
-    L = adjacent_l(LL, cell)
+    L = adjacent_l(LL, cell_)
 
     ! *** Only do if the cell is valid
-    if( L >= 2 .AND. L <= LA )then
+    if( L >= 2 .and. L <= LA )then
       ! *** INVERSE DISTANCE SQUARED interpolation, interpolate with center of surrounding cells
       center_dist = MAX( (x_pos - XCOR(L,5))**2 + (y_pos - YCOR(L,5))**2, 1D-8)
 
@@ -608,8 +625,8 @@ subroutine interp_depth_elev(self, cell, x_pos, y_pos, bed_elev, w_depth)
 
       ! *** for water surface interpolation
       zeta = zeta + (HP(L) + BELV(L))/center_dist
-    end if
-  end do
+    endif
+  enddo
   if( weight > 0.0 )then
     bed_elev = bed_elev_1/weight
     zeta = zeta/weight
@@ -625,12 +642,12 @@ end subroutine interp_depth_elev
 !
 !< @param[inout]  self
 !---------------------------------------------------------------------------!
-subroutine interp_z(self,cell, bed_elev, w_depth, z_loc)
+subroutine interp_z(self,cell_, bed_elev, w_depth, z_loc)
 
   implicit none
   ! *** dummy variables
   class(active_ship), intent(in) :: self
-  integer, intent(in) :: cell
+  integer, intent(in) :: cell_
   real(kind = rkd), intent(in) :: bed_elev
   real(kind = rkd), intent(in) :: w_depth
   real(kind = rkd), intent(inout) :: z_loc
@@ -645,16 +662,16 @@ end subroutine interp_z
 !
 !< @param[inout]  self
 !---------------------------------------------------------------------------!
-subroutine interp_bot_vel(self, cell, x_pos, y_pos, u_vel, v_vel)
+subroutine interp_bot_vel(self, cell_, x_pos, y_pos, u_vel, v_vel)
 
   implicit none
   ! *** dummy variables
   class(active_ship), intent(in) :: self
-  integer, intent(in)     :: cell
-  real(kind=rkd), intent(in) :: x_pos
-  real(kind=rkd), intent(in) :: y_pos
-  real(kind=rkd), intent(inout) :: u_vel
-  real(kind=rkd), intent(inout) :: v_vel
+  integer, intent(in)     :: cell_
+  real(kind = rkd), intent(in) :: x_pos
+  real(kind = rkd), intent(in) :: y_pos
+  real(kind = rkd), intent(inout) :: u_vel
+  real(kind = rkd), intent(inout) :: v_vel
 
   ! *** local variables
   integer :: ll, l_east, l_north, l
@@ -673,12 +690,12 @@ subroutine interp_bot_vel(self, cell, x_pos, y_pos, u_vel, v_vel)
   sv_3 = 0.0
 
   ! *** get bottom for current cell
-  k_bot_cur = ksz(cell)
+  k_bot_cur = ksz(cell_)
 
   ! *** go around 8 surrounding cells
   do ll = 1, 9
 
-    l = adjacent_l(ll, cell)
+    l = adjacent_l(ll, cell_)
     ! *** bottom layer
     k_bot = KSZ(l)
     ! *** make sure cell is valid
@@ -696,57 +713,57 @@ subroutine interp_bot_vel(self, cell, x_pos, y_pos, u_vel, v_vel)
 
     else ! *** Edge cells, apply a zero face velocity
 
-      u_tmp = slipfactor*U2(cell, k_bot_cur)
-      v_tmp = slipfactor*V2(cell, k_bot_cur)
+      u_tmp = slipfactor*U2(cell_, k_bot_cur)
+      v_tmp = slipfactor*V2(cell_, k_bot_cur)
 
-      IF( LL == 1 )THEN
+      if( LL == 1 )then
         ! *** NORTHWEST
-        XOUT = XCOR(cell,5) + ( DYP(cell)*CVE(cell) - DXP(cell)*CUE(cell) )
-        YOUT = YCOR(cell,5) + ( DYP(cell)*CVN(cell) - DXP(cell)*CUN(cell) )
+        XOUT = XCOR(cell_,5) + ( DYP(cell_)*CVE(cell_) - DXP(cell_)*CUE(cell_) )
+        YOUT = YCOR(cell_,5) + ( DYP(cell_)*CVN(cell_) - DXP(cell_)*CUN(cell_) )
         dist_center = MAX((x_pos - XOUT)**2+(y_pos-YOUT)**2,1D-8)
-      ELSEIF( LL == 2 )THEN
+      elseif( LL == 2 )then
         ! *** NORTH FACE (MOVE WITH DRIFTER)
-        XOUT = x_pos + 0.5*( DYP(cell)*CVE(cell) )
-        YOUT = y_pos + 0.5*( DYP(cell)*CVN(cell) )
+        XOUT = x_pos + 0.5*( DYP(cell_)*CVE(cell_) )
+        YOUT = y_pos + 0.5*( DYP(cell_)*CVN(cell_) )
         dist_center = MAX( (x_pos-XOUT)**2 + (y_pos-YOUT)**2, 1D-8)
-        v_tmp = -VFACTOR*MAX(V2(cell,k_bot_cur),0.0)
-      ELSEIF( LL == 3 )THEN
+        v_tmp = -VFACTOR*MAX(V2(cell_,k_bot_cur),0.0)
+      elseif( LL == 3 )then
         ! *** NORTHEAST
-        XOUT = XCOR(cell,5) + ( DYP(cell)*CVE(cell) + DXP(cell)*CUE(cell) )
-        YOUT = YCOR(cell,5) + ( DYP(cell)*CVN(cell) + DXP(cell)*CUN(cell) )
+        XOUT = XCOR(cell_,5) + ( DYP(cell_)*CVE(cell_) + DXP(cell_)*CUE(cell_) )
+        YOUT = YCOR(cell_,5) + ( DYP(cell_)*CVN(cell_) + DXP(cell_)*CUN(cell_) )
         dist_center = MAX((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
-      ELSEIF( LL == 4 )THEN
+      elseif( LL == 4 )then
         ! *** WEST FACE (MOVE WITH DRIFTER)
-        XOUT = x_pos - 0.5*( DXP(cell)*CUE(cell) )
-        YOUT = y_pos - 0.5*( DXP(cell)*CUN(cell) )
+        XOUT = x_pos - 0.5*( DXP(cell_)*CUE(cell_) )
+        YOUT = y_pos - 0.5*( DXP(cell_)*CUN(cell_) )
         dist_center = MAX( (x_pos-XOUT)**2 + (y_pos-YOUT)**2, 1D-8)
-        u_tmp = -VFACTOR*MIN(U2(LEC(cell),k_bot_cur),0.0)
-      ELSEIF( LL == 6 )THEN
+        u_tmp = -VFACTOR*MIN(U2(LEC(cell_),k_bot_cur),0.0)
+      elseif( LL == 6 )then
         ! *** EAST FACE (MOVE WITH DRIFTER)
-        XOUT = x_pos + 0.5*( DXP(cell)*CUE(cell) )
-        YOUT = y_pos + 0.5*( DXP(cell)*CUN(cell) )
+        XOUT = x_pos + 0.5*( DXP(cell_)*CUE(cell_) )
+        YOUT = y_pos + 0.5*( DXP(cell_)*CUN(cell_) )
         dist_center = MAX( (x_pos-XOUT)**2 + (y_pos-YOUT)**2, 1D-8)
-        u_tmp = -VFACTOR*MAX(U2(cell,k_bot_cur),0.0)
-      ELSEIF( LL == 7 )THEN
+        u_tmp = -VFACTOR*MAX(U2(cell_,k_bot_cur),0.0)
+      elseif( LL == 7 )then
         ! *** SOUTHWEST
-        XOUT = XCOR(cell,5) - ( DYP(cell)*CVE(cell) + DXP(cell)*CUE(cell) )
-        YOUT = YCOR(cell,5) - ( DYP(cell)*CVN(cell) + DXP(cell)*CUN(cell) )
+        XOUT = XCOR(cell_,5) - ( DYP(cell_)*CVE(cell_) + DXP(cell_)*CUE(cell_) )
+        YOUT = YCOR(cell_,5) - ( DYP(cell_)*CVN(cell_) + DXP(cell_)*CUN(cell_) )
         dist_center = MAX((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
-      ELSEIF( LL == 8 )THEN
+      elseif( LL == 8 )then
         ! *** SOUTH
-        XOUT = x_pos - 0.5*( DYP(cell)*CVE(cell) )
-        YOUT = y_pos - 0.5*( DYP(cell)*CVN(cell) )
+        XOUT = x_pos - 0.5*( DYP(cell_)*CVE(cell_) )
+        YOUT = y_pos - 0.5*( DYP(cell_)*CVN(cell_) )
         dist_center = MAX((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
-        v_tmp  = -VFACTOR*MIN(V2(LNC(cell),k_bot_cur),0.0)
-      ELSEIF( LL == 9 )THEN
+        v_tmp  = -VFACTOR*MIN(V2(LNC(cell_),k_bot_cur),0.0)
+      elseif( LL == 9 )then
         ! *** SOUTHEAST
-        XOUT = XCOR(cell,5) - ( DYP(cell)*CVE(cell) - DXP(cell)*CUE(cell) )
-        YOUT = YCOR(cell,5) - ( DYP(cell)*CVN(cell) - DXP(cell)*CUN(cell) )
+        XOUT = XCOR(cell_,5) - ( DYP(cell_)*CVE(cell_) - DXP(cell_)*CUE(cell_) )
+        YOUT = YCOR(cell_,5) - ( DYP(cell_)*CVN(cell_) - DXP(cell_)*CUN(cell_) )
         dist_center = MAX((x_pos-XOUT)**2+(y_pos-YOUT)**2,1D-8)
-      ENDIF
+      endif
 
-      l = cell
-    end if
+      l = cell_
+    endif
 
     ! *** Rotation?
     vel_east  = CUE(l)*u_tmp + CVE(l)*v_tmp
@@ -759,7 +776,7 @@ subroutine interp_bot_vel(self, cell, x_pos, y_pos, u_vel, v_vel)
     sv_2 = sv_2 + vel_north / dist_center
     sv_3 = sv_3 + 1.0_rkd / dist_center
 
-  end do
+  enddo
 
   ! *** Final interpolated values
   u_vel = su_2 / su_3
@@ -778,19 +795,19 @@ end subroutine interp_bot_vel
 !---------------------------------------------------------------------------!
 subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
 
-  Use Mod_Ship
+  use Mod_Ship
 
   implicit none
 
   ! *** dummy variables
-  class(active_ship), intent(inout) :: self
+  class(active_ship), intent(inout),target :: self
   real(kind = rkd), intent(in)      :: ax               !< axial distance away from the starting point
   real(kind = rkd), intent(in)      :: radius           !< radius from the center point
   real(kind = rkd), intent(inout)   :: bot_velocity     !< radial velocity we want to calculate
   integer, intent(in)               :: ieffluxonly      !< Momentum only flag
 
   ! *** local
-  integer          :: cell
+  integer          :: cell_
   !< Ship position cell
   real(kind = rkd) :: efflux_vel, power
   real(kind = rkd) :: radius_vel_max                    !< location of the maximum radial velocity
@@ -801,17 +818,22 @@ subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
   real(kind = RKD) :: EP, EPD, C1, rho
 
   real(kind = RKD) :: zone0, zone1, zone2               !< Propeller velocity regions
-
+  type(ship_type), pointer :: ship 
+  type(position_cell), pointer :: pt
+  
+  ship => self.ship
+  pt => self.pos
+  
   ! *** Efflux zone - Maximum velocity at propeller
   if( self.rps >= 0.0 )then
     ! *** Based on angular speed
-    !efflux_vel = 1.22 * self.rps**1.01 * self.ship.prop_diam**0.84 * self.ship.thrust_coeff**0.62   ! *** Hamill&Kee 2016
-    efflux_vel  = 1.59 * self.rps * self.ship.prop_diam * sqrt(self.ship.thrust_coeff)               ! *** Jiang, etal 2019
-    !efflux_vel = 1.33 * self.rps * self.ship.prop_diam * sqrt(self.ship.thrust_coeff)               ! *** Hamill 1987
+    !efflux_vel = 1.22 * self.rps**1.01 * ship.prop_diam**0.84 * ship.thrust_coeff**0.62   ! *** Hamill&Kee 2016
+    efflux_vel  = 1.59 * self.rps * ship.prop_diam * sqrt(ship.thrust_coeff)               ! *** Jiang, etal 2019
+    !efflux_vel = 1.33 * self.rps * ship.prop_diam * sqrt(ship.thrust_coeff)               ! *** Hamill 1987
   else
     ! *** Based on applied horsepower
-    power = self.power / self.ship.num_props                                           ! *** Assume power is total ship power.  Calcs based on single prop
-    if( self.ship.ducted == 0 )then
+    power = self.power / ship.num_props                                           ! *** Assume power is total ship power.  Calcs based on single prop
+    if( ship.ducted == 0 )then
       ! *** Open propeller
       ! ***            HP              m/s   MPH/(m/s)
       EP = 23.57*power**0.974 - 2.3*(self.speed*2.237)**2 * sqrt(power)                ! *** Thrust Toutant Eq [lbs-force]  -  Ignores ambient current
@@ -827,26 +849,26 @@ subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
 
     ! *** Get water density
     if( bsc > 0.0 )then
-      cell = self.pos.cell
-      rho = RHOW(cell,KSZ(cell))
+      cell_ = pt.cell
+      rho = RHOW(cell_,KSZ(cell_))
     else
       rho = 999.82                                                                     ! *** Water density @ 20 degC
     endif
 
-    efflux_vel = 1.13/C1/self.ship.prop_diam * sqrt(EP/rho)
+    efflux_vel = 1.13/C1/ship.prop_diam * sqrt(EP/rho)
   endif
   self.efflux_vel = efflux_vel * efflux_mag_mult                                       ! *** efflux_mag_mult is a factor to account for subgrid turbulent losses
   if( ieffluxonly > 0 )then
     bot_velocity = efflux_vel
-    return                                                                             ! *** Used if current iteration only needs momentum impacts
+    return                                                                            ! *** Used if current iteration only needs momentum impacts
   endif
 
   vel_max_ax   = 0.0
   bot_velocity = 0.0
 
   ! *** cutoff distances for each flow regime
-  zone0 = efflux_zone_mult * self.ship.prop_diam                ! *** Efflux zone
-  zone1 = flow_est_zone1_mult * self.ship.prop_diam             ! *** Zone of flow establishment
+  zone0 = efflux_zone_mult * ship.prop_diam                ! *** Efflux zone
+  zone1 = flow_est_zone1_mult * ship.prop_diam             ! *** Zone of flow establishment
 
   ! *** Velocities by Zone/Flow regime
   if( ax <= zone0 )then
@@ -856,46 +878,46 @@ subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
     vel_max_ax = efflux_vel
 
     ! *** radial velocity
-    if( radius <= 0.75*self.ship.prop_diam )then
+    if( radius <= 0.75*ship.prop_diam )then
       bot_velocity = efflux_vel
-    end if
+    endif
 
   elseif( ax > zone0 .and. ax < zone1 )then
     ! *** Zone of flow estabishment  0.35Dp < axial distance < 3.25 Dp (Hamill & Kee 2016)
-    vel_max_ax  = efflux_vel *(1.51 - 0.175 * (ax / self.ship.prop_diam) - 0.46 * self.ship.pitch_ratio)
+    vel_max_ax  = efflux_vel *(1.51 - 0.175 * (ax / ship.prop_diam) - 0.46 * ship.pitch_ratio)
 
-    radius_prop = 0.5*self.ship.prop_diam
-    radius_vel_max = 0.67 * (radius_prop - 0.5*self.ship.prop_hub_diam)                                    ! *** Radius of max vel at efflux plane (Rm0)
+    radius_prop = 0.5*ship.prop_diam
+    radius_vel_max = 0.67 * (radius_prop - 0.5*ship.prop_hub_diam)                                    ! *** Radius of max vel at efflux plane (Rm0)
 
     ! *** determine radial velocity
     if( ax < radius_prop )then
       sigma = 0.5*radius_vel_max
     else
       sigma = 0.5*radius_vel_max + 0.075*(ax - radius_prop)
-    end if
+    endif
     bot_velocity = vel_max_ax * exp( -0.5*(radius - radius_vel_max)**2 / sigma**2 )
 
   else
     ! *** Zone of Established Flow
-    Aprime = -11.4 * self.ship.thrust_coeff + 6.65 * self.ship.blade_area_ratio + 2.16 * self.ship.pitch_ratio;    ! eqn (2.32)
+    Aprime = -11.4 * ship.thrust_coeff + 6.65 * ship.blade_area_ratio + 2.16 * ship.pitch_ratio;    ! eqn (2.32)
     if( Aprime > 1.0 )then
-      Bprime = -(self.ship.thrust_coeff**(-0.216)) * self.ship.blade_area_ratio**1.024 / self.ship.pitch_ratio;    ! eqn (2.33)
+      Bprime = -(ship.thrust_coeff**(-0.216)) * ship.blade_area_ratio**1.024 / ship.pitch_ratio;    ! eqn (2.33)
 
-      vel_max_ax = efflux_vel * Aprime * (ax / self.ship.prop_diam)**Bprime
+      vel_max_ax = efflux_vel * Aprime * (ax / ship.prop_diam)**Bprime
     else
       ! *** If either BAR is not known or Aprime is too low, use Hashmi 1993
-      vel_max_ax = efflux_vel * 0.638*exp(-0.097*(ax / self.ship.prop_diam))
+      vel_max_ax = efflux_vel * 0.638*exp(-0.097*(ax / ship.prop_diam))
     endif
 
     ! *** radial velocity calc
     bot_velocity = vel_max_ax * exp(-22.2*(radius/ax)**2)
 
-  end if
+  endif
 
   ! *** remove small velocities
   if( bot_velocity < epsilon )then
     bot_velocity = 0.0
-  end if
+  endif
 
 end subroutine calc_velocity
 
@@ -905,17 +927,19 @@ end subroutine calc_velocity
 !< @author Paul Craig, Luis Bastidas & Zander Mausolff
 !< @param[inout] self
 !---------------------------------------------------------------------------!
-subroutine calc_erosive_flux(self, debug)
+subroutine calc_erosive_flux(self, debug_)
 
+  use Variables_MPI_Mapping, only:isghost
+  
   implicit none
-
+  
   ! *** Dummy variables
-  class(active_ship), intent(inout) :: self
-  logical, optional, intent(in)     :: debug
+  class(active_ship), intent(inout),target :: self
+  logical, optional, intent(in)     :: debug_
 
   ! *** Local variables
-  integer :: i, j, k, m, q, isurf
-  integer :: cell
+  integer :: i, j, k, m, q, iopened, isurf
+  integer :: cell_
   integer :: shear_counter
   real(kind = rkd) :: ang, ax, radius, bot_velocity, d1, d2, xp2, yp2, cos2, sin2, prop_off, vel2, velx, vely, xxx, yyy
   real(kind = rkd) :: bottom_roughness          !< Bottom roughness in meters
@@ -927,15 +951,23 @@ subroutine calc_erosive_flux(self, debug)
   real(kind = rkd) :: shear_pa                  !< shear stress [Pa]
   real(kind = rkd) :: erosion                   !< erosion from propwash velocity field [g/cm^2]
   real(kind = rkd) :: prop_radius               !< Propeller radius [m]
-  real(kind = rkd) :: elay(nscm)                !< erosion from propwash velocity field into suspension [g/cm^2]
-  real(kind = rkd) :: ebld(nscm)                !< erosion from propwash velocity field into bedload [g/cm^2]
+  real(kind = rkd) :: elay(NSEDS)               !< erosion from propwash velocity field into suspension [g/cm^2]
+  real(kind = rkd) :: ebld(NSEDS)               !< erosion from propwash velocity field into bedload [g/cm^2]
   real(kind = rkd) :: vb_max, vb_max1           !< Current iteration maximum bottom velocity
 
   character(31)    :: filename
   logical          :: bflag
-
+  type(ship_type), pointer :: ship 
+  type(position), pointer :: stern,antenna 
+  type(position_cell), pointer :: pt
+  
+  ship => self.ship
+  stern => self.stern
+  antenna => self.antenna
+  pt => self.pos
+  
   ! *** Ignore track points outside domain
-  if( self.pos.cell < 2 ) return
+  if( pt.cell < 2 ) return
 
   ! *** initialize
   elay = 0.0
@@ -948,13 +980,13 @@ subroutine calc_erosive_flux(self, debug)
   prop_radius = self.prop_radius
 
   ! *** Get the Shear coefficient (Maynord 2000) based on depth at the propeller
-  cell  = self.pos.cell
-  x_bed = self.pos.x_pos
-  y_bed = self.pos.y_pos
-  call self.interp_depth_elev(cell, x_bed, y_bed, z_bed, w_depth)   ! *** Determines z_bed and water depth
+  cell_  = pt.cell
+  x_bed = pt.x_pos
+  y_bed = pt.y_pos
+  call self.interp_depth_elev(cell_, x_bed, y_bed, z_bed, w_depth)   ! *** Determines z_bed and water depth
   d2 = w_depth - self.draft
   d2 = max(d2,prop_radius)
-  c_f = 0.01 * self.ship.prop_diam/d2                               ! *** Bottom friction coefficient - Use constant c_f (2021-06-28)
+  c_f = 0.01 * ship.prop_diam/d2                               ! *** Bottom friction coefficient - use constant c_f (2021-06-28)
 
   ! *** Determine bottom shear stress at all intersection points
   !     of the bottom with propwash velocity field
@@ -962,16 +994,16 @@ subroutine calc_erosive_flux(self, debug)
   !$OMP                           PRIVATE(x_ax, y_ax, ax, prop_off, sin2, cos2, xp2, yp2, radius, d1, d2)           &
   !$OMP                           PRIVATE(vel2, erosion, shear, ang, velx, vely, ebld, xxx, yyy)                    &
   !$OMP                           FIRSTPRIVATE(elay, bot_velocity, shear_counter, vb_max1, prop_radius)             &
-  !$OMP                           FIRSTPRIVATE(cell, x_bed, y_bed, z_bed, w_depth, c_f)                             &
-  !$OMP                           SHARED(KSZ, RHOW, ISTRAN, LBED, LSEDZLJ, DTSEDJ, NSCM, PROP_ERO, PROP_BLD)        &
-  !$OMP                           SHARED(self, num_axial_elems, num_radial_elems)
+  !$OMP                           FIRSTPRIVATE(cell_, x_bed, y_bed, z_bed, w_depth, c_f)                             &
+  !$OMP                           SHARED(KSZ, RHOW, ISTRAN, LBED, LSEDZLJ, DTSEDJ, NSEDS, PROP_ERO, PROP_BLD)       &
+  !$OMP                           SHARED(self, num_axial_elems, num_radial_elems, ship, pt)
   do i = 1, num_axial_elems
     ! *** get axial location (x,y,z)
     x_ax = self.axial_mesh(i).x_pos         ! *** Model domain position X
     y_ax = self.axial_mesh(i).y_pos         ! *** Model domain position Y
 
     ! *** get axial distance away from ship prop
-    ax = ((x_ax - self.pos.x_pos) **2 + (y_ax - self.pos.y_pos)**2)**(0.5)
+    ax = ((x_ax - pt.x_pos) **2 + (y_ax - pt.y_pos)**2)**(0.5)
 
     do j = 1, num_radial_elems
       if( self.subgrid_mesh(j,i).cell < 1 )then
@@ -981,7 +1013,7 @@ subroutine calc_erosive_flux(self, debug)
       endif
 
       ! *** get the cell index for the current (x,y)
-      cell = self.subgrid_mesh(j,i).cell
+      cell_ = self.subgrid_mesh(j,i).cell
 
       ! *** Determine the distance from the center axial line of the prop to the (x,y,z) that intersects the bed
 
@@ -990,7 +1022,7 @@ subroutine calc_erosive_flux(self, debug)
       y_bed = self.subgrid_mesh(j,i).y_pos
 
       ! *** interpolate the bed location based on the (x,y)
-      call self.interp_depth_elev(cell, x_bed, y_bed, z_bed, w_depth)         ! *** Determines z_bed and water depth
+      call self.interp_depth_elev(cell_, x_bed, y_bed, z_bed, w_depth)         ! *** Determines z_bed and water depth
 
       ! *** Vertical component of radius, i.e. depth at the mesh location
       d2 = w_depth - self.draft
@@ -998,8 +1030,8 @@ subroutine calc_erosive_flux(self, debug)
 
       ! *** Use superposition to calculate the total velocity for each point
       bot_velocity = 0.
-      prop_off = -0.5*self.ship.dist_between_props*real(self.ship.num_props-1)
-      do m=1,self.ship.num_props
+      prop_off = -0.5*ship.dist_between_props*real(ship.num_props-1)
+      do m = 1,ship.num_props
         sin2 = prop_off*sin(self.heading)
         cos2 = prop_off*cos(self.heading)
         xp2 = x_ax + sin2
@@ -1013,7 +1045,7 @@ subroutine calc_erosive_flux(self, debug)
 
         bot_velocity = bot_velocity + vel2
 
-        prop_off = prop_off + self.ship.dist_between_props                    ! *** Offset for next propeller
+        prop_off = prop_off + ship.dist_between_props                    ! *** Offset for next propeller
       enddo
 
       self.subgrid_mesh(j,i).z_pos  = z_bed
@@ -1038,18 +1070,18 @@ subroutine calc_erosive_flux(self, debug)
         vel2 = bot_velocity                                                    ! *** Ignore ambient velocities
 
         ! *** Shear due to propwash velocities (Maynord 2000)
-        !c_f = 0.01 * self.ship.prop_diam/d2                                  ! *** Bottom friction coefficient - Use constant c_f (2021-06-28)
-        shear = 0.5 * Rhow(cell,ksz(cell)) * c_f * vel2**2                    ! *** Bottom shear in N/m**2        Using resulant magnitude vel2
+        !c_f = 0.01 * ship.prop_diam/d2                                  ! *** Bottom friction coefficient - use constant c_f (2021-06-28)
+        shear = 0.5 * Rhow(cell_,ksz(cell_)) * c_f * vel2**2                    ! *** Bottom shear in N/m**2        Using resulant magnitude vel2
         self.subgrid_mesh(j,i).var(2) = shear                                 ! *** Shear in Pascals
-        !
+
         ! *** Determine erosion rate based on the shear stress
         if( ISTRAN(6)+ISTRAN(7) > 0 )then
-          IF( LBED(cell) ) CYCLE                                              ! *** Bypass hard bottom cells
+          if( LBED(cell_) ) CYCLE                                              ! *** Bypass hard bottom cells
 
           ebld = 0.0
           elay = 0.0
           if( LSEDZLJ )then
-            Call Calc_Prop_Erosion_SEDZLJ(cell, shear, elay, isurf)           ! *** Calculate erosion rates in g/cm^2
+            call Calc_Prop_Erosion_SEDZLJ(cell_, shear, elay, isurf)           ! *** Calculate erosion rates in g/cm^2
 
             elay(:) = elay(:)*self.subgrid_mesh(j,i).area                     ! *** Mass eroded for mesh cell per class (g)
             self.subgrid_mesh(j,i).ero(:) = elay(:)                           ! *** Total mass eroded for mesh cell per class (g)
@@ -1057,7 +1089,7 @@ subroutine calc_erosive_flux(self, debug)
             !self.subgrid_mesh(j,i).ero(:) = (elay(:) + ebld(:))              ! *** Total mass eroded for mesh cell per class (g)                ToDo
           else
             shear = shear*0.001                                               ! *** Density normalized shear in m2/s2
-            Call Calc_Prop_Erosion_Original(cell, shear, elay, ebld)          ! *** Calculate erosion rates
+            call Calc_Prop_Erosion_Original(cell_, shear, elay, ebld)          ! *** Calculate erosion rates
                                                                               ! *** elay in g/m^2 and ebld in g/m/s
 
             elay(:) = elay(:)*self.subgrid_mesh(j,i).area                     ! *** Mass eroded for mesh cell per class (g)
@@ -1074,22 +1106,23 @@ subroutine calc_erosive_flux(self, debug)
         self.subgrid_mesh(j,i).ero(:) = 0.0
         self.subgrid_mesh(j,i).var(2) = 0.0
         self.subgrid_mesh(j,i).var(3) = 0.0
-      end if
+      endif
 
-    end do
-  end do
+    enddo
+  enddo
   !$OMP END PARALLEL DO
 
-  ! *** Accumulate the global propwash erosion (moved outside OMP due to "racing")
+  ! *** Accumulate the global propwash erosion (moved outside OMP due to "racing")NSEDS
+  
   do i = 1, num_axial_elems
     do j = 1, num_radial_elems
       if( self.subgrid_mesh(j,i).cell < 1 )then
         cycle
       endif
 
-      cell = self.subgrid_mesh(j,i).cell          ! *** Gather erosion and put it into the cell the propwash component exists
-      prop_ero(cell,1:nscm) = prop_ero(cell,1:nscm) + self.subgrid_mesh(j,i).ero(:)               ! *** (g)
-      !prop_bld(cell,1:nscm) = prop_bld(cell,1:nscm) + ebld(1:nscm)/DBLE(self.mesh_count(cell))   ! *** Average unit discharge (g/m/s)
+      cell_ = self.subgrid_mesh(j,i).cell          ! *** Gather erosion and put it into the cell the propwash component exists
+      prop_ero(cell_,1:NSEDS) = prop_ero(cell_,1:NSEDS) + self.subgrid_mesh(j,i).ero(:)                ! *** (g)
+      !prop_bld(cell_,1:NSEDS) = prop_bld(cell_,1:NSEDS) + ebld(1:NSEDS)/DBLE(self.mesh_count(cell_))   ! *** Average unit discharge (g/m/s)
     enddo
   enddo
   
@@ -1099,49 +1132,53 @@ subroutine calc_erosive_flux(self, debug)
   if( self.freq_out > 0. )then
     if( timeday >= self.timesnap )then
       if( self.power /= 0.0 .or. self.nsnap == 0 )then
-        ! *** Output subgrid mesh data to binary format
-        write(filename, '(A8,I9.9,A4)')    'pw_mesh_', self.mmsi, '.out'
-        inquire(file = OUTDIR//filename, EXIST = bflag)
-        if( .not. bflag )then
-          Call create_linkage(self)
-        endif
-        close(801)
-        open(unit = 801,file = OUTDIR//filename,status='OLD',position='APPEND',form='BINARY',shared)
-  
-        write(801) timeday
-        write(801) real(self.pos.x_pos - center_x, 4)
-        write(801) real(self.pos.y_pos - center_y, 4)
-        write(801) real(self.stern.x_pos - center_x, 4)
-        write(801) real(self.stern.y_pos - center_y, 4)
-        write(801) real(self.antenna.x_pos - center_x, 4)
-        write(801) real(self.antenna.y_pos - center_y,4)
-        write(801) real(self.heading,4)
+        cell_ = pt.cell
+        if( .not. IsGhost(cell_) )then
+          ! *** Output subgrid mesh data to binary format
+          write(filename, '(A8,I9.9,A4)')    'pw_mesh_', self.mmsi, '.out'
+          inquire(file = OUTDIR//filename, EXIST = bflag)
+          if( .not. bflag )then
+            call create_linkage(self)
+          endif
+        
+          close(801)
+          open(unit = 801,file = OUTDIR//filename,status = 'OLD',position = 'APPEND',FORM = FMT_BINARY,shared)
 
-        write(801) int(self.pos.cell,4)
+          write(801) timeday
+          write(801) real(pt.x_pos - center_x, 4)
+          write(801) real(pt.y_pos - center_y, 4)
+          write(801) real(stern.x_pos - center_x, 4)
+          write(801) real(stern.y_pos - center_y, 4)
+          write(801) real(antenna.x_pos - center_x, 4)
+          write(801) real(antenna.y_pos - center_y,4)
+          write(801) real(self.heading,4)
 
-        write(801) ((real(self.subgrid_mesh(j,i).x_pos - center_x, 4), j = 1, num_radial_elems), i = 1, num_axial_elems)
-        write(801) ((real(self.subgrid_mesh(j,i).y_pos - center_y, 4), j = 1, num_radial_elems), i = 1, num_axial_elems)
-        write(801) ((real(self.subgrid_mesh(j,i).z_pos,4), j = 1, num_radial_elems), i = 1, num_axial_elems)
+          write(801) int(pt.cell,4)
 
-        do i = 1, num_axial_elems
-          do j = 1, num_radial_elems
-            if( self.subgrid_mesh(j,i).cell < 1 ) cycle
-            erosion = sum(self.subgrid_mesh(j,i).ero(:))                                 ! *** Total mass eroded for subgrid area (g)
-            self.subgrid_mesh(j,i).var(3) = erosion/DTSEDJ/self.subgrid_mesh(j,i).area   ! *** Mass erosion rate:  LSEDZLJ: g/cm^2/s,  Orig: g/m^2/s
-            if( .not. LSEDZLJ )then
-              self.subgrid_mesh(j,i).var(3) = self.subgrid_mesh(j,i).var(3)/10000.       ! *** Convert g/m^2/s to g/cm^2/s
-            endif
+          write(801) ((real(self.subgrid_mesh(j,i).x_pos - center_x, 4), j = 1, num_radial_elems), i = 1, num_axial_elems)
+          write(801) ((real(self.subgrid_mesh(j,i).y_pos - center_y, 4), j = 1, num_radial_elems), i = 1, num_axial_elems)
+          write(801) ((real(self.subgrid_mesh(j,i).z_pos,4), j = 1, num_radial_elems), i = 1, num_axial_elems)
+
+          do i = 1, num_axial_elems
+            do j = 1, num_radial_elems
+              if( self.subgrid_mesh(j,i).cell < 1 ) cycle
+              erosion = sum(self.subgrid_mesh(j,i).ero(:))                                 ! *** Total mass eroded for subgrid area (g)
+              self.subgrid_mesh(j,i).var(3) = erosion/DTSEDJ/self.subgrid_mesh(j,i).area   ! *** Mass erosion rate:  LSEDZLJ: g/cm^2/s,  Orig: g/m^2/s
+              if( .not. LSEDZLJ )then
+                self.subgrid_mesh(j,i).var(3) = self.subgrid_mesh(j,i).var(3)/10000.       ! *** Convert g/m^2/s to g/cm^2/s
+              endif
+            enddo
           enddo
-        enddo
 
-        do k = 1, 3
-          write(801) ((real(self.subgrid_mesh(j,i).var(k),4), j = 1, num_radial_elems), i = 1, num_axial_elems)
-        enddo
-        write(801) ((int(self.subgrid_mesh(j,i).cell,4), j = 1, num_radial_elems), i = 1, num_axial_elems)
+          do k = 1, 3
+            write(801) ((real(self.subgrid_mesh(j,i).var(k),4), j = 1, num_radial_elems), i = 1, num_axial_elems)
+          enddo
+          write(801) ((int(self.subgrid_mesh(j,i).cell,4), j = 1, num_radial_elems), i = 1, num_axial_elems)
 
-        close(801)
-        self.nsnap = self.nsnap + 1
-        iwrite_pwmesh = 1                                                                ! *** Global flag to indicate a pw_mesh file has been updated
+          close(801)
+          self.nsnap = self.nsnap + 1
+          iwrite_pwmesh = 1                                                                ! *** Global flag to indicate a pw_mesh file has been updated
+        endif
       endif
 
       ! *** Check on snapshot frequency option
@@ -1155,7 +1192,7 @@ subroutine calc_erosive_flux(self, debug)
         self.timesnap = int(timeday*10000.)*0.0001 + self.freq_out/1440.
       endif
     endif
-  end if
+  endif
 
 end subroutine calc_erosive_flux
 
@@ -1178,8 +1215,8 @@ subroutine write_xyz(self, unit_num)
     do j = 1, num_radial_elems
       !call self.radial_mesh(j,i).write_out(unit_num)
 
-    end do
-  end do
+    enddo
+  enddo
 
 end subroutine write_xyz
 
@@ -1211,9 +1248,9 @@ subroutine create_linkage(self)
   blockSize = 4*(10+(4+varCount)*num_axial_elems*num_radial_elems)
 
   write(filename, '(A8,I9.9,A4)')    'pw_mesh_',self.mmsi, '.out'
-  open(unit = 801,file = OUTDIR//filename,status='UNKNOWN')
-  close(801,status='DELETE')
-  open(unit = 801,file = OUTDIR//filename,status='UNKNOWN',access='SEQUENTIAL',form='BINARY')
+  open(unit = 801,file = OUTDIR//filename,status = 'UNKNOWN')
+  close(801,status = 'DELETE')
+  open(unit = 801,file = OUTDIR//filename,status = 'UNKNOWN',access = 'SEQUENTIAL',FORM = FMT_BINARY)
   filename = self.name
   write(801) int(verNum,4),int(headerSize,4),int(blockSize,4),int(varCount,4)     ! 4*4
   write(801) int(self.mmsi,4),filename                                            ! 4 + 32

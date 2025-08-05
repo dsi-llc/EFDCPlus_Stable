@@ -3,54 +3,52 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 MODULE XYIJCONV
 !Author: Dang Huu Chung
 
-USE GLOBAL  
+use GLOBAL  
 USE INFOMOD
 Use Variables_MPI
 Use Variables_MPI_Mapping
-#ifdef _MPI
-    Use Broadcast_Routines
-#endif
+    use Broadcast_Routines
 
-IMPLICIT NONE
+implicit none
 
-CONTAINS
+contains
 
 SUBROUTINE XY2IJ(CEL, VALID) 
-  TYPE(CELL),INTENT(INOUT) :: CEL
-  INTEGER, INTENT(IN), OPTIONAL :: VALID
-  INTEGER :: N, NPMAX, ISVALID
+  type(CELL),intent(INOUT) :: CEL
+  integer, intent(IN), OPTIONAL :: VALID
+  integer :: N, NPMAX, ISVALID
   
-  IF( PRESENT(VALID) )THEN
+  if( PRESENT(VALID) )then
     ISVALID = 1
-  ELSE
+  else
     ISVALID = 0
-  ENDIF
+  endif
   
   NPMAX = SIZE(CEL.XCEL)
   
-  DO N=1,NPMAX 
-    CALL CONTAINERIJ_GL(N, CEL.XCEL(N), CEL.YCEL(N), CEL.ICEL(N), CEL.JCEL(N), ISVALID)
-  ENDDO
+  do N = 1,NPMAX 
+    call CONTAINERIJ_GL(N, CEL.XCEL(N), CEL.YCEL(N), CEL.ICEL(N), CEL.JCEL(N), ISVALID)
+  enddo
   
 END SUBROUTINE
 
 SUBROUTINE CONTAINERIJ(NCEL, XCLL, YCLL, ICLL, JCLL, ISVALID)   
-  INTEGER,INTENT(IN)  :: NCEL
-  REAL(8), INTENT(IN) :: XCLL, YCLL
-  INTEGER, INTENT(IN) :: ISVALID
-  INTEGER, INTENT(OUT) :: ICLL, JCLL
-  INTEGER :: LMILOC(1), L, I, J, ILN, JLN
-  INTEGER :: I1, I2, J1, J2
-  REAL(8) :: RADLA(LA)
+  integer,intent(IN)  :: NCEL
+  real(8), intent(IN) :: XCLL, YCLL
+  integer, intent(IN) :: ISVALID
+  integer, intent(OUT) :: ICLL, JCLL
+  integer :: LMILOC(1), L, I, J, ILN, JLN
+  integer :: I1, I2, J1, J2
+  real(8) :: RADLA(LA)
   
   ! *** FOR THE FIRST CALL                     
-  RADLA(2:LA) = SQRT((XCLL-XCOR(2:LA,5))**2+(YCLL-YCOR(2:LA,5))**2)     ! *** Delme - This is inefficient.  Todo - Make more efficient.  Use LEC, LWC, LSC, LNC
+  RADLA(2:LA) = SQRT((XCLL-XCOR(2:LA,5))**2+(YCLL-YCOR(2:LA,5))**2)     ! *** Delme - This is inefficient.  Todo - Make more efficient.  use LEC, LWC, LSC, LNC
   LMILOC = MINLOC(RADLA(2:LA))
   ILN = IL(LMILOC(1)+1)    !I OF THE NEAREST CELL FOR DRIFTER
   JLN = JL(LMILOC(1)+1)    !J OF THE NEAREST CELL FOR DRIFTER     
@@ -60,41 +58,41 @@ SUBROUTINE CONTAINERIJ(NCEL, XCLL, YCLL, ICLL, JCLL, ISVALID)
   I2 = MIN(ILN+1,ICM)
   J1 = MAX(1,JLN-1)
   J2 = MIN(JLN+1,JCM)
-  DO J=J1,J2
-    DO I=I1,I2
+  do J = J1,J2
+    do I = I1,I2
       L = LIJ(I,J)
-      IF( L < 2 ) CYCLE
-      IF( INSIDECELL(L, XCLL, YCLL) )THEN
+      if( L < 2 ) CYCLE
+      if( INSIDECELL(L, XCLL, YCLL) )then
         ICLL = I
         JCLL = J
-        RETURN
-      ENDIF
-    ENDDO
-  ENDDO
+        return
+      endif
+    enddo
+  enddo
 
   ! *** Cooridnates not found.  Determin the action
-  IF( ISVALID > 0 )THEN
+  if( ISVALID > 0 )then
     ! *** Flag as invalid
     ICLL = -999
     JCLL = -999
-  ELSE
+  else
     PRINT *,'THIS CELL IS OUTSIDE THE DOMAIN:',NCEL
-    CALL STOPP('Invalid XY in SUBSET.INP')
-  ENDIF
+    call STOPP('Invalid XY in SUBSET.INP')
+  endif
   
 END SUBROUTINE
 
 SUBROUTINE CONTAINERIJ_GL(NCEL, XCLL, YCLL, ICLL, JCLL, ISVALID)   
-  INTEGER,INTENT(IN)  :: NCEL
-  REAL(8), INTENT(IN) :: XCLL, YCLL
-  INTEGER, INTENT(IN) :: ISVALID
-  INTEGER, INTENT(OUT) :: ICLL, JCLL
-  INTEGER :: LMILOC(1), L, I, J, ILN, JLN
-  INTEGER :: I1, I2, J1, J2
-  REAL(8) :: RADLA(LA_GLOBAL)
+  integer,intent(IN)  :: NCEL
+  real(8), intent(IN) :: XCLL, YCLL
+  integer, intent(IN) :: ISVALID
+  integer, intent(OUT) :: ICLL, JCLL
+  integer :: LMILOC(1), L, I, J, ILN, JLN
+  integer :: I1, I2, J1, J2
+  real(8) :: RADLA(LA_GLOBAL)
   
   ! *** FOR THE FIRST CALL                     
-  RADLA(2:LA_GLOBAL) = SQRT((XCLL-XCOR_Global(2:LA_GLOBAL,5))**2+(YCLL-YCOR_Global(2:LA_GLOBAL,5))**2)     ! *** Delme - This is inefficient.  Todo - Make more efficient.  Use LEC, LWC, LSC, LNC
+  RADLA(2:LA_GLOBAL) = SQRT((XCLL-XCOR_Global(2:LA_GLOBAL,5))**2+(YCLL-YCOR_Global(2:LA_GLOBAL,5))**2)     ! *** Delme - This is inefficient.  Todo - Make more efficient.  use LEC, LWC, LSC, LNC
   LMILOC = MINLOC(RADLA(2:LA_GLOBAL))
   ILN = IL_GL(LMILOC(1)+1)    !I OF THE NEAREST CELL FOR DRIFTER
   JLN = JL_GL(LMILOC(1)+1)    !J OF THE NEAREST CELL FOR DRIFTER     
@@ -104,27 +102,27 @@ SUBROUTINE CONTAINERIJ_GL(NCEL, XCLL, YCLL, ICLL, JCLL, ISVALID)
   I2 = MIN(ILN+1,ICM_Global)
   J1 = MAX(1,JLN-1)
   J2 = MIN(JLN+1,JCM_Global)
-  DO J=J1,J2
-    DO I=I1,I2
+  do J = J1,J2
+    do I = I1,I2
       L = LIJ_Global(I,J)
-      IF( L < 2 ) CYCLE
-      IF( INSIDECELL_GL(L, XCLL, YCLL) )THEN
+      if( L < 2 ) CYCLE
+      if( INSIDECELL_GL(L, XCLL, YCLL) )then
         ICLL = I
         JCLL = J
-        RETURN
-      ENDIF
-    ENDDO
-  ENDDO
+        return
+      endif
+    enddo
+  enddo
 
   ! *** Cooridnates not found.  Determin the action
-  IF( ISVALID > 0 )THEN
+  if( ISVALID > 0 )then
     ! *** Flag as invalid
     ICLL = -999
     JCLL = -999
-  ELSE
+  else
     PRINT *,'THIS CELL IS OUTSIDE THE DOMAIN:',NCEL
-    CALL STOPP('Invalid XY in SUBSET.INP')
-  ENDIF
+    call STOPP('Invalid XY in SUBSET.INP')
+  endif
   
 END SUBROUTINE
 
@@ -140,14 +138,14 @@ END SUBROUTINE
 !---------------------------------------------------------------------------!
  SUBROUTINE AREACAL(XC,YC,AREA) 
  
-  Implicit none
+  implicit none
   ! *** Passed in variables
-  REAL(8),INTENT(IN)  :: XC(:)
-  REAL(8),INTENT(IN)  :: YC(:)
-  REAL(8),INTENT(OUT) :: AREA
+  real(8),intent(IN)  :: XC(:)
+  real(8),intent(IN)  :: YC(:)
+  real(8),intent(OUT) :: AREA
   ! *** Local variables
-  REAL(8) :: XVEC(2),YVEC(2)
-  INTEGER :: NPOL,K
+  real(8) :: XVEC(2),YVEC(2)
+  integer :: NPOL,K
   
   ! *** Get the number of vertices in polygon
   NPOL = SIZE(XC)
@@ -155,13 +153,13 @@ END SUBROUTINE
   
   XVEC(1) = XC(2) - XC(1)
   YVEC(1) = YC(2) - YC(1)
-  DO K=3,NPOL
+  do K = 3,NPOL
     XVEC(2) = XC(K) - XC(1)
     YVEC(2) = YC(K) - YC(1)
     AREA    = AREA + 0.5*ABS( XVEC(1)*YVEC(2) - XVEC(2)*YVEC(1) )
     XVEC(1) = XVEC(2)
     YVEC(1) = YVEC(2)
-  ENDDO
+  enddo
 END SUBROUTINE AREACAL
 
 !---------------------------------------------------------------------------!
@@ -178,15 +176,15 @@ END SUBROUTINE AREACAL
 !---------------------------------------------------------------------------!
 FUNCTION INSIDECELL(L,XM,YM) RESULT(INSIDE)   
 
-  Implicit none
+  implicit none
 
   ! *** Passed in an return variables
-  LOGICAL(4) :: INSIDE
-  INTEGER, INTENT(IN) :: L
-  REAL(8), INTENT(IN) :: XM
-  REAL(8), INTENT(IN) :: YM
+  logical(4) :: INSIDE
+  integer, intent(IN) :: L
+  real(8), intent(IN) :: XM
+  real(8), intent(IN) :: YM
   ! *** Local variables
-  REAL(8) :: XC(6),YC(6),AREA2
+  real(8) :: XC(6),YC(6),AREA2
   
   XC(1)   = XM 
   YC(1)   = YM 
@@ -195,27 +193,27 @@ FUNCTION INSIDECELL(L,XM,YM) RESULT(INSIDE)
   XC(6)   = XC(2)
   YC(6)   = YC(2)
 
-  CALL AREACAL(XC,YC,AREA2)
+  call AREACAL(XC,YC,AREA2)
   
-  IF( ABS(AREA2-AREA(L)) <= 1D-6 )THEN
-    INSIDE=.TRUE.
-  ELSE 
-    INSIDE=.FALSE.
-  ENDIF
+  if( ABS(AREA2-AREA(L)) <= 1D-6 )then
+    INSIDE = .TRUE.
+  else 
+    INSIDE = .FALSE.
+  endif
   
  END FUNCTION INSIDECELL
 !---------------------------------------------------------------------------!
 FUNCTION INSIDECELL_GL(L,XM,YM) RESULT(INSIDE)   
 
-  Implicit none
+  implicit none
 
   ! *** Passed in an return variables
-  LOGICAL(4) :: INSIDE
-  INTEGER, INTENT(IN) :: L
-  REAL(8), INTENT(IN) :: XM
-  REAL(8), INTENT(IN) :: YM
+  logical(4) :: INSIDE
+  integer, intent(IN) :: L
+  real(8), intent(IN) :: XM
+  real(8), intent(IN) :: YM
   ! *** Local variables
-  REAL(8) :: XC(6),YC(6),AREA2
+  real(8) :: XC(6),YC(6),AREA2
   
   XC(1)   = XM 
   YC(1)   = YM 
@@ -224,40 +222,40 @@ FUNCTION INSIDECELL_GL(L,XM,YM) RESULT(INSIDE)
   XC(6)   = XC(2)
   YC(6)   = YC(2)
 
-  CALL AREACAL(XC,YC,AREA2)
+  call AREACAL(XC,YC,AREA2)
   
-  IF( ABS(AREA2-AREA_Global(L)) <= 1D-6 )THEN
-    INSIDE=.TRUE.
-  ELSE 
-    INSIDE=.FALSE.
-  ENDIF
+  if( ABS(AREA2-AREA_Global(L)) <= 1D-6 )then
+    INSIDE = .TRUE.
+  else 
+    INSIDE = .FALSE.
+  endif
   
 END FUNCTION INSIDECELL_GL
 !---------------------------------------------------------------------------!
 
 SUBROUTINE AREA_CENTRD
 
-  Implicit None
+  implicit none
   
   ! *** DETERMINING CELL CENTROID OF ALL CELLS
   ! *** AND CALCULATING THE AREA OF EACH CELL
-  INTEGER :: I,J,K, IIN, JIN, ii
-  REAL(8) :: XC(4),YC(4),AREA2
-  Integer :: Q
-  Integer :: l_global, l_local, l
+  integer :: I,J,K, IIN, JIN, ii
+  real(8) :: XC(4),YC(4),AREA2
+  integer :: Q
+  integer :: l_global, l_local, l
   
   ! *** ****************************
-  if( process_id == master_id )THEN
-      WRITE(*,'(A)')'READING CORNERS.INP'
-      OPEN(UCOR,FILE='corners.inp',ACTION='READ')
-      CALL SKIPCOM(UCOR, '*')
-  end if
+  if( process_id == master_id )then
+      write(*,'(A)')'READING CORNERS.INP'
+      open(UCOR,FILE = 'corners.inp',ACTION = 'READ')
+      call SKIPCOM(UCOR, '*')
+  endif
   
   ! *** At this point 'LA' is local to each process
   ! *** Want to read in using 'global' LA
-  ALLOCATE(XCOR_Global(LCM_Global,5),YCOR_Global(LCM_Global,5),AREA_Global(LCM_Global))
+  allocate(XCOR_Global(LCM_Global,5),YCOR_Global(LCM_Global,5),AREA_Global(LCM_Global))
   ! *** Setup local arrays 
-  Allocate(XCOR(LCM, 5), YCOR(LCM, 5), Area(LCM))
+  allocate(XCOR(LCM, 5), YCOR(LCM, 5), Area(LCM))
   
   XCOR_Global = 0
   YCOR_Global = 0
@@ -265,10 +263,10 @@ SUBROUTINE AREA_CENTRD
   XCOR = 0
   YCOR = 0
   AREA = 0
-  DO Q=1,LA_Global-1
-     if( process_id == master_id )THEN 
-         READ(UCOR,*,ERR=998) IIN,JIN,(XCOR_Global(LIJ_Global(IIN,JIN),K),YCOR_Global(LIJ_Global(IIN,JIN),K),K=1,4)
-     end if
+  do Q = 1,LA_Global-1
+     if( process_id == master_id )then 
+         read(UCOR,*,err = 998) IIN,JIN,(XCOR_Global(LIJ_Global(IIN,JIN),K),YCOR_Global(LIJ_Global(IIN,JIN),K),K = 1,4)
+     endif
       
      ! *** Setup xcor_global, ycor_global cell centroid and area_global
      if(process_id == master_id )then
@@ -277,13 +275,13 @@ SUBROUTINE AREA_CENTRD
         xc(1:4) = xcor_global(l_global, 1:4)
         yc(1:4) = ycor_global(l_global, 1:4)
         ! *** Calculatet area of the cell
-        Call AREACAL(xc,yc,area2)
+        call AREACAL(xc,yc,area2)
         ! *** Set to global value
         Area_Global(l_global) = area2
-        ! ***  STORE THE CELL CENTROID IN INDEX=5
+        ! ***  STORE THE CELL CENTROID IN INDEX = 5
         XCOR_Global(l_global, 5) = 0.25*SUM(XC)        
         YCOR_Global(l_global, 5) = 0.25*SUM(YC)
-     end if
+     endif
      
      ! *** Broadcast read in I,J from the file for local remapping to determine local xcor/ycor
      call Broadcast_Scalar(IIN, master_id)
@@ -292,22 +290,22 @@ SUBROUTINE AREA_CENTRD
      I = IG2IL(IIN)
      J = JG2JL(JIN)
     
-     Call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),1), master_id)
-     Call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),2), master_id)
-     Call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),3), master_id)
-     Call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),4), master_id)
-     Call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),5), master_id)
+     call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),1), master_id)
+     call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),2), master_id)
+     call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),3), master_id)
+     call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),4), master_id)
+     call Broadcast_Scalar(XCOR_Global(LIJ_Global(IIN,JIN),5), master_id)
      
-     Call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),1), master_id)
-     Call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),2), master_id)
-     Call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),3), master_id)
-     Call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),4), master_id)
-     Call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),5), master_id)
+     call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),1), master_id)
+     call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),2), master_id)
+     call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),3), master_id)
+     call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),4), master_id)
+     call Broadcast_Scalar(YCOR_Global(LIJ_Global(IIN,JIN),5), master_id)
      
      ! *** Make sure we are only operating on data local to a process
      ! *** This works because IG2IL and JG2JL put zeros or ICM/JCM if the cell is not part of the domain
-     IF( I >0 .AND. I <= IC )THEN
-         IF( J > 0 .AND. J <= JC )THEN 
+     if( I >0 .and. I <= IC )then
+         if( J > 0 .and. J <= JC )then 
              l_global = LIJ_Global(IIN,JIN)
              l_local = LIJ(I,J)
              
@@ -316,30 +314,30 @@ SUBROUTINE AREA_CENTRD
              
              XC(1:4) = XCOR(l_local,1:4)  ! Access local only of the global xcor
              YC(1:4) = YCOR(l_local,1:4)
-             CALL AREACAL(XC,YC,AREA2)
+             call AREACAL(XC,YC,AREA2)
              AREA(l_local) = AREA2
-             ! ***  STORE THE CELL CENTROID IN INDEX=5
+             ! ***  STORE THE CELL CENTROID IN INDEX = 5
              XCOR(l_local,5) = 0.25*SUM(XC)        
              YCOR(l_local,5) = 0.25*SUM(YC)
-         ENDIF
-     ENDIF
+         endif
+     endif
 
-  ENDDO
+  enddo
   
-  Call WriteBreak(mpi_log_unit)
-  !DO ii = 1, LA
-  !    write(mpi_log_unit,'(a,f7.2)') 'XCOR:   ', l, XCOR(ii,5),YCOR(ii,5)
-  !End do
-  Call WriteBreak(mpi_log_unit)
+  !Call WriteBreak(mpi_log_unit)
+  !!DO ii = 1, LA
+  !!    write(mpi_log_unit,'(a,f7.2)') 'XCOR:   ', l, XCOR(ii,5),YCOR(ii,5)
+  !!End do
+  !Call WriteBreak(mpi_log_unit)
 
   !Call Broadcast_Array(XCOR_Global, master_id)
   !Call Broadcast_Array(YCOR_Global, master_id)
   
-  if( process_id == master_id )THEN 
-      100 CLOSE(UCOR)
+  if( process_id == master_id )then 
+      100 close(UCOR)
   endif
     
-  RETURN
+  return
   998 STOP 'CORNERS.INP READING ERROR!'
 END SUBROUTINE AREA_CENTRD
 
@@ -355,37 +353,37 @@ SUBROUTINE DIST2LINE(L,IP,X0,Y0,IPOINT,OFFSET,D,X3,Y3)
   ! *** 
   ! ***    C1   4    C4
   
-  INTEGER(IK4),INTENT(IN)  :: L,IP,IPOINT
-  REAL(RKD)   ,INTENT(IN)  :: X0,Y0,OFFSET
-  REAL(RKD)   ,INTENT(OUT) :: D,X3,Y3
+  integer(IK4),intent(IN)  :: L,IP,IPOINT
+  real(RKD)   ,intent(IN)  :: X0,Y0,OFFSET
+  real(RKD)   ,intent(OUT) :: D,X3,Y3
     
-  INTEGER(IK4) :: I1,I2
-  REAL(RKD)    :: H,XDEL,YDEL,ANG,EPSILON
+  integer(IK4) :: I1,I2
+  real(RKD)    :: H,XDEL,YDEL,ANG,EPSILON
 
-  IF( IP == 4 )THEN
+  if( IP == 4 )then
     I1 = 4
     I2 = 1
-  ELSE
+  else
     I1 = IP
     I2 = IP+1
-  ENDIF
+  endif
   XDEL = XCOR(L,I2) - XCOR(L,I1)
   YDEL = YCOR(L,I2) - YCOR(L,I1)
     
   D = YDEL*X0 - XDEL*Y0 + XCOR(L,I2)*YCOR(L,I1) - YCOR(L,I2)*XCOR(L,I1)
   H = SQRT(XDEL*XDEL + YDEL*YDEL)
-  IF( H < 1E-6 )THEN
+  if( H < 1E-6 )then
     D = 0
-    RETURN
-  ENDIF
+    return
+  endif
       
   ! *** SIGNED DISTANCE  <0 - LEFT OF LINE, >0 - RIGHT OF LINE
   D = D/H
   
-  IF( IPOINT > 0 )THEN
-    !IF( ABS(XDEL) < 1E-12 )THEN
+  if( IPOINT > 0 )then
+    !IF( ABS(XDEL) < 1E-12 )then
     !  M = 1E32
-    !ELSEIF( ABS(YDEL) > 1E-12 )THEN
+    !ELSEIF( ABS(YDEL) > 1E-12 )then
     !  M = YDEL/XDEL
     !ELSE
     !  M = 1E-32
@@ -399,23 +397,23 @@ SUBROUTINE DIST2LINE(L,IP,X0,Y0,IPOINT,OFFSET,D,X3,Y3)
 
     ! *** CHECK RANGES BUT ADD A SMALL BUFFER FOR ROUNDOFF (EPSILON)
     EPSILON = 1E-12*X3
-    IF( (X3 + EPSILON) < MIN(XCOR(L,I1),XCOR(L,I2)) .OR. (X3 - EPSILON) > MAX(XCOR(L,I1),XCOR(L,I2)) )THEN
+    if( (X3 + EPSILON) < MIN(XCOR(L,I1),XCOR(L,I2)) .or. (X3 - EPSILON) > MAX(XCOR(L,I1),XCOR(L,I2)) )then
       ! *** ON THE LINE BUT NOT IN THE SEGMENT
       D = 1E32
-      RETURN
-    ELSEIF( (Y3 + EPSILON) < MIN(YCOR(L,I1),YCOR(L,I2)) .OR. (Y3 - EPSILON) > MAX(YCOR(L,I1),YCOR(L,I2)) )THEN
+      return
+    elseif( (Y3 + EPSILON) < MIN(YCOR(L,I1),YCOR(L,I2)) .or. (Y3 - EPSILON) > MAX(YCOR(L,I1),YCOR(L,I2)) )then
       ! *** ON THE LINE BUT NOT IN THE SEGMENT
       D = 1E32
-      RETURN
-    ENDIF
+      return
+    endif
   
     ! *** RECOMPUTE X3,Y3 WITH OFFSET
     X3 = X0 + COS(ANG)*(D-OFFSET)  !*DS
     Y3 = Y0 + SIN(ANG)*(D-OFFSET)  !*DS
 
-  ENDIF
+  endif
 
-  RETURN
+  return
     
 END SUBROUTINE DIST2LINE
 
@@ -449,16 +447,16 @@ function BLOCKED(X1, Y1, X2, Y2, icell, jcell) result(intersect)
   do j = jmin, jmax
     do i = imin, imax
       L = LIJ(i,j)
-      if ( UMASK(L)  ==  1 ) then
+      if( UMASK(L)  ==  1 )then
         if( L > 0 )then
           intersect = isintersect(X1, Y1, X2, Y2, XCOR(L,1), YCOR(L,1), XCOR(L,2), YCOR(L,2))
-          if (intersect) return
+          if( intersect) return
         endif
       endif
-      if ( VMASK(L)  ==  1 ) then
+      if( VMASK(L)  ==  1 )then
         if( L > 0 )then
           intersect = isintersect(X1, Y1, X2, Y2, XCOR(L,1), YCOR(L,1), XCOR(L,4), YCOR(L,4))
-          if (intersect) return
+          if( intersect) return
         endif
       endif
     enddo
@@ -467,17 +465,25 @@ function BLOCKED(X1, Y1, X2, Y2, icell, jcell) result(intersect)
 end function
 
 FUNCTION ISINTERSECT(X1,Y1,X2,Y2,X3,Y3,X4,Y4) RESULT(XSECT) 
-    IMPLICIT NONE
-    LOGICAL :: XSECT
-    REAL(kind = RKD),INTENT(IN)  :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
-    XSECT = (ISCCW(X1,Y1,X3,Y3,X4,Y4) /= ISCCW(X2,Y2,X3,Y3,X4,Y4)) &
-      .AND. (ISCCW(X1,Y1,X2,Y2,X3,Y3) /= ISCCW(X1,Y1,X2,Y2,X4,Y4))
+    implicit none
+    logical :: XSECT
+    real(kind = RKD),intent(IN)  :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
+    logical :: L1,L2,L3,L4
+    L1 = ISCCW(X1,Y1,X3,Y3,X4,Y4)
+    L2 = ISCCW(X2,Y2,X3,Y3,X4,Y4)
+    L3 = ISCCW(X1,Y1,X2,Y2,X3,Y3)
+    L4 = ISCCW(X1,Y1,X2,Y2,X4,Y4)
+#ifdef GNU    
+    XSECT = (L1 .neqv. L2) .and. (L3 .neqv. L4)
+#else    
+    XSECT = (L1 /= L2) .and. (L3 /= L4)
+#endif    
 END FUNCTION
 
 FUNCTION ISCCW(X1,Y1,X2,Y2,X3,Y3) RESULT(CCW) 
-    IMPLICIT NONE
-    LOGICAL :: CCW
-    REAL(kind = RKD),INTENT(IN)  :: X1,Y1,X2,Y2,X3,Y3
+    implicit none
+    logical :: CCW
+    real(kind = RKD),intent(IN)  :: X1,Y1,X2,Y2,X3,Y3
     CCW = (Y3-Y1)*(X2-X1) > (Y2-Y1)*(X3-X1)
 END FUNCTION
 

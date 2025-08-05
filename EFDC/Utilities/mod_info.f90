@@ -3,104 +3,104 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 MODULE INFOMOD
 !Author: Dang Huu Chung
 
-USE GLOBAL,ONLY:IK4
-IMPLICIT NONE
-CONTAINS
+use GLOBAL,only:IK4
+implicit none
+contains
 
 FUNCTION READSTR(UNIT) RESULT(STR)
-  INTEGER(IK4),INTENT(IN) :: UNIT
-  CHARACTER(200) :: STR
-  INTEGER(IK4) :: ISTR,I
-  DO WHILE (1)
-    READ(UNIT,'(A)',ERR=1000,END=1010) STR
+  integer(IK4),intent(IN) :: UNIT
+  character(200) :: STR
+  integer(IK4) :: ISTR,I
+  do while (.true.)
+    read(UNIT,'(A)',err = 1000,end = 1010) STR
     STR = ADJUSTL(STR)
     ISTR = ICHAR(STR(1:1))
     I = 1
-    DO WHILE (ISTR == 9) 
+    do while (ISTR == 9) 
       I = I+1
       ISTR = ICHAR(STR(I:I))
-    ENDDO
+    enddo
     SELECT CASE (ISTR)
     CASE (45,46,48:57)  !CHARACTER = -, ., 0:9
       BACKSPACE UNIT
-      RETURN
+      return
     END SELECT
-  ENDDO
-  RETURN
+  enddo
+  return
   
-1000 CALL STOPP('READ ERROR!')
-1010 CALL STOPP('END OF FILE BEFORE EXPECTED!')
+1000 call STOPP('READ ERROR!')
+1010 call STOPP('END OF FILE BEFORE EXPECTED!')
  
 END FUNCTION
 
 SUBROUTINE SKIPCOM(IUNIT,CC,IUOUT)
-  INTEGER(IK4),  INTENT(IN) :: IUNIT    
-  INTEGER(IK4),  INTENT(IN),OPTIONAL :: IUOUT
-  CHARACTER(1),INTENT(IN) :: CC
-  CHARACTER(250) :: LINE,COMM*1(4)
-  INTEGER(IK4)   :: I,ISTR
+  integer(IK4),  intent(IN) :: IUNIT    
+  integer(IK4),  intent(IN),OPTIONAL :: IUOUT
+  character(1),intent(IN) :: CC
+  character(250) :: LINE,COMM*1(4)
+  integer(IK4)   :: I,ISTR
   DATA COMM /'C','c','*','#'/
  
-  DO WHILE(1)
-    READ(IUNIT, '(A)', END=999) LINE      
-    IF( PRESENT(IUOUT)) WRITE(IUOUT,'(A)') LINE
+  do while (.true.)
+    read(IUNIT, '(A)', end = 999) LINE      
+    if( PRESENT(IUOUT)) WRITE(IUOUT,'(A)') LINE
     LINE = ADJUSTL(LINE)
     ISTR = ICHAR(LINE(1:1))
     I = 1
-    DO WHILE (ISTR == 9) 
+    do while (ISTR == 9) 
       I = I+1
       ISTR = ICHAR(LINE(I:I))
-    ENDDO
-    IF( LINE(I:I) == CC .OR. ANY(COMM == LINE(I:I)) )THEN
+    enddo
+    if( LINE(I:I) == CC .or. ANY(COMM == LINE(I:I)) )then
       CYCLE
-    ELSE
+    else
       BACKSPACE(IUNIT)
       EXIT
-    ENDIF
-  END DO
+    endif
+  enddo
   999 RETURN
 END SUBROUTINE
  
 FUNCTION FINDSTR(STR,SS,NCOL) RESULT(COLM)
-  CHARACTER(*)  :: STR,SS
-  CHARACTER(10) :: SSN(NCOL)
-  INTEGER(IK4)  :: M,COLM,NCOL,NL
-  COLM=0
-  READ(STR,*,end=100) (SSN(M),M=1,NCOL)
+  integer(IK4)  :: M,COLM,NCOL,NL
+  character(*)  :: STR,SS
+  character(10) :: SSN(NCOL)
+  COLM = 0
+  read(STR,*,end = 100) (SSN(M),M = 1,NCOL)
   100 continue
-  DO M=1,NCOL
+  do M = 1,NCOL
     SSN(M) = ADJUSTL(SSN(M))
     NL = INDEX(SSN(M),SS)
-    IF( NL > 0 )THEN
+    if( NL > 0 )then
       COLM = M
-      RETURN
-    ENDIF
-  ENDDO
+      return
+    endif
+  enddo
 END FUNCTION
 
 FUNCTION NUMCOL(STR) RESULT(NC)
 
-  INTEGER(IK4) :: M,NC,NL
-  CHARACTER(*) :: STR,STR1*200
+  integer(IK4) :: M,NC,NL
+  character(*) :: STR,STR1*200
 
   STR1 = ADJUSTL(STR)
   NL = LEN_TRIM(STR1)
-  IF( NL == 0 )THEN
-    NC=0
-    RETURN
-  ENDIF
+  if( NL == 0 )then
+    NC = 0
+    return
+  endif
   NC = 1
-  DO M=2,NL
-    IF( STR1(M:M) == '' .AND. STR1(M-1:M-1)/='' )THEN
-      NC=NC+1
-    ENDIF
-  ENDDO
+  do M = 2,NL
+    if( STR1(M:M) == '' .and. STR1(M-1:M-1)/='' )then
+      NC = NC+1
+    endif
+  enddo
 END FUNCTION
  
 END MODULE

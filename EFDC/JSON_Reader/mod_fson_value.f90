@@ -3,7 +3,7 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 ! Copyright (c) 2012 Joseph A. Levin
@@ -21,7 +21,7 @@
 ! INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
 ! PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE 
 ! LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT
-! OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+! OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE use OR OTHER
 ! DEALINGS IN THE SOFTWARE.
 
 !     
@@ -74,7 +74,7 @@ module mod_fson_value
     !
     ! FSON VALUE GET
     !
-    ! Use either a 1 based index or member name to get the value.
+    ! use either a 1 based index or member name to get the value.
     interface fson_value_get
         module procedure get_by_index
         module procedure get_by_name_chars
@@ -106,23 +106,23 @@ contains
       type(fson_value), pointer :: p
       logical :: donext
 
-      IF( present(destroy_next) )then
+      if( present(destroy_next) )then
          donext = destroy_next
       else
          donext = .true.
-      end if
+      endif
 
-      IF( associated(this) )then
+      if( associated(this) )then
 
          if(associated(this.name) )then
             call fson_string_destroy(this.name)
             nullify (this.name)
-         end if
+         endif
 
          if(associated(this.value_string) )then
             call fson_string_destroy(this.value_string)
             nullify (this.value_string)
-         end if
+         endif
 
          if(associated(this.children) )then
             do while (this.count > 0)
@@ -130,23 +130,23 @@ contains
                this.children => this.children.next
                this.count = this.count - 1
                call fson_value_destroy(p, .false.)
-            end do
+            enddo
             nullify(this.children)
-         end if
+         endif
 
-         IF( (associated(this.next)) .and. (donext) )then
+         if( (associated(this.next)) .and. (donext) )then
             call fson_value_destroy(this.next)
             nullify (this.next)
-         end if
+         endif
 
          if(associated(this.tail) )then
             nullify (this.tail)
-         end if
+         endif
 
          deallocate(this)
          nullify(this)
 
-      end if
+      endif
 
     end subroutine fson_value_destroy
 
@@ -164,11 +164,11 @@ contains
       member.parent => this
 
       ! add to linked list
-      IF( associated(this.children) )then
+      if( associated(this.children) )then
          this.tail.next => member
       else
          this.children => member
-      end if
+      endif
 
       this.tail => member
       this.count = this.count + 1
@@ -197,7 +197,7 @@ contains
 
         do i = 1, index - 1
             p => p.next
-        end do
+        enddo
 
     end function get_by_index
 
@@ -206,7 +206,7 @@ contains
     !
     function get_by_name_chars(this, name) result(p)
         type(fson_value), pointer :: this, p
-        character(len=*), intent(in) :: name
+        character(len = *), intent(in) :: name
         
         type(fson_string), pointer :: string
         
@@ -229,17 +229,17 @@ contains
         
         if(this.value_type .ne. TYPE_OBJECT )then
             nullify(p)
-            return 
-        end if
+            return
+        endif
 
         count = fson_value_count(this)
         p => this%children
         do i = 1, count
-           IF( fson_string_equals(p%name, name) )then
+           if( fson_string_equals(p%name, name) )then
               return
-           end if
+           endif
            p => p%next
-        end do
+        enddo
         
         ! didn't find anything
         nullify(p)
@@ -255,11 +255,11 @@ contains
         character (len = 1024) :: tmp_chars
         integer :: tab, i, count, spaces
                 
-        IF( present(indent) )then
+        if( present(indent) )then
             tab = indent
         else
             tab = 0
-        end if
+        endif
         
         spaces = tab * 2
 
@@ -276,11 +276,11 @@ contains
                ! recursive print of the element
                call fson_value_print(element, tab + 1)
                ! print the separator if required
-               IF( i < count )then
+               if( i < count )then
                   print *, repeat(" ", spaces), ","
-               end if
+               endif
                element => element%next
-            end do
+            enddo
 
             print *, repeat(" ", spaces), "}"
         case (TYPE_ARRAY)
@@ -291,11 +291,11 @@ contains
                ! recursive print of the element
                call fson_value_print(element, tab + 1)
                ! print the separator if required
-               IF( i < count )then
+               if( i < count )then
                   print *, ","
-               end if
+               endif
                element => element%next
-            end do
+            enddo
             print *, repeat(" ", spaces), "]"
         case (TYPE_NULL)
             print *, repeat(" ", spaces), "null"
@@ -303,11 +303,11 @@ contains
             call fson_string_copy(this.value_string, tmp_chars)
             print *, repeat(" ", spaces), '"', trim(tmp_chars), '"'
         case (TYPE_LOGICAL)
-            IF( this.value_logical )then
+            if( this.value_logical )then
                 print *, repeat(" ", spaces), "true"
             else
                 print *, repeat(" ", spaces), "false"
-            end if
+            endif
         case (TYPE_INTEGER)
             print *, repeat(" ", spaces), this.value_long_integer
         case (TYPE_REAL)

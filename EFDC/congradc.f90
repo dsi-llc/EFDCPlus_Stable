@@ -3,13 +3,13 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 SUBROUTINE CONGRADC()
 
-  ! **  SUBROUTINE CONGRAD SOLVES THE EXTERNAL MODE BY A CONJUGATE
-  ! **  GRADIENT SCHEME
+  ! ***  SUBROUTINE CONGRAD SOLVES THE EXTERNAL MODE BY A CONJUGATE
+  ! ***  GRADIENT SCHEME
 
   !----------------------------------------------------------------------!  
   ! CHANGE RECORD  
@@ -18,198 +18,214 @@ SUBROUTINE CONGRADC()
   ! 2014-08           D H CHUNG          SET EXPLICIT PRECISIONS OF INTEGER & REAL
   ! 2011-03           Paul M. Craig      Rewritten to F90
 
-  USE GLOBAL
-  USE EFDCOUT
+  use GLOBAL
+  use EFDCOUT
+  use Variables_MPI
+  use Mod_Map_Write_EE_Binary
 
   ! *** DSI
-  IMPLICIT NONE
+  implicit none
   
-  INTEGER    :: L, NMD
-  INTEGER    :: LHOST,LCHNU,LCHNV
+  integer    :: L, NMD
+  integer    :: LHOST,LCHNU,LCHNV
   
-  REAL       :: RPCGN, RPCG, PAPCG, ALPHA, BETA, RSQ
-  REAL(RKD)  :: TTDS         ! MODEL TIMING TEMPORARY VARIABLE
-  REAL(RKD), EXTERNAL   :: DSTIME
+  real       :: RPCGN, RPCG, PAPCG, ALPHA, BETA, RSQ
+  real(RKD)  :: TTDS         ! MODEL TIMING TEMPORARY VARIABLE
+  real(RKD), external :: DSTIME
 
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: PNORTH
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: PSOUTH
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: TMPCG
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: PCG
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: RCG
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: SRPCGN
-  REAL,SAVE,ALLOCATABLE,DIMENSION(:) :: SRSQ
+  real,save,allocatable,dimension(:) :: PNORTH
+  real,save,allocatable,dimension(:) :: PSOUTH
+  real,save,allocatable,dimension(:) :: TMPCG
+  real,save,allocatable,dimension(:) :: PCG
+  real,save,allocatable,dimension(:) :: RCG
+  real,save,allocatable,dimension(:) :: SRPCGN
+  real,save,allocatable,dimension(:) :: SRSQ
 
-  IF(  .NOT. ALLOCATED(PNORTH) )THEN
-    ALLOCATE(PNORTH(LCM))
-    ALLOCATE(PSOUTH(LCM))
-    ALLOCATE(PCG(LCM))
-    ALLOCATE(RCG(LCM))
-    ALLOCATE(SRPCGN(NDM))
-    ALLOCATE(SRSQ(NDM))
-    ALLOCATE(TMPCG(LCM))
-    PNORTH=0.0
-    PSOUTH=0.0
-    PCG=0.0
-    RCG=0.0
-    SRSQ=0.0
-    TMPCG=0.0
-  ENDIF
+  if( .not. allocated(PNORTH) )then
+    allocate(PNORTH(LCM))
+    allocate(PSOUTH(LCM))
+    allocate(PCG(LCM))
+    allocate(RCG(LCM))
+    allocate(SRPCGN(NDM))
+    allocate(SRSQ(NDM))
+    allocate(TMPCG(LCM))
+    PNORTH = 0.0
+    PSOUTH = 0.0
+    PCG = 0.0
+    RCG = 0.0
+    SRSQ = 0.0
+    TMPCG = 0.0
+  endif
 
   TTDS = DSTIME(0)
-  DO L=2,LA
-    PNORTH(L)=P(LNC(L))
-    PSOUTH(L)=P(LSC(L))
-  ENDDO
-  DO L=2,LA
+  do L = 2,LA
+    PNORTH(L) = P(LNC(L))
+    PSOUTH(L) = P(LSC(L))
+  enddo
+  do L = 2,LA
     RCG(L) = FPTMP(L) - CCC(L)*P(L) - CCN(L)*PNORTH(L) - CCS(L)*PSOUTH(L) &
                                     - CCW(L)*P(LWC(L)) - CCE(L)*P(LEC(L))
-  ENDDO
-  IF( MDCHH >= 1 )THEN
-    DO NMD=1,MDCHH
-      LHOST=LMDCHH(NMD)
-      LCHNU=LMDCHU(NMD)
-      LCHNV=LMDCHV(NMD)
+  enddo
+  if( MDCHH >= 1 )then
+    do NMD = 1,MDCHH
+      LHOST = LMDCHH(NMD)
+      LCHNU = LMDCHU(NMD)
+      LCHNV = LMDCHV(NMD)
 
       !         X-DIRECTION CHANNEL
-      IF( MDCHTYP(NMD) == 1 )THEN
-        RCG(LCHNU)=RCG(LCHNU)+CCCCHH(NMD)*P(LHOST)
-        RCG(LHOST)=RCG(LHOST)+CCCCHH(NMD)*P(LCHNU)
-      ENDIF
+      if( MDCHTYP(NMD) == 1 )then
+        RCG(LCHNU) = RCG(LCHNU)+CCCCHH(NMD)*P(LHOST)
+        RCG(LHOST) = RCG(LHOST)+CCCCHH(NMD)*P(LCHNU)
+      endif
 
       !         Y-DIRECTION CHANNEL
-      IF( MDCHTYP(NMD) == 2 )THEN
-        RCG(LCHNV)=RCG(LCHNV)+CCCCHH(NMD)*P(LHOST)
-        RCG(LHOST)=RCG(LHOST)+CCCCHH(NMD)*P(LCHNV)
-      ENDIF
-    ENDDO
-  ENDIF
+      if( MDCHTYP(NMD) == 2 )then
+        RCG(LCHNV) = RCG(LCHNV)+CCCCHH(NMD)*P(LHOST)
+        RCG(LHOST) = RCG(LHOST)+CCCCHH(NMD)*P(LCHNV)
+      endif
+    enddo
+  endif
 
-  DO L=2,LA
-    PCG(L)=RCG(L)*CCCI(L)
-  ENDDO
-  RPCG=0.
-  DO L=2,LA
-    RPCG=RPCG+RCG(L)*PCG(L)
-  ENDDO
-  IF( RPCG == 0.0)RETURN 
-  ITER=0
+  do L = 2,LA
+    PCG(L) = RCG(L)*CCCI(L)
+  enddo
+  RPCG = 0.
+  do L = 2,LA
+    RPCG = RPCG+RCG(L)*PCG(L)
+  enddo
+  if( RPCG == 0.0) return 
+  ITER = 0
   
-100 CONTINUE
-  ITER=ITER+1
-  DO L=2,LA
-    PNORTH(L)=PCG(LNC(L))
-    PSOUTH(L)=PCG(LSC(L))
-  ENDDO
-  DO L=2,LA
-    APCG(L)=CCC(L)*PCG(L)+CCS(L)*PSOUTH(L)+CCN(L)*PNORTH(L) &
+100 continue
+  ITER = ITER+1
+  do L = 2,LA
+    PNORTH(L) = PCG(LNC(L))
+    PSOUTH(L) = PCG(LSC(L))
+  enddo
+  do L = 2,LA
+    APCG(L) = CCC(L)*PCG(L)+CCS(L)*PSOUTH(L)+CCN(L)*PNORTH(L) &
         +CCW(L)*PCG(LWC(L))+CCE(L)*PCG(LEC(L))
-  ENDDO
-  IF( MDCHH >= 1 )THEN
-    DO NMD=1,MDCHH
-      LHOST=LMDCHH(NMD)
-      LCHNU=LMDCHU(NMD)
-      LCHNV=LMDCHV(NMD)
+  enddo
+  if( MDCHH >= 1 )then
+    do NMD = 1,MDCHH
+      LHOST = LMDCHH(NMD)
+      LCHNU = LMDCHU(NMD)
+      LCHNV = LMDCHV(NMD)
 
       !         X-DIRECTION CHANNEL
-      IF( MDCHTYP(NMD) == 1 )THEN
-        APCG(LCHNU)=APCG(LCHNU)+CCCCHH(NMD)*PCG(LHOST)
-        APCG(LHOST)=APCG(LHOST)+CCCCHH(NMD)*PCG(LCHNU)
-      ENDIF
+      if( MDCHTYP(NMD) == 1 )then
+        APCG(LCHNU) = APCG(LCHNU)+CCCCHH(NMD)*PCG(LHOST)
+        APCG(LHOST) = APCG(LHOST)+CCCCHH(NMD)*PCG(LCHNU)
+      endif
 
       !         Y-DIRECTION CHANNEL
-      IF( MDCHTYP(NMD) == 2 )THEN
-        APCG(LCHNV)=APCG(LCHNV)+CCCCHH(NMD)*PCG(LHOST)
-        APCG(LHOST)=APCG(LHOST)+CCCCHH(NMD)*PCG(LCHNV)
-      ENDIF
-    ENDDO
-  ENDIF
+      if( MDCHTYP(NMD) == 2 )then
+        APCG(LCHNV) = APCG(LCHNV)+CCCCHH(NMD)*PCG(LHOST)
+        APCG(LHOST) = APCG(LHOST)+CCCCHH(NMD)*PCG(LCHNV)
+      endif
+    enddo
+  endif
 
-  PAPCG=0.
-  DO L=2,LA
-    PAPCG=PAPCG+APCG(L)*PCG(L)
-  ENDDO
-  ALPHA=RPCG/PAPCG
-  DO L=2,LA
-    P(L)=P(L)+ALPHA*PCG(L)
-  ENDDO
-  DO L=2,LA
-    RCG(L)=RCG(L)-ALPHA*APCG(L)
-  ENDDO
-  DO L=2,LA
-    TMPCG(L)=CCCI(L)*RCG(L)
-  ENDDO
-  RPCGN=0.
-  RSQ=0.
-  DO L=2,LA
-    RPCGN=RPCGN+RCG(L)*TMPCG(L)
-    RSQ=RSQ+RCG(L)*RCG(L)
-  ENDDO
-  IF( RSQ  <=  RSQM) GOTO 200
-  IF( ITER  >=  ITERM )THEN
-    OPEN(8,FILE=OUTDIR//'EFDCLOG.OUT',POSITION='APPEND')
-    WRITE(6,600)
-    WRITE(8,*)'  I   J   CCS   CCW    CCC    CCE    CCN   FPTMP'
-    DO L=2,LA
-      WRITE(8,800)IL(L),JL(L),CCS(L),CCW(L),CCC(L),CCE(L),CCN(L),FPTMP(L)
-    ENDDO
-    CLOSE(8)
-    CALL EE_LINKAGE(-1)
+  PAPCG = 0.
+  do L = 2,LA
+    PAPCG = PAPCG+APCG(L)*PCG(L)
+  enddo
+  ALPHA = RPCG/PAPCG
+  do L = 2,LA
+    P(L) = P(L)+ALPHA*PCG(L)
+  enddo
+  do L = 2,LA
+    RCG(L) = RCG(L)-ALPHA*APCG(L)
+  enddo
+  do L = 2,LA
+    TMPCG(L) = CCCI(L)*RCG(L)
+  enddo
+  RPCGN = 0.
+  RSQ = 0.
+  do L = 2,LA
+    RPCGN = RPCGN+RCG(L)*TMPCG(L)
+    RSQ = RSQ+RCG(L)*RCG(L)
+  enddo
+  if( RSQ  <=  RSQM) GOTO 200
+  if( ITER  >=  ITERM )then
+    write(6,600) Map2Global(L).LG, process_id
+    
+    ! *** Write to unique log per process 
+    Open(mpi_error_unit, FILE = OUTDIR//mpi_error_file,STATUS = 'OLD')
+    write(mpi_error_unit,600) Map2Global(L).LG, process_id
+
+    write(mpi_error_unit,610)
+    do L = 2,LA  
+      write(mpi_error_unit,800) Map2Global(L).LG, L, IL(L), JL(L), CCS(L), CCW(L), CCC(L), CCE(L), CCN(L), FPTMP(L), RCG(L)
+    enddo
+    close(mpi_error_unit)
+    
+    ! *** save A SNAPSHOT FOR EE
+    if( ISPPH == 1 )then
+      write(6,*) ' The latest model results have been saved to the EE linkage files.'
+      call Map_Write_EE_Binary
+      if( process_id == master_id )then
+        call EE_LINKAGE(-1)  
+      endif
+    endif
+    
     STOP
-  ENDIF
+  endif
   
-  BETA=RPCGN/RPCG
-  RPCG=RPCGN
-  DO L=2,LA
-    PCG(L)=TMPCG(L)+BETA*PCG(L)
-  ENDDO
+  BETA = RPCGN/RPCG
+  RPCG = RPCGN
+  do L = 2,LA
+    PCG(L) = TMPCG(L)+BETA*PCG(L)
+  enddo
   
   GOTO 100
-  600 FORMAT('  MAXIMUM ITERATIONS EXCEEDED IN EXTERNAL SOLUTION')
+600 FORMAT('  MAXIMUM ITERATIONS EXCEEDED IN EXTERNAL SOLUTION.  MAX ERROR AT LG = ',I6,', PROCESS ID = ',I4)
+610 FORMAT('    LG     L     I     J          CCS          CCW          CCC          CCE          CCN       FPTMP'    &
+                             //     '       RCG^2            P          RCG        TMPCG          PCG')
+800 FORMAT(4I6,12E13.4)
 
-  ! ** CALCULATE FINAL RESIDUAL
-  200 CONTINUE
+  ! *** CALCULATE FINAL RESIDUAL
+  200 continue
 
-  IF( ISLOG >= 1 )THEN
-    DO L=2,LA
-      PNORTH(L)=P(LNC(L))
-      PSOUTH(L)=P(LSC(L))
-    ENDDO
-    RSQ=0.
-    DO L=2,LA
-      RCG(L)=CCC(L)*P(L)+CCS(L)*PSOUTH(L)+CCN(L)*PNORTH(L) &
+  if( ISLOG >= 1 )then
+    do L = 2,LA
+      PNORTH(L) = P(LNC(L))
+      PSOUTH(L) = P(LSC(L))
+    enddo
+    RSQ = 0.
+    do L = 2,LA
+      RCG(L) = CCC(L)*P(L)+CCS(L)*PSOUTH(L)+CCN(L)*PNORTH(L) &
         +CCW(L)*P(LWC(L))+CCE(L)*P(LEC(L))-FPTMP(L)
-    ENDDO
-    IF( MDCHH >= 1 )THEN
-      DO NMD=1,MDCHH
-        LHOST=LMDCHH(NMD)
-        LCHNU=LMDCHU(NMD)
-        LCHNV=LMDCHV(NMD)
+    enddo
+    if( MDCHH >= 1 )then
+      do NMD = 1,MDCHH
+        LHOST = LMDCHH(NMD)
+        LCHNU = LMDCHU(NMD)
+        LCHNV = LMDCHV(NMD)
 
         !         X-DIRECTION CHANNEL
-        IF( MDCHTYP(NMD) == 1 )THEN
-          RCG(LCHNU)=RCG(LCHNU)-CCCCHH(NMD)*P(LHOST)
-          RCG(LHOST)=RCG(LHOST)-CCCCHH(NMD)*P(LCHNU)
-        ENDIF
+        if( MDCHTYP(NMD) == 1 )then
+          RCG(LCHNU) = RCG(LCHNU)-CCCCHH(NMD)*P(LHOST)
+          RCG(LHOST) = RCG(LHOST)-CCCCHH(NMD)*P(LCHNU)
+        endif
 
         !         Y-DIRECTION CHANNEL
-        IF( MDCHTYP(NMD) == 2 )THEN
-          RCG(LCHNV)=RCG(LCHNV)-CCCCHH(NMD)*P(LHOST)
-          RCG(LHOST)=RCG(LHOST)-CCCCHH(NMD)*P(LCHNV)
-        ENDIF
-      ENDDO
-    ENDIF
-    DO L=2,LA
-      RCG(L)=RCG(L)*CCCI(L)
-    ENDDO
-    DO L=2,LA
-      RSQ=RSQ+RCG(L)*RCG(L)
-    ENDDO
-  ENDIF
+        if( MDCHTYP(NMD) == 2 )then
+          RCG(LCHNV) = RCG(LCHNV)-CCCCHH(NMD)*P(LHOST)
+          RCG(LHOST) = RCG(LHOST)-CCCCHH(NMD)*P(LCHNV)
+        endif
+      enddo
+    endif
+    do L = 2,LA
+      RCG(L) = RCG(L)*CCCI(L)
+    enddo
+    do L = 2,LA
+      RSQ = RSQ+RCG(L)*RCG(L)
+    enddo
+  endif
 
-  TCONG=TCONG+(DSTIME(0)-TTDS)
+  TCONG = TCONG+(DSTIME(0)-TTDS)
 
-  800 FORMAT(2I6,6E13.4)
-
-  RETURN
+  return
 END
 

@@ -3,14 +3,14 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 Module Mod_Position_Cell
 
-  Use GLOBAL, only : RKD, RK4
-  Use Mod_MPI_Helper_Functions
-  Use Mod_Position
+  use GLOBAL, only : RKD, RK4
+  use Mod_MPI_Helper_Functions
+  use Mod_Position
 
   implicit none
 
@@ -53,12 +53,12 @@ Module Mod_Position_Cell
   type(position_cell) function position_cell_constructor(x_position, y_position, curr_time, test) result(self)
   
     ! *** Dummy variables
-    Real(kind = RKD), intent(in) :: x_position
-    Real(kind = RKD), intent(in) :: y_position
-    Real(kind = RKD), intent(in) :: curr_time
+    real(kind = RKD), intent(in) :: x_position
+    real(kind = RKD), intent(in) :: y_position
+    real(kind = RKD), intent(in) :: curr_time
     logical, optional, intent(in) :: test !> bypasses calls to cell location functions that require an actual EFDC+ geometry to be instantiated
     ! *** Local variables
-    Integer :: cell
+    integer :: cell
 
     self.x_pos = x_position
     self.y_pos = y_position
@@ -74,12 +74,12 @@ Module Mod_Position_Cell
 
       ! *** Check that the cell returns is valid
       if(self.cell < 2  )then
-        Call STOPP('***Warning*** Cell index is invalid for this ships (x,y) location')
+        call STOPP('***Warning*** Cell index is invalid for this ships (x,y) location')
       else
         ! *** Deterine which process id the cell belongs in
         self.sub_domain_id = get_subdomain_id(self.cell)
-      end if
-    end if
+      endif
+    endif
 
   end function position_cell_constructor
 
@@ -105,7 +105,7 @@ Module Mod_Position_Cell
       write(884, '(a,f15.5)') 'time:         ', self.time
       write(884, '(a,i4)')    'Subdomain ID: ', self.sub_domain_id
       write(884, '(a,i8)')    'Cell index:   ', self.cell
-    end if
+    endif
 
   end subroutine write_out_cell
 

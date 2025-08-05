@@ -3,13 +3,13 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 Module Variables_Ship
     
-  Use Mod_all_tracks
-  Use Mod_Active_Ship
+  use Mod_all_tracks
+  use Mod_Active_Ship
   use Mod_all_ship_tracks
     
   implicit none

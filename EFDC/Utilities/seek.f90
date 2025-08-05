@@ -3,58 +3,66 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-SUBROUTINE SEEK(TAG)
+SUBROUTINE SEEK(TAG, ISKIP)
   
-  USE GLOBAL,ONLY: IKV,CARDNO
+  use GLOBAL,only: IKV,CARDNO
+  use Variables_MPI
   
-  IMPLICIT NONE
+  implicit none
   
-  INTEGER :: I,J,K,L,M
-  CHARACTER TAG*(*)
-  CHARACTER*80 TEXT
-  LOGICAL(4) :: OPN
+  integer,intent(IN)      :: ISKIP
+  character,intent(INOUT) :: TAG*(*)
+
+  integer :: I, J, K, L, M
+  character*120 TEXT
+  logical(4) :: OPN, ECHO
+  
+  ECHO = .TRUE.
+  if( ISKIP > 0 ) ECHO = .FALSE.
   
   CARDNO = TAG
-  INQUIRE(UNIT=7,OPENED=OPN) 
+  INQUIRE(UNIT = mpi_efdc_out_unit,OPENED = OPN) 
   
-  L=LEN(TAG)
-  DO I=1,L
-    J=ICHAR(TAG(I:I))
-    IF( 97 <= J .AND. J <= 122 )THEN
-      TAG(I:I)=CHAR(J-32)
-    ENDIF
-  ENDDO  
-  IF( OPN ) WRITE(7,'(A,A)')'SEEKING GROUP: ',TAG
+  L = LEN(TAG)
+  do I = 1,L
+    J = ICHAR(TAG(I:I))
+    if( 97 <= J .and. J <= 122 )then
+      TAG(I:I) = CHAR(J-32)
+    endif
+  enddo  
+  if( OPN ) WRITE(mpi_efdc_out_unit,'(A,A)')'SEEKING GROUP: ',TAG
   
-  DO K=1,2
-10  READ(1,'(A)',END=20)TEXT
-    M=MAX(1,LEN_TRIM(TEXT))
-    IF( OPN ) WRITE(7,'(A)')TEXT(1:M)
-    DO WHILE( M > L .AND. TEXT(1:1) == '' )
-      TEXT(1:M-1)=TEXT(2:M)
-      TEXT(M:M)=' '
-      M=M-1
-    ENDDO
-    IF( M < L )GO TO 10
-    DO I=1,M
-      J=ICHAR(TEXT(I:I))
-      IF( 97 <= J .AND. J <= 122 )THEN
-        TEXT(I:I)=CHAR(J-32)
-      ENDIF
-    ENDDO
-    IF( TEXT(1:L) /= TAG )     GO TO 10
-    IF( TEXT(L+1:L+1) /= ' ' ) GO TO 10
-  ENDDO
-  !WRITE(8,'(A,A)') TAG,' FOUND.' 
-  RETURN
+  do K = 1,2
+10  read(1,'(A)',END = 20)TEXT
+    M = MAX(1,LEN_TRIM(TEXT))
+    if( OPN .and. ECHO ) WRITE(mpi_efdc_out_unit,'(A)') TEXT(1:M)
+    do while( M > L .and. TEXT(1:1) == '' )
+      TEXT(1:M-1) = TEXT(2:M)
+      TEXT(M:M) = ' '
+      M = M-1
+    enddo
+    if( M < L )GO TO 10
+    do I = 1,M
+      J = ICHAR(TEXT(I:I))
+      if( 97 <= J .and. J <= 122 )then
+        TEXT(I:I) = CHAR(J-32)
+      endif
+    enddo
+    if( TEXT(1:L) /= TAG )     GO TO 10
+    if( TEXT(L+1:L+1) /= ' ' ) GO TO 10
+  enddo
+
+  return
  
-  20 WRITE(*,'(A,A,A)')'GROUP: ',TAG,' NOT FOUND BEFORE END OF FILE'
+  20 WRITE(*,'(A,A,A)') 'GROUP: ',TAG,' NOT FOUND BEFORE END OF FILE'
+  write(mpi_error_file,'(A,A,A)') 'GROUP: ',TAG,' NOT FOUND BEFORE END OF FILE'
+  
   PAUSE
   
-  CALL STOPP('.')
+  call STOPP('.')
 
 END
 

@@ -3,13 +3,13 @@
 !   Website:  https://eemodelingsystem.com/
 !   Repository: https://github.com/dsi-llc/EFDC_Plus.git
 ! ----------------------------------------------------------------------
-! Copyright 2021-2022 DSI, LLC
+! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
 Module Mod_Position
     
-    Use GLOBAL, only : RKD, RK4
-    Use Mod_MPI_Helper_Functions
+    use GLOBAL, only : RKD, RK4
+    use Mod_MPI_Helper_Functions
     
     implicit none
     
@@ -17,12 +17,12 @@ Module Mod_Position
     public :: position
     
     type :: position
-        Real (kind = RKD)   :: time   = 0.0       !< Current time we are at
-        Real (kind = RKD)   :: x_pos  = 0.0       !< x position [meters]
-        Real (kind = RKD)   :: y_pos  = 0.0       !< y position [meters]
-        Real (kind = RKD)   :: z_pos  = 0.0       !< z position [meters]
-        Real (kind = RKD)   :: var(3) = 0.0       !< Spatially dependent variable
-        Real (kind = RKD), allocatable :: ero(:)  !< Spatially dependent erosion rate by sediment class
+        real (kind = RKD)   :: time   = 0.0       !< Current time we are at
+        real (kind = RKD)   :: x_pos  = 0.0       !< x position [meters]
+        real (kind = RKD)   :: y_pos  = 0.0       !< y position [meters]
+        real (kind = RKD)   :: z_pos  = 0.0       !< z position [meters]
+        real (kind = RKD)   :: var(3) = 0.0       !< Spatially dependent variable
+        real (kind = RKD), allocatable :: ero(:)  !< Spatially dependent erosion rate by sediment class
     contains
     
         procedure, pass(self) :: write_out

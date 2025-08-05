@@ -16,7 +16,7 @@ Execute the following:
 ```bash
 git clone https://github.com/dsi-llc/EFDC_Plus.git
 cd EFDC_Plus
-chmod +x toolkit-setup.sh
+chmod -x toolkit-setup.sh
 ```
 
 Run the setup script and pass in your package manager parameter (ubuntu users would use apt).  
@@ -37,13 +37,51 @@ Load the intel environment variables.
 ```bash
 source /opt/intel/oneapi/setvars.sh
 ```
-
-If your environment already has NetCDF installed and available in the Path, you can add the DNCOUT flag to the FFLAGS section in the makefile to compile with NetCDF features enabled.
+Install NetCDF library (for Ubuntu users) \
+Run the command to update the package lists for upgrades for packages that need upgrading
+```bash
+sudo apt update
+```
+Install hdf5 and hdf5-devel libraries using the command: 
+```bash
+sudo apt install hdf5-tools hdf5-helpers libhdf5-dev libhdf5-doc libhdf5-serial-dev
+```
+Install the libnetcdf-dev:
+```bash
+sudo apt install libnetcdf-dev
+```
+Install m4 package:
+```bash
+sudo apt-get install m4
+```
+Download netcdf-fortran-4.5.2 from the website https://github.com/Unidata/netcdf-fortran/releases/tag/v4.5.2 \
+Go to the netcdf-fortran-4.5.2 folder and create config-intel.sh as the following:
+```bash
+export FC=mpiifort
+export F77=mpiifort
+export F90=mpiifort
+./configure
+```
+Run config.sh
+```bash
+./config.sh
+```
+Build NetCDF-Foxtran \
+Go to the NetCDF-Fortran source code folder and run the following commands
+```bash
+make check
+make install
+```
+Run the below command for checking whether NetCDF and NetCDF-Foxtran are installed propertly or not
+```bash
+nc-config --all
+```
+Add the DNCOUT flag to the FFLAGS section in the makefile for supporting NetCDF
 
 #### _Build EFDC_
 ```bash
 make -f Makefile
-chmod +x efdc.x  # this allows the built file to be executed as a program.
+chmod -x efdc.x  # this allows the built file to be executed as a program.
 ```
 
 #### _Run EFDC_
@@ -69,10 +107,6 @@ mpiexec -n <number of nodes> path/to/efdc.x -NT<number of omp threads>
 
 * Clone the EFDC_Plus repository: https://github.com/dsi-llc/EFDC_Plus.git
 * Open the .sln file at the root of the repository.
-
-#### NetCDF
-
-If compiled with the NCOUT flag, you will need to get the NetCDF dlls to run EFDC+. The installer can be found [here](https://docs.unidata.ucar.edu/netcdf-c/current/winbin.html). Once installed, locate the bin directory (e.g. - C:\Program Files\netCDF 4.8.1\bin) and copy the dlls to your EFDC+ executable directory.
 
 ## Contribute
 The open source availability of this code will make it easier for scientists, researchers, and developers to contribute to the code and build more trust in their models. We welcome all the opportunities to collaborate. If you would like to contribute to the source code development, please clone the repository and submit pull requests as needed. For more active contribution and role, please email admin@ds-intl.biz
