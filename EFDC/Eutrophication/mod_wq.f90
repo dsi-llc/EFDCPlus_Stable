@@ -38,7 +38,7 @@ MODULE WATERQUALITY
   use WQ_ZOOPLANKTON
   use WQ_BIOTA
 
-  ! *** LB is a globally declared integer that can be hardwired for debugging (defined in AAEFDC)
+  real(RKD) :: DAYNEXT
   
   contains
   
@@ -61,15 +61,12 @@ MODULE WATERQUALITY
 
   implicit none
 
-  real(RKD), STATIC :: DAYNEXT
   real(RKD), STATIC :: SUNDAY1, SUNDAY2
   real,      STATIC :: SUNSOL1, SUNSOL2
   real,      STATIC :: SUNFRC1, SUNFRC2
   real,      STATIC :: WQKCNT = 0.
   
   real       :: TIMTMP, RATIO, SOLARAVG, WTEMP, WQTT, TT20, HP2I, WQ2
-  integer    :: IACTION ! not used
-  integer    :: IWQTAGR, IWQTSTL, ISMTICI ! not used
   integer    :: M1, M2, L, K, NMALG, NW
   integer    :: LF, LL, LP, NAL, ND
   integer, STATIC :: M
@@ -77,8 +74,6 @@ MODULE WATERQUALITY
   real(RKD), external :: DSTIME 
   real(RKD)           :: TTDS       ! MODEL TIMING TEMPORARY VARIABLE
 
-  DATA IWQTAGR,IWQTSTL,ISMTICI/3*0/  
-  
   ! *** SET THE HYDRODYNAMIC TIMESTEP
   if( ISDYNSTP == 0 )then  
     DELT = DT  
@@ -124,10 +119,10 @@ MODULE WATERQUALITY
           SUNFRC1 = 1.0
         endif
     
-        ! *** BUILD THE AVERAGE DAILY SOLAR RADIATION        
+        ! *** BUILD THE AVERAGE DAILY SOLAR RADIATION  
         M1 = 0
         M2 = 0
-        SUNSOL2 = 0.
+        SUNSOL2 = 0.0
         do while (TSATM(1).TIM(M) < SUNDAY2)
           M1 = M1+1
           if( TSATM(1).VAL(M,6) > 0. )then
@@ -270,7 +265,7 @@ MODULE WATERQUALITY
         RATIO = (TIMEDAY-SUNDAY1)
         SOLARAVG = RATIO*(SUNSOL2-SUNSOL1)+SUNSOL1
 
-        ! *** SOLAR RADIATION IN LANGLEYS/DAY
+        ! *** Solar radiation in langleys/day
         WQI0 = PARADJ*2.065*SOLARAVG  
         WQFD = RATIO*(SUNFRC2-SUNFRC1)+SUNFRC1
     
@@ -286,7 +281,7 @@ MODULE WATERQUALITY
           ! *** Spatially Constant Atmospheric Parameters
           SOLARAVG = SOLSWRT(2)
         endif  
-        ! *** SOLAR RADIATION IN LANGLEYS/DAY
+        ! *** Solar radiation in langleys/day
         WQI0 = PARADJ*2.065*SOLARAVG               ! *** Current light for growth
         WQFD = 1.                                  ! *** Set fraction of day to 1 for 
         
@@ -297,7 +292,7 @@ MODULE WATERQUALITY
 
     ! *** MASS LOADING BC'S.  WQWPSL IS ONLY USED IN THE KINETIC ROUTINES.  
     ! *** IF CONCENTRATION BASED LOADING, CALCSER AND CALFQC ALREADY HANDLED LOADING
-    if( IWQPSL == 1 ) CALL WQPSL  
+    if( IWQPSL == 1 ) CALL WQPSL     ! delme
 
     ! *** CALL SPATIALLY AND TIME VARYING BENTHIC FLUX HERE, IF REQUIRED  
     ! *** IF SIMULATION TIME IS >= THE NEXT TIME IN THE BENTHIC FILE.  
@@ -391,23 +386,12 @@ MODULE WATERQUALITY
   use RESTART_MODULE, only:WQ_WCRST_IN, WQSDRST_IN
   implicit none
 
-  integer :: J, L, LG, K, IWQTICI, IWQTAGR, IWQTSTL, IWQTSUN, IWQTBEN, IWQTPSL
-  integer :: IWQTNPL, ISMTICI, NWQVOUT, NS, NW, NAL
+  integer :: J, L, LG, K
+  integer :: NWQVOUT, NS, NW, NAL
   real    :: O2WQ_, WQTAMD 
   real    :: RKCWQ         !< 
 
   character*3 CWQHDR(NWQVM)
-  DATA IWQTICI,IWQTAGR,IWQTSTL,IWQTSUN,IWQTBEN,IWQTPSL,IWQTNPL/7*0/
-  DATA ISMTICI/0/
-
-  IWQTICI = IWQTICI
-  IWQTAGR = IWQTAGR
-  IWQTSTL = IWQTSTL
-  IWQTSUN = IWQTSUN
-  IWQTBEN = IWQTBEN
-  IWQTPSL = IWQTPSL
-  IWQTNPL = IWQTNPL
-  ISMTICI = ISMTICI
   
   if( process_id == master_id )then
     open(2,FILE = OUTDIR//'WQ3D.OUT',STATUS = 'UNKNOWN')
@@ -2967,7 +2951,7 @@ MODULE WATERQUALITY
   real PPCDO, TMP22, WQA22, WQA22C, WQA22D, WQA22G, WQCDDOC
   real WQCDREA, WQCDSUM, ALGCOUNT
   real WQKESS, EXPA0, EXPA1, WQISM                         ! VARIABLES FOR LIGHT EXTINCTION
-  real PSMLMULTIPLIER
+  real PSMLMULTIPLIER, HVM
   
   real(RKD) :: TVAL1
   real(RKD), STATIC :: AVGNEXT, AVGLAST
@@ -3128,7 +3112,7 @@ MODULE WATERQUALITY
   !$OMP             PRIVATE(PPCDO, TMP22, WQA22, WQA22C, WQA22D, WQA22G, WQCDDOC)                 &
   !$OMP             PRIVATE(WQCDREA, WQCDSUM)                                                     &
   !$OMP             PRIVATE(WQKESS, EXPA0, EXPA1, WQISM)                                          &
-  !$OMP             PRIVATE(WQSROPT)
+  !$OMP             PRIVATE(WQSROPT, HVM)
   do ND = 1,NDM
     LF = (ND - 1)*LDMWET + 1  
     LL = min(LF+LDMWET-1,LAWET)
@@ -3164,9 +3148,16 @@ MODULE WATERQUALITY
     ! *** Set the cyanobacteria temporally/spatially varying settling rates
     do NAL = 1,NALGAE
       if( ALGAES(NAL).ISVARSETTLE > 0 )then
+        HVM = MAX(ALGAES(NAL).HVM, HDRY)
         do LP = LF,LL  
           L = LWET(LP)
-          if( HP(L) > ALGAES(NAL).HVM ) call ALGAE_SETTLING(NAL, L)
+          if( HP(L) > HVM ) then
+            call ALGAE_SETTLING(NAL, L)
+          else
+            do K = KSZ(L), KC
+              ALGAES(NAL).SETTLING(L,K) = ALGAES(NAL).WQWS(IWQZMAP(L,K))    ! *** Constant settling velocities at shallow cells (m/s)
+            enddo
+          endif
         enddo
       endif
     enddo   
@@ -3366,9 +3357,6 @@ MODULE WATERQUALITY
               if( ALGAES(NAL).ISMOBILE )then
                 ! *** Phytoplankton
                 WQIS(L,NAL) = max( WQAVGIO*EXP(-WQKESS*ALGAES(NAL).WQDOP(IZ)), WQISMIN )  
-                
-                ! *** HARDWIRE TO SET OPTIMAL GROWTH TO A FIXED VALUE USED BY CHAPRA (Algal Growth Example (Chapra 33.2 with Fixed IS250).
-                !WQIS(L,NAL) = 250./WQFD         ! *** Is
               endif
             enddo
           endif
@@ -3457,10 +3445,10 @@ MODULE WATERQUALITY
             ! *** Crowding limitation factor based on WQKBP optimal plant density
             XMRM = WQV(L,K,19+NAL)*HPK(L,K)          ! *** Convert WQV (gC/M3) to a density: XMRM (gC/M2)  
             WQLDF = ALGAES(NAL).WQKBP(IZ) / (ALGAES(NAL).WQKBP(IZ) + XMRM)
-              
+            
             ! ***                 Max growth rate       Nutr/Vel    Light     Temperature       Crowding
             WQPA(L,NAL) = ALGAES(NAL).WQPMA(IMWQZT(L))*WQF1N(NAL)*WQF2I(NAL)*WQTDG(IWQT(L),NAL)*WQLDF   ! *** Macroalgae growth rate
-              
+            
             WQBM(L,NAL) = ALGAES(NAL).WQBMRA(IMWQZT(L)) * WQTDR(IWQT(L),NAL)                            ! *** Temperature Adjusted macroalgae metabolism rate
             WQPR(L,NAL) = ALGAES(NAL).WQPRRA(IMWQZT(L)) * WQTDR(IWQT(L),NAL)                            ! *** Temperature Adjusted macroalgae predation rate 
             
@@ -3763,8 +3751,8 @@ MODULE WATERQUALITY
           ! *** Phytoplankton
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)
-            ! ***   GROWTH        BASAL_METAB   PREDATION     SETTLING           TIME STEP  
-            WQAC = (WQPA(L,NAL) - WQBM(L,NAL) - WQPR(L,NAL) - WQBSETL(L,2,NAL) )*DTWQO2           ! *** Production per unit time multiplied by half time step
+            ! ***   GROWTH        BASAL_METAB   PREDATION     SETTLING            RISING         TIME STEP  
+            WQAC = (WQPA(L,NAL) - WQBM(L,NAL) - WQPR(L,NAL) - WQBSETL(L,2,NAL) + WQBSETL(L,3,NAL) )*DTWQO2           ! *** Production per unit time multiplied by half time step
             WQKK(L) = 1.0 / (1.0 - WQAC) 
       
             ! ***   PT_SRC_LOADS        VOLUME  
@@ -3781,25 +3769,25 @@ MODULE WATERQUALITY
           endif
           
           ! *** Vertical fluxes from various sources
-          if( K /= KC )then
-            do LP = 1,LLWET(K,ND)
-              L = LKWET(LP,K,ND)  
-              WQRR(L) = WQRR(L) + DTWQO2*WQBSETL(L,1,NAL)*WQO(L,K+1,19+NAL)    ! *** Vertical migration into the current layer from layer above
-            enddo
-          else  ! K == KC
+          if( K == KC )then
             do LP = 1,LLWET(K,ND)
               L = LKWET(LP,K,ND)  
               ! ***    ATM DRY DEP           ATM WET DEP         VOLUME  
               WQRC = (WQWDSL(L,KC,19+NAL) + WQATML(L,KC,19+NAL))*VOLWQ(L)      ! *** Atmospheric loading mass per time / cell volume
               WQRR(L) = WQRR(L) + DTWQ*WQRC                                    ! *** Biomass conc. + Dt*loading rate per unit volume
+              WQRR(L) = WQRR(L) - DTWQ*WQBSETL(L,4,NAL)*WQVO(L,K-1,19+NAL)     ! *** Vertical migration into the current layer from layer below
             enddo
-          endif 
-          do LP = 1,LLWET(K,ND)
-            L = LKWET(LP,K,ND)  
-            WQRR(L) = WQRR(L) - DTWQ*( WQBSETL(L,4,NAL)*WQVO(L,K-1,19+NAL)   & ! *** Vertical migration into the current layer from layer below
-                                     - WQBSETL(L,3,NAL)*WQVO(L,K,19+NAL) )
-            
-          enddo
+          else
+            do LP = 1,LLWET(K,ND)
+              L = LKWET(LP,K,ND)
+              ! *** Vertical migration into the current layer from layers above and below 
+              if( K == KSZ(L) )then
+                  WQRR(L) = WQRR(L) + DTWQ*WQBSETL(L,1,NAL)*WQVO(L,K+1,19+NAL)
+              else
+                  WQRR(L) = WQRR(L) + DTWQ*(WQBSETL(L,1,NAL)*WQVO(L,K+1,19+NAL) - WQBSETL(L,4,NAL)*WQVO(L,K-1,19+NAL))
+              endif
+            enddo
+          endif
 
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
@@ -4374,12 +4362,12 @@ MODULE WATERQUALITY
           do NAL = 1,NALGAE
             if( ALGAES(NAL).ISMOBILE  )then
               ! *** Phytoplankton
-              WQA14A(NAL) = ALGAES(NAL).WQFNIB*WQBM(L,NAL) + ALGAES(NAL).WQFNIP*WQPR(L,NAL) - WQPN(L,1)*WQPA(L,NAL)  
+              WQA14A(NAL) = ALGAES(NAL).WQFNIB*WQBM(L,NAL) + ALGAES(NAL).WQFNIP*WQPR(L,NAL) - WQPN(L,NAL)*WQPA(L,NAL)  
               WQA14 = WQA14 + WQA14A(NAL)*ALGAES(NAL).WQANCA*WQO(L,K,19+NAL)
             endif
             if( .not. ALGAES(NAL).ISMOBILE .and. (K >= LAYERBOT(NAL,L) .and. K <= LAYERTOP(NAL,L)) )then
               ! *** Macrophytes and periphyton
-              WQA14A(NAL) = ALGAES(NAL).WQFNIB*WQBM(L,NAL) + ALGAES(NAL).WQFNIP*WQPR(L,NAL) - WQPN(L,1)*WQPA(L,NAL)  
+              WQA14A(NAL) = ALGAES(NAL).WQFNIB*WQBM(L,NAL) + ALGAES(NAL).WQFNIP*WQPR(L,NAL) - WQPN(L,NAL)*WQPA(L,NAL)  
               WQA14 = WQA14 + WQA14A(NAL)*ALGAES(NAL).WQANCA*WQO(L,K,19+NAL)
             endif
           enddo
@@ -4456,16 +4444,17 @@ MODULE WATERQUALITY
           ! *** Algal metabolism and predation source
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)
+            ! ***      Dissolution       Settling (temporary use RPOM settling velocity)
+            WQM16 = -(WQKSUA(IWQT(L)) + WQRPSET(L,1)) * DTWQO2 
+            WQKK(L) = 1.0 / (1.0 - WQM16)
             
+            ! *** Diatom predation and metabolism source of Silica
             WQA16D = 0.0
-            WQM16 = 0.0
             do NAL = 1,NALGAE
               if( ALGAES(NAL).ISILICA > 0 )then
                 WQA16D = WQA16D + (ALGAES(NAL).WQFSPD*WQBM(L,NAL) + ALGAES(NAL).WQFSPP*WQPR(L,NAL)) * ALGAES(NAL).WQASC * WQO(L,K,19+NAL)
-                WQM16 =  WQM16  - (WQKSUA(IWQT(L)) + WQBSETL(L,2,NAL) + WQBSETL(L,3,NAL)) * DTWQO2  
               endif
             enddo
-            WQKK(L) = 1.0 / (1.0 - WQM16)
                         
             ! ***    PT_SRC_LOADS      VOLUME  
             WQR16 = WQWPSL(L,K,ISUU) * VOLWQ(L) * PSMLMULTIPLIER
@@ -4479,17 +4468,13 @@ MODULE WATERQUALITY
               WQRR(L) = WQRR(L) + DTWQ*SSUZ(L,K)
             enddo
           endif
-          
+     
           ! *** Vertical fluxes from various sources
           if( K /= KC )then  
-            do NAL = 1,NALGAE
-              if( ALGAES(NAL).ISILICA > 0 )then
-                do LP = 1,LLWET(K,ND)
-                  L = LKWET(LP,K,ND)  
-                  WQRR(L) = WQRR(L) + DTWQO2*WQBSETL(L,1,NAL)*WQO(L,K+1,ISUU)    ! *** Vertical migration into the current layer from layer above
-                enddo
-              endif
-            enddo  
+            do LP = 1,LLWET(K,ND)
+              L = LKWET(LP,K,ND)  
+              WQRR(L) = WQRR(L) + DTWQO2*WQRPSET(L,2)*WQO(L,K+1,ISUU)    ! *** Vertical migration into the current layer from layer above
+            enddo
           else
             do LP = 1,LLWET(K,ND)
               L = LKWET(LP,K,ND)  
@@ -4999,15 +4984,17 @@ MODULE WATERQUALITY
         do LP = LF,LL
           L = LWET(LP)
           IMWQZ = IWQZMAP(L,KSZ(L))  
-          WQDFLP(L) = SCB(L)*(WQDFLP(L) + WQWSS(IMWQZ)*( WQV(L,KSZ(L),IP4D) - WQPO4D(L,1)) )       ! *** Add PO4 flux to LOP flux
-          if( IWQSI == 1 ) WQDFSI(L) = (WQDFSI(L) + WQWSS(IMWQZ)*(WQV(L,KSZ(L),ISAA) - WQSAD(L,1)))  
+          !                                                     PO4t               PO4D
+          WQDFLP(L) = SCB(L)*(WQDFLP(L) + WQWSS(IMWQZ)*( WQV(L,KSZ(L),IP4D) - WQPO4D(L,KSZ(L))) )           ! *** Add PO4 flux to LOP flux
+          if( IWQSI == 1 ) WQDFSI(L) = (WQDFSI(L) + WQWSS(IMWQZ)*(WQV(L,KSZ(L),ISAA) - WQSAD(L,KSZ(L))))  
         enddo  
       elseif( IWQSRP == 2 .and. ISTRAN(6) > 0 )then  
         ! *** Sorbed to cohesive class 1
         do LP = LF,LL
           L = LWET(LP)
-          WQDFLP(L) = SCB(L)*(WQDFLP(L) + WSEDO(NS)*( WQV(L,KSZ(L),IP4D) - WQPO4D(L,1)) )          ! *** Add PO4 flux to LOP flux
-          if( IWQSI == 1 ) WQDFSI(L) = (WQDFSI(L) + WSEDO(NS)*(WQV(L,KSZ(L),ISAA) - WQSAD(L,1)))  
+          !                                                     PO4t               PO4D
+          WQDFLP(L) = SCB(L)*(WQDFLP(L) + WSEDO(NS)*( WQV(L,KSZ(L),IP4D) - WQPO4D(L,KSZ(L))) )          ! *** Add PO4 flux to LOP flux
+          if( IWQSI == 1 ) WQDFSI(L) = (WQDFSI(L) + WSEDO(NS)*(WQV(L,KSZ(L),ISAA) - WQSAD(L,KSZ(L))))  
         enddo  
       endif  
     endif  
@@ -5143,7 +5130,7 @@ MODULE WATERQUALITY
     endif  
     close(1)  
   endif  
-
+ 
   ! ***************************************************************************
   ! INCREMENT COUNTER FOR LIMITATION AND XDOXXX DO COMPONENT ARRAYS:  
   TIMTMP = TIMESEC/TCON  

@@ -29,27 +29,36 @@
     end type
     
     type CycloneTrack
-        type(CycloneTrackPoint), allocatable, dimension(:) :: points
-        integer :: num_points = 0       !> number of points in this track
-        real(RKD) :: start_time         !> time of start simulation (days)
-        real(RKD) :: end_time           !> time of end simulation (days)
+        type(CycloneTrackPoint), allocatable, dimension(:) :: points  !< Array of cyclone track points
+        integer :: num_points = 0       !< Number of points in this track
+        real(RKD) :: start_time         !< Time of start simulation (days)
+        real(RKD) :: end_time           !< Time of end simulation (days)
     contains 
 
         procedure, pass(self) :: InterpCycloneTrack
     end type
     
-    real(RKD) :: rho_a = 1.15           ! Air density (kg/m3)
-    real(RKD) :: Pinf = 1010.           ! Ambient pressure (hPa)
-    real(RKD) :: thetaMax = 65          ! between (45 - 135 deg.)
-    real(RKD) :: TC_KM = 0.7            ! Boundary layer effect
-    real(RKD) :: TC_KF = 0.5            ! Forward moving effect
-    real(RKD) :: TC_CSWP = 0.88         ! Conversion factor from 1-min. to 10-min sustained wind speed
-    real(RKD) :: N_RAMP = 9.0           ! Ramp up factor
+    real(RKD) :: rho_a = 1.15           !< Air density (kg/m3)
+    real(RKD) :: Pinf = 1010.           !< Ambient pressure (hPa)
+    real(RKD) :: thetaMax = 65          !< Maximum inflow angle (degrees, between 45-135)
+    real(RKD) :: TC_KM = 0.7            !< Boundary layer effect coefficient
+    real(RKD) :: TC_KF = 0.5            !< Forward moving effect coefficient
+    real(RKD) :: TC_CSWP = 0.88         !< Conversion factor from 1-min to 10-min sustained wind speed
+    !real(RKD) :: N_RAMP = 9.0           !< Ramp up factor for wind field blending
     
-    real(RKD) :: rad2deg, deg2rad, fcor, sgnW, Rmw, delP, Vfm, Vfa, coeffB, CONVRT2
-    type(CycloneTrack), allocatable, dimension(:), target :: cyclone_tracks
-    integer :: num_cyclone_tracks = 0   !> number of cyclone tracks
-    integer :: ICYCLONE = 0             !> 0 = no, 1 = McConochie (2004), 2 = Willoughby (2006)
+    real(RKD) :: rad2deg                !< Radians to degrees conversion factor
+    real(RKD) :: deg2rad                !< Degrees to radians conversion factor
+    real(RKD) :: fcor                   !< Coriolis parameter (1/s)
+    real(RKD) :: sgnW                   !< Sign of latitude for hemisphere
+    real(RKD) :: Rmw                    !< Radius of maximum winds (km)
+    real(RKD) :: delP                   !< Central pressure deficit (hPa)
+    real(RKD) :: Vfm                    !< Forward speed magnitude (m/s)
+    real(RKD) :: Vfa                    !< Forward speed direction (radians)
+    real(RKD) :: coeffB                 !< Holland B parameter (shape parameter)
+    real(RKD) :: CONVRT2                !< Wind speed conversion factor to 2m height
+    type(CycloneTrack), allocatable, dimension(:), target :: cyclone_tracks  !< Array of cyclone tracks
+    integer :: num_cyclone_tracks = 0   !< Number of cyclone tracks
+    integer :: ICYCLONE = 0             !< Cyclone model: 0=none, 1=Holland, 2=Hubbert, 3=McConochie, 4=Willoughby
 
     contains
 
@@ -129,14 +138,15 @@
     end subroutine
     
     integer function InterpCycloneTrack(self, time, point)
-    
+
         implicit none
-        
-        class(CycloneTrack), intent(in) :: self
-        real(kind = RKD), intent(in) :: time
-        type(CycloneTrackPoint), intent(inout) :: point
-        real(RKD) :: deltaT, factor
-        integer :: i
+
+        class(CycloneTrack), intent(in) :: self      !< Cyclone track object
+        real(kind = RKD), intent(in) :: time         !< Current simulation time (days)
+        type(CycloneTrackPoint), intent(inout) :: point  !< Output interpolated point
+        real(RKD) :: deltaT                          !< Time interval between points
+        real(RKD) :: factor                          !< Interpolation factor (0-1)
+        integer :: i                                 !< Loop index
 
         do i = 1, self.num_points - 1
             if( (time >= self.points(i).Time) .and. &
@@ -166,10 +176,11 @@
     end function InterpCycloneTrack
     
     subroutine CycloneFields(time)
-        real(kind = RKD), intent(in) :: time
-        type(CycloneTrackPoint) :: pt
-        integer :: ret, i
-        real(kind = RKD) :: omega
+        real(kind = RKD), intent(in) :: time  !< Current simulation time (days)
+        type(CycloneTrackPoint) :: pt         !< Interpolated cyclone point
+        integer :: ret                        !< Interpolation return code
+        integer :: i                          !< Loop index
+        real(kind = RKD) :: omega             !< Earth rotation rate (rad/s)
         
         if(ICYCLONE==0) return
         
@@ -244,15 +255,16 @@
     end subroutine 
     
     subroutine CyclonePointHolland1980(pt, x, y, r, Pa, Wx, Wy)
-    
+
         implicit none
 
-        class(CycloneTrackPoint), intent(inout) :: pt
-        !integer, intent(in)  :: L
-        real(RKD), intent(in)  :: x, y
-        real(RKD), intent(out)  :: r, Pa, WX, WY
-        real(RKD) :: dx, dy, rf, Vc2, Vg, V10
-        real(RKD) :: phi, theta, gamma, delta
+        class(CycloneTrackPoint), intent(inout) :: pt  !< Cyclone track point
+        real(RKD), intent(in)  :: x, y          !< Grid point coordinates (m)
+        real(RKD), intent(out) :: r             !< Distance from cyclone center (km)
+        real(RKD), intent(out) :: Pa            !< Atmospheric pressure (hPa)
+        real(RKD), intent(out) :: WX, WY        !< Wind velocity components (m/s)
+        real(RKD) :: dx, dy, rf, Vc2, Vg, V10  !< Intermediate calc variables
+        real(RKD) :: phi, theta, gamma, delta   !< Angular and scaling parameters
 
         dx = x - pt.Xc
         dy = y - pt.Yc
@@ -581,17 +593,34 @@
 
     subroutine assimilate_cyclone(L, r, Rmw, Pa, Wx, Wy)
         implicit none
-        integer :: L
-        real(RKD), intent(in) :: r, Rmw, Pa, Wx, Wy
-        real(RKD) :: factor = 0.
+        integer :: L                            !< Cell index
+        real(RKD), intent(in) :: r              !< Distance from cyclone center (km)
+        real(RKD), intent(in) :: Rmw            !< Radius of maximum winds (km)
+        real(RKD), intent(in) :: Pa             !< Atmospheric pressure (hPa)
+        real(RKD), intent(in) :: Wx, Wy         !< Wind velocity components (m/s)
+        real(RKD) :: factor = 0.                !< Blending factor for wind field
+        real(RKD) :: Rin, Rout
+                
+        ! *** Calculate the blending (ramo up) factor using a linear ramp function (Shao et al., 2018)
+        ! *** The purpose of the ramp function is to avoid abrupt discontinuities
+        ! *** at the boundary where the two different wind fields (cyclone and synoptic) merge.
+               
+        Rin = 2.*Rmw    !< Inner radius
+        Rout = 7.*Rmw   !< Outer radius
+        if( r <= Rin )then
+          factor = 1.
+        elseif( r > Rin .AND. r < Rout)then
+          factor = 0.2*(7.*Rmw - r)/Rmw
+        else
+          factor = 0.  
+        endif
+
+        WNDVELE(L) = (1. - factor) * WNDVELE(L) + factor * WX
+        WNDVELN(L) = (1. - factor) * WNDVELN(L) + factor * WY
         
-        if(N_RAMP > 0.) factor = r/(N_RAMP*rmw)
-        factor = factor ** 4
-        !if (r <= Rmw) factor = 0.
-        WNDVELE(L) = factor * WNDVELE(L) + (1. - factor) * WX
-        WNDVELN(L) = factor * WNDVELN(L) + (1. - factor) * WY
-        PATMT(L) = factor * PATMT(L) + (1. - factor) * Pa
-        ATMP(L) = PATMT(L)*0.0101974*G 
+        PATMT(L)   = Pa  !< Pa is already calculated with including ambient pressure by the cyclone model
+        ATMP(L)    = PATMT(L)*0.0101974*G 
+        
     end subroutine    
 
     real(RKD) function WeightingFunc(xi)
@@ -608,10 +637,12 @@
     
     real(RKD) function SolveNewtonRaphson(rhs)
         implicit none
-        real(RKD), intent(in) :: rhs
-        real(RKD) :: x0 = 0.5, eps = 10e-4
-        real(RKD) :: fx, df, dx, x
-        integer :: i = 0, itmax = 100
+        real(RKD), intent(in) :: rhs            !< Right-hand side of equation to solve
+        real(RKD) :: x0 = 0.5                   !< Initial guess
+        real(RKD) :: eps = 10e-4                !< Convergence tolerance
+        real(RKD) :: fx, df, dx, x              !< Function value, derivative, increment, solution
+        integer :: i = 0                        !< Iteration counter
+        integer :: itmax = 100                  !< Maximum iterations
         
         x = x0
         do i = 1, itmax

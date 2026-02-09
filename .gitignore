@@ -8,7 +8,14 @@
 *.user
 *.obj
 *.o
-*.vfproj.*
+EFDCPlus_MPI_10.3.vfproj.*
+EFDCPlus_MPI_11.1.vfproj.*
+EFDCPlus_MPI_11.3.vfproj.*
+EFDCPlus_MPI_11.4.vfproj.*
+EFDCPlus_MPI_11.4.vfproj.*
+EFDCPlus_MPI_11.6.vfproj.*
+EFDCPlus_MPI_12.0.vfproj.*
+EFDCPlus_MPI_12.1.vfproj.*
 
 # testing & debug
 \EFDC_Test_Harness\SimpleTestHarness\SimpleTestHarness
@@ -19,7 +26,6 @@ bin
 DebugSP
 ReleaseSP
 ReleaseDP
-build
 MPI_SP_64
 64DP_D_MPI
 64SP_D_MPI
@@ -34,6 +40,7 @@ MPI_SP_64
 # executables & archives
 *.x
 *.exe
+!redist/*.exe
 *.rar
 
 # misc
@@ -56,5 +63,10 @@ EFDC/Intel® VTune™ Profiler Results
 GPUCache
 *.yaml
 NetCDFLib/x86
+bin-dev
+bin-edg
 
-build/
+
+# CMake
+build/*
+!CMakeLists.txt

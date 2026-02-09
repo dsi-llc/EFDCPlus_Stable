@@ -360,7 +360,7 @@ Module Variables_WQ
   real :: WQKHDNN     !< Half-sat. constant for denitrification (gN/m^3)
   real :: WQAONT      !< Stoichiometric algae oxygen = to-nitrate ratio (gO2/gN)
   real :: WQFD        !< Solar radiation fraction daylength
-  real :: WQISMIN     !< Minimum optimum solar radiation (Langley/day)
+  real :: WQISMIN     !< Minimum optimum solar radiation (Langleys/day)
   real :: WQI0OPT     !< Optimal solar radiation
   real :: SOLSRDT     !< Daily average solar radiation interpolation for water quality
   real :: SOLFRDT     

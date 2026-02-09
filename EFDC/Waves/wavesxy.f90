@@ -59,7 +59,7 @@ SUBROUTINE WAVESXY
 
  
   integer :: NW,L,K,IOS,NWV,IWV,JWV,LS,LW,LSW,LE
-  integer :: LN,LNW,LSE,ND,LF,LL
+  integer :: LN,LNW,LSE,ND,LF,LL,KC0
   
   ! ***  INPUT WAVE INFORMATION                                                                                            
   if( JSWAVE == 0 )then
@@ -98,24 +98,52 @@ SUBROUTINE WAVESXY
     enddo
     ! ***  INITIALIZE VERTICAL DISTRIBUTION OF WAVE DISSIPATION AS SOURCE                                                    
     ! ***  TO VERTICAL TKE CLOSURE                                                                                           
-    if( KC == 2 )then
-      WVDTKEM(1) = WVDISV
-      WVDTKEP(1) = WVDISV
-    endif
-    if( KC == 3 )then
-      WVDTKEM(1) = WVDISV
-      WVDTKEP(1) = 0.5*WVDISV
-      WVDTKEM(2) = 0.5*WVDISV
-      WVDTKEP(2) = WVDISV
-    endif
-    if( KC >= 4 )then
-      WVDTKEM(1) = WVDISV
-      WVDTKEP(1) = 0.5*WVDISV
-      WVDTKEM(KS) = 0.5*WVDISV
-      WVDTKEP(KS) = WVDISV
-      do K = 2,KS-1
-        WVDTKEM(K) = 0.5*WVDISV  ! *** BOTTOM
-        WVDTKEP(K) = 0.5*WVDISV  ! *** TOP
+    if( IGRIDV == 0 )then
+      do L = 2,LA
+        if( KC == 2 )then
+          WVDTKEM(L,1) = WVDISV
+          WVDTKEP(L,1) = WVDISV
+        endif
+        if( KC == 3 )then
+          WVDTKEM(L,1) = WVDISV
+          WVDTKEP(L,1) = 0.5*WVDISV
+          WVDTKEM(L,2) = 0.5*WVDISV
+          WVDTKEP(L,2) = WVDISV
+        endif
+        if( KC >= 4 )then
+          WVDTKEM(L,1) = WVDISV
+          WVDTKEP(L,1) = 0.5*WVDISV
+          WVDTKEM(L,KS) = 0.5*WVDISV
+          WVDTKEP(L,KS) = WVDISV
+          do K = 2,KS-1
+            WVDTKEM(L,K) = 0.5*WVDISV
+            WVDTKEP(L,K) = 0.5*WVDISV
+          enddo
+        endif
+      enddo
+    else
+      do L = 2,LA
+        KC0 = KC - KSZ(L) + 1
+        if( KC0 == 2 )then
+          WVDTKEM(L,KSZ(L)) = WVDISV
+          WVDTKEP(L,KSZ(L)) = WVDISV
+        endif
+        if( KC0 == 3 )then
+          WVDTKEM(L,KSZ(L)) = WVDISV
+          WVDTKEP(L,KSZ(L)) = 0.5*WVDISV
+          WVDTKEM(L,KS) = 0.5*WVDISV
+          WVDTKEP(L,KS) = WVDISV
+        endif
+        if( KC0 >= 4 )then
+          WVDTKEM(L,KSZ(L)) = WVDISV
+          WVDTKEP(L,KSZ(L)) = 0.5*WVDISV
+          WVDTKEM(L,KS) = 0.5*WVDISV
+          WVDTKEP(L,KS) = WVDISV
+          do K = KSZ(L)+1,KS-1
+            WVDTKEM(L,K) = 0.5*WVDISV
+            WVDTKEP(L,K) = 0.5*WVDISV
+          enddo
+        endif
       enddo
     endif
     

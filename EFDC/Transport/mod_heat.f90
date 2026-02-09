@@ -38,7 +38,6 @@ real, save, PRIVATE :: BCONV               = 1.520411    ! *** W2 equilibrium te
 
 real, save, PRIVATE :: LHF     = 333507.0                ! *** LATENT HEAT OF FUSION FOR ICE (J/KG)
 real, save, PRIVATE :: CP      = 4179.0                  ! *** SPECIFIC HEAT (J/KG/degC)    (Previously EFDC used 4179.0)   4184
-real, save, PRIVATE :: CP_A    = 1005.0                  ! *** SPECIFIC HEAT (J/KG/degC)    (Previously EFDC used 4179.0)   4184
 
 real, save, PRIVATE :: REFICE                            ! ***
 real, save, PRIVATE :: RHOWCP                            ! *** 1393725753 (W s)/(m^3 degC)
@@ -126,14 +125,13 @@ SUBROUTINE CALHEAT
   real       :: T1, T2, SVPW1, DTHEQT, WCKESS, TFLUX, BOT, FRACLAYER
   real       :: TFAST, TFAST1, TSLOW, TSLOW1, RSN, C1, C2, UBED, VBED
   real       :: USPD, TMPKC, SRO, SRON
-  real       :: THICK, TMIN
+  real       :: THICK, TMIN, FLUXQB
   real       :: ET, CSHE, TEMP, RICETHKL0, ET0, CSHE0, WSHLTR0, PSHADE0
   real       :: HBLW, HBCD, HBCV, HBEV, HBNT, HBLWW
   real,save  :: TIMEDRY
 
   real,save,allocatable,dimension(:) :: TBEDTHK                ! *** Thermal Thickness of the bed (m)
   real,save,allocatable,dimension(:) :: FLUXTB                 ! *** Accumulator for conductive and convective heat exchange with the bed  (C*m)
-  real,save,allocatable,dimension(:) :: FLUXQB                 ! *** Accumulator for conductive and convective heat exchange with the bed  (C*m)
   real,save,allocatable,dimension(:) :: RADBOTT                ! *** Accumulator for solar radiation at the bed surface                    (W/m2)
   real,save,allocatable,dimension(:) :: PSHADE_OLD
   real,save,allocatable,dimension(:) :: WSHLTR_OLD
@@ -152,7 +150,6 @@ SUBROUTINE CALHEAT
   if( .not. allocated(TBEDTHK) )then
     call AllocateDSI(TBEDTHK,    LCM, 0.0)
     call AllocateDSI(FLUXTB,     LCM, 0.0)
-    call AllocateDSI(FLUXQB,     LCM, 0.0)
     call AllocateDSI(RADBOTT,    LCM, 0.0)
 
     call AllocateDSI(PSHADE_OLD, NDM, 0.0)
@@ -433,15 +430,7 @@ SUBROUTINE CALHEAT
 
   enddo   ! *** END OF DOMAIN
   !$OMP END PARALLEL DO
-  if( ISTOPT(2) == 0 .and. IASWRAD == 0 )then
-    ! *** Computing the light extinction for Chapra test-case - DKT
-    do K = 1,KC
-      do L = 2,LA
-        WCKESS = GET_EXT_COEFF(L,K)
-      enddo
-    enddo
-    return      ! *** No atmoshperic Linkage and no solar radiation computation
-  endif
+  
   ! *************************************************************************************************************
   ! *************************************************************************************************************
   !$OMP PARALLEL DEFAULT(SHARED)
@@ -449,18 +438,52 @@ SUBROUTINE CALHEAT
   ! *** Computation of Solar Radiation
   if( IASWRAD == 0 )then                         ! *** Ignore solar radiation
   
-    !$OMP DO PRIVATE(ND,K,LP,L,C1,RSN)
-    do ND = 1,NDM
-      do K = 1,KC
-        do LP = 1,LLWET(K,ND)
-          L = LKWET(LP,K,ND)
-          RADBOT(L,K) = 0.
-          RADTOP(L,K) = 0.
-          RADNET(L,K) = 0.
+    if( ISTOPT(2) == 0 .and. ISTRAN(8) > 0 )then
+      ! *** Computing the light extinction for Chapra test cases
+      !$OMP DO PRIVATE(ND,K,LP,L,C1,RSN)
+      do ND = 1,NDM
+        do K = KC,1,-1
+          do LP = 1,LLWET(K,ND)
+            L = LKWET(LP,K,ND)
+            
+            ! *** Update Chl-a regardless of LDAYLIGHT
+            WQCHL(L,K) = 0.0
+            do NAL = 1,NALGAE
+              WQCHL(L,K) = WQCHL(L,K) + WQV(L,K,NAL+19)*ALGMOBILE(NAL)
+            enddo
+            WCKESS = GET_EXT_COEFF(L,K)
+              
+            ! *** Computing fraction of light at bottom of the current layer for Visser, 1997 test-cases
+            BOT=MAX(-WCKESS*HPK(L,K),-40.0)
+            FRACLAYER=EXP(BOT)
+            RADBOT(L,K) = RADTOP(L,K)*FRACLAYER
+            
+            ! *** Compute Net Energy (W/M2)
+            RADNET(L,K) = RADTOP(L,K) - RADBOT(L,K)
+            
+            ! *** Update layer variables
+            RADTOP(L,K-1) = RADBOT(L,K)
+          enddo
         enddo
       enddo
-    enddo
-    !$OMP END DO
+      !$OMP END DO
+    
+    else
+      ! ***  
+      !$OMP DO PRIVATE(ND,K,LP,L,C1,RSN)
+      do ND = 1,NDM
+        do K = 1,KC
+          do LP = 1,LLWET(K,ND)
+            L = LKWET(LP,K,ND)
+            RADBOT(L,K) = 0.
+            RADTOP(L,K) = 0.
+            RADNET(L,K) = 0.
+          enddo
+        enddo
+      enddo
+      !$OMP END DO
+      
+    endif
     
   elseif( IASWRAD == 1 )then                     ! *** Absorb 100% solar radiation in top layer
   
@@ -520,7 +543,7 @@ SUBROUTINE CALHEAT
               C1 = DELT*DZIC(L,K)*RHOWCPI
               RSN = RADTOP(L,KC)*( FSWRATF*EXP(TFAST*HP(L))  + (1.-FSWRATF)*EXP(TSLOW*HP(L))      &
                                  - FSWRATF*EXP(TFAST1*HP(L)) - (1.-FSWRATF)*EXP(TSLOW1*HP(L)) )
-                                 
+
               RADNET(L,K) = RSN*C1                                                                ! *** m*degC
               RADTOP(L,K) = RADBOT(L,K+1)                                                         ! *** W/m2
               RADBOT(L,K) = RADTOP(L,K) - RSN                                                     ! *** W/m2
@@ -550,8 +573,12 @@ SUBROUTINE CALHEAT
           ! *** FRACTION OF LIGHT AT THE BOTTOM OF THE CURRENT LAYER
           BOT = max(-WCKESS*HPK(L,K),-40.0)
           FRACLAYER = EXP(BOT)
-          FRACLAYER = max(FRACLAYER, FSOLRADMIN)
-            
+          if( FSOLRADMIN > 0.0 )then
+            BOT = 1.0 - FRACLAYER
+            BOT = max(BOT, FSOLRADMIN)
+            FRACLAYER = 1.0 - BOT
+          endif
+          
           RADBOT(L,K) = RADTOP(L,K)*FRACLAYER
 
           ! *** Compute Net Energy (W/M2)
@@ -883,7 +910,7 @@ SUBROUTINE CALHEAT
   if( NASER > 0 .and. ISTOPT(2) /= 0 )then
 
     ! *** Update bottom water column layer temperatures
-    if( (HTBED1 + HTBED2) > 0. )then
+    if( (HTBED1 + HTBED2) > 0.0 )then
       !$OMP DO PRIVATE(ND,LF,LL,LP,L,UBED,VBED,USPD,TFLUX,THICK,TEMP)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
@@ -898,11 +925,7 @@ SUBROUTINE CALHEAT
           !        (nodim) (m/s)   (m/s)      (C)       (C)    (s)
           TFLUX = ( HTBED1*USPD + HTBED2 )*( TEMB(L) - TEMP )*DELT   ! *** C*m
                     
-          ! *** Calculate longwave heat emission from the bed
-          ! *** 4.43E-14 = 1/rhob * 1/cpb * 5.67e-8, where rhob = 1600 kg/m3 and cpb = 800 J/kg/C
-          FLUXQB(L) = 4.43E-14*((TEMB(L) + 273.)**4 - (TEMP + 273.)**4)*DELT
-
-          ! *** Accumulate bottom heat FLUXTB and FLUXQB (to avoid truncation error, apply minimum FLUXTB)
+          ! *** Accumulate bottom heat FLUXTB (to avoid truncation error, apply minimum FLUXTB)
           FLUXTB(L) = FLUXTB(L) + TFLUX
           THICK = HPK(L,KSZ(L))
 
@@ -922,7 +945,7 @@ SUBROUTINE CALHEAT
 
     ! *** Update bed temperatures, if needed
     if( TEMBO > 0.0 )then
-      !$OMP DO PRIVATE(ND,LF,LL,LP,L,THICK)
+      !$OMP DO PRIVATE(ND,LF,LL,LP,L,FLUXQB,TEMP,THICK)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
         LL = min(LF+LDMWET-1,LAWET)
@@ -939,11 +962,19 @@ SUBROUTINE CALHEAT
         do LP = LF,LL
           L = LWET(LP)
 
-          THICK = HPK(L,KSZ(L))
+          ! *** Calculate longwave heat emission from the bed
+          if( HP(L) < 0.5 .or. (HP(L) < 3.0 .and. RADKE(L,KSZ(L)) < 1.0) )then
+            if( .not. ICECELL(L) )then
+              ! *** 4.43E-14 = 1/rhob * 1/cpb * 5.67e-8, where rhob = 1600 kg/m3 and cpb = 800 J/kg/C
+              TEMP = max(TEM(L,KSZ(L)), 0.1 )
+              FLUXQB = 4.43E-14*((TEMB(L) + 273.)**4 - (TEMP + 273.)**4)*DELT
+
+              ! *** Update bed temperature
+              TEMB(L) = TEMB(L) - FLUXQB/TBEDTHK(L)
+            endif
+          endif
           
-          ! *** Update bed temperature
-          TEMB(L) = TEMB(L) - FLUXQB(L)/TBEDTHK(L)
-          FLUXQB(L) = 0.
+          THICK = HPK(L,KSZ(L))
           if( ABS(FLUXTB(L))/THICK > 0.001 )then
             ! ***       C         (     C*m        )     C*m          1/m
             TEMB(L) = TEMB(L) + ( RHOWCPI*RADBOTT(L) - FLUXTB(L) )/TBEDTHK(L)        ! *** Update bed temperature
@@ -963,7 +994,7 @@ SUBROUTINE CALHEAT
       do L = 2,LA
         if( HP(L) < HDRY )then
           TEMB(L) = TEMB(L) - 0.5*HTBED2*( TEMB(L) - TATMT(L))*DELT/TBEDTHK(L)  &
-                   - 4.43E-14*((TEMB(L) + 273.)**4 - (TATMT(L) + 273.)**4)*DELT
+                   - 4.43E-14*((TEMB(L) + 273.)**4 - (TATMT(L) + 273.)**4)*DELT/TBEDTHK(L)
           TEMB(L) = max(MIN(TEMB(L), TATMT(1)+20.), 0.) 
         endif
       enddo

@@ -80,11 +80,11 @@ Subroutine Scan_Cell
         JF = JT
         JLAST = JT + JACROSS - 1
         if( JLAST > JC ) JLAST = JC
-        WRITE (777,8) JF,JLAST
+        WRITE (mpi_efdc_out_unit,8) JF,JLAST
         do I = 1,IC
           read(1,6,IOSTAT = ISO) (IJCT_Read_In(I,J),J = JF,JLAST)
           if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE CELL.INP')
-          WRITE (777,66) (IJCT_Read_In(I,J),J = JF,JLAST)
+          WRITE (mpi_efdc_out_unit,66) (IJCT_Read_In(I,J),J = JF,JLAST)
         enddo
       enddo
 

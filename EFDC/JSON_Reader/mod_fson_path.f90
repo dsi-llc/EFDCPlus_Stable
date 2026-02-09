@@ -142,7 +142,7 @@ contains
                 case ("]")
                     if( .not.array )then
                         print *, "ERROR: Unexpected ], not missing preceding ["
-                        call Stopp('.')    ! exit(1)
+                        call Stopp('.', 1)    ! exit(1)
                     endif
                     array = .false.
                     child_i = parse_integer(path(child_i:i-1))                                                

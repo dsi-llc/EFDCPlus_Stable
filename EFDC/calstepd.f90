@@ -30,7 +30,7 @@
 
   implicit none
 
-  integer :: IERR, ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX
+  integer :: IERR, ND, L, K, LF, LL, LE, LN, LP, KM, LLOC, ITRNTMP, NX, NINCRMTLoc
   integer :: NMD, LMDCHHT, LMDCHUT, LMDCHVT, ITMPR, LLOCOLD,  MINTYPE
   integer,save :: NUP
   !INTEGER,save,allocatable,dimension(:) :: LDYN
@@ -128,7 +128,7 @@
     LF = 2+(ND-1)*LDM
     LL = min(LF+LDM-1,LA)
 
-    ! *** METHOD 1: COURANT–FRIEDRICHS–LEWY
+    ! *** Method 1: COURANT–FRIEDRICHS–LEWY
     do LP = 1,LAWET
       L = LWET(LP)   
       TMPVAL = 1.E-16
@@ -138,7 +138,7 @@
       if( TMPVAL > 0.  ) DTL1(L)  = 1./TMPVAL
     enddo
 
-    ! *** METHOD 2: POSITIVITY OF ADVECTED MATERIAL, DTL2
+    ! *** Method 2: Positivity of advected material, DTL2
     if( ITRNTMP >= 1 )then
       do K = 1,KC
         do LP = 1,LLWET(K,ND)
@@ -203,7 +203,7 @@
     !  endif
     !ENDDO
 
-    ! ***  METHOD 4: LIMIT RATE OF DEPTH CHANGE
+    ! ***  Method 4: Limit rate of depth change
     if( DTSSDHDT > 0. )then
       do LP = 1,LLWET(KC,ND)
         L = LKWET(LP,KC,ND)  
@@ -221,12 +221,13 @@
   enddo   ! *** END OF DOMAIN
   !$OMP END PARALLEL DO
 
-  ! *** CHOOSE THE MINIMUM OF THE THREE METHODS
+  ! *** Choose the minimum of the three methods
   MINTYPE = 0
 
   L1LOC = MINLOC(DTL1,DIM = 1)
   DTL1MN = DTL1(L1LOC)
 
+  ! *** Initialize Method 2, if advective transport is activated
   if( ITRNTMP >= 1 )then
     L2LOC = MINLOC(DTL2,DIM = 1)
     DTL2MN = DTL2(L2LOC)
@@ -246,9 +247,9 @@
     DTL4MN = DTL4(L4LOC)
   endif
 
-  ! *** FIND MINIMUM & APPLY A SAFETY FACTOR
+  ! *** Find minimum & apply a safety factor
   DTL1MN = DTL1MN*DTSSFAC
-  DTTMP  = 2.*DTMAXX               ! *** DTTMP - MINIMUM TIME STEP WITHOUT SAFETY FACTOR
+  DTTMP  = 2.*DTMAXX               ! *** DTTMP - Minimum time step without safety factor
   if( DTTMP > DTL1MN )then
     DTTMP  = DTL1MN
     DTCOMP = 1./DTSSFAC
@@ -257,7 +258,7 @@
   endif
 
   if( ITRNTMP >= 1 )then
-    DTL2MN = DTL2MN*0.5             ! *** FIXED SAFETY FACTOR FOR ADVECTION OF 0.5
+    DTL2MN = DTL2MN*0.5             ! *** Fixed safety factor for advection of 0.5
     if( DTTMP > DTL2MN )then
       DTTMP  = DTL2MN
       DTCOMP = 2.
@@ -284,13 +285,13 @@
   call MPI_barrier(DSIcomm, IERR)
   call DSI_All_Reduce(TMPVAL, LL, DTTMP, LMINSTEP, MPI_MIN, TTDS, 1, TWAIT)
 
-  call Broadcast_Scalar(DTTMP, master_id)        ! *** Forcing communication due to MPI bug (2025-05-01)
-  call Broadcast_Scalar(LMINSTEP, master_id)     ! *** Forcing communication due to MPI bug (2025-05-01)
+  call Broadcast_Scalar(DTTMP, master_id)             ! *** Timestep with safety factor
+  call Broadcast_Scalar(LMINSTEP, master_id)
 
   DSITIMING(11) = DSITIMING(11) + TTDS
 
 
-  DTCOMP = DTTMP*DTCOMP           ! *** Minimum delta T without any safety factors
+  DTCOMP = DTTMP*DTCOMP           ! *** Backout the safety factor to have the minimum delta T without any safety factors
   if( DTCOMP < DTMIN )then
     write(6,800) TIMEDAY, DTTMP, DTMIN, Map2Global(LLOC).IG, Map2Global(LLOC).JG, HP(LLOC)
     write(6,801) Map2Global(L1LOC).IG, Map2Global(L1LOC).JG, DTL1MN, HP(L1LOC)
@@ -316,7 +317,7 @@
   else
     TMPVAL = DTTMP/DTMIN
     ITMPR = NINT(TMPVAL)
-    RTMPR = FLOAT(ITMPR)
+    RTMPR = DBLE(ITMPR)
     if( RTMPR < TMPVAL )then
       DTTMP = RTMPR*DTMIN
     else
@@ -358,11 +359,13 @@
   endif
   DTDYN = min(DTTMP,DTMAX)
 
-  ! *** SET INCREMENTAL INCREASE IN OUTPUT COUNTER
-  NINCRMT = NINT(DTDYN/DTMIN)
-  DTDYN   = FLOAT(NINCRMT)*DTMIN
+  ! *** Set incremental increase in output counter
+  NINCRMTLoc = NINT(DTDYN/DTMIN)
 
   call MPI_barrier(DSIcomm, IERR)
+  call DSI_All_Reduce(NINCRMTLoc, NINCRMT, MPI_MIN, TTDS, 1, TWAIT)
+
+  DTDYN   = DBLE(NINCRMT)*DTMIN
 
 100 FORMAT(5I5,5F12.5,E13.5)
 101 FORMAT(3I5,E13.5)

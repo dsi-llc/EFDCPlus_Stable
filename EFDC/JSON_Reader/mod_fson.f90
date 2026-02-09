@@ -93,7 +93,7 @@ contains
             u = 0
         else 
             print *, "ERROR: Need a file or a string"
-            call Stopp('.')    ! exit(1)
+            call STOPP('', 1)    ! exit(1)
         endif
 
         ! open the file
@@ -173,7 +173,7 @@ contains
                 call parse_number(unit, str, value)
             case default
                 print *, "ERROR: Unexpected character while parsing value. '", c, "' ASCII = ", iachar(c)
-                call Stopp('.')    ! exit(1)
+                call STOPP('', 1)    ! exit(1)
             end select
         endif
 
@@ -195,7 +195,7 @@ contains
         c = pop_char(unit, str, eof = eof, skip_ws = .true.)
         if( eof )then
             print *, "ERROR: Unexpected end of file while parsing start of object."
-            call Stopp('.')    ! exit(1)
+            call STOPP('', 1)    ! exit(1)
         elseif( "}" == c )then
             ! end of an empty object
             return
@@ -204,21 +204,21 @@ contains
             pair.name => parse_string(unit, str)
         else
             print *, "ERROR: Expecting string: '", c, "'"
-            call Stopp('.')    ! exit(1)
+            call STOPP('', 1)    ! exit(1)
         endif
 
         ! pair value
         c = pop_char(unit, str, eof = eof, skip_ws = .true.)
         if( eof )then
             print *, "ERROR: Unexpected end of file while parsing object member. 1"
-            call Stopp('.')    ! exit(1)
+            call STOPP('', 1)    ! exit(1)
         elseif( ":" == c )then
             ! parse the value                       
             call parse_value(unit, str, pair)
             call fson_value_add(parent, pair)
         else
             print *, "ERROR: Expecting : and then a value. ", c
-            call Stopp('.')    ! exit(1)
+            call STOPP('', 1)    ! exit(1)
         endif
 
         ! another possible pair
@@ -232,7 +232,7 @@ contains
             return
         else
             print *, "ERROR: Expecting end of object.", c
-            call Stopp('.')    ! exit(1)
+            call STOPP('', 1)    ! exit(1)
         endif
 
     end subroutine parse_object
@@ -294,7 +294,7 @@ contains
             c = pop_char(unit, str, eof = eof, skip_ws = .false.)
             if( eof )then
                print *, "Expecting end of string"
-               call Stopp('.')    ! exit(1)
+               call STOPP('', 1)    ! exit(1)
             elseif( escape )then
               call fson_string_append(string,c)
               escape = .false.
@@ -327,10 +327,10 @@ contains
             c = pop_char(unit, str, eof = eof, skip_ws = .true.)
             if( eof )then
                 print *, "ERROR: Unexpected end of file while parsing array."
-                call Stopp('.')    ! exit(1)
+                call STOPP('', 1)    ! exit(1)
             elseif( c .ne. chars(i:i) )then
                 print *, "ERROR: Unexpected character.'", c,"'", chars(i:i)
-                call Stopp('.')    ! exit(1)
+                call STOPP('', 1)    ! exit(1)
             endif
         enddo
 
@@ -354,7 +354,7 @@ contains
         c = pop_char(unit, str, eof = eof, skip_ws = .true.)
         if( eof )then
             print *, "ERROR: Unexpected end of file while parsing number."
-            call Stopp('.')    ! exit(1)
+            call STOPP('', 1)    ! exit(1)
         elseif( "-" == c )then
             negative = .true.
         else
@@ -375,7 +375,7 @@ contains
             c = pop_char(unit, str, eof = eof, skip_ws = .true.)
             if( eof )then
                 print *, "ERROR: Unexpected end of file while parsing number."
-                call Stopp('.')    ! exit(1)
+                call STOPP('', 1)    ! exit(1)
             else
                 select case (c)
                 case (".")
@@ -383,7 +383,7 @@ contains
                     if( decimal )then
                         ! already found a decimal place
                         print *, "ERROR: Unexpected second decimal place while parsing number."
-                        call Stopp('.')    ! exit(1)
+                        call STOPP('', 1)    ! exit(1)
                     endif
                     decimal = .true.
                     frac = parse_integer(unit, str, digit_count, allow_truncate = .true.)
@@ -393,7 +393,7 @@ contains
                     if( scientific )then
                         ! already found a e place
                         print *, "ERROR: Unexpected second exponent while parsing number."
-                        call Stopp('.')    ! exit(1)
+                        call STOPP('', 1)    ! exit(1)
                     endif
                     scientific = .true.
                     decimal = .true.
@@ -462,19 +462,19 @@ contains
             c = pop_char(unit, str, eof = eof, skip_ws = .true.)
             if( eof )then
                 print *, "ERROR: Unexpected end of file while parsing digit."
-                call Stopp('.')    ! exit(1)
+                call STOPP('', 1)    ! exit(1)
             else
                 select case(c)
                 case ("+")
                     if( found_sign.or.found_digit )then
                         print *, "ERROR: Misformatted number."
-                        call Stopp('.')    ! exit(1)
+                        call STOPP('', 1)    ! exit(1)
                     endif
                     found_sign = .true.
                 case ("-")
                     if( found_sign.or.found_digit )then
                         print *, "ERROR: Misformatted number."
-                        call Stopp('.')    ! exit(1)
+                        call STOPP('', 1)    ! exit(1)
                     endif
                     found_sign = .true.
                     isign = -1
@@ -485,7 +485,7 @@ contains
                           truncating = .true.
                        else
                           print *, "ERROR: Too many digits for an integer."
-                          call Stopp('.')    ! exit(1)
+                          call STOPP('', 1)    ! exit(1)
                        endif
                     endif
                     ! digit        

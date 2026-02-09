@@ -307,11 +307,11 @@ SUBROUTINE CALHDMF
           LN = LNC(L)
           LS = LSC(L)
           LW = LWC(L)
-          FMDUX0(L,K) = ( DYP(L) *HP(L) *AH(L,K) *DXU1(L,K) - DYP(LW)*HP(LW)*AH(LW,K)*DXU1(LW,K) )*SUB(L)*SUB(LW)
-          FMDUY0(L,K) = ( DXU(LN)*HU(LN)*AH(LN,K)*SXY(LN,K) - DXU(L) *HU(L) *AH(L,K) *SXY(L,K)   )*SVB(LW)*SVB(L)*SUB(LS)*SUB(L)
+          FMDUX0(L,K) = ( DYP(L) *HP(L) *AH(L,K) *DXU1(L,K) - DYP(LW)*HP(LW)*AH(LW,K)*DXU1(LW,K) )*SUB(L)
+          FMDUY0(L,K) = ( DXU(LN)*HU(LN)*AH(LN,K)*SXY(LN,K) - DXU(L) *HU(L) *AH(L,K) *SXY(L,K)   )*SUB(L)*SVB(L)*SVB(LN)
           
-          FMDVY0(L,K) = ( DXP(L) *HP(L) *AH(L,K) *DYV1(L,K) - DXP(LS)*HP(LS)*AH(LS,K)*DYV1(LS,K) )*SVB(L)*SVB(LN)
-          FMDVX0(L,K) = ( DYV(LE)*HV(LE)*AH(LE,K)*SXY(LE,K) - DYV(L) *HV(L) *AH(L,K) *SXY(L,K)   )*SVB(LW)*SVB(L)*SUB(LS)*SUB(L)
+          FMDVY0(L,K) = ( DXP(L) *HP(L) *AH(L,K) *DYV1(L,K) - DXP(LS)*HP(LS)*AH(LS,K)*DYV1(LS,K) )*SVB(L)
+          FMDVX0(L,K) = ( DYV(LE)*HV(LE)*AH(LE,K)*SXY(LE,K) - DYV(L) *HV(L) *AH(L,K) *SXY(L,K)   )*SVB(L)*SUB(L)*SUB(LE)
         enddo
       enddo
     else

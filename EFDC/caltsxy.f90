@@ -493,7 +493,7 @@ SUBROUTINE CALTSXY(INITFLAG)
             LL = min(LF+LDM-1,LA)
         
             do L = LF,LL
-                call WINDSTRESS(L)
+              call WINDSTRESS(L)
             enddo  
           enddo  
           !$OMP END DO

@@ -57,7 +57,9 @@
 
    interface init_eqstate
       module procedure init_eqstate_nml
+#ifdef USE_YAML      
       module procedure init_eqstate_yaml
+#endif      
    end interface
 
 !
@@ -114,6 +116,7 @@
    end subroutine init_eqstate_nml
 !EOC
 
+#ifdef USE_YAML
 !-----------------------------------------------------------------------
 !BOP
 !
@@ -164,6 +167,7 @@
    LEVEL2 'done.'
    end subroutine init_eqstate_yaml
 !EOC
+#endif
 
 !-----------------------------------------------------------------------
 !BOP

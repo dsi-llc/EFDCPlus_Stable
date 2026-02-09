@@ -21,26 +21,25 @@ MODULE SCANINPMOD
   
   implicit none
 
-  integer :: NSER(8)
-  character(*) :: STR*200 ,CFILE*15
-  character( * ), PRIVATE, parameter :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'
-  character( * ), PRIVATE, parameter :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+  integer :: NSER(8)                   !< Number of series for each constituent (1-8)
+  character(*) :: STR*200              !< String buffer for input parsing
+  character(*) :: CFILE*15             !< Current filename being processed
+  character( * ), PRIVATE, parameter :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz'  !< Lowercase alphabet
+  character( * ), PRIVATE, parameter :: UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'  !< Uppercase alphabet
 
   contains
 
 SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
 
-  integer, intent(OUT) :: NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7
+  integer, intent(OUT) :: NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7  !< Number of time-series for each transport class
 
-  !INTEGER :: K, NT, I, M, M1, NN
-  !INTEGER :: NDUM, ISTOCNT, ISO, ITIDASM, NPFOR, NDATAPTS, ISTYP
-  integer :: K, NT, I, M, M1, NN, ITYPE
-  integer :: LDUM, NDUM, ISTOCNT, ISO, ITIDASM, NPFOR, NDATAPTS
-  integer :: ITMPPMX, ITSSS, NS, IS, IITMP, IJTMP, NPMXZ, NPMXPTS
-  integer :: ISBEDTEMI  ! *** DEPRECATED VARIABLE
-  real    :: DIFTOXNT, DIFTOXSNT
-  real    :: PDIFTOXNT, DPDIFTOXNT, R, TC1, TAV1, TMP
-  real    :: R1TMP, R2TMP, R3TMP, R4TMP, R5TMP, PMIXSF
+  integer :: K, NT, I, M, M1, NN, ITYPE                           !< Loop indices and type flag
+  integer :: LDUM, NDUM, ISTOCNT, ISO, ITIDASM, NPFOR, NDATAPTS   !< Temporary variables and counters
+  integer :: ITMPPMX, ITSSS, NS, IS, IITMP, IJTMP, NPMXZ, NPMXPTS !< Additional indices and counters
+  integer :: ISBEDTEMI                                             !< Deprecated bed temperature flag
+  real    :: DIFTOXNT, DIFTOXSNT                                   !< Toxics diffusion coefficients
+  real    :: PDIFTOXNT, DPDIFTOXNT, R, TC1, TAV1, TMP              !< Toxics partitioning and temperature variables
+  real    :: R1TMP, R2TMP, R3TMP, R4TMP, R5TMP, PMIXSF             !< Temporary real variables
 
   ! *** ********************************************
   if( process_id == master_id )then
@@ -860,11 +859,11 @@ SUBROUTINE SCANEFDC(NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7)
   ! *** ERROR MESSAGES
 10 WRITE(6,'(A)') '  READ ERROR '//CARDNO//' IN INPUT FILE: '//TRIM(CFILE)
   write(mpi_error_unit,'(A)') '  READ ERROR '//CARDNO//' IN INPUT FILE: '//TRIM(CFILE)
-  call STOPP('.')
+  call STOPP('', 1)
 
 30 WRITE(6,'(A)') '  READ ERROR '//CARDNO//': UNEXPECTED END OF INPUT FILE: '//TRIM(CFILE)
   write(mpi_error_unit,'(A)') '  READ ERROR '//CARDNO//': UNEXPECTED END OF INPUT FILE: '//TRIM(CFILE)
-  call STOPP('.')
+  call STOPP('', 1)
 
 END SUBROUTINE
 
@@ -881,11 +880,11 @@ SUBROUTINE SCANMODC
   return
 20 WRITE(6,'(A)') '  READ ERROR IN INPUT FILE: MODCHAN.INP'
   write(mpi_error_unit,'(A)') '  READ ERROR IN INPUT FILE: MODCHAN.INP'
-  call STOPP('.')
+  call STOPP('', 1)
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: MODCHAN.INP'
   write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: MODCHAN.INP'
-  call STOPP('.')
+  call STOPP('', 1)
 
 END SUBROUTINE
 
@@ -915,11 +914,11 @@ SUBROUTINE SCANGWSR
   return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: GWSER.INP IN SERIES:',NS,', POINT:',I
    write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: GWSER.INP IN SERIES:',NS,', POINT:',I
-   call STOPP('.')
+   call STOPP('', 1)
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: GWSER.INP'
    write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: GWSER.INP'
-   call STOPP('.')
+   call STOPP('', 1)
    
 END SUBROUTINE
 
@@ -997,15 +996,15 @@ SUBROUTINE SCANASER
   return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: ASER.INP IN SERIES:',NS,', POINT:',I
    write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: ASER.INP IN SERIES:',NS,', POINT:',I
-   call STOPP('.')
+   call STOPP('', 1)
   
 30 WRITE(6,'(A)') '  READ ERROR IN INPUT FILE'
    write(mpi_error_unit,'(A)') '  READ ERROR IN INPUT FILE'
-   call STOPP('.')
+   call STOPP('', 1)
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE'
    write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE'
-   call STOPP('.')
+   call STOPP('', 1)
 
 END SUBROUTINE
 
@@ -1057,11 +1056,11 @@ SUBROUTINE SCANSSER
    ! *** ****************************
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SSER.INP IN SERIES:',NS,', POINT:',J
    write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SSER.INP IN SERIES:',NS,', POINT:',J
-   call STOPP('.')
+   call STOPP('', 1)
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: SSER.INP'
    write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: SSER.INP'
-   call STOPP('.')
+   call STOPP('', 1)
 
 END SUBROUTINE
 
@@ -1229,11 +1228,11 @@ SUBROUTINE SCANDSER
   return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: DSER.INP IN SERIES:',NS,', POINT:',I
    write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: DSER.INP IN SERIES:',NS,', POINT:',I
-   call STOPP('.')
+   call STOPP('', 1)
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: DSER.INP'
    write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: DSER.INP'
-   call STOPP('.')
+   call STOPP('', 1)
    
 END SUBROUTINE
 
@@ -1282,11 +1281,11 @@ SUBROUTINE SCANSFSR
   return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SFSER.INP IN SERIES:',NS,', POINT:',J
    write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: SFSER.INP IN SERIES:',NS,', POINT:',J
-   call STOPP('.')
+   call STOPP('', 1)
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: SFSER.INP'
    write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: SFSER.INP'
-   call STOPP('.')
+   call STOPP('', 1)
    
 END SUBROUTINE
 
@@ -1339,11 +1338,11 @@ SUBROUTINE SCANQSER
   return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QSER.INP IN SERIES:',NS,', POINT:',J
    write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: QSER.INP IN SERIES:',NS,', POINT:',J
-   call STOPP('.')
+   call STOPP('', 1)
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: QSER.INP'
    write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: QSER.INP'
-   call STOPP('.')
+   call STOPP('', 1)
    
 END SUBROUTINE
 
@@ -1413,7 +1412,7 @@ SUBROUTINE SCANWRSER
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: QWRS.INP'
    write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: QWRS.INP'
-   call STOPP('.')
+   call STOPP('', 1)
 
 END SUBROUTINE
 
@@ -1464,11 +1463,11 @@ SUBROUTINE SCANPSER
   return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: PSER.INP IN SERIES:',NS,', POINT:',I
    write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: PSER.INP IN SERIES:',NS,', POINT:',I
-   call STOPP('.')
+   call STOPP('', 1)
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: PSER.INP'
    write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: PSER.INP'
-   call STOPP('.')
+   call STOPP('', 1)
    
 END SUBROUTINE
 
@@ -1516,11 +1515,11 @@ SUBROUTINE SCANWSER
   return
 20 WRITE(6,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: WSER.INP IN SERIES:',NS,', POINT:',I
    write(mpi_error_unit,'(A,I5,A,I10)') '  READ ERROR IN INPUT FILE: WSER.INP IN SERIES:',NS,', POINT:',I
-   call STOPP('.')
+   call STOPP('', 1)
 
 40 WRITE(6,'(A)') '  UNEXPECTED END OF INPUT FILE: WSER.INP'
    write(mpi_error_unit,'(A)') '  UNEXPECTED END OF INPUT FILE: WSER.INP'
-   call STOPP('.')
+   call STOPP('', 1)
    
 END SUBROUTINE
 
@@ -1575,7 +1574,7 @@ SUBROUTINE SCANQCTL
   return
 20 WRITE(6,'(A)') ' READ ERROR IN FILE: '//TRIM(CFILE)
    write(mpi_error_unit,'(A)') ' READ ERROR IN FILE: '//TRIM(CFILE)
-   call STOPP('.')
+   call STOPP('', 1)
 
 END SUBROUTINE
 
@@ -2204,11 +2203,11 @@ SUBROUTINE SCNTXSED
    ! *** ****************************
 20 WRITE(6,'(A)') '*** READ ERROR IN FILE: '//CFILE
    write(mpi_error_unit,'(A)')    '*** READ ERROR IN FILE: '//CFILE
-   call STOPP('.')
+   call STOPP('', 1)
 
 40 WRITE(6,'(A)') '*** UNEXPECTED END OF FILE: '//CFILE
    write(mpi_error_unit,'(A)')    '*** UNEXPECTED END OF FILE: '//CFILE
-   call STOPP('.')
+   call STOPP('', 1)
 
 END SUBROUTINE SCNTXSED
 
@@ -2250,7 +2249,7 @@ SUBROUTINE OPENFILE(INFILE)
   return
 200 WRITE(6,'(A)') '  FILE DOES NOT EXIST:  '//TRIM(CFILE)
   write(mpi_error_unit,'(A)') '  FILE DOES NOT EXIST:  '//TRIM(CFILE)
-  call STOPP('.')
+  call STOPP('', 1)
 
 END SUBROUTINE
 

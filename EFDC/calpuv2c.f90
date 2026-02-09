@@ -265,11 +265,11 @@ SUBROUTINE CALPUV2C
     LF = 2+(ND-1)*LDMOPT(1)  
     LL = min(LF+LDMOPT(1)-1,LA)
 
-    ! *** RESET BOUNDARY CONDITIONS SWITCHES
+    ! *** Reset boundary conditions switches
     if( ISDRY > 0 )then  
       ! ****************************************************************************
       if( NITER < 100 .or. MOD(NITER,50) == 0 .or. ITERHPM == 0 )then
-        ! *** FORCE A COMPLETE UPDATE EVERY 100 INTERATIONS
+        ! *** Force a complete update every 100 iterations
         do L = LF,LL
           SUB(L) = SUBO(L)  
           SVB(L) = SVBO(L)  
@@ -1042,7 +1042,7 @@ SUBROUTINE CALPUV2C
     open(mpi_efdc_out_unit,FILE = OUTDIR//mpi_efdc_out_file,POSITION = 'APPEND')
     
     if( INT(TBEGIN) == DAYOLD .or. INT(TIMEDAY) >= DAYOLD30 )then
-      write(mpi_efdc_out_unit,'(A//)') ' *** CALPUV Interation summary'
+      write(mpi_efdc_out_unit,'(A//)') ' *** CALPUV Iteration summary'
       write(mpi_efdc_out_unit,'(A)') '              N     NITER     TIMEDAY             NPUVAVG   NPUVMAX            NCONGAVG  NCONGMAX' 
       DAYOLD30 = DAYOLD + 30.
     endif
@@ -1329,7 +1329,7 @@ SUBROUTINE CALPUV2C
 
   ! *** DETERMINE THE WET AND DRY CELL LIST
   if( ISDRY == 0 )then
-    LAWET = LA-1
+    LAWET = LA - 1
     LADRY = 0
   else
     LAWET = 0

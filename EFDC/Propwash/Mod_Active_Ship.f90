@@ -237,12 +237,14 @@ subroutine interp_track(self, track_id, prev_pos_id, next_pos_id, debug_)
 
   ! *** optional debug write statements
   if( present(debug_) )then
+    open(mpi_efdc_out_unit,FILE = OUTDIR//mpi_efdc_out_file,POSITION = 'APPEND')
     write(mpi_efdc_out_unit, '(a,f15.5)') 'dx       ', dx
     write(mpi_efdc_out_unit, '(a,f15.5)') 'dy       ', dy
     write(mpi_efdc_out_unit, '(a,f15.5)') 'delta t  ', delta_t
     write(mpi_efdc_out_unit, '(a,f15.5)') 'curr dt  ', curr_delta_t
     write(mpi_efdc_out_unit, '(a,f15.5)') 'heading  ', self.heading
     write(mpi_efdc_out_unit, '(a,f15.5)') 'speed    ', self.speed
+    close(mpi_efdc_out_unit)
   endif
 
 end subroutine interp_track

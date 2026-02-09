@@ -392,7 +392,7 @@ SUBROUTINE CALQQ1
           L = LKWET(LP,K,ND)  
           if( LWVMASK(L) )then
             ! ***                 BOTTOM                              TOP
-            TVAR1W(L,K) = WVDTKEM(K)*WV(L).DISSIPA(K) + WVDTKEP(K)*WV(L).DISSIPA(K+1)
+            TVAR1W(L,K) = WVDTKEM(L,K)*WV(L).DISSIPA(K) + WVDTKEP(L,K)*WV(L).DISSIPA(K+1)
           else
             TVAR1W(L,K) = 0.0
           endif

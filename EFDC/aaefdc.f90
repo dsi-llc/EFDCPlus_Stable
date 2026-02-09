@@ -19,7 +19,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !----------------------------------------------------------------------!
 !
-!  RELEASE:         EFDCPlus_12.3
+!  RELEASE:         EFDCPlus_12.4
 !                   Domain Decomposition with MPI
 !                   Propeller Wash 
 !                   New WQ kinetics with user defined algal groups and zooplankton
@@ -27,7 +27,7 @@
 !                   General Ocean Turbulence Model (GOTM)
 !                   SIGMA-Zed (SGZ) Vertical Layering
 !
-!  DATE:            2025-05-01
+!  DATE:            2025-12-29
 !  BY:              DSI, LLC
 !                   EDMONDS, WASHINGTON  98020
 !                   USA
@@ -147,54 +147,111 @@ PROGRAM EFDC
 
   implicit none
 
-  real(RKD), allocatable,dimension(:,:) :: SHOTS
-  integer,   allocatable,dimension(:,:) :: IFDCH
-  integer,   allocatable,dimension(:)   :: IDX
+  ! *** High-frequency output snapshot control arrays
+  real(RKD), allocatable,dimension(:,:) :: SHOTS      !< High-frequency output periods: (NSHOTS,3) where (:,1)=start, (:,2)=duration, (:,3)=interval (days)
+  integer,   allocatable,dimension(:,:) :: IFDCH      !< Discharge cell flags for special monitoring
+  integer,   allocatable,dimension(:)   :: IDX        !< Index array for sorting/mapping operations
 
-  real, allocatable,dimension(:) :: THICK
+  real, allocatable,dimension(:) :: THICK             !< Layer thickness working array (m)
 
-  real :: TSHIFT, DET, XLNUTME, YLTUTMN, TA1, TA2, FORCSUM, ZERO, MAXTHICK, DEPTHMIN, MAXTHICK_local
-  real :: CCUE, CCVE, CCUN, CCVN, TMPVAL, TMPCOR, ANG1, ANG2, ANG, DETTMP, DZPC
-  real :: ANGTMP1, ANGTMP2, DYUP1, DYUM1, DDXDDDY, DDYDDDX, DXVLN, DXVLS, C
-  real :: TMP, C1, DZGTMP, FRACK
-  real :: GRADW, GRADE, GRADS, GRADN, MHKE, MHKE_Global, MHKL, MHKL_Global
-  real(8) :: XUTM(1), YUTM(1), XLL(1), YLL(1)
-  real :: ACS2
-  real :: AS2
-  real :: AC2
-  real :: TNT            !< 
-  real :: TPN
+  ! *** Grid transformation and geometry variables
+  real :: TSHIFT                          !< Time shift for output (days)
+  real :: DET                             !< Jacobian determinant for curvilinear grid transformation
+  real :: XLNUTME, YLTUTMN                !< Temporary easting/northing coordinates (m)
+  real :: TA1, TA2                        !< Temporary time/angle variables
+  real :: FORCSUM                         !< Sum of Coriolis parameters for checking spatially-varying Coriolis
+  real :: ZERO                            !< Constant zero value for comparisons
+  real :: MAXTHICK, MAXTHICK_local        !< Maximum layer thickness (m) - global and local MPI domain
+  real :: DEPTHMIN                        !< Minimum depth threshold (m)
+  real :: CCUE, CCVE, CCUN, CCVN          !< Curvilinear grid transformation coefficients (read from LXLY.INP)
+  real :: TMPVAL, TMPCOR                  !< Temporary values for coordinate transformation
+  real :: ANG1, ANG2, ANG, DETTMP         !< Angles and determinant for grid rotation calculations (radians)
+  real :: DZPC                            !< Vertical layer spacing fraction
+  real :: ANGTMP1, ANGTMP2                !< Temporary angle storage (radians)
+  real :: DYUP1, DYUM1                    !< DY at upstream/downstream cells (m)
+  real :: DDXDDDY, DDYDDDX                !< Cross-derivatives for grid curvature
+  real :: DXVLN, DXVLS                    !< DX at north/south V-cell faces (m)
+  real :: C, TMP, C1                      !< General-purpose temporary real variables
+  real :: DZGTMP, FRACK                   !< Vertical grid and fractional K-layer variables
+  real :: GRADW, GRADE, GRADS, GRADN      !< Gradients in west/east/south/north directions
+  real :: MHKE, MHKE_Global               !< Marine hydrokinetic energy extracted - local and global (Watts)
+  real :: MHKL, MHKL_Global               !< Marine hydrokinetic momentum loss - local and global (N)
+  real(8) :: XUTM(1), YUTM(1)             !< UTM coordinates for WGS84 conversion (m)
+  real(8) :: XLL(1), YLL(1)               !< Longitude/Latitude for WGS84 conversion (degrees)
+  real(8) :: DZCBT, DZCAD                 !< Vertical coordinate transformations for cell bottom/center
+  real :: ACS2, AS2, AC2                  !< Acceleration terms for momentum equations (m/s²)
+  real :: TNT                             !< Total nitrogen target concentration (mg/L)
+  real :: TPN                             !< Total phosphorus nitrogen ratio (dimensionless)
 
-  real(RK4) :: CPUTIME(2)
-  real(RKD) :: T0, T1, T2, T3, T4, T9, DELSNAP, TCPU, TTDS, TWAIT
-  real(RKD), external :: DSTIME
+  ! *** Performance timing and simulation time control
+  real(RK4) :: CPUTIME(2)                 !< CPU time array for DTIME function (seconds)
+  real(RKD) :: T0                         !< Simulation start time (days)
+  real(RKD) :: T1                         !< Current time for snapshot loop (days)
+  real(RKD) :: T2                         !< Simulation end time (days)
+  real(RKD) :: T3, T4                     !< Temporary times for high-frequency periods (days)
+  real(RKD) :: T9                         !< Final simulation time (days)
+  real(RKD) :: DELSNAP                    !< Regular snapshot output interval (days)
+  real(RKD) :: TCPU                       !< Total CPU time (seconds)
+  real(RKD) :: TTDS                       !< Total timesteps executed
+  real(RKD) :: TWAIT                      !< MPI wait time (seconds)
+  real(RKD), external :: DSTIME           !< System timing function
 
-  integer :: COUNT, NSNAPMAX, NT, iStatus, NS, NTMP, NSHOTS, ISNAP, NFDCHIJ
-  integer :: ITMPVAL, IFIRST, ILAST, ISO, JDUMY, IISTMP, LPBTMP, LBELMIN
-  integer :: L, K, KK, I, J, IP, IS, M, LL, LP, LF, LT, LN, LS, NX, LW, KM, LE, LG, MW, ND, IYEAR, NP, NC, MD
-  integer :: IU, JU, KU, LU, ID, JD, KD, LD, NWR, NJP
-  
-  integer(IK4) :: IERROR
-  integer(IK4) :: IRET
-  integer(IK8) :: NREST,NN
-  integer(1)   :: VERSION
+  ! *** Loop counters and array dimensions
+  integer :: COUNT                        !< Command line argument count
+  integer :: NSNAPMAX                     !< Maximum number of snapshot times (dynamically grown)
+  integer :: NT                           !< OpenMP thread counter
+  integer :: iStatus                      !< I/O status flag
+  integer :: NS, NTMP                     !< Shot/snapshot counters
+  integer :: NSHOTS                       !< Number of high-frequency output periods
+  integer :: ISNAP                        !< Current high-frequency period index
+  integer :: NFDCHIJ                      !< Number of discharge cells for monitoring
+  integer :: ITMPVAL                      !< Temporary integer value
+  integer :: IFIRST, ILAST                !< First/last indices for loops
+  integer :: ISO                          !< Isopycnal flag
+  integer :: JDUMY                        !< Dummy J-index
+  integer :: IISTMP                       !< Temporary I-index
+  integer :: LPBTMP                       !< Temporary L-index for periodic boundaries
+  integer :: LBELMIN                      !< Minimum bottom elevation cell index
 
-  logical(4) :: RES, LDEBUG, BFLAG
+  ! *** Standard loop indices
+  integer :: L                            !< Linear cell index (1 to LC)
+  integer :: K, KK                        !< Vertical layer index (1=bottom to KC=surface)
+  integer :: I, J                         !< Cartesian grid indices (I=east-west, J=north-south)
+  integer :: IP, IS, M                    !< Index pointers and module counters
+  integer :: LL, LP, LF, LT               !< Linear cell indices for neighbors
+  integer :: LN, LS, LW, LE               !< Linear indices for north/south/west/east neighbors
+  integer :: NX, KM, LG, MW, ND           !< Miscellaneous indices
+  integer :: IYEAR, NP, NC, MD            !< Year, particle/constituent counters
+  integer :: IU, JU, KU, LU               !< Upstream cell indices
+  integer :: ID, JD, KD, LD               !< Downstream cell indices
+  integer :: NWR, NJP                     !< Number of writing records, jet plume counter
 
-  character*24  :: mpi_filename
-  character*19  :: MPI_LIST
-  character*20  :: BUFFER
-  character*120 :: LINE
-  character*8   :: DAY
-  character*200 :: STR
-  
-  ! *** MPI Variables
-  integer(4) :: IERR     !< local MPI error flag
-  integer    :: IIN, JIN
-  Double Precision :: starting_time, ending_time
+  ! *** Status and control flags
+  integer(IK4) :: IERROR                  !< General error flag
+  integer(IK4) :: IRET                    !< Return status code
+  integer(IK8) :: NREST                   !< Restart timestep number
+  integer(IK8) :: NN                      !< General 64-bit counter
+  integer(1)   :: VERSION                 !< Binary file version number
+
+  logical(4) :: RES                       !< Restart file exists flag
+  logical(4) :: LDEBUG                    !< Local debug output flag
+  logical(4) :: BFLAG                     !< General boolean flag
+
+  ! *** String variables for file I/O and MPI
+  character*24  :: mpi_filename           !< MPI log file name
+  character*19  :: MPI_LIST               !< MPI rank list string
+  character*20  :: BUFFER                 !< Command line argument buffer
+  character*120 :: LINE                   !< Input file line buffer
+  character*8   :: DAY                    !< Day string from system
+  character*200 :: STR                    !< General string for file paths and messages
+
+  ! *** MPI communication variables
+  integer(4) :: IERR                      !< MPI error flag (0=success)
+  integer    :: IIN, JIN                  !< Global I,J indices read from input files
+  Double Precision :: starting_time, ending_time  !< MPI wall-clock timing (seconds)
   
   ! *** When updating the version date also update the EXE date in the project settings
-  EFDC_VER = '2025-05-01'
+  EFDC_VER = '2026-02-05'
   
   ! *** GET START TIME OF ELAPSED TIME COUNTER
   TCPU = DTIME(CPUTIME)
@@ -365,9 +422,9 @@ PROGRAM EFDC
     close(1)
   endif !***End calculation on master process
 
-  ! *** SET TIME RELATED parameterS
-  ! *** THE parameter NTC = NUMBER OF TIME CYCLES, CONTROLS THE LENGTH OF RUN (NUMBER OF TIME STEPS)
-  ! *** STARTING AND ENDING DATES, IN DAYS
+  ! *** Set time related parameters
+  ! *** The parameter ntc = number of time cycles, controls the length of run (number of time steps)
+  ! *** Starting and ending dates, in days
   TIMEDAY  = DBLE(TCON)*DBLE(TBEGIN)/86400._8
   TIMEEND  = TIMEDAY + (DBLE(TIDALP)*DBLE(NTC) + DBLE(DT))/86400._8
   HOURNEXT   = TIMEDAY + 1./24.
@@ -568,26 +625,35 @@ PROGRAM EFDC
 
     ! *** HIGH FREQUENCY SNAPSHOTS
     if( ISPPH == 100 )then
-      write(*,'(A)')'HIGH FREQ SNAPSHOTS USED'
-      NS = 0
-      write(*,'(A)')'  READING SNAPSHOTS.INP'
-      open(1,FILE = 'snapshots.inp',STATUS = 'UNKNOWN',ERR = 999)
+      if( process_id == master_id )then
+        write(*,'(A)')'HIGH FREQ SNAPSHOTS USED'
+        NS = 0
+        write(*,'(A)')'  READING SNAPSHOTS.INP'
+        open(1,FILE = 'snapshots.inp',STATUS = 'UNKNOWN',ERR = 999)
 
-      call SKIPCOM(1,'*')
-      read(1,*)NSHOTS
-      allocate(SHOTS(NSHOTS+1,3))
-      SHOTS = 0.0
-      do NS = 1,NSHOTS
-        read(1,*)(SHOTS(NS,K),K = 1,3)
-        SHOTS(NS,3) = SHOTS(NS,3)/1440._8
-        SHOTS(NS,2) = SHOTS(NS,2)/24._8
-      enddo
-999   NSHOTS = NS-1
-      if( NSHOTS < 0 )NSHOTS = 0
-      close(1)
+        call SKIPCOM(1,'*')
+        read(1,*)NSHOTS
+      endif
+      call Broadcast_Scalar(NSHOTS, master_id)
+      
+      call AllocateDSI( SHOTS, NSHOTS+1, 3, 0.0)
 
-      SHOTS(NSHOTS+1,1) = T2
+      if( process_id == master_id )then
+        do NS = 1,NSHOTS
+          read(1,*)(SHOTS(NS,K),K = 1,3)
+          SHOTS(NS,3) = SHOTS(NS,3)/1440._8
+          SHOTS(NS,2) = SHOTS(NS,2)/24._8
+        enddo
+  999   NSHOTS = NS-1
+        if( NSHOTS < 0 ) NSHOTS = 0
 
+        SHOTS(NSHOTS+1,1) = T2
+        
+        close(1)
+      endif
+      call Broadcast_Scalar(NSHOTS, master_id)
+      call Broadcast_Array(SHOTS,   master_id)
+      
       do NS = 1,NSHOTS
         NN = NN + NINT(SHOTS(NS,2)/SHOTS(NS,3),8) + 1
       enddo
@@ -751,10 +817,6 @@ PROGRAM EFDC
   ! ****************************************************************************
   ! *** MPI communication
   call MPI_barrier(DSIcomm, ierr)
-  call communicate_ghost_cells(DXU, 'DXU')
-  call communicate_ghost_cells(DYU, 'DYU')
-  call communicate_ghost_cells(DXV, 'DXV')
-  call communicate_ghost_cells(DYV, 'DYV')
   call communicate_ghost_cells(HMU, 'HMU')
   call communicate_ghost_cells(HMV, 'HMV')
   ! ****************************************************************************
@@ -863,7 +925,7 @@ PROGRAM EFDC
       if( DETTMP == 0.0 )then
         write(6,6262)
         write(6,6263) IL(L), JL(L)
-        call STOPP('.')
+        call STOPP('.', 1)
       endif
     endif
   enddo
@@ -1010,9 +1072,26 @@ PROGRAM EFDC
 
   ! ****************************************************************************
   ! *** MPI communication
-  ! *** Communicate SUB/SVB switches
-  call communicate_ghost_cells(SUB, 'SUB')
-  call communicate_ghost_cells(SVB, 'SVB')
+  ! *** Communicate SUB/SVB and boundary switches
+  call communicate_ghost_cells(SUB,  'SUB')
+  call communicate_ghost_cells(SVB,  'SVB')
+  call communicate_ghost_cells(SUBO, 'SUBO')
+  call communicate_ghost_cells(SVBO, 'SVBO')
+  call communicate_ghost_cells(SUBD, 'SUBD')
+  call communicate_ghost_cells(SVBD, 'SVBD')
+  call communicate_ghost_cells(DXU,  'DXU')
+  call communicate_ghost_cells(DYU,  'DYU')
+  call communicate_ghost_cells(DXV,  'DXV')
+  call communicate_ghost_cells(DYV,  'DYV')
+  call communicate_ghost_cells(SWB,  'SWB')
+  call communicate_ghost_cells(SPB,  'SPB')
+  call communicate_ghost_cells(SAAX, 'SAAX')
+  call communicate_ghost_cells(SAAY, 'SAAY')
+  call communicate_ghost_cells(SCAX, 'SCAX')
+  call communicate_ghost_cells(SCAY, 'SCAY')
+  call communicate_ghost_cells(SDX,  'SDX')
+  call communicate_ghost_cells(SDY,  'SDY')
+
   call communicate_ghost_cells(RSSBCE, 'RSSBCE')
   call communicate_ghost_cells(RSSBCW, 'RSSBCW')
   call communicate_ghost_cells(RSSBCN, 'RSSBCN')
@@ -1204,8 +1283,6 @@ PROGRAM EFDC
   ! *** ACTIVE CELL LISTS
   call AllocateDSI( LLWET, KCM, -NDM,    0)
   call AllocateDSI( LKWET, LCM,  KCM, -NDM, 0)
-  LLWET = 0
-  LKWET = 0
   if( ISHDMF > 0 )then
     call AllocateDSI( LHDMF,  LCM,  KCM, .false.)
     call AllocateDSI( LLHDMF, KCM, -NDM,       0)
@@ -1303,11 +1380,11 @@ PROGRAM EFDC
             DZC(L,K) = DZC_Global(LG,K)
             if( K < KSZ(L) .and. DZC(L,K) /= 0.0 )then
               write(6,'(A,2I5,I8,I5)') '*** ERROR: DZC(L,K) FROM SGZLAYER.INP - NOT 0.0  @  I,J,L,K: ',I,J,LG,K
-              call STOPP('.')
+              call STOPP('.', 1)
             endif
             if( K >= KSZ(L) .and. DZC(L,K) < 5E-5 )then
               write(6,'(A,2I5,I8,I5)') '*** ERROR: DZC(L,K) FROM SGZLAYER.INP - TOO SMALL  @   I,J,L,K: ',I,J,LG,K
-              call STOPP('.')
+              call STOPP('.', 1)
             endif
           enddo
         endif
@@ -1410,7 +1487,7 @@ PROGRAM EFDC
       if( DZC(L,K) < 1.E-5 )then
         write(*,'(A,3I5,F10.4,I5)') 'ERROR: BAD LAYER THICKNESS FOR L,K,KSZ,HP = ',L,K,KSZ(L),HMP(L),process_id
         write(mpi_error_unit,'(A,3I5,F10.4)') 'ERROR: BAD LAYER THICKNESS FOR L,K,KSZ,HP = ',L,K,KSZ(L),HMP(L)
-        call STOPP('.')
+        call STOPP('.', 1)
       endif
       DZIC(L,K) = 1./DZC(L,K)
     enddo
@@ -1522,7 +1599,7 @@ PROGRAM EFDC
       LN = 0
       do L = LF,LL
         if( K < KSZ(L) )CYCLE
-        LN = LN+1
+        LN = LN + 1
         LKWET(LN,K,ND) = L
       enddo
       LLWET(K,ND) = LN
@@ -1956,14 +2033,14 @@ PROGRAM EFDC
   if( ISRESTI >= 1 .and. ISCI(5) == 0 ) IISTMP = 0
   if( IISTMP == 0 .and. ISTRAN(5) > 0 )then
     do NT = 1,NTOX
-      if( ITXINT(NT) == 2 .or. ITXINT(NT) == 3 )then
+      !if( ITXINT(NT) == 2 .or. ITXINT(NT) == 3 )then
         do K = 1,KB
           do L = 2,LA
             TOXB(L,K,NT) = TOXBINIT(L,K,NT)
             TOXB1(L,K,NT) = TOXB(L,K,NT)
           enddo
         enddo
-      endif
+      !endif
     enddo
   endif
 
@@ -2502,12 +2579,14 @@ PROGRAM EFDC
   
   ! ****************************************************************************
   ! *** MPI communication - Communicate face values
-  call communicate_ghost_cells(SBX, 'SBX')
-  call communicate_ghost_cells(SBY, 'SBY')
-  call communicate_ghost_cells(SBY, 'SBXO')
-  call communicate_ghost_cells(SBY, 'SBYO')
-  call communicate_ghost_cells(SBY, 'HRUO')
-  call communicate_ghost_cells(SBY, 'HRVO')
+  call communicate_ghost_cells(SBX,  'SBX')
+  call communicate_ghost_cells(SBY,  'SBY')
+  call communicate_ghost_cells(SBXO, 'SBXO')
+  call communicate_ghost_cells(SBYO, 'SBYO')
+  call communicate_ghost_cells(HRU,  'HRU')
+  call communicate_ghost_cells(HRV,  'HRV')
+  call communicate_ghost_cells(HRUO, 'HRUO')
+  call communicate_ghost_cells(HRVO, 'HRVO')
   ! ****************************************************************************
 
   ! *** Determine FSGZU/FSGZV for gross momentum
@@ -2527,7 +2606,14 @@ PROGRAM EFDC
       endif
     enddo
   enddo
-
+  
+  ! *** Determine initial layer thicknesses
+  do K = 1,KC
+    do L = 2,LA
+      HPK(L,K) = HP(L)*DZC(L,K)
+    enddo
+  enddo
+  
   ! *** Third pass at cell constants
   do L = 2,LA
     LW = LWC(L)
@@ -2575,110 +2661,130 @@ PROGRAM EFDC
 
       if( SUBO(L) > 0. )then
         KSZW(L) = KSZU(L)
+        DZCBT = 0.
         if( KSZ(LW) > KSZ(L) )then
-          BELVW(L) = BELV(LW)
-          !BELVW(L) = max(BELV(LW)-FRACK,BELV(L))
-          do K = 1,KC
-            SGZW(L,K)  = DZC(LW,K)
-            SGZKW(K,L) = DZC(LW,K)
-            ZW(L,K)    = Z(LW,K)
-            ZZW(K,L)   = ZZ(LW,K)
+          do K = KSZ(L), KSZ(LW)-1
+            BELVW(L) =  BELVW(L) + HPK(L,K)
+            DZCBT = DZCBT + DZC(L,K)
+          enddo
+          DZCAD = DZCBT/(KC-KSZ(LW)+1.)
+          ZW(L,KSZ(LW)-1) = 0.
+          do K = KSZ(LW),KC
+            SGZW(L,K)  = DZC(L,K) + DZCAD
+            SGZKW(K,L) = DZC(L,K) + DZCAD
+            ZW(L,K)    = ZW(L,K-1) + SGZW(L,K)
+            ZZW(K,L)   = ZW(L,K) - 0.5*SGZW(L,K)
           enddo
         endif
-        if( IGRIDV > 1 .and. KSZ(LW) == KSZ(L) .and. KSZ(L) < KC-KMINV+1 )then
-          if( BELV(L) >= BELV(LW) )then
-            LL = L
-          else
-            LL = LW
-          endif
-          BELVW(L) = BELV(LL)
-          do K = 1,KC
-            SGZW(L,K)  = DZC(LL,K)
-            SGZKW(K,L) = DZC(LL,K)
-            ZW(L,K)    = Z(LL,K)
-            ZZW(K,L)   = ZZ(LL,K)
-          enddo
-        endif
+        !if( IGRIDV > 1 .and. KSZ(LW) == KSZ(L) .and. KSZ(L) < KC-KMINV+1 )then
+        !  if( BELV(L) >= BELV(LW) )then
+        !    LL = L
+        !  else
+        !    LL = LW
+        !  endif
+        !  BELVW(L) = BELV(LL)
+        !  do K = 1,KC
+        !    SGZW(L,K)  = DZC(LL,K)
+        !    SGZKW(K,L) = DZC(LL,K)
+        !    ZW(L,K)    = Z(LL,K)
+        !    ZZW(K,L)   = ZZ(LL,K)
+        !  enddo
+        !endif
       endif
 
       if( SUBO(LE) > 0. )then
         KSZE(L) = KSZU(LE)
+        DZCBT = 0.
         if( KSZ(LE) > KSZ(L) )then
-          BELVE(L) = BELV(LE)
-          !BELVE(L) = max(BELV(LE)-FRACK,BELV(L))
-          do K = 1,KC
-            SGZE(L,K)  = DZC(LE,K)
-            SGZKE(K,L) = DZC(LE,K)
-            ZE(L,K)    = Z(LE,K)
-            ZZE(K,L)   = ZZ(LE,K)
+          do K = KSZ(L), KSZ(LE)-1
+            BELVE(L) =  BELVE(L) + HPK(L,K)
+            DZCBT = DZCBT + DZC(L,K)
           enddo
-        elseif( IGRIDV > 1 .and. KSZ(LE) == KSZ(L) .and. KSZ(L) < KC-KMINV+1 )then
-          if( BELV(L) >= BELV(LE) )then
-            LL = L
-          else
-            LL = LE
-          endif
-          BELVE(L) = BELV(LL)
-          do K = 1,KC
-            SGZE(L,K)  = DZC(LL,K)
-            SGZKE(K,L) = DZC(LL,K)
-            ZE(L,K)    = Z(LL,K)
-            ZZE(K,L)   = ZZ(LL,K)
+          DZCAD = DZCBT/(KC-KSZ(LE)+1.)
+          ZE(L,KSZ(LE)-1) = 0.
+          do K = KSZ(LE),KC
+            SGZE(L,K)  = DZC(L,K) + DZCAD
+            SGZKE(K,L) = DZC(L,K) + DZCAD
+            ZE(L,K)    = ZE(L,K-1) + SGZE(L,K)
+            ZZE(K,L)   = ZE(L,K) - 0.5*SGZE(L,K)
           enddo
+        !elseif( IGRIDV > 1 .and. KSZ(LE) == KSZ(L) .and. KSZ(L) < KC-KMINV+1 )then
+        !  if( BELV(L) >= BELV(LE) )then
+        !    LL = L
+        !  else
+        !    LL = LE
+        !  endif
+        !  BELVE(L) = BELV(LL)
+        !  do K = 1,KC
+        !    SGZE(L,K)  = DZC(LL,K)
+        !    SGZKE(K,L) = DZC(LL,K)
+        !    ZE(L,K)    = Z(LL,K)
+        !    ZZE(K,L)   = ZZ(LL,K)
+        !  enddo
         endif
       endif
 
       if( SVBO(L) > 0. )then
         KSZS(L) = KSZV(L)
+        DZCBT = 0.
         if( KSZ(LS) > KSZ(L) )then
-          BELVS(L) = BELV(LS)
-          !BELVS(L) = max(BELV(LS)-FRACK,BELV(L))
-          do K = 1,KC
-            SGZS(L,K)  = DZC(LS,K)
-            SGZKS(K,L) = DZC(LS,K)
-            ZS(L,K)    = Z(LS,K)
-            ZZS(K,L)   = ZZ(LS,K)
+          do K = KSZ(L), KSZ(LS)-1
+            BELVS(L) =  BELVS(L) + HPK(L,K)
+            DZCBT = DZCBT + DZC(L,K)
           enddo
-        elseif( IGRIDV > 1 .and. KSZ(LS) == KSZ(L) .and. KSZ(L) < KC-KMINV+1 )then
-          if( BELV(L) >= BELV(LS) )then
-            LL = L
-          else
-            LL = LS
-          endif
-          BELVS(L) = BELV(LL)
-          do K = 1,KC
-            SGZS(L,K)  = DZC(LL,K)
-            SGZKS(K,L) = DZC(LL,K)
-            ZS(L,K)    = Z(LL,K)
-            ZZS(K,L)   = ZZ(LL,K)
+          DZCAD = DZCBT/(KC-KSZ(LS)+1.)
+          ZS(L,KSZ(LS)-1) = 0.
+          do K = KSZ(LS),KC               
+            SGZS(L,K)  = DZC(L,K) + DZCAD
+            SGZKS(K,L) = DZC(L,K) + DZCAD
+            ZS(L,K)    = ZS(L,K-1) + SGZS(L,K)
+            ZZS(K,L)   = ZS(L,K) - 0.5*SGZS(L,K)
           enddo
+        !elseif( IGRIDV > 1 .and. KSZ(LS) == KSZ(L) .and. KSZ(L) < KC-KMINV+1 )then
+        !  if( BELV(L) >= BELV(LS) )then
+        !    LL = L
+        !  else
+        !    LL = LS
+        !  endif
+        !  BELVS(L) = BELV(LL)
+        !  do K = 1,KC
+        !    SGZS(L,K)  = DZC(LL,K)
+        !    SGZKS(K,L) = DZC(LL,K)
+        !    ZS(L,K)    = Z(LL,K)
+        !    ZZS(K,L)   = ZZ(LL,K)
+        !  enddo
         endif
       endif
 
       if( SVBO(LN) > 0. )then
         KSZN(L) = KSZV(LN)
+        DZCBT = 0.
         if( KSZ(LN) > KSZ(L) )then
-          BELVN(L) = BELV(LN)
-          !BELVN(L) = max(BELV(LN)-FRACK,BELV(L))
-          do K = 1,KC
-            SGZN(L,K)  = DZC(LN,K)
-            SGZKN(K,L) = DZC(LN,K)
-            ZN(L,K)    = Z(LN,K)
-            ZZN(K,L)   = ZZ(LN,K)
+          do K = KSZ(L), KSZ(LN)-1
+            BELVN(L) =  BELVN(L) + HPK(L,K)
+            DZCBT = DZCBT + DZC(L,K)
           enddo
-        elseif( IGRIDV > 1 .and. KSZ(LN) == KSZ(L) .and. KSZ(L) < KC-KMINV+1 )then
-          if( BELV(L) >= BELV(LN) )then
-            LL = L
-          else
-            LL = LN
-          endif
-          BELVN(L) = BELV(LL)
-          do K = 1,KC
-            SGZN(L,K)  = DZC(LL,K)
-            SGZKN(K,L) = DZC(LL,K)
-            ZN(L,K)    = Z(LL,K)
-            ZZN(K,L)   = ZZ(LL,K)
+          DZCAD = DZCBT/(KC-KSZ(LN)+1.)
+          ZN(L,KSZ(LN)-1) = 0.
+          do K = KSZ(LN),KC
+            SGZN(L,K)  = DZC(L,K) + DZCAD
+            SGZKN(K,L) = DZC(L,K) + DZCAD
+            ZN(L,K)    = ZN(L,K-1) + SGZN(L,K)
+            ZZN(K,L)   = ZN(L,K) - 0.5*SGZN(L,K)
           enddo
+        !elseif( IGRIDV > 1 .and. KSZ(LN) == KSZ(L) .and. KSZ(L) < KC-KMINV+1 )then
+        !  if( BELV(L) >= BELV(LN) )then
+        !    LL = L
+        !  else
+        !    LL = LN
+        !  endif
+        !  BELVN(L) = BELV(LL)
+        !  do K = 1,KC
+        !    SGZN(L,K)  = DZC(LL,K)
+        !    SGZKN(K,L) = DZC(LL,K)
+        !    ZN(L,K)    = Z(LL,K)
+        !    ZZN(K,L)   = ZZ(LL,K)
+        !  enddo
         endif
       endif
     endif
@@ -2725,8 +2831,6 @@ PROGRAM EFDC
   
   ! ****************************************************************************
   ! *** MPI communication - Communicate face values
-  call communicate_ghost_cells(SBX, 'SBX')
-  call communicate_ghost_cells(SBY, 'SBY')
   if( IGRIDV > 0 )then
     call communicate_ghost_cells(BELVW, 'BELVW')
     call communicate_ghost_cells(BELVE, 'BELVE')
@@ -2837,11 +2941,6 @@ PROGRAM EFDC
     LLWET(K,0) = LN        ! *** Total Wet Cells for Layer K
   enddo
 
-  do K = 1,KC
-    do L = 2,LA
-      HPK(L,K) = HP(L)*DZC(L,K)
-    enddo
-  enddo
   if( ISRESTI > 0 )then
     do K = 1,KC
       do L = 2,LA
@@ -2900,17 +2999,17 @@ PROGRAM EFDC
     enddo
   endif
 
-  ! *** END OF SIGMA-Z VARIABLE INITIALIZATION (SGZ)
+  ! *** End of Sigma-Z variable initialization (SGZ)
   ! ***************************************************************************
 
-  ! *** DSI BEGIN SEEPAGE
+  ! *** DSI begin seepage
   if( ISGWIT == 3 )then
     do L = 2,LA
       QGW(L) = QGW(L)*DXYP(L)                ! *** m3/s
     enddo
   endif
 
-  ! *** LARGE ASPECT RATIO ASSIGMENTS
+  ! *** Large aspect ratio assigments
   NASPECT = 0
   if( XYRATIO > 1.1 )then
     call AllocateDSI( LASPECT, LCM, .false.)
@@ -2922,7 +3021,7 @@ PROGRAM EFDC
     enddo
   endif
 
-  ! *** INITIALIZE ELEVATION OF ACTIVE GROUNDWATER ZONE FOR COLD START
+  ! *** Initialize elevation of active groundwater zone for cold start
   if( ISGWIE >= 1 .and. ISRESTI == 0 )then
     do L = 2,LA
       if( HP(L) > HDRY )then
@@ -2950,7 +3049,7 @@ PROGRAM EFDC
   ! *** CALCULATE CONSTANT C ARRAYS FOR EXTERNAL P SOLUTION
   ! *** HRU = SUB*HMU*DYU/DXU & HRV = SVB*HMV*DXV/DYV
   ! *** DXYIP = 1/(DXP*DYP)
-  if( IRVEC /= 9 )then
+  if( IRVEC /= 9 )then        ! pmc - delete
     do L = 2,LA
       CC(L) = 1.
       CCC(L) = 1.
@@ -3079,7 +3178,7 @@ PROGRAM EFDC
   endif
   
   LB = 2                    ! *** LB is a globally declared integer that can be hardwired for dubugging a certain cell
-  
+
   ! *** *********************************************************************
   ! *** SELECT FULL HYDRODYNAMIC AND MASS TRANSPORT CALCULATION OR
   ! *** LONG-TERM MASS TRANSPORT CALCULATION  (DISABLED)
@@ -3459,25 +3558,32 @@ PROGRAM EFDC
 
 #ifdef GNU  
   SUBROUTINE STOPP(MSG)
-#else
-  SUBROUTINE STOPP(MSG, IOPEN)
-#endif   
+
   use GLOBAL
   use Variables_MPI
   
   ! *** STOP WITH A PAUSE TO ALLOW USERS TO SEE MESSAGE IF EFDC LAUNCHED BY EE
   character(LEN = *),  intent(IN) :: MSG
-#ifndef GNU  
-  integer, OPTIONAL, intent(IN) :: IOPEN
-
-  if( .not. PRESENT(IOPEN) )then
-#endif   
-    open(mpi_error_unit,FILE = OUTDIR//mpi_error_file,POSITION = 'APPEND')
-#ifndef GNU  
-  endif
-#endif   
   
+#else
+  SUBROUTINE STOPP(MSG, IOPEN)
 
+  use GLOBAL
+  use Variables_MPI
+  
+  integer ilen
+  
+  ! *** STOP WITH A PAUSE TO ALLOW USERS TO SEE MESSAGE IF EFDC LAUNCHED BY EE
+  character(LEN = *),  intent(IN) :: MSG
+  integer, optional, intent(IN)   :: IOPEN
+
+  if( .not. present(IOPEN) )then
+    open(mpi_error_unit, file = OUTDIR//mpi_error_file, position = 'APPEND')
+  endif
+
+#endif   
+ 
+  ilen = LEN_TRIM(MSG)
   if( LEN_TRIM(MSG) < 1 )then
     if( process_id == master_id) PRINT '("EFDCPlus Stopped: ",A)', 'SEE #OUTPUT\log_error_proc_xxx FOR MORE INFORMATION'
     write(mpi_error_unit,'("EFDCPlus Stopped: ",A)')
@@ -3495,6 +3601,7 @@ PROGRAM EFDC
 #endif
   
   ERROR STOP
+  
   END SUBROUTINE STOPP
   ! *** Useful Regular Expressions
   ! ***

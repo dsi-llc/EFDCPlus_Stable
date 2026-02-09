@@ -266,6 +266,12 @@ SUBROUTINE CALUVW
         VHDXF(L,K) = 0.0
         UHDYEK(L,K) = 0.0
         VHDXEK(L,K) = 0.0
+                
+        UHDY1(L,K) = 0.0
+        VHDX1(L,K) = 0.0
+        
+        UHDY2(L,K) = 0.0
+        VHDX2(L,K) = 0.0
       enddo
     enddo
   endif
@@ -1222,7 +1228,7 @@ SUBROUTINE CALUVW
   !$OMP END SINGLE
 
   ! *** COMPUTE FACE DEPTHS AND LAYER THICKNESSES
-  !$OMP DO PRIVATE(ND,LF,LL,K,LP,L)
+  !$OMP DO PRIVATE(ND, LF, LL, K, LP, L, LW, LE, LS, LN)
   do ND = 1,NDM
     LF = (ND-1)*LDMWET+1
     LL = min(LF+LDMWET-1,LAWET)
@@ -1236,7 +1242,49 @@ SUBROUTINE CALUVW
 
     if( IGRIDV > 0 )then
       do LP = LF,LL
-        L = LWET(LP)
+        L = LWET(LP)  
+        ! *** Update directional bottom elevations
+        LE = LEC(L)
+        LN = LNC(L)  
+        LS = LSC(L)
+        LW = LWC(L)
+        BELVW(L) = BELV(L)
+        BELVE(L) = BELV(L)
+        BELVS(L) = BELV(L)
+        BELVN(L) = BELV(L)
+        
+        if( SUB(L) > 0. )then
+          if( KSZ(LW) > KSZ(L) )then
+            do K = KSZ(L), KSZ(LW)-1
+              BELVW(L) =  BELVW(L) + HPK(L,K)
+            enddo
+          endif
+        endif
+          
+        if( SUB(LE) > 0. )then
+          if( KSZ(LE) > KSZ(L) )then
+            do K = KSZ(L), KSZ(LE)-1
+              BELVE(L) =  BELVE(L) + HPK(L,K)
+            enddo
+          endif
+        endif
+
+        if( SVB(L) > 0. )then
+          if( KSZ(LS) > KSZ(L) )then
+            do K = KSZ(L), KSZ(LS)-1
+              BELVS(L) =  BELVS(L) + HPK(L,K)
+            enddo
+          endif
+        endif
+
+        if( SVB(LN) > 0. )then
+          if( KSZ(LN) > KSZ(L) )then
+            do K = KSZ(L), KSZ(LN)-1
+              BELVN(L) =  BELVN(L) + HPK(L,K)
+            enddo
+          endif
+        endif
+        
         ! *** SET DIRECTIONAL DEPTHS
         HPW(L) = HP(L) + BELV(L) - BELVW(L)
         HPE(L) = HP(L) + BELV(L) - BELVE(L)

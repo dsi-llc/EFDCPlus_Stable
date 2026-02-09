@@ -157,7 +157,7 @@ SUBROUTINE ALGAECONTROL
 
       if( .not. ALGAES(NAL).ISMOBILE )then
         call fson_get(item, "layerthreshold",                               ALGAES(NAL).THRESHOLD)      ! *** Biomass concentration limit to force macrophyte mass into the next layer (mg C/L/m)
-        call fson_get(item, "base_depth",                                   ALGAES(NAL).BASEDEPTH)      ! *** Distance below the surface (i.e. depth) of the "base" of the macrophyte/periphyton growth (m)
+        call fson_get(item, "base_depth",                                   ALGAES(NAL).BASEDEPTH)      ! *** Distance above the bottom (i.e. depth) of the "base" of the macrophyte/periphyton growth (m)
         call fson_get(item, "maximum_length",                               ALGAES(NAL).MAXLENGTH)      ! *** Maximum length from the "base" to allow macrophyte/periphyton growth (m)
         call fson_get(item, "use_hydro_feedback",                           ALGAES(NAL).ISDRAG)      
         call fson_get(item, "laminar_flow_option",                          ALGAES(NAL).ISMACL)      
@@ -622,7 +622,7 @@ SUBROUTINE Macro_Veg(NAL)
   do L = 2,LA
     ! *** Set active layers               delme - TODO - handle growth downward from suspended base
     do K = KSZ(L),KC
-      if( HP(L)*Z(L,K-1) >= (HP(L)-ALGAES(NAL).BASEDEPTH+HEIGHT_MAC(L,NAL)) )then
+      if( HP(L)*Z(L,K) >= ALGAES(NAL).BASEDEPTH )then
         LAYERTOP(NAL,L) = K                                                    ! *** Top active layer
         exit                                                                   ! *** Jump out of the layer loop
       endif

@@ -1041,6 +1041,7 @@ SUBROUTINE DRIFTER_INP
 
   ! *** Write out information regaring the local mapping of drifters
   if(MPI_DEBUG_FLAG )then
+    open(mpi_efdc_out_unit,FILE = OUTDIR//mpi_efdc_out_file,POSITION = 'APPEND')
     write(mpi_efdc_out_unit,'(a,i8)') 'Total number of local drifters: ', NPD
 
     call writebreak(mpi_efdc_out_unit)
@@ -1057,6 +1058,7 @@ SUBROUTINE DRIFTER_INP
       endif
 
     enddo
+    close(mpi_efdc_out_unit)
   endif
 
   !< @todo Improve random number generation
@@ -1616,6 +1618,7 @@ SUBROUTINE CHECK_BCS
   if( NQSIJ > 0 )then
     if( ANY(BCPS(:).L == LLA(NI)) .and. QSUM(LLA(NI),KLA(NI)) < 0. )then
       ! *** If inside a cell then use cell dimensions to determine if should remove
+      LLA2 = LLA(NI)
       if( NPSTAT == 1 )then
         ! *** INSIDE CELL
         RAD = SQRT( (XLA(NI)-XCOR(LLA2,5))**2 + (YLA(NI)-YCOR(LLA2,5))**2 )

@@ -44,7 +44,7 @@ Subroutine Map_River
     BCPS_GL(LL).L = LIJ_Global(BCPS_GL(LL).I,BCPS_GL(LL).J)
     if( BCPS_GL(LL).L < 2 )then
       write(6,*) 'ERROR! FLOW CELL IS NOT IN GLOBAL DOMAIN FOR FLOW BOUNDARY: ',LL
-      call STOPP('.')
+      call STOPP('', 1)
     endif
 
     III = IG2IL(BCPS_GL(LL).I)
@@ -171,7 +171,7 @@ Subroutine Map_Hydraulic_Structures
     JJJ = HYD_STR_GL(LL).JQCTLU
     if( LIJ_Global(III,JJJ) < 2 )then
       write(6,*) 'ERROR! UPSTREAM CELL IS NOT VALID FOR HYDRAULIC STRUCTURE ',LL
-      call STOPP('.')
+      call STOPP('', 1)
     endif
 
     III = IG2IL(HYD_STR_GL(LL).IQCTLU)
@@ -198,11 +198,11 @@ Subroutine Map_Hydraulic_Structures
           JJJ = JG2JL(HYD_STR_GL(LL).JQCTLD)
           if( III == 0 .or. JJJ == 0 )then
             write(6,*) 'ERROR! DOWNSTREAM CELL IS NOT IN DOMAIN FOR HYDRAULIC STRUCTURE ',LL
-            call STOPP('.')
+            call STOPP('', 1)
           endif
           if( LIJ(III,JJJ) < 2 )then
             write(6,*) 'ERROR! DOWNSTREAM CELL IS NOT VALID FOR HYDRAULIC STRUCTURE ',LL
-            call STOPP('.')
+            call STOPP('', 1)
           endif
           
           HYD_STR(NCTL).IQCTLD = III
@@ -291,7 +291,7 @@ Subroutine Map_Withdrawal_Return
     JJJ = WITH_RET_GL(LL).JQWRU
     if( LIJ_Global(III,JJJ) < 2 )then
       write(6,*) 'ERROR! UPSTREAM CELL IS NOT VALID FOR WITHDRAWAL-RETURN BOUNDARY ',LL
-      call STOPP('.')
+      call STOPP('', 1)
     endif
     III = IG2IL(WITH_RET_GL(LL).IQWRU)
     JJJ = JG2JL(WITH_RET_GL(LL).JQWRU)
@@ -316,7 +316,7 @@ Subroutine Map_Withdrawal_Return
           JJJ = JG2JL(WITH_RET_GL(LL).JQWRD)
           if( III == 0 .or. JJJ == 0 )then
             write(6,*) 'ERROR!  FLOW RETURN CELLS NOT IN SAME DOMAIN, CHECK CARD 33 and DECOMP.INP ',LL
-            call STOPP('.')
+            call STOPP('', 1)
           endif
           WITH_RET(NWR).IQWRD = III
           WITH_RET(NWR).JQWRD = JJJ
@@ -387,7 +387,7 @@ Subroutine Map_Jet_Plume
     ! *** Map to global I/J
     if( LIJ_Global(JET_PLM_GL(LL).IQJP,JET_PLM_GL(LL).JQJP) < 2 )then
       write(6,*) 'ERROR! DIFFUSER CELL IS NOT VALID FOR JET-PLUME BOUNDARY ',LL
-      call STOPP('.')
+      call STOPP('', 1)
     endif
     III = IG2IL(JET_PLM_GL(LL).IQJP)
     JJJ = JG2JL(JET_PLM_GL(LL).JQJP)
@@ -408,13 +408,13 @@ Subroutine Map_Jet_Plume
         if( JET_PLM(NQJPIJ).ICALJP == 2 )then
           if( LIJ_Global(JET_PLM_GL(LL).IUPCJP,JET_PLM_GL(LL).JUPCJP) < 2 )then
             write(6,*) 'ERROR! DIFFUSER WITHDRAWAL CELL IS NOT VALID FOR JET-PLUME BOUNDARY ',LL
-            call STOPP('.')
+            call STOPP('', 1)
           endif
           III = IG2IL(JET_PLM_GL(LL).IUPCJP)
           JJJ = JG2JL(JET_PLM_GL(LL).JUPCJP)
           if( LIJ(III,JJJ) < 2 )then
             write(6,*) 'ERROR! DIFFUSER WITHDRAWAL CELL IS NOT INSIDE DIFFUSER MPI DOMAIN ',LL
-            call STOPP('.')
+            call STOPP('', 1)
           endif
           
           ! *** Map to local I/J

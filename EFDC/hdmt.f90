@@ -72,7 +72,7 @@
   logical, external :: ISEXIT
 #endif
   real(8)           :: DEL !RESTTIME
-  logical           :: RES
+  logical           :: RES, BSYNC
 
   integer :: ierr
 
@@ -1417,6 +1417,7 @@
         NCDFSHOT = NCDFSHOT + 1.
       endif
     endif
+    
     ! *** *******************************************************************C
     ! *** WRITE EFDC EXPLORER FORMAT OUTPUT
     if( ISPPH == 1 )then
@@ -1476,8 +1477,10 @@
 
 
     ! *** *******************************************************************!
-    if( process_id == master_id )then
-      if( ISHOW > 0 ) CALL SHOWVAL
+    if( ISHOW > 0 )then
+      CALL SHOWVAL(BSYNC)
+
+      if( BSYNC ) call MPI_barrier(DSIcomm, ierr)
     endif
     ! *** *******************************************************************!
 

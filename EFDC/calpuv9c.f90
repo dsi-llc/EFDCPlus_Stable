@@ -296,11 +296,11 @@
     LF = 2+(ND-1)*LDMOPT(1)
     LL = min(LF+LDMOPT(1)-1,LA)
 
-    ! *** RESET BOUNDARY CONDITIONS SWITCHES
+    ! *** Reset boundary conditions switches
     if( ISDRY > 0 )then
       ! ****************************************************************************
       if( NITER < 100 .or. MOD(NITER,50) == 0 .or. ITERHPM == 0 )then
-        ! *** FORCE A COMPLETE UPDATE EVERY 100 INTERATIONS
+        ! *** Force a complete update every 100 iterations
         do L = LF,LL
           SUB(L) = SUBO(L)
           SVB(L) = SVBO(L)
@@ -1119,7 +1119,7 @@
     open(mpi_efdc_out_unit,FILE = OUTDIR//mpi_efdc_out_file,POSITION = 'APPEND')
 
     if( INT(TBEGIN) == DAYOLD .or. INT(TIMEDAY) >= DAYOLD30 )then
-      write(mpi_efdc_out_unit,'(A//)') ' *** CALPUV Interation summary'
+      write(mpi_efdc_out_unit,'(A//)') ' *** CALPUV Iteration summary'
       write(mpi_efdc_out_unit,'(A)') '              N     NITER     TIMEDAY             NPUVAVG   NPUVMAX            NCONGAVG  NCONGMAX'
       DAYOLD30 = DAYOLD + 30.
     endif
@@ -1364,7 +1364,7 @@
   NTMP = SUM(NNATDRY)
   if( NTMP > 0 )then
     if( INOTICE /= INT(TIMEDAY) )then    ! *** ONLY DISPLAY WARNING ONCE PER DAY
-      PRINT '(A,F14.5,I6,i4)',' QDWASTED CELLS. SEE mpi_qdwaste_proc_xxx.log FOR DETAILS. [TIMEDAY, # OF CELLS, Process ID]: ', TIMEDAY, NTMP, process_id
+      PRINT '(A,F14.5,I6,i4)',' QDWASTE CELLS. SEE mpi_qdwaste_proc_xxx.log FOR DETAILS. [TIMEDAY, # OF CELLS, Process ID]: ', TIMEDAY, NTMP, process_id
       INOTICE = INT(TIMEDAY)
     endif
 

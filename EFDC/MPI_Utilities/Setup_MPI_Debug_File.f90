@@ -33,9 +33,11 @@
   character*200 :: STR
 
   ! *** Get unique unit number for writting out details of each MPI process
+  mpi_efdc_out_unit = mpi_efdc_out_unit + process_id
   mpi_log_unit = mpi_log_unit + process_id
   mpi_comm_unit = mpi_comm_unit + process_id
   mpi_mapping_unit = mpi_mapping_unit + process_id
+  mpi_qdwaste_unit = mpi_qdwaste_unit + process_id
   mpi_error_unit = mpi_error_unit + process_id
 
 #ifdef _WIN
@@ -64,32 +66,32 @@
 
   ! *** Create output file for each processor to record EFDC+ messages
   write(mpi_filename, '(A13,I3.3,A4)')    'EFDC_out_proc_', process_id, '.log'
-  Open(unit = mpi_efdc_out_unit, status = 'replace', file = OUTDIR//mpi_filename)
+  open(unit = mpi_efdc_out_unit, status = 'replace', file = OUTDIR//mpi_filename)
   mpi_efdc_out_file = mpi_filename
   write(mpi_efdc_out_unit, '(A,/,A,/,A,/)') REPEAT('*',LEN_TRIM(STR)), TRIM(STR), REPEAT('*',LEN_TRIM(STR))
 
   ! *** Create output file for each processor to record EFDC+ mpi messages
   write(mpi_filename, '(A13,I3.3,A4)')    'log_mpi_proc_', process_id, '.log'
-  Open(unit = mpi_log_unit, status = 'replace', file = OUTDIR//mpi_filename)
+  open(unit = mpi_log_unit, status = 'replace', file = OUTDIR//mpi_filename)
   mpi_log_file = mpi_filename
   write(mpi_log_unit, '(A,/,A,/,A,/)') REPEAT('*',LEN_TRIM(STR)), TRIM(STR), REPEAT('*',LEN_TRIM(STR))
   
   ! *** Create output file for each processor to record EFDC+ errors
   write(mpi_filename, '(A15,I3.3,A4)')    'log_error_proc_', process_id, '.log'
-  Open(unit = mpi_error_unit, status = 'replace', file = OUTDIR//mpi_filename)
+  open(unit = mpi_error_unit, status = 'replace', file = OUTDIR//mpi_filename)
   mpi_error_file = mpi_filename
   write(mpi_error_unit, '(A,/,A,/,A,/)') REPEAT('*',LEN_TRIM(STR)), TRIM(STR), REPEAT('*',LEN_TRIM(STR))
   
   ! *** Write the file out
   if( MPI_DEBUG_FLAG )then
     write(mpi_filename, '(A14,I3.3,A4)')  'comm_mpi_proc_', process_id, '.log'
-    Open(unit = mpi_comm_unit, status = 'replace', file = OUTDIR//mpi_filename)
+    open(unit = mpi_comm_unit, status = 'replace', file = OUTDIR//mpi_filename)
     write(mpi_comm_unit, '(A,/,A,/,A,/)') REPEAT('*',LEN_TRIM(STR)), TRIM(STR), REPEAT('*',LEN_TRIM(STR))
   endif
 
   ! *** Write the file out
   write(mpi_filename, '(A13,I3.3,A4)')    'map_mpi_proc_', process_id, '.log'
-  Open(unit = mpi_mapping_unit, status = 'replace', file = OUTDIR//mpi_filename)
+  open(unit = mpi_mapping_unit, status = 'replace', file = OUTDIR//mpi_filename)
   write(mpi_mapping_unit, '(A,/,A,/,A,/)') REPEAT('*',LEN_TRIM(STR)), TRIM(STR), REPEAT('*',LEN_TRIM(STR))
 
   End subroutine Setup_MPI_Debug_File

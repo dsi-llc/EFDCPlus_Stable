@@ -323,14 +323,14 @@
       LBLOCKED(NBLOCKED) = L
 
       if( SUBO(L) > 0.0 )then
-        BLANCHORU(NBLOCKED) = BLANCHORUM
-        BLDRAFTUO(NBLOCKED) = BLDRAFTUOM
-        BLSILLU(NBLOCKED)   = BLSILLUM
+        BLANCHORU(NBLOCKED) = R2D_Global(M,1)
+        BLDRAFTUO(NBLOCKED) = R2D_Global(M,2)
+        BLSILLU(NBLOCKED)   = R2D_Global(M,3)
       endif
       if( SVBO(L) > 0.0 )then
-        BLANCHORV(NBLOCKED) = BLANCHORVM
-        BLDRAFTVO(NBLOCKED) = BLDRAFTVOM
-        BLSILLV(NBLOCKED)   = BLSILLVM
+        BLANCHORV(NBLOCKED) = R2D_Global(M,4)
+        BLDRAFTVO(NBLOCKED) = R2D_Global(M,5)
+        BLSILLV(NBLOCKED)   = R2D_Global(M,6)
       endif
 
       ! *** Set path intersect flags

@@ -97,7 +97,7 @@ Subroutine Map_Connectors
 
       if( M == 1 )then
         write(6,*) 'ERROR!  E/W CELL CONNECTORS MUST BE IN THE SAME DOMAIN', NP
-        call STOPP('.')
+        call STOPP('', 1)
       elseif( M == 2 )then
         ! *** VALID CONNECTOR
         NPEWBP = NPEWBP + 1
@@ -200,7 +200,7 @@ Subroutine Map_Connectors
 
       if( M == 1 )then
         write(6,*) 'ERROR!  E/W CELL CONNECTORS MUST BE IN THE SAME DOMAIN', NP
-        call STOPP('.')
+        call STOPP('', 1)
       elseif( M == 2 )then
         ! *** VALID CONNECTOR
         NPNSBP = NPNSBP + 1

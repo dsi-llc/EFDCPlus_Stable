@@ -9,7 +9,7 @@
 SUBROUTINE SEDIC
   
   use GLOBAL
-  use INFOMOD,only:SKIPCOM,READSTR
+  use INFOMOD,only: SKIPCOM, READSTR, NUMCOL
 
   use Variables_MPI
   use Broadcast_Routines
@@ -18,17 +18,19 @@ SUBROUTINE SEDIC
   implicit none
   
   integer :: CORE, INCORE, I, J, K, KT, L, LG, LL, M, NS, NT, VAR_BED, FDIR, NWV, NSC, ILocal, JLocal, SURFACE 
-  integer :: IWV, JWV, NSKIP, KTOP
+  integer :: IWV, JWV, KTOP, NSKIP, NCOL, VER
   character(LEN = 80)  :: STR_LINE
   character(LEN = 120) :: STR_120
   
-  !PT- real values are written in DOUBLE PRECISION. 7/16/08
+  real(RKD) :: TBEGINSEDZLJ
   real(RKD) :: DTOTAL, STWVHTMP, STWVTTMP, STWVDTMP, TSUM
   real(RKD),allocatable,dimension(:,:)   :: BDEN          ! *** (INCORE,KB)
   real(RKD),allocatable,dimension(:,:)   :: TAUTEMP       ! *** (KB)
   real(RKD),allocatable,dimension(:,:,:) :: PNEW          ! *** (INCORE,KB,NSEDS)
   real(RKD),allocatable,dimension(:,:)   :: TSED0S        ! *** (KB,INCORE)
   real(RKD),allocatable,dimension(:,:,:) :: ERATETEMP     ! *** (INCORE,KB,ITBM)
+
+  character(100) :: STR                    !< String buffer for input
 
   ! Reads in Initial Erosion data.
   ! Reads in Erosion Data for Newly deposited 
@@ -341,7 +343,7 @@ SUBROUTINE SEDIC
           endif
           if( BULKDENS(K,L) <= 0. )then
             PRINT '(" INVALID BULK DENSITY FOR CORE",I5," AT LAYER = ",I3)',NCORENO(I,J),K
-            call STOPP('.')
+            call STOPP('', 1)
           endif
         endif
       enddo
@@ -452,20 +454,38 @@ SUBROUTINE SEDIC
       write(*,'(A)')'READING SEDBED_HOT.SDF'
       OPEN (514,FILE = 'SEDBED_HOT.SDF',FORM = 'FORMATTED',STATUS = 'old')
       
-      read(514,34569) ((LAYERACTIVE_Global(K,LG),K = 1,KB),LG = 2,LA_Global)                ! *** LAYERACTIVE
-      read(514,34569) (KBT_Global(LG),LG = 2,LA_Global)                                   ! *** KBT
-      read(514,34567) (D50AVG_Global(LG),LG = 2,LA_Global)                                ! *** D50AVG
-      read(514,34568) ((BULKDENS_Global(K,LG),K = 1,KB),LG = 2,LA_Global)                   ! *** BULKDENS
-      read(514,34568) ((TSED_Global(K,LG),K = 1,KB),LG = 2,LA_Global)                       ! *** TSED
+      ! *** Check restart file version
+      read(514,'(A)') STR
+      NCOL = NUMCOL(STR)
+      VER = -1
+      if( NCOL == 2 )then
+        read(STR,*) TBEGINSEDZLJ, VER                   !< Restart time and version
+      endif
+
+      if( VER < 1240 )then
+        ! *** Reset file
+        close(514)
+        OPEN (514,FILE = 'SEDBED_HOT.SDF',FORM = 'FORMATTED',STATUS = 'old')
+      endif
+      
+      read(514,34569) ((LAYERACTIVE_Global(K,LG),K = 1,KB),LG = 2,LA_Global)                   ! *** LAYERACTIVE
+      read(514,34569) (KBT_Global(LG),LG = 2,LA_Global)                                        ! *** KBT
+      read(514,34567) (D50AVG_Global(LG),LG = 2,LA_Global)                                     ! *** D50AVG
+      read(514,34568) ((BULKDENS_Global(K,LG),K = 1,KB),LG = 2,LA_Global)                      ! *** BULKDENS
+      read(514,34568) ((TSED_Global(K,LG),K = 1,KB),LG = 2,LA_Global)                          ! *** TSED
+      if( VER >= 1240 )then
+        read(514,34568) ((TSED0_Global(K,LG),K = 1,KB),LG = 2,LA_Global)                       ! *** TSED
+      endif
       read(514,34568) (((PERSED_Global(NS,K,LG),NS = 1,NSEDS),K = 1,KB),LG = 2,LA_Global)      ! *** PERSED
     endif !***End calculation on master process
     
     call Broadcast_Array(LAYERACTIVE_Global, master_id)
-    call Broadcast_Array(KBT_Global, master_id)
-    call Broadcast_Array(D50AVG_Global, master_id)
-    call Broadcast_Array(BULKDENS_Global, master_id)
-    call Broadcast_Array(TSED_Global, master_id)
-    call Broadcast_Array(PERSED_Global, master_id)
+    call Broadcast_Array(KBT_Global,         master_id)
+    call Broadcast_Array(D50AVG_Global,      master_id)
+    call Broadcast_Array(BULKDENS_Global,    master_id)
+    call Broadcast_Array(TSED_Global,        master_id)
+    call Broadcast_Array(TSED0_Global,       master_id)
+    call Broadcast_Array(PERSED_Global,      master_id)
 
     ! *** Map to local domain
     do LG = 2,LA_Global
@@ -476,6 +496,9 @@ SUBROUTINE SEDIC
         D50AVG(LL)        = D50AVG_Global(LG)
         BULKDENS(:,LL)    = BULKDENS_Global(:,LG)
         TSED(:,LL)        = TSED_Global(:,LG)
+        if( VER >= 12400 )then
+          TSED0(:,LL)        = TSED0_Global(:,LG)
+        endif
         PERSED(:,:,LL)    = PERSED_Global(:,:,LG)
         do K = 1,KB
           DTOTAL = SUM(PERSED(:,K,LL))
@@ -526,7 +549,7 @@ SUBROUTINE SEDIC
         CORE = NCORENO(IL(L),JL(L))
         if( CORE < 1 ) CORE = 1
         do K = 1,KB
-          TSED0(K,L)  = TSED(K,L)
+          if( VER < 12400 ) TSED0(K,L)  = TSED(K,L)
           PORBED(L,K) = 1. - BULKDENS(K,L)/SEDDENS(CORE)
         enddo
       endif

@@ -420,7 +420,7 @@ SUBROUTINE SETBCS
     endif
   enddo
 
-  ! *** SET THIN BARRIERS BY CALLING CELLMASK
+  ! *** Set thin barriers by calling CELLMASK
   if( ISMASK == 1 )  call CELLMASK
 
   ! *** Navigation locks - Set initial masks to off
@@ -1193,4 +1193,4 @@ SUBROUTINE SETBCS
  RETURN
   
 END SUBROUTINE SETBCS
-
+    

@@ -28,36 +28,66 @@ module mod_netcdf
 
     implicit none
 
-    integer(4), parameter        :: ZERO = 0, ONE = 1, FOUR = 4, NC_VAR_CNT = 155, LEN_NAME = 20
-    real(4), parameter           :: MISSING_VALUE = -999.
-    
+    integer(4), parameter        :: ZERO = 0, ONE = 1, FOUR = 4, NC_VAR_CNT = 155, LEN_NAME = 20  !< NetCDF constants
+    real(4), parameter           :: MISSING_VALUE = -999.  !< Missing value indicator for NetCDF output
+
     type nc_var
-        integer(2)     :: id = 0
-        character(20)  :: name,units
-        integer(2)     :: data_type,dim_type,layer_dim,comp_dim
-        character(100) :: long_name
-        character(100) :: standard_name
-        integer(4),allocatable,dimension(:) :: idx
+        integer(2)     :: id = 0               !< NetCDF variable ID
+        character(20)  :: name                 !< Variable short name
+        character(20)  :: units                !< Variable units
+        integer(2)     :: data_type            !< Data type (0=real, 1=integer)
+        integer(2)     :: dim_type             !< Dimension type code
+        integer(2)     :: layer_dim            !< Layer dimension ID
+        integer(2)     :: comp_dim             !< Component dimension ID
+        character(100) :: long_name            !< Variable long descriptive name
+        character(100) :: standard_name        !< CF standard name
+        integer(4),allocatable,dimension(:) :: idx  !< Index array for variable
     end type
 
     type nc_dataset
-        integer(4) :: id = 0
-        integer(2) :: isopen = 0
-        integer(4) :: node_dim, col_dim, row_dim, lcm_dim, cnr_dim
-        integer(4) :: nodecnt, cellcnt, colcnt, rowcnt
-        integer(4) :: nc_msh(9), nc_sig, nc_kl, nc_kc, nc_lyr
-        integer(4) :: nc_cuv, nc_rssbc, nc_seddia
-        integer(4) :: cell_dim, time_dim, name_dim
-        integer(4) :: kc_dim, dye_dim, tox_dim, nalg_dim, nzoo_dim, nshf_dim
-        integer(4) :: kb_dim, sed_dim, snd_dim, sxd_dim, nseds2_dim
-        integer(4) :: nqctl_dim, nqwr_dim, time_idx
-        integer(4) :: nc_time
-        integer(4) :: idx(NC_VAR_CNT)
+        integer(4) :: id = 0                   !< NetCDF file ID
+        integer(2) :: isopen = 0               !< File open status flag (0=closed, 1=open)
+        integer(4) :: node_dim                 !< Node dimension ID
+        integer(4) :: col_dim                  !< Column dimension ID
+        integer(4) :: row_dim                  !< Row dimension ID
+        integer(4) :: lcm_dim                  !< LCM dimension ID
+        integer(4) :: cnr_dim                  !< Corner dimension ID
+        integer(4) :: nodecnt                  !< Number of nodes
+        integer(4) :: cellcnt                  !< Number of cells
+        integer(4) :: colcnt                   !< Number of columns
+        integer(4) :: rowcnt                   !< Number of rows
+        integer(4) :: nc_msh(9)                !< Mesh topology variable IDs
+        integer(4) :: nc_sig                   !< Sigma coordinate variable ID
+        integer(4) :: nc_kl                    !< Layer index variable ID
+        integer(4) :: nc_kc                    !< Layer count variable ID
+        integer(4) :: nc_lyr                   !< Layer variable ID
+        integer(4) :: nc_cuv                   !< UV component variable ID
+        integer(4) :: nc_rssbc                 !< Radiation stress BC variable ID
+        integer(4) :: nc_seddia                !< Sediment diameter variable ID
+        integer(4) :: cell_dim                 !< Cell dimension ID
+        integer(4) :: time_dim                 !< Time dimension ID
+        integer(4) :: name_dim                 !< Name dimension ID
+        integer(4) :: kc_dim                   !< KC (vertical layers) dimension ID
+        integer(4) :: dye_dim                  !< Dye classes dimension ID
+        integer(4) :: tox_dim                  !< Toxics classes dimension ID
+        integer(4) :: nalg_dim                 !< Algae classes dimension ID
+        integer(4) :: nzoo_dim                 !< Zooplankton classes dimension ID
+        integer(4) :: nshf_dim                 !< Shellfish classes dimension ID
+        integer(4) :: kb_dim                   !< KB (bed layers) dimension ID
+        integer(4) :: sed_dim                  !< Cohesive sediment classes dimension ID
+        integer(4) :: snd_dim                  !< Non-cohesive sediment classes dimension ID
+        integer(4) :: sxd_dim                  !< Combined sediment classes dimension ID
+        integer(4) :: nseds2_dim               !< Extended sediment classes dimension ID
+        integer(4) :: nqctl_dim                !< Hydraulic structures dimension ID
+        integer(4) :: nqwr_dim                 !< Withdrawal/return dimension ID
+        integer(4) :: time_idx                 !< Current time index
+        integer(4) :: nc_time                  !< Time variable ID
+        integer(4) :: idx(NC_VAR_CNT)          !< Variable IDs array
     end type
         
-    
-    type(nc_dataset),allocatable :: nc(:)
-    character(10)                :: nc_datestamp
+
+    type(nc_dataset),allocatable :: nc(:)    !< Array of NetCDF datasets
+    character(10)                :: nc_datestamp  !< Datestamp for NetCDF files
 
     contains
 

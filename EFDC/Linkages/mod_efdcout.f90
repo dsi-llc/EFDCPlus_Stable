@@ -389,7 +389,10 @@
     NS = 0
     if (IS_ARRAY_OUT(2) == 1 ) NS = NS + 9
     if (IS_ARRAY_OUT(3) == 1 ) NS = NS + 4
-    if (IS_ARRAY_OUT(4) == 1 ) NS = NS + 5
+    if (IS_ARRAY_OUT(4) == 1 ) then
+      NS = NS + 2
+      if( ISTOPT(2) == 1 .or. ISTOPT(2) == 2 ) NS = NS + 3
+    endif
     if (IS_ARRAY_OUT(5) == 1 ) NS = NS + 1 + 3*NALGAE
     write(EE_UNIT) INT(NS,4)
 

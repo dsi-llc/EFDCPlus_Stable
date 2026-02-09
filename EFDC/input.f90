@@ -406,7 +406,7 @@
 
   if( ISRESTI == 1 .and. ICONTINUE == 1 )then
     ! *** FOR CONTINUATION MODE (TBEGINC IS SET FROM THE RESTART FILE)
-    NTC = NTC + INT(TBEGIN - TBEGINC)
+    NTC = NTC + NINT((TBEGIN - TBEGINC)*TCON/TIDALP)
     TBEGIN = TBEGINC
   endif
 
@@ -1623,8 +1623,8 @@
 
         if( HYD_STR_GL(NC).NQCTYP > 4 )then
           if( HYD_STR_GL(NC).HS_FACTOR <= 0  )then
-            PRINT *,' *** BAD HS_FACTOR: NC, HS_FACTOR = ',NC, HYD_STR_GL(NC).HS_FACTOR
-            call STOPP('')
+            PRINT *,' *** BAD HS_FACTOR: NC, HS_FACTOR = ', NC, HYD_STR_GL(NC).HS_FACTOR
+            call STOPP('', 1)
           endif
         endif
 
@@ -2055,7 +2055,6 @@
   endif
 
   TAUCMIN = 1000.
-  ICALC_BL = 0
   SSG = 2.65         ! *** DEFAULT GRAIN DENSITY USING QUARTZ
   if( NSND > 0 )then
     !C41*  READ NONCOHESIVE SEDIMENT parameter SET 1 REPEAT DATA LINE NSND TIMES
@@ -2635,25 +2634,26 @@
       write(mpi_efdc_out_unit,*) IASWRAD, REVC, RCHC, ISVHEAT, SWRATNF, SWRATNS, FSWRATF, TEMTHKO, TEMBO, HTBED1, HTBED2, WQKETSS, FSOLRADMIN
       if( ISO > 0 ) GOTO 100
     endif
+
+    call Broadcast_Scalar(IASWRAD    , master_id)
+    call Broadcast_Scalar(REVC       , master_id)
+    call Broadcast_Scalar(RCHC       , master_id)
+    call Broadcast_Scalar(ISVHEAT    , master_id)
+    call Broadcast_Scalar(SWRATNF    , master_id)
+    call Broadcast_Scalar(SWRATNS    , master_id)
+    call Broadcast_Scalar(FSWRATF    , master_id)
+    call Broadcast_Scalar(TEMTHKO    , master_id)
+    call Broadcast_Scalar(TEMBO      , master_id)
+    call Broadcast_Scalar(HTBED1     , master_id)
+    call Broadcast_Scalar(HTBED2     , master_id)
+    call Broadcast_Scalar(WQKETSS    , master_id)
+    call Broadcast_Scalar(FSOLRADMIN , master_id)
+
     WQKEB(1) = SWRATNF
     If( ISTRAN(6) == 0 .and. ISTRAN(7) == 0  )then
       WQKETSS = 0.0
     endif
-
-    call Broadcast_Scalar(IASWRAD   , master_id)
-    call Broadcast_Scalar(REVC      , master_id)
-    call Broadcast_Scalar(RCHC      , master_id)
-    call Broadcast_Scalar(ISVHEAT   , master_id)
-    call Broadcast_Scalar(SWRATNF   , master_id)
-    call Broadcast_Scalar(SWRATNS   , master_id)
-    call Broadcast_Scalar(FSWRATF   , master_id)
-    call Broadcast_Scalar(TEMTHKO   , master_id)
-    call Broadcast_Scalar(TEMBO     , master_id)
-    call Broadcast_Scalar(HTBED1    , master_id)
-    call Broadcast_Scalar(HTBED2    , master_id)
-    call Broadcast_Scalar(WQKEB(1)  , master_id)
-    call Broadcast_Scalar(WQKETSS   , master_id)
-
+    
   endif
 
   ! *** READ DYE TYPES
@@ -3374,7 +3374,7 @@
   write(mpi_error_unit,1001)NCARD
   write(mpi_error_unit,1001)NCARD
 
-  call STOPP('')
+  call STOPP('', 1)
 
 2000 continue
 
@@ -3850,7 +3850,6 @@
 
   ! *** OPEN FILE GWATER.INP TO SPECIFY GROUNDWATER INTERACTION
   ! *** BY INFILTRATION AND EVAPOTRANSPIRATION
-  ISGWIE = 0
   RNPOR = 1.E-12
   if( ISGWIT == 1 )then
     if( process_id == master_id )then
@@ -4000,7 +3999,7 @@
           if( IZONE > NSEEPCLASSES )then
 
             write(mpi_log_unit,*)'BAD SEEPAGE CLASS AT I,J = ',id,jd
-            call STOPP('')
+            call STOPP('', 1)
           endif
           QGW(L) = SEEPRATE(IZONE)*RVALUE
         else
@@ -4736,95 +4735,100 @@
 
   ! *** READ IN INITIAL SALINITY, TEMPERATURE, DYE, SED, SND, TOX
   ! *** FOR COLD STARTS FORM FILE XXXX.INP
+  
   ! *** SALINITY
-  do K = 1,KC
-    do L = 2,LA
-      SALINIT(L,K) = 0.
-    enddo
-  enddo
-
-  if( ISTRAN(1) >= 1 .and. (ISRESTI == 0 .or. (ISRESTI >= 1 .and. ISCI(1) == 0) .or. (ISTOPT(1) > 1))  )then
-    if( ISTOPT(1) >= 1 )then
-      if( process_id == master_id )then
-        write(*,'(A)')'READING SALT.INP'
-        open(1,FILE = 'salt.inp',STATUS = 'UNKNOWN')
-
-        ! ***   SKIP OVER TITLE AND AND HEADER LINES
-        STR = READSTR(1)
-        read(1,*)ISALTYP
-
-        if( ISALTYP == 0 )then
-          do LG = 2, LA_GLOBAL
-            read(1,*,IOSTAT = ISO) (SAL_Global(LG,K),K = 1,KC)
-            if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE SALT.INP')
-          enddo
-        else
-          do L = 2, LA_GLOBAL
-            read(1,*,IOSTAT = ISO)LDUM,IDUM,JDUM,(CONINIT(K),K = 1,KC)
-            if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE SALT.INP')
-
-            LG = LIJ_Global(IDUM,JDUM)
-            SAL_Global(LG,:) = CONINIT(:)
-          enddo
-        endif
-        close(1)
-      endif
-
-      call Broadcast_Array(SAL_Global, master_id)
-
-      ! *** Map to Local Domain
-      do LG = 2,LA_GLOBAL
-        L = Map2Local(LG).LL
-        if( L > 1 )then
-          SALINIT(L,:) = SAL_Global(LG,:)
-        endif
+  if( ISTRAN(1) >= 1 )then
+      do K = 1,KC
+        do L = 2,LA
+          SALINIT(L,K) = 0.
+        enddo
       enddo
-    endif
 
+      if( ISRESTI == 0 .or. (ISRESTI >= 1 .and. ISCI(1) == 0) .or. (ISTOPT(1) > 1) )then
+        if( ISTOPT(1) >= 1 )then
+          if( process_id == master_id )then
+            write(*,'(A)')'READING SALT.INP'
+            open(1,FILE = 'salt.inp',STATUS = 'UNKNOWN')
+
+            ! ***   SKIP OVER TITLE AND AND HEADER LINES
+            STR = READSTR(1)
+            read(1,*)ISALTYP
+
+            if( ISALTYP == 0 )then
+              do LG = 2, LA_GLOBAL
+                read(1,*,IOSTAT = ISO) (SAL_Global(LG,K),K = 1,KC)
+                if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE SALT.INP')
+              enddo
+            else
+              do L = 2, LA_GLOBAL
+                read(1,*,IOSTAT = ISO)LDUM,IDUM,JDUM,(CONINIT(K),K = 1,KC)
+                if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE SALT.INP')
+
+                LG = LIJ_Global(IDUM,JDUM)
+                SAL_Global(LG,:) = CONINIT(:)
+              enddo
+            endif
+            close(1)
+          endif
+
+          call Broadcast_Array(SAL_Global, master_id)
+
+          ! *** Map to Local Domain
+          do LG = 2,LA_GLOBAL
+            L = Map2Local(LG).LL
+            if( L > 1 )then
+              SALINIT(L,:) = SAL_Global(LG,:)
+            endif
+          enddo
+        endif
+
+      endif
   endif
 
   ! *** TEMPERATURE
-  TEM_Global = TEMO
-  do K = 1,KC
-    do L = 2,LA
-      TEMINIT(L,K) = TEMO
-    enddo
-  enddo
-
-  if( ISTRAN(2) >= 1 .and. (ISRESTI == 0 .or. (ISRESTI >= 1 .and. ISCI(2) == 0) .or. (ISTOPT(2) > 9) ) )then
-    if( ISTOPT(2) >= 1 .or. INITTEMP > 0 )then
-      if( process_id == master_id )then
-        write(*,'(A)')'READING TEMP.INP'
-        open(1,FILE = 'temp.inp',STATUS = 'UNKNOWN')
-        ! ***   SKIP OVER TITLE AND AND HEADER LINES
-        STR = READSTR(1)
-        read(1,*) ISALTYP
-
-        if( ISALTYP == 0 )then
-          do LG = 2,LA_Global
-            read(1,*,IOSTAT = ISO) (TEM_Global(LG,K),K = 1,KC)
-            if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE TEMP.INP')
-          enddo
-        else
-          do L = 2,LA_Global
-            read(1,*,IOSTAT = ISO) LDUM, IDUM, JDUM, (CONINIT(K),K = 1,KC)
-
-            LG = LIJ_Global(IDUM,JDUM)
-            TEM_Global(LG,:) = CONINIT(:)
-          enddo
-        endif
-        close(1)
-      endif
-      call Broadcast_Array(TEM_Global, master_id)
-
-      ! *** Map to Local Domain
-      do LG = 2,LA_GLOBAL
-        L = Map2Local(LG).LL
-        if( L > 1 )then
-          TEMINIT(L,:) = TEM_Global(LG,:)
-        endif
+  if( ISTRAN(2) >= 1 )then
+      TEM_Global = TEMO
+      do K = 1,KC
+        do L = 2,LA
+          TEMINIT(L,K) = TEMO
+        enddo
       enddo
-    endif
+
+      if( ISRESTI == 0 .or. (ISRESTI >= 1 .and. ISCI(2) == 0) .or. (ISTOPT(2) > 9) )then
+        if( ISTOPT(2) >= 1 .or. INITTEMP > 0 )then
+          if( process_id == master_id )then
+            write(*,'(A)')'READING TEMP.INP'
+            open(1,FILE = 'temp.inp',STATUS = 'UNKNOWN')
+            ! ***   SKIP OVER TITLE AND AND HEADER LINES
+            STR = READSTR(1)
+            read(1,*) ISALTYP
+
+            if( ISALTYP == 0 )then
+              do LG = 2,LA_Global
+                read(1,*,IOSTAT = ISO) (TEM_Global(LG,K),K = 1,KC)
+                if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE TEMP.INP')
+              enddo
+            else
+              do L = 2,LA_Global
+                read(1,*,IOSTAT = ISO) LDUM, IDUM, JDUM, (CONINIT(K),K = 1,KC)
+
+                LG = LIJ_Global(IDUM,JDUM)
+                TEM_Global(LG,:) = CONINIT(:)
+              enddo
+            endif
+            close(1)
+          endif
+          call Broadcast_Array(TEM_Global, master_id)
+
+          ! *** Map to Local Domain
+          do LG = 2,LA_GLOBAL
+            L = Map2Local(LG).LL
+            if( L > 1 )then
+              TEMINIT(L,:) = TEM_Global(LG,:)
+            endif
+          enddo
+        endif
+      endif
   endif
 
   ! *** DYE
@@ -7272,7 +7276,7 @@
                 DIAMMHK = ZMAXMHK(M,L)-ZMINMHK(M,L)
                 if( DIAMMHK<0.0 )then   !error check
                   PRINT *,'MHK ZMIN > ZMAX'
-                  call STOPP('.')
+                  call STOPP('.', 1)
                 endif
               endif
             enddo
@@ -7320,7 +7324,7 @@
               DIAMMHK = ZMAXMHK(M,L)-ZMINMHK(M,L)
               if( DIAMMHK<0.0 )then
                 PRINT*,'MHK ZMIN > ZMAX'
-                call STOPP('')
+                call STOPP('', 1)
               endif
             endif
           enddo
@@ -7362,7 +7366,7 @@
           if( (DIAMMHK>DXP(L) .or. DIAMMHK>DYP(L)) .and. DENMHK(MVEGL(L)-90)>1.0 )then
             PRINT*,'MHK DIAMETER EXCEEDS CELL SIZE'
             PRINT*,'AND DENSITY >= 1'
-            call STOPP('')
+            call STOPP('', 1)
           endif
         endif
       enddo

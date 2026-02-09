@@ -38,10 +38,11 @@ SUBROUTINE SEDZLJ(L)
   real(RKD) :: ERATEMOD
   real(RKD) :: ERO
   real(RKD) :: NSCTOT
-  real(RKD) :: ONE = 1.0
+  real(RKD) :: ONE = 1.0_8
   real(RKD) :: PFY
   real(RKD) :: PX
   real(RKD) :: PY
+  real(RKD) :: RATIOMASS
   real(RKD) :: SEDFLUX
   real(RKD) :: SN00
   real(RKD) :: SN01
@@ -66,6 +67,7 @@ SUBROUTINE SEDZLJ(L)
   real(RKD) ,dimension(NSEDS2) :: QBFLUX
   real(RKD) ,dimension(NSEDS2) :: SMASS
   real(RKD) ,dimension(NSEDS)  :: TTEMP
+  real(RKD) ,dimension(KBM,NSEDS)  :: PMC   ! DELME
 
   real(RKD) ,dimension(KB) :: INITMASS
   real(RKD) ,dimension(2)  :: NSCD
@@ -97,6 +99,9 @@ SUBROUTINE SEDZLJ(L)
   NOPROPWASH = .TRUE.
   
   INITMASS(1:KB) = TSED(1:KB,L)   ! *** Save the starting sediment mass by layers  (g/cm^2)
+  DO K = 1,KB
+    PMC(K,1:NSEDS) = PERSED(1:NSEDS,K,L)*INITMASS(K)   ! DELME
+  ENDDO
   SQR2PI = 1. / SQRT(2.*PI)
 
   ! *** Convert Bottom Shear from (m/s)^2 to dynes/cm^2, if using shear from EFDC
@@ -413,6 +418,10 @@ SUBROUTINE SEDZLJ(L)
       enddo
     endif
     
+    !if( timeday > 59.9 )then
+    !  print '(f15.5,i10,i6,i3,i5,f10.4,2e12.4)', timeday, niter, Map2Global(L).LG, K, LAYERACTIVE(K,L), HP(L), TSED(k,L), TSED0(K,L) ! delme
+    !endif
+
     ! *** Calculate TAUCRIT Based on the D50 of the bed or from Sedflume Data
     if( LAYERACTIVE(K,L) == 1 )then
       ! *** For active layers
@@ -570,7 +579,7 @@ SUBROUTINE SEDZLJ(L)
         TTEMP(1:NSEDS) = PERSED(1:NSEDS,K,L)*TSED(K,L)
       ENDWHERE
     endif
-    ! *** At this point, ELAY only includes the total potenial mass to be eroded frm the bed. Propwash Fast classes not addressed yet
+    ! *** At this point, ELAY only includes the total potential mass to be eroded frm the bed. Propwash Fast classes not addressed yet
     
     ! *** Ensure sufficient mass in current layer, otherwise empty the current layer
     ! *** and reduce erosion for next layer
@@ -610,27 +619,44 @@ SUBROUTINE SEDZLJ(L)
     
     ! *** Subtract total erosion from layer unit mass then Calculate new percentages
     TEMP = TSED(K,L) - ERO                                                           ! *** Eroded layer unit mass.  TSED already has deposition added.
-                                                                                     
-    if( TEMP < 1e-12 .or. SUM(TTEMP(:)) <= 0.0 )then                                 ! *** If the remaining mass in the layer is negative, set its mass to zero
+    TSUM = sum(TTEMP(:))
+    
+    if( TEMP < 1e-12 .or. TSUM <= 0.0 )then                                          ! *** If the remaining mass in the layer is negative, set its mass to zero
       TSED(K,L) = 0.0                                                                ! *** This layer has no mass
       LAYERACTIVE(K,L) = 0                                                           ! *** This layer is absent
       PERSED(1:NSEDS,K,L) = 0.0                                                      ! *** Zero mass fractions
-    else                                                                             
-      TSED(K,L) = TEMP                                                               ! *** New layer unit mass (g/cm^2)
+      
+    elseif( TEMP < 1e-4 .and. TSUM < 1e-4 )then
+      ! *** If the sediment layer contains very little mass, just use the TTEMP mass to recompute PERSED
+      TSED(K,L) = sum(TTEMP(:))
       PERSED(1:NSEDS,K,L) = TTEMP(1:NSEDS)/TSED(K,L)                                 ! *** New mass fractions
-      SUMPER = sum(PERSED(1:NSEDS,K,L))
-      if( abs(SUMPER - ONE) > 1e-8 )then
-        print '(a,f15.5,i10,2i5,4e18.10,f10.1,f10.7)', 'Bad PERSED: ',  TIMEDAY, NITER, L, K, TSED(K,L), sum(TTEMP(:)), TEMP, sum(prop_ero(l,1:nseds)) , PROP_ERO(L,0)/DXYP(L)/10000.  ! delme
+    
+    else 
+      ! *** Standard erosion processing
+      RATIOMASS = TEMP/TSUM
+      TTEMP(1:NSEDS) = TTEMP(1:NSEDS)*RATIOMASS                                      ! *** Ensure mass balance to the precision of the compiler
+      TSED(K,L) = TEMP                                                               ! *** New layer unit mass (g/cm^2)
+
+      PERSED(1:NSEDS,K,L) = TTEMP(1:NSEDS)/TSED(K,L)                                 ! *** New mass fractions
+      
+      ! delme
+      if( abs(RATIOMASS - ONE) > 1e-8 )then
+        SUMPER = sum(PERSED(1:NSEDS,K,L))
+        print '(a,f15.5,i10,2i5,6e18.10,f10.1,f10.7)', 'Bad PERSED: ',  TIMEDAY, NITER, L, K, SUMPER, INITMASS(K), ERO, TSED(K,L),   &
+                                                       sum(TTEMP(:)), TEMP!, sum(prop_ero(l,1:nseds)) , PROP_ERO(L,0)/DXYP(L)/10000.  ! delme
+        do ns = 1,nseds
+          print '(a,f15.5,i10,2i5,4e18.10,i5)', '            ',  TIMEDAY, NITER, L, K, PERSED(NS,K,L), ELAY(NS), TTEMP(NS), PMC(K,NS), NS  ! delme
+        enddo
         
         ! *** If the sediment layer contains very little mass, just use the TTEMP mass to recompute PERSED
-        if( TSED(K,L) < 1e-4 )then
+        if( TSED(K,L) < 1e-3 )then
           TSED(K,L) = sum(TTEMP(:))
           PERSED(1:NSEDS,K,L) = TTEMP(1:NSEDS)/TSED(K,L)                             ! *** New mass fractions
         else
           print '(a,e16.8,a,e16.8)', 'Stopping.  Computed Total Sediment = ', TSED(K,L), ',  Sum of Class by Class = ', sum(TTEMP(:))
           call STOPP('.')
         endif
-        !pause
+        pause   ! DELME
       endif
     endif                                                                            
 

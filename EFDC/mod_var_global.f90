@@ -27,26 +27,26 @@ MODULE GLOBAL
   integer(4),parameter :: ULOC = 301  !< OPEN UNIT FOR DRIFTER.INP
   integer(4),parameter :: ULGR = 302  !< OPEN UNIT FOR EE_DRIFTER.OUT
   integer(4),parameter :: UCOR = 303  !< OPEN UNIT FOR CORNERS.INP
-  integer(4),parameter :: WUNI = 304
-  integer(4),parameter :: UGRP = 305
-  integer(4),parameter :: UTBL = 306
-  integer(4),parameter :: UINP = 307
-  integer(4),parameter :: UOUT = 308
+  integer(4),parameter :: WUNI = 304  !< File unit number for wave/wind output
+  integer(4),parameter :: UGRP = 305  !< File unit number for group output
+  integer(4),parameter :: UTBL = 306  !< File unit number for table output
+  integer(4),parameter :: UINP = 307  !< File unit number for general input
+  integer(4),parameter :: UOUT = 308  !< File unit number for general output
   
-  character(10) :: EFDC_VER
-  character(40) :: EFDC_EXE
+  character(10) :: EFDC_VER  !< EFDC+ version number string
+  character(40) :: EFDC_EXE  !< EFDC+ executable name
 
   ! *****************************************************************************************************************************
   ! *** EFDC+ Main Controls and Hydrodynamics
   
-  character :: projectId*80, title*100, RunID*24
+  character :: projectId*80, title*100, RunID*24  !< Project identifier, title, and run identifier strings
   
   ! *** Global Control Variables
-  integer :: ISADAC(0:10)
-  integer :: ISFCT(0:10)
-  integer :: ISPHXY(10)
-  integer :: ISRSPH(10)
-  integer :: ISSPH(10)
+  integer :: ISADAC(0:10)  !< ADAC (Alternating Direction Advection Control) option flags by constituent type
+  integer :: ISFCT(0:10)   !< FCT (Flux Corrected Transport) option flags by constituent type
+  integer :: ISPHXY(10)    !< Horizontal advection scheme option flags
+  integer :: ISRSPH(10)    !< Radial source-sink advection option flags
+  integer :: ISSPH(10)     !< Spherical advection option flags
   integer :: ISTOPT(0:10)    !< Module option flags, see code for options
   integer :: ISTRAN(0:10)    !< Module activation/deactivation flag
   integer :: IWRSP(20)       !< SEDZLJ
@@ -58,30 +58,30 @@ MODULE GLOBAL
 
   logical DEBUG                                         !< Global flag to turn on additional output statements for debugging and model evaluation
   logical,allocatable,dimension(:) :: LMASKDRY          !< LMASKDRY = TRUE CELL IS WET.  CONTROLS ACTIVE CELL OPERATIONS
-  logical,allocatable,dimension(:) :: OLDMASK  
+  logical,allocatable,dimension(:) :: OLDMASK  !< Previous wet/dry mask for comparison (.TRUE.=wet, .FALSE.=dry)  
   
-  character*8  :: OUTDIR
-  character*8  :: CARDNO
-  character*10 :: RUNTITLE
+  character*8  :: OUTDIR    !< Output directory path for result files
+  character*8  :: CARDNO    !< Card number identifier for input processing
+  character*10 :: RUNTITLE  !< Simulation run title
 
-  integer(IK8) :: N                                     !< Global counter of timesteps based on DT 
-  integer(IK8) :: NRESTART                              !< Global counter of timesteps at the time of writing the restart file
-  integer(IK8) :: NITER                                 !< Global counter of actual timesteps
-  integer(IK8) :: NTS                                   !< Global counter of maximum timesteps based on DT
+  integer(IK8) :: N         !< Global counter of timesteps based on DT 
+  integer(IK8) :: NRESTART  !< Global counter of timesteps at the time of writing the restart file
+  integer(IK8) :: NITER     !< Global counter of actual timesteps
+  integer(IK8) :: NTS       !< Global counter of maximum timesteps based on DT
 
-  integer :: ISTL        !< Time step level: Normal: 2TL - Always 2, 3TL - 3 for standard timestep, 2 for trapezoidal corrector step
-  integer :: NTC         !< Number of reference time periods in run
-  integer :: NTSPTC      !< Number of time steps per reference time period
-  integer :: NTSPTC2     !< 
-  integer :: IS2TIM      !< Time stepping option: 0 - 3TL, 1 - 2TL
-  integer :: IS2TL       !< Time stepping option: 0 - 3TL, 1 - 2TL
-  
-  real :: TBEGIN         !< Starting Julian date of the run
-  real :: TCON           !< Conversion factor to convert TBEGIN to seconds
-  real :: TIDALP         !< Reference time period in seconds (e.g. 3600.0 or 86400.0) 
-
-  integer :: NTSTBC      !< 3tl hydrodynamic step counters
-  integer :: NCTBC       !< 3tl hydrodynamic step counters
+  integer :: ISTL           !< Time step level: Normal: 2TL - Always 2, 3TL - 3 for standard timestep, 2 for trapezoidal corrector step
+  integer :: NTC            !< Number of reference time periods in run
+  integer :: NTSPTC         !< Number of time steps per reference time period
+  integer :: NTSPTC2        !< Half of NTSPTC for time stepping 
+  integer :: IS2TIM         !< Time stepping option: 0 - 3TL, 1 - 2TL
+  integer :: IS2TL          !< Time stepping option: 0 - 3TL, 1 - 2TL
+                            
+  real(RKD) :: TBEGIN       !< Starting Julian date of the run
+  real(RKD) :: TCON         !< Conversion factor to convert TBEGIN to seconds
+  real(RKD) :: TIDALP       !< Reference time period in seconds (e.g. 3600.0 or 86400.0) 
+                            
+  integer :: NTSTBC         !< 3tl hydrodynamic step counters
+  integer :: NCTBC          !< 3tl hydrodynamic step counters
   
   ! *** Model time counters and intervals
  !REAL(RKD) :: DAYNEXT      !< The next whole day,     i.e.  INT(TIMEDAY) + 1
@@ -103,13 +103,13 @@ MODULE GLOBAL
   real(RKD) :: DTD          !< Delta T (days)
   real(RKD) :: DTDYN        !< Current dynamic timestep (2TL only)
   real(RKD) :: DTDYN1       !< Current dynamic timestep (2TL only) - Previous timesstep
-  real(RKD) :: DTI          !< 
+  real(RKD) :: DTI          !< Inverse of DT (1/DT) (1/s) 
   real(RKD) :: DTL1MN       !< Dynamic timestepping: Maximum delta T for method 1
   real(RKD) :: DTL2MN       !< Dynamic timestepping: Maximum delta T for method 2
   real(RKD) :: DTL3MN       !< Dynamic timestepping: Maximum delta T for method 3
   real(RKD) :: DTL4MN       !< Dynamic timestepping: Maximum delta T for method 4
-  real(RKD) :: DTMAX        !< 
-  real(RKD) :: DTMIN        !< 
+  real(RKD) :: DTMAX        !< Maximum allowed timestep for dynamic timestepping (s)
+  real(RKD) :: DTMIN        !< Minimum allowed timestep for dynamic timestepping (s) 
   real(RKD) :: DTSSFAC      !< Dynamic timestepping: Safety factor (> 0.0 to enable dynamic timestepping)
   real(RKD) :: DTSSDHDT     !< Dynamic timestepping: Maximum allowable change in HP (method 4)
 
@@ -117,68 +117,68 @@ MODULE GLOBAL
   real :: DELTI             !< 1/DELT
 
   !< Runtime timing variables
-  real(RKD) :: TAVB
-  real(RKD) :: TTBXY
-  real(RKD) :: TCEXP
-  real(RKD) :: TCONG
-  real(RKD) :: THDMT
-  real(RKD) :: THEAT
-  real(RKD) :: THMDF
-  real(RKD) :: TLRPD
-  real(RKD) :: TMISC
-  real(RKD) :: TPUV
-  real(RKD) :: TQCTL
-  real(RKD) :: TQQQ
-  real(RKD) :: TSADV
-  real(RKD) :: TTSED
-  real(RKD) :: TSSTX
-  real(RKD) :: TTWAIT
-  real(RKD) :: TUVW
-  real(RKD) :: TVDIF
-  real(RKD) :: TMPIEE
-  real(RKD) :: TMPIGH
-  real(RKD) :: TMPITMP
-  real(RKD) :: TWQKIN
-  real(RKD) :: TWQRPEM
-  real(RKD) :: TWQSED
-  real(RKD) :: DSITIMING(20)
+  real(RKD) :: TAVB         !< Accumulated CPU time for vertical diffusion (s)
+  real(RKD) :: TTBXY        !< Accumulated CPU time for bed shear stress calculations (s)
+  real(RKD) :: TCEXP        !< Accumulated CPU time for explicit momentum terms (s)
+  real(RKD) :: TCONG        !< Accumulated CPU time for conjugate gradient solver (s)
+  real(RKD) :: THDMT        !< Accumulated CPU time for horizontal diffusion momentum (s)
+  real(RKD) :: THEAT        !< Accumulated CPU time for heat transport (s)
+  real(RKD) :: THMDF        !< Accumulated CPU time for horizontal momentum diffusion (s)
+  real(RKD) :: TLRPD        !< Accumulated CPU time for LRP drifter tracking (s)
+  real(RKD) :: TMISC        !< Accumulated CPU time for miscellaneous operations (s)
+  real(RKD) :: TPUV         !< Accumulated CPU time for external mode velocity (s)
+  real(RKD) :: TQCTL        !< Accumulated CPU time for hydraulic structures (s)
+  real(RKD) :: TQQQ         !< Accumulated CPU time for turbulence calculations (s)
+  real(RKD) :: TSADV        !< Accumulated CPU time for salinity/temperature advection (s)
+  real(RKD) :: TTSED        !< Accumulated CPU time for sediment transport (s)
+  real(RKD) :: TSSTX        !< Accumulated CPU time for surface shear stress (s)
+  real(RKD) :: TTWAIT       !< Accumulated CPU time for MPI wait operations (s)
+  real(RKD) :: TUVW         !< Accumulated CPU time for velocity calculations (s)
+  real(RKD) :: TVDIF        !< Accumulated CPU time for vertical diffusion (s)
+  real(RKD) :: TMPIEE       !< Accumulated CPU time for MPI east-west exchanges (s)
+  real(RKD) :: TMPIGH       !< Accumulated CPU time for MPI ghost cell operations (s)
+  real(RKD) :: TMPITMP      !< Accumulated CPU time for MPI temporary operations (s)
+  real(RKD) :: TWQKIN       !< Accumulated CPU time for water quality kinetics (s)
+  real(RKD) :: TWQRPEM      !< Accumulated CPU time for RPEM water quality (s)
+  real(RKD) :: TWQSED       !< Accumulated CPU time for water quality sediment flux (s)
+  real(RKD) :: DSITIMING(20) !< Array of DSI-specific timing accumulators (s)
   
-  character*8 :: DSITIME(20)
+  character*8 :: DSITIME(20)  !< Labels for DSI-specific timing accumulators
   
   ! *****************************************************************************************************************************
   ! *** Restart Variables
-  character(120) :: RESFILE
-  character(120) :: RSTFILE
-  character(10)  :: RSTDATE
-  character(2)   :: RSTTIME
+  character(120) :: RESFILE  !< Restart input file path
+  character(120) :: RSTFILE  !< Restart output file path
+  character(10)  :: RSTDATE  !< Restart date string (YYYY-MM-DD)
+  character(2)   :: RSTTIME  !< Restart time string (HH)
 
-  integer :: Restart_In_Ver
+  integer :: Restart_In_Ver  !< Version number of the restart file being read
   
   integer :: ISRESTI     !< Global restart input flag
-  integer :: ISRESTIOPT
+  integer :: ISRESTIOPT  !< Restart input option flag
   integer :: ISRESTO     !< Global restart write flag
   integer :: ISRESTR     !< Global restart
   integer :: ISCI(0:10)      !< RESTART FLAG - INPUT
   integer :: ISCO(0:10)      !< RESTART FLAG - OUTPUT
 
-  integer(IK4)    :: ISGREGOR
-  integer(IK4)    :: ICONTINUE
-  integer(IK4)    :: RSTFIRST_WC
-  integer(IK4)    :: RSTFIRST_WS
-  integer(IK4)    :: RSTFIRST_VEL
-  integer(IK4)    :: RSTFIRST_WQ
-  integer(IK4)    :: RSTFIRST_SEDZLJ
-  integer(IK4)    :: RSTFIRST_BED
-  integer(IK4)    :: RSTFIRST_SD
-  integer(IK4)    :: RSTFIRST_BC
-  integer(IK4)    :: RSTFIRST_RPEM
+  integer(IK4)    :: ISGREGOR        !< Gregorian calendar option for restart
+  integer(IK4)    :: ICONTINUE       !< Flag to continue from previous simulation (1=continue, 0=new)
+  integer(IK4)    :: RSTFIRST_WC     !< Flag indicating first restart write for water column
+  integer(IK4)    :: RSTFIRST_WS     !< Flag indicating first restart write for water surface
+  integer(IK4)    :: RSTFIRST_VEL    !< Flag indicating first restart write for velocity
+  integer(IK4)    :: RSTFIRST_WQ     !< Flag indicating first restart write for water quality
+  integer(IK4)    :: RSTFIRST_SEDZLJ !< Flag indicating first restart write for SEDZLJ
+  integer(IK4)    :: RSTFIRST_BED    !< Flag indicating first restart write for bed
+  integer(IK4)    :: RSTFIRST_SD     !< Flag indicating first restart write for sediment diagnostics
+  integer(IK4)    :: RSTFIRST_BC     !< Flag indicating first restart write for boundary conditions
+  integer(IK4)    :: RSTFIRST_RPEM   !< Flag indicating first restart write for RPEM
   
   ! *****************************************************************************************************************************
   ! *** OMP
-  integer(4)  :: NTHREADS
-  real(RKD)   :: TIME_END
-  real(RKD)   :: TIME_START
-  real(RKD)   :: TCGRS
+  integer(4)  :: NTHREADS    !< Number of OpenMP threads
+  real(RKD)   :: TIME_END    !< Wall clock time at end of simulation (s)
+  real(RKD)   :: TIME_START  !< Wall clock time at start of simulation (s)
+  real(RKD)   :: TCGRS       !< Accumulated CPU time for conjugate gradient solver (s)
   
   ! *****************************************************************************************************************************
   ! *** EFDC+ Structured Grid
@@ -208,9 +208,9 @@ MODULE GLOBAL
   integer,allocatable,dimension(:)     :: LSWC       !< Index of the cell to the SOUTH-WEST of the current L
   integer,allocatable,dimension(:)     :: LWC        !< Index of the cell to the SOUTH of the current L
   
-  real :: DX
-  real :: DY
-  real :: DZI           
+  real :: DX   !< Default uniform grid spacing in X/I direction (m)
+  real :: DY   !< Default uniform grid spacing in Y/J direction (m)
+  real :: DZI  !< Inverse of default vertical layer thickness (1/m)           
   real(8) :: center_x, center_y                      !< Domain centroid, used to reduce coordinates from double precision to single precision
 
   real,target,allocatable,dimension(:) :: CUE        !< Cell rotation matrix
@@ -226,7 +226,7 @@ MODULE GLOBAL
   integer :: LA          !< Number of active cells minus one.  L = 2 is first active cell.  Active cells range from 2 to LA
   integer :: LC          !< LC = LA + 1
   integer :: LCM         !< Maximum number of cells, LCM = LA + 2
-  integer :: LVC
+  integer :: LVC  !< Number of cells in vertical column for special operations
   
   integer :: NDM         !< Number of OpemMP threads used to divide the domain
   integer :: LDM         !< Number of active cells in each multi-thread region for OpenMP implementation
@@ -323,7 +323,7 @@ MODULE GLOBAL
   integer,allocatable,dimension(:)     :: JEPEW      !< East-West cell connector, J index of East cell     
   integer,allocatable,dimension(:)     :: JWPEW      !< East-West cell connector, J index of West cell    
 
-  real :: QCHERR   
+  real :: QCHERR  !< Subgrid channel flow error tolerance (m3/s)   
   real,allocatable,dimension(:) :: CHANFRIC      !< Subrgid scale channel friction coefficient dimensionless
   real,allocatable,dimension(:) :: CHANLEN       !< Subgrid scale channel connector length
   real,allocatable,dimension(:) :: PMDCH         !< SURFACE ELEVATION POTENTIAL IN CHANNEL HOST CELL
@@ -373,81 +373,81 @@ MODULE GLOBAL
   logical,allocatable,dimension(:)   :: LBED      !< LOGICAL FLAG IF THE SPECIFIED VEGETATION CELL IS SELECTED
   logical,allocatable,dimension(:)   :: LVEG      !< LOGICAL FLAG IF THE SPECIFIED VEGETATION CELL IS SELECTED
 
-  real,allocatable,dimension(:)   :: BELVE
-  real,allocatable,dimension(:)   :: BELVW
-  real,allocatable,dimension(:)   :: BELVN
-  real,allocatable,dimension(:)   :: BELVS
-  real,allocatable,dimension(:,:) :: BE
-  real,allocatable,dimension(:,:) :: BW
-  real,allocatable,dimension(:,:) :: BN
-  real,allocatable,dimension(:,:) :: BS
-  real,allocatable,dimension(:)   :: BEE
-  real,allocatable,dimension(:)   :: BEW
-  real,allocatable,dimension(:)   :: BEN
-  real,allocatable,dimension(:)   :: BES
-  real,allocatable,dimension(:)   :: BI1E
-  real,allocatable,dimension(:)   :: BI1W
-  real,allocatable,dimension(:)   :: BI1N
-  real,allocatable,dimension(:)   :: BI1S
-  real,allocatable,dimension(:)   :: BI2E
-  real,allocatable,dimension(:)   :: BI2W
-  real,allocatable,dimension(:)   :: BI2N
-  real,allocatable,dimension(:)   :: BI2S
-  real,allocatable,dimension(:,:) :: DZIGSD4U
-  real,allocatable,dimension(:,:) :: DZIGSD4V
-  real,allocatable,dimension(:)   :: HPE
-  real,allocatable,dimension(:)   :: HPW
-  real,allocatable,dimension(:)   :: HPN
-  real,allocatable,dimension(:)   :: HPS
-  real,allocatable,dimension(:,:) :: CDZDU
-  real,allocatable,dimension(:,:) :: CDZDV
-  real,allocatable,dimension(:,:) :: CDZFU
-  real,allocatable,dimension(:,:) :: CDZFV
-  real,allocatable,dimension(:,:) :: CDZMU
-  real,allocatable,dimension(:,:) :: CDZLU
-  real,allocatable,dimension(:,:) :: CDZLV
-  real,allocatable,dimension(:,:) :: CDZMV
-  real,allocatable,dimension(:,:) :: CDZRU
-  real,allocatable,dimension(:,:) :: CDZRV
-  real,allocatable,dimension(:,:) :: CDZUU
-  real,allocatable,dimension(:,:) :: CDZUV
-  real,allocatable,dimension(:,:) :: ZE
-  real,allocatable,dimension(:,:) :: ZW
-  real,allocatable,dimension(:,:) :: ZN
-  real,allocatable,dimension(:,:) :: ZS
-  real,allocatable,dimension(:,:) :: ZZE
-  real,allocatable,dimension(:,:) :: ZZW
-  real,allocatable,dimension(:,:) :: ZZN
-  real,allocatable,dimension(:,:) :: ZZS
+  real,allocatable,dimension(:)   :: BELVE   !< Bed elevation at east face for Sigma-Z (m)
+  real,allocatable,dimension(:)   :: BELVW   !< Bed elevation at west face for Sigma-Z (m)
+  real,allocatable,dimension(:)   :: BELVN   !< Bed elevation at north face for Sigma-Z (m)
+  real,allocatable,dimension(:)   :: BELVS   !< Bed elevation at south face for Sigma-Z (m)
+  real,allocatable,dimension(:,:) :: BE      !< Layer bottom elevation at east face (m)
+  real,allocatable,dimension(:,:) :: BW      !< Layer bottom elevation at west face (m)
+  real,allocatable,dimension(:,:) :: BN      !< Layer bottom elevation at north face (m)
+  real,allocatable,dimension(:,:) :: BS      !< Layer bottom elevation at south face (m)
+  real,allocatable,dimension(:)   :: BEE     !< Bed elevation offset for east face (m)
+  real,allocatable,dimension(:)   :: BEW     !< Bed elevation offset for west face (m)
+  real,allocatable,dimension(:)   :: BEN     !< Bed elevation offset for north face (m)
+  real,allocatable,dimension(:)   :: BES     !< Bed elevation offset for south face (m)
+  real,allocatable,dimension(:)   :: BI1E    !< Sigma-Z interpolation coefficient 1 for east face
+  real,allocatable,dimension(:)   :: BI1W    !< Sigma-Z interpolation coefficient 1 for west face
+  real,allocatable,dimension(:)   :: BI1N    !< Sigma-Z interpolation coefficient 1 for north face
+  real,allocatable,dimension(:)   :: BI1S    !< Sigma-Z interpolation coefficient 1 for south face
+  real,allocatable,dimension(:)   :: BI2E    !< Sigma-Z interpolation coefficient 2 for east face
+  real,allocatable,dimension(:)   :: BI2W    !< Sigma-Z interpolation coefficient 2 for west face
+  real,allocatable,dimension(:)   :: BI2N    !< Sigma-Z interpolation coefficient 2 for north face
+  real,allocatable,dimension(:)   :: BI2S    !< Sigma-Z interpolation coefficient 2 for south face
+  real,allocatable,dimension(:,:) :: DZIGSD4U !< Sigma-Z vertical derivative term for U momentum
+  real,allocatable,dimension(:,:) :: DZIGSD4V !< Sigma-Z vertical derivative term for V momentum
+  real,allocatable,dimension(:)   :: HPE     !< Water depth at east face (m)
+  real,allocatable,dimension(:)   :: HPW     !< Water depth at west face (m)
+  real,allocatable,dimension(:)   :: HPN     !< Water depth at north face (m)
+  real,allocatable,dimension(:)   :: HPS     !< Water depth at south face (m)
+  real,allocatable,dimension(:,:) :: CDZDU   !< Sigma-Z vertical grid coefficient for U momentum diffusion
+  real,allocatable,dimension(:,:) :: CDZDV   !< Sigma-Z vertical grid coefficient for V momentum diffusion
+  real,allocatable,dimension(:,:) :: CDZFU   !< Sigma-Z vertical grid coefficient for U flux
+  real,allocatable,dimension(:,:) :: CDZFV   !< Sigma-Z vertical grid coefficient for V flux
+  real,allocatable,dimension(:,:) :: CDZMU   !< Sigma-Z vertical grid coefficient for U momentum
+  real,allocatable,dimension(:,:) :: CDZLU   !< Sigma-Z vertical grid coefficient for lower U
+  real,allocatable,dimension(:,:) :: CDZLV   !< Sigma-Z vertical grid coefficient for lower V
+  real,allocatable,dimension(:,:) :: CDZMV   !< Sigma-Z vertical grid coefficient for V momentum
+  real,allocatable,dimension(:,:) :: CDZRU   !< Sigma-Z vertical grid coefficient for right U
+  real,allocatable,dimension(:,:) :: CDZRV   !< Sigma-Z vertical grid coefficient for right V
+  real,allocatable,dimension(:,:) :: CDZUU   !< Sigma-Z vertical grid coefficient for UU term
+  real,allocatable,dimension(:,:) :: CDZUV   !< Sigma-Z vertical grid coefficient for UV term
+  real,allocatable,dimension(:,:) :: ZE      !< Dimensionless height at east face layer interface
+  real,allocatable,dimension(:,:) :: ZW      !< Dimensionless height at west face layer interface
+  real,allocatable,dimension(:,:) :: ZN      !< Dimensionless height at north face layer interface
+  real,allocatable,dimension(:,:) :: ZS      !< Dimensionless height at south face layer interface
+  real,allocatable,dimension(:,:) :: ZZE     !< Dimensionless height at east face layer midpoint
+  real,allocatable,dimension(:,:) :: ZZW     !< Dimensionless height at west face layer midpoint
+  real,allocatable,dimension(:,:) :: ZZN     !< Dimensionless height at north face layer midpoint
+  real,allocatable,dimension(:,:) :: ZZS     !< Dimensionless height at south face layer midpoint
 
   real,allocatable,dimension(:)   :: DZCK         !< DEFAULT/GLOBAL SIGMA LAYER SPLITS
   real,target,allocatable,dimension(:,:) :: DZC   !< CELL BY CELL SIGMA LAYER SPLITS
   real,allocatable,dimension(:,:) :: DZIC         !< 1./DZC
-  real,allocatable,dimension(:,:) :: DZCU
-  real,allocatable,dimension(:,:) :: DZCV
-  real,allocatable,dimension(:,:) :: DZG          !< VERTICAL LAYER THICKNESS AT LAYER INTERFACE
-  real,allocatable,dimension(:,:) :: DZIG         !< 1./DZG
-  real,allocatable,dimension(:,:) :: DZGU
-  real,allocatable,dimension(:,:) :: DZGV
-  real,allocatable,dimension(:,:) :: SUB3D
-  real,allocatable,dimension(:,:) :: SUB3DO
-  real,allocatable,dimension(:,:) :: SVB3D
-  real,allocatable,dimension(:,:) :: SVB3DO
-  real,allocatable,dimension(:,:) :: SGZKE
-  real,allocatable,dimension(:,:) :: SGZKW
-  real,allocatable,dimension(:,:) :: SGZKN
-  real,allocatable,dimension(:,:) :: SGZKS
-  real,allocatable,dimension(:,:) :: SGZE
-  real,allocatable,dimension(:,:) :: SGZW
-  real,allocatable,dimension(:,:) :: SGZN
-  real,allocatable,dimension(:,:) :: SGZS
-  real,allocatable,dimension(:,:) :: SGZU
-  real,allocatable,dimension(:,:) :: SGZV
-  real,allocatable,dimension(:,:) :: FSGZU
-  real,allocatable,dimension(:,:) :: FSGZV
-  
-  logical,allocatable,dimension(:,:) :: LSGZU
-  logical,allocatable,dimension(:,:) :: LSGZV
+  real,allocatable,dimension(:,:) :: DZCU    !< Sigma layer thickness at U face (dimensionless)
+  real,allocatable,dimension(:,:) :: DZCV    !< Sigma layer thickness at V face (dimensionless)
+  real,allocatable,dimension(:,:) :: DZG     !< VERTICAL LAYER THICKNESS AT LAYER INTERFACE
+  real,allocatable,dimension(:,:) :: DZIG    !< 1./DZG
+  real,allocatable,dimension(:,:) :: DZGU    !< Vertical layer thickness at U face layer interface (dimensionless)
+  real,allocatable,dimension(:,:) :: DZGV    !< Vertical layer thickness at V face layer interface (dimensionless)
+  real,allocatable,dimension(:,:) :: SUB3D   !< 3D U face mask (0=blocked, 1=open)
+  real,allocatable,dimension(:,:) :: SUB3DO  !< 3D U face mask initial condition (0=blocked, 1=open)
+  real,allocatable,dimension(:,:) :: SVB3D   !< 3D V face mask (0=blocked, 1=open)
+  real,allocatable,dimension(:,:) :: SVB3DO  !< 3D V face mask initial condition (0=blocked, 1=open)
+  real,allocatable,dimension(:,:) :: SGZKE   !< Sigma-Z K index at east face
+  real,allocatable,dimension(:,:) :: SGZKW   !< Sigma-Z K index at west face
+  real,allocatable,dimension(:,:) :: SGZKN   !< Sigma-Z K index at north face
+  real,allocatable,dimension(:,:) :: SGZKS   !< Sigma-Z K index at south face
+  real,allocatable,dimension(:,:) :: SGZE    !< Sigma-Z elevation at east face (m)
+  real,allocatable,dimension(:,:) :: SGZW    !< Sigma-Z elevation at west face (m)
+  real,allocatable,dimension(:,:) :: SGZN    !< Sigma-Z elevation at north face (m)
+  real,allocatable,dimension(:,:) :: SGZS    !< Sigma-Z elevation at south face (m)
+  real,allocatable,dimension(:,:) :: SGZU    !< Sigma-Z elevation at U face (m)
+  real,allocatable,dimension(:,:) :: SGZV    !< Sigma-Z elevation at V face (m)
+  real,allocatable,dimension(:,:) :: FSGZU   !< Sigma-Z U face interpolation factor
+  real,allocatable,dimension(:,:) :: FSGZV   !< Sigma-Z V face interpolation factor
+
+  logical,allocatable,dimension(:,:) :: LSGZU  !< Sigma-Z U face layer active flag (.TRUE.=inactive)
+  logical,allocatable,dimension(:,:) :: LSGZV  !< Sigma-Z V face layer active flag (.TRUE.=inactive)
 
   real,allocatable,dimension(:,:) :: HPK           !< Water layer thickness (m)
   real,allocatable,dimension(:,:) :: HPKI          !< 1/HPK
@@ -551,8 +551,8 @@ MODULE GLOBAL
   real(RKD)            :: SHLIM             !<  MAXIMUM ANGULAR WAVE NUMBER*DEPTH
 
   real,allocatable,dimension(:)     :: UWVSQ       !< Waves - Square of the orbital velocity
-  real,allocatable,dimension(:)     :: WVDTKEM     !< Wave current interaction variable
-  real,allocatable,dimension(:)     :: WVDTKEP     !< Wave current interaction variable
+  real,allocatable,dimension(:,:)   :: WVDTKEM     !< Wave current interaction variable
+  real,allocatable,dimension(:,:)   :: WVDTKEP     !< Wave current interaction variable
   real,allocatable,dimension(:)     :: WVENEP      !< Wave current interaction variable
   real,allocatable,dimension(:,:)   :: WVHUU       !< Wave current interaction variable: Radiation Stresses SXX  (kg/m^3)(m/s^2)(m^2)
   real,allocatable,dimension(:,:)   :: WVHUV       !< Wave current interaction variable: Radiation Stresses SXY
@@ -834,12 +834,12 @@ MODULE GLOBAL
   
   ! *****************************************************************************************************************************
   ! *** Hydrodynamics
-  logical ISCURVATURE
+  logical ISCURVATURE  !< Flag to activate curvature terms in momentum equations
 
-  integer :: IDRYTBP
-  integer :: IRVEC       !< Conjugate gradient option
-  integer :: ISDRY
-  integer :: ISHELTERVARY
+  integer :: IDRYTBP      !< Dry cell bed shear option
+  integer :: IRVEC        !< Conjugate gradient option
+  integer :: ISDRY        !< Wet/dry option: 0 - Off, >0 - Activate wetting/drying
+  integer :: ISHELTERVARY !< Time-varying wind shelter option
   integer :: ISITB       !< Implicit vegetation drag option
   integer :: ISNEGH      !< Flag to check for negative depths
   integer :: ISRLID      !< Rigid lid flag
@@ -848,69 +848,69 @@ MODULE GLOBAL
   integer :: ITERHPM     !< Wet/Dry option for resetting SUB/SVB for each iteration: 0 - Always reset (default), 1 - Reset only when needed
   integer :: NASPECT     !< Number of large aspect ratio cells
 
-  integer :: NDRYSTP     !< 
+  integer :: NDRYSTP  !< Number of dry timesteps before permanent deactivation 
   
   integer :: IBSC        !< handle buoyancy temp calcs
   real :: BSC            !< Water density flag (multiplier)
   
-  character*20,allocatable,dimension(:) :: CLSL
-  character* 5,allocatable,dimension(:) :: SYMBOL
+  character*20,allocatable,dimension(:) :: CLSL    !< Cell location labels for diagnostics
+  character* 5,allocatable,dimension(:) :: SYMBOL  !< Symbol labels for diagnostics
   logical,allocatable,dimension(:) :: LASPECT      !< LARGE ASPECT RATIO LIST
   
   integer :: ICALTB      !< Bed Shear calculation option
-  integer :: ICK2COR     !<
-  integer :: ICSHOW      !<
-  integer :: IINTPG      !<
+  integer :: ICK2COR     !< Curvature-Coriolis correction option
+  integer :: ICSHOW      !< I index for diagnostic output (SHOWVAL)
+  integer :: IINTPG      !< Internal pressure gradient option
   integer :: IOSWD       !< Flag for wind shear effect on oil spill movement
-  integer :: IS2LMC      !< 
-  integer :: ISAVBMX     !< 
-  integer :: ISAVCOMP    !< 
-  integer :: ISSQL       !< 
-  integer :: ISBEXP      !< ee linkage bed save flag
-  integer :: ISBLFUC     !< 
-  integer :: ISBODYF     !< 
-  integer :: ISBSDFUF    !< 
-  integer :: ISCDMA      !< 
-  integer :: ISCFL       !< 
-  integer :: ISCFLM      !< 
+  integer :: IS2LMC      !< Two-layer mixing option
+  integer :: ISAVBMX     !< Save maximum bottom velocity flag
+  integer :: ISAVCOMP    !< Save computed values flag
+  integer :: ISSQL       !< SQL database output flag
+  integer :: ISBEXP      !< EE linkage bed save flag
+  integer :: ISBLFUC     !< Bottom layer friction option
+  integer :: ISBODYF     !< Body force option
+  integer :: ISBSDFUF    !< Bottom shear diffusive flux option
+  integer :: ISCDMA      !< Cell drying method option
+  integer :: ISCFL       !< CFL diagnostic flag
+  integer :: ISCFLM      !< CFL diagnostic mode 
   integer :: ISCORTBC    !< Corner correction flag for bed shear stress
-  integer :: ISCORTBCD   !< 
-  integer :: ISCORV      !< 
-  integer :: ISDCCA      !< 
-  integer :: ISDIQ       !< 
+  integer :: ISCORTBCD   !< Corner correction depth option
+  integer :: ISCORV      !< Corner velocity option
+  integer :: ISDCCA      !< Diagnostic cell center averaging option
+  integer :: ISDIQ       !< Diagnostic internal wave option
   integer :: ISDIVEX     !< Compute divergence on a cell by cell basis
-  integer :: ISDSOLV     !< 
-  integer :: ISDYNSTP    !< 
-  integer :: ISDZBR      !< waves
+  integer :: ISDSOLV     !< Diagnostic solver option
+  integer :: ISDYNSTP    !< Dynamic timestep diagnostics flag
+  integer :: ISDZBR      !< Wave breaking option
 
   integer :: ISHDMF      !< HMD
   integer :: ISHDMFILTER !< HMD
   integer :: IHMDSUB     !< HMD flag: 0 - Use all cells, 1 - Use spatially subset of cells
-  integer :: ISFAVB      !< 
-  integer :: ISGWIE      !< 
-  integer :: ISGWIT      !< 
-  integer :: ISHOW       !< 
-  integer :: ISHPRT      !< 
-  integer :: ISLOG       !< 
+  integer :: ISFAVB      !< Favorable pressure gradient option
+  integer :: ISGWIE = 0  !< Groundwater interaction evaporation flag
+  integer :: ISGWIT = 0  !< Groundwater interaction temperature flag
+  integer :: ISHOW       !< Runtime screen output level
+  integer :: ISHPRT      !< Depth print option
+  integer :: ISLOG       !< Logarithmic output flag
   integer :: ISLTMT      !< Flag to activate decoupled solution (not available)
-  integer :: ISLTMTS     !< 
-  integer :: ISMMC       !< 
-  integer :: ISPD        !< 
-  integer :: ISPERC      !< 
-  integer :: ISPNHYDS    !< 
-  integer :: ISQQ        !< 
+  integer :: ISLTMTS     !< Limiting time step option
+  integer :: ISMMC       !< Momentum correction option
+  integer :: ISPD        !< Particle diagnostics flag
+  integer :: ISPERC      !< Percolation option
+  integer :: ISPNHYDS    !< Non-hydrostatic pressure option
+  integer :: ISQQ        !< Turbulence model option 
 
   integer :: ISPPH       !< Primary EE linkage flag
   integer :: NPPPH       !< EE Linkage output frequency per reference period
   integer :: ISINWV      !< 1 - Activate CFL diagnostics, 2 - EE_Arrays linkage
 
-  integer :: ISWAVE      !< Waves - 
-  integer :: ISWCBL      !< Waves - 
-  integer :: ISWRSI      !<  1 Activates Inclusion Of Irrotational Component Of Rad Stress
+  integer :: ISWAVE      !< Wave model option: 0 - Off, >0 - Wave model activated
+  integer :: ISWCBL      !< Wave-current bottom layer interaction option
+  integer :: ISWRSI      !< 1 Activates Inclusion Of Irrotational Component Of Rad Stress
   integer :: ISWQFLUX    !< Flag to indicate if any WQ / Shellfish modules actived
-  
+
   integer :: IWDRAG      !< Wind drag calculation option
-  integer :: IWVCOUNT    !< Waves
+  integer :: IWVCOUNT    !< Wave iteration counter
   
   integer :: JCSHOW      !< SHOWVAL J index
   integer :: JSWAVE      !< Initialization flag - Waves
@@ -922,8 +922,8 @@ MODULE GLOBAL
   integer :: LMINSTEP    !< L index of the cell that has the lowest time step when using dynamic time stepping, i.e. the controlling cell
 
   integer :: NFLTMT ! delme
-  integer :: NINCRMT     !< 
-  integer :: NITERAT     !< 
+  integer :: NINCRMT  !< Number of increments for dynamic timestepping
+  integer :: NITERAT  !< Number of iterations for iterative solvers 
   integer :: NLTC        !< Ramp-up
   integer :: NLTS        !< Ramp-up
   integer :: NDYE        !< Number of dye classes
@@ -955,10 +955,10 @@ MODULE GLOBAL
   integer :: ISWGS84     !< Horizontal grid coordinate system: 0 = UTM (meters), 1 = Geographic (WGS84) (Lon/Lat) (degrees)
   integer :: ISHOUSATONIC
   
-  integer :: ISLLIM
-  integer :: IFPROX
-  integer :: ISVTURB
-  real :: BC_EDGEFACTOR
+  integer :: ISLLIM         !< Salinity limiter option
+  integer :: IFPROX         !< Proximity function option
+  integer :: ISVTURB        !< Vertical turbulence option
+  real :: BC_EDGEFACTOR     !< Boundary condition edge factor (dimensionless)
 
   ! *** General variables
   integer,allocatable,dimension(:)     :: ICFLMP     !< CFL diagnostics
@@ -988,20 +988,20 @@ MODULE GLOBAL
   
   integer,allocatable,dimension(:)     :: NWET       !< Number of iterations since cell was wet
   
-  real :: AHD
-  real :: AHO
-  real :: XYRATIO
+  real :: AHD      !< Background horizontal eddy viscosity (m2/s)
+  real :: AHO      !< Initial horizontal eddy viscosity (m2/s)
+  real :: XYRATIO  !< X-Y aspect ratio for horizontal eddy viscosity adjustment
 
-  real :: ABMAX
-  real :: ABMIN
-  real :: ABMX
-  real :: ABO
-  real :: AVCON
-  real :: AVCON1
-  real :: AVMAX
-  real :: AVMIN
-  real :: AVMX
-  real :: AVO
+  real :: ABMAX    !< Maximum background horizontal diffusivity (m2/s)
+  real :: ABMIN    !< Minimum background horizontal diffusivity (m2/s)
+  real :: ABMX     !< Maximum horizontal diffusivity from Smagorinsky (m2/s)
+  real :: ABO      !< Initial horizontal diffusivity (m2/s)
+  real :: AVCON    !< Constant vertical eddy viscosity (m2/s)
+  real :: AVCON1   !< Constant vertical eddy viscosity - alternate value (m2/s)
+  real :: AVMAX    !< Maximum vertical eddy viscosity (m2/s)
+  real :: AVMIN    !< Minimum vertical eddy viscosity (m2/s)
+  real :: AVMX     !< Maximum vertical eddy viscosity from turbulence model (m2/s)
+  real :: AVO      !< Initial vertical eddy viscosity (m2/s)
 
   real :: CDRAG1         !< Lower drag coefficient for user defined wind drag relationship
   real :: CDRAG2         !< Upper drag coefficient for user defined wind drag relationship
@@ -1035,7 +1035,7 @@ MODULE GLOBAL
   real :: ERR            !< Global read error code
   
   real :: FOURDPI        !< 4./PI
-  real :: FSCORTBC
+  real :: FSCORTBC  !< Corner correction factor for bed shear stress
   real :: FSWRATF        !< Fraction of solar radiation attenuated fast
   real :: FSOLRADMIN     !< Minimum fraction of solar radiation absorbed in the top layer of the water column (dimensionless)
   
@@ -1055,23 +1055,23 @@ MODULE GLOBAL
   real :: OSWDA          !< Wind speed dependent coefficient for oil spill wind shear (s/m)
   real :: OSWDB          !< Fixed coefficient for oil spill wind shear (dimensionless fraction)
   
-  real :: PI
-  real :: PI2
+  real :: PI   !< Pi constant (3.14159...)
+  real :: PI2  !< 2*Pi constant (6.28318...)
   
-  real :: QQLMIN
-  real :: QQMIN
+  real :: QQLMIN  !< Minimum turbulent intensity times length scale (m3/s2)
+  real :: QQMIN   !< Minimum turbulent intensity (m2/s2)
   
   real :: RITB           !< Implicit factor
   real :: RITB1          !< Implicit factor
-  real :: RNEW           !< 
-  real :: ROLD           !< 
-  real :: RP             !< 
-  real :: RIQMAX         !< 
+  real :: RNEW    !< Conjugate gradient residual - new iteration
+  real :: ROLD    !< Conjugate gradient residual - old iteration
+  real :: RP      !< Conjugate gradient parameter
+  real :: RIQMAX  !< Maximum turbulent intensity squared (dimensionless) 
   real :: RSQM           !< Square of the maximum conjugate gradient error
   
   real :: S2TL           !< Time integration level real switch
   real :: S3TL           !< Time integration level real switch
-  real :: SNLT           !< 
+  real :: SNLT    !< Non-linear transition ramp factor (dimensionless) 
   real :: SWRATNF        !< Solar radiation extinction coefficient - Fast (1/m)
   real :: SWRATNS        !< Solar radiation extinction coefficient - Slow (1/m)
   
@@ -1084,7 +1084,7 @@ MODULE GLOBAL
   
   real :: ZBRADJ         !< Bottom roughness - Offset
   real :: ZBRCVRT        !< Bottom roughness - Multiplier
-  real :: ZBRWALL        !< 
+  real :: ZBRWALL  !< Wall roughness height for rigid boundaries (m) 
   real :: ZSSMAX         !< SHOWVAL
   real :: ZSSMIN         !< SHOWVAL
   
@@ -1699,7 +1699,7 @@ MODULE GLOBAL
   logical :: LFRAZIL     !< FLAG IS TRUE OF FRAZIL ICE EXISTS
   logical :: LCHECKICE   !< FLAG TO DETERMINE IF ICE CONDITIONS MAY EXIST
 
-  integer :: IASWRAD     !< Solar ratiation adsorbtion option
+  integer :: IASWRAD     !< Solar radiation absorption option
   integer :: IATMP       !< 
   integer :: ISVHEAT     !< Flag to use Variable surface heat coefficients
   
@@ -1711,9 +1711,9 @@ MODULE GLOBAL
   real :: RCHC           !< 1000*Convective heat transfer coefficient (sensible heat)
   real :: REVC           !< 1000*Evaprative heat transfer coefficient (latent heat)
 
-  real :: TEMO           !< 
-  real :: TEMBO          !< 
-  real :: TEMTHKO        !< 
+  real :: TEMO    = 20.0 !< Constant initial conditions in the water (deg C)
+  real :: TEMBO   = 0.0  !< Constant initial conditions for the bed  (deg C)
+  real :: TEMTHKO = 1.0  !< Constant thermal thickness (m)
 
   logical COMPUTESOLRAD
   logical USESHADE
@@ -1724,25 +1724,25 @@ MODULE GLOBAL
   logical,allocatable,dimension(:) :: LSVHTWINDC        !< FLAG TO DETERMINE WIND HEAT EXCHANGE COEFFICIENTS ARE BEING USED - CONDUCTION 
 
   ! *** Atmospheric Conditions
-  real,allocatable,dimension(:)        :: PATMT   !< Currant value of ATM pressure (mb)
-  real,allocatable,dimension(:)        :: TATMT   !< Currant value of dry bulb temperature (C)
-  real,allocatable,dimension(:)        :: TDEWT   !< Currant value of dew point temperature (C)
-  real,target,allocatable,dimension(:) :: RAINT   !< Currant value of rainfall (m/s)
-  real,allocatable,dimension(:)        :: SOLSWRT !< Currant value of solar radiation (W/m2)
-  real,allocatable,dimension(:)        :: CLOUDT  !< Currant value of cloud cover 
-  real,allocatable,dimension(:)        :: RHAT    !< Currant value of relative humidity
-  real,target,allocatable,dimension(:) :: EVAPT   !< Currant value of evaporation (m/s)
-  real,allocatable,dimension(:)        :: VPAT    !< Currant value of vapor pressure
-  real,allocatable,dimension(:)        :: SVPAT   !< Currant value of saturated vapor pressure
-
-  integer                              :: IEVAP    !< Evaporation option used for water balance
-  real                                 :: WINDFA   !< WIND FACTOR COEFFICIENT A
-  real                                 :: WINDFB   !< WIND FACTOR COEFFICIENT B
-  real                                 :: WINDFC   !< WIND FACTOR COEFFICIENT C
-  real,allocatable,dimension(:)        :: CLEVAP   !< EVAPORATIVE TRANSFER COEFFICIENT DIMENSIONLESS
-  real,target,allocatable,dimension(:) :: EVAPGW   !< CURRENT EVAPORATION TAKEN FROM GROUNDWATER LAYER L/T
-  real,target,allocatable,dimension(:) :: EVAPSW   !< CURRENT EVAPORATION TAKEN FRON TOP LAYER OF WATER COLUMN L/T
-  real,allocatable,dimension(:)        :: EVACOARE !< CURRENT TOTAL EVAPORATION L/T
+  real,allocatable,dimension(:)        :: PATMT      !< Currant value of ATM pressure (mb)
+  real,allocatable,dimension(:)        :: TATMT      !< Currant value of dry bulb temperature (C)
+  real,allocatable,dimension(:)        :: TDEWT      !< Currant value of dew point temperature (C)
+  real,target,allocatable,dimension(:) :: RAINT      !< Currant value of rainfall (m/s)
+  real,allocatable,dimension(:)        :: SOLSWRT    !< Currant value of solar radiation (W/m2)
+  real,allocatable,dimension(:)        :: CLOUDT     !< Currant value of cloud cover 
+  real,allocatable,dimension(:)        :: RHAT       !< Currant value of relative humidity
+  real,target,allocatable,dimension(:) :: EVAPT      !< Currant value of evaporation (m/s)
+  real,allocatable,dimension(:)        :: VPAT       !< Currant value of vapor pressure
+  real,allocatable,dimension(:)        :: SVPAT      !< Currant value of saturated vapor pressure
+                                                     
+  integer                              :: IEVAP = 0  !< Evaporation option used for water balance
+  real                                 :: WINDFA     !< WIND FACTOR COEFFICIENT A
+  real                                 :: WINDFB     !< WIND FACTOR COEFFICIENT B
+  real                                 :: WINDFC     !< WIND FACTOR COEFFICIENT C
+  real,allocatable,dimension(:)        :: CLEVAP     !< EVAPORATIVE TRANSFER COEFFICIENT DIMENSIONLESS
+  real,target,allocatable,dimension(:) :: EVAPGW     !< CURRENT EVAPORATION TAKEN FROM GROUNDWATER LAYER L/T
+  real,target,allocatable,dimension(:) :: EVAPSW     !< CURRENT EVAPORATION TAKEN FRON TOP LAYER OF WATER COLUMN L/T
+  real,allocatable,dimension(:)        :: EVACOARE   !< CURRENT TOTAL EVAPORATION L/T
   real,allocatable,dimension(:)        :: SVPW
                                        
   
@@ -1756,7 +1756,7 @@ MODULE GLOBAL
   real,allocatable,dimension(:,:)   :: TEMINIT       !< Initial value of temperature
 
   ! *** Ice
-  integer :: ISICE
+  integer :: ISICE = 0   !< Ice computation option
   integer :: ISICECOV    !< ISICE = 1  ICE FUNCTION (NOT USED)
   integer :: NISER       !< ISICE = 1  NUMBER OF ICE INPUT SERIES
   integer :: ICETHKFUN   !< ISICE = 3  ICE FUNCTION (NOT USED)
@@ -1919,41 +1919,41 @@ MODULE GLOBAL
   
   ! *****************************************************************************************************************************
   ! *** Sediment Transport (SedTran)
-  integer :: IALSTUP     !< During initialization, split the top sediment layer into armor and parent layer 
-  integer :: IALTYP      !< Armor layer option: 0 - Constant thickness, 1 - Constant mass
-  integer :: IBMECH      !< Bed consolidation option
-  integer :: IMORPH      !< Morphologic feedback to hydrodynamics: 0 - No feedback, 1 - Use feedback
-  integer :: ICALC_BL    !< Bedload flag:  0 - No bedload, 1 - Bedload
-  integer :: ISBEDMAP    !< Flag for erosion/deposition calculations:  0 - All cells, 1 - Only cells listed is BEDMAP.INP
-  integer :: ISBEDSTR    !< Bed shear stress otion
-  integer :: ISEDBED     !<
-  integer :: ISEDBINT    !<
-  integer :: ISEDEFF     !< Cohesive hiding option
-  integer :: ISEDINT     !<
-  integer :: ISEDVW      !< sediment settling vel option
-  integer :: ISMUD       !< Flag for cohesive viscous effects for SedTran
-  integer :: ISNDAL      !< Activate armoring
-  integer :: ISNDVW      !< 
-  integer :: ISBSDIAM    !< Sediment diameter option used for bed shear
-  
-  integer :: KB          !< Maximum number of sediment bed layers.  KB at top for original sedtran module and at the bottom for SEDZLJ
-  integer :: KBB         !< BOTTOM LAYER (ORIGINAL:KBB = 1, SEDZLJ:KBB = KB)
-  integer :: KBH         !< NOT USED, BUT MAINTAINED FOR GVC
-  integer :: KBM         !< Maximum KB
+  integer :: IALSTUP         !< During initialization, split the top sediment layer into armor and parent layer 
+  integer :: IALTYP          !< Armor layer option: 0 - Constant thickness, 1 - Constant mass
+  integer :: IBMECH   = 0    !< Bed consolidation option
+  integer :: IMORPH   = 0    !< Morphologic feedback to hydrodynamics: 0 - No feedback, 1 - Use feedback
+  integer :: ICALC_BL = 0    !< Bedload flag:  0 - No bedload, 1 - Bedload
+  integer :: ISBEDMAP        !< Flag for erosion/deposition calculations:  0 - All cells, 1 - Only cells listed is BEDMAP.INP
+  integer :: ISBEDSTR = 0    !< Bed shear stress otion
+  integer :: ISEDBED  = 0    !<
+  integer :: ISEDBINT = 0    !<
+  integer :: ISEDEFF  = 0    !< Cohesive hiding option
+  integer :: ISEDINT         !<
+  integer :: ISEDVW   = 0    !< sediment settling vel option
+  integer :: ISMUD    = 0    !< Flag for cohesive viscous effects for SedTran
+  integer :: ISNDAL   = 0    !< Activate armoring
+  integer :: ISNDVW   = 0    !< 
+  integer :: ISBSDIAM = 0    !< Sediment diameter option used for bed shear
+                             
+  integer :: KB  = 0         !< Maximum number of sediment bed layers.  KB at top for original sedtran module and at the bottom for SEDZLJ
+  integer :: KBB = 0         !< BOTTOM LAYER (ORIGINAL:KBB = 1, SEDZLJ:KBB = KB)
+  integer :: KBH = 0         !< NOT USED, BUT MAINTAINED FOR GVC
+  integer :: KBM = 0         !< Maximum KB
+                             
+  integer :: NSBDLDBC = 0    !< SedTran - Number of cells to allow bedload to exit model
+  integer :: NSCM     = 0    !< Number of cohesive sediment classes
+  integer :: NSED     = 0    !< Number of cohesive sediment classes
+  integer :: NSED2    = 0    !< 2*NSED, Used for fast settling of propwash resuspended materials
+  integer :: NSEDS    = 0    !< Total number of sediment classes, NSEDS = NSED + NSND
+  integer :: NSEDS2   = 0    !< 2*NSCM, Used for fast settling of propwash resuspended materials
+  integer :: NSND     = 0    !< Number of non-cohesive sediment classes
+  integer :: NSND2    = 0    !< 2*NSND, Used for fast settling of propwash resuspended materials
+  integer :: NSNM     = 0    !< Number of non-cohesive sediment classes
+  integer :: NSNM2    = 0    !< 2*NSND, Used for fast settling of propwash resuspended materials
 
-  integer :: NSBDLDBC    !< SedTran - Number of cells to allow bedload to exit model
-  integer :: NSCM        !< Number of cohesive sediment classes
-  integer :: NSED        !< Number of cohesive sediment classes
-  integer :: NSED2       !< 2*NSED, Used for fast settling of propwash resuspended materials
-  integer :: NSEDS       !< Total number of sediment classes, NSEDS = NSED + NSND
-  integer :: NSEDS2      !< 2*NSCM, Used for fast settling of propwash resuspended materials
-  integer :: NSND        !< Number of non-cohesive sediment classes
-  integer :: NSND2       !< 2*NSND, Used for fast settling of propwash resuspended materials
-  integer :: NSNM        !< Number of non-cohesive sediment classes
-  integer :: NSNM2       !< 2*NSND, Used for fast settling of propwash resuspended materials
-  
-  integer :: NSTM        !< Number of cohesive + non-cohesive sediment classes
-  integer :: NSTM2       !< 2*NSTM, Used for fast settling of propwash resuspended materials
+  integer :: NSTM     = 0    !< Number of cohesive + non-cohesive sediment classes
+  integer :: NSTM2    = 0    !< 2*NSTM, Used for fast settling of propwash resuspended materials
 
   integer,allocatable,dimension(:)     :: IBLTAUC    !< SedTran - Bedload
   integer,allocatable,dimension(:)     :: IROUSE     !< SedTran
@@ -2727,7 +2727,7 @@ MODULE GLOBAL
   real,allocatable,dimension(:,:)   :: WVPT 
   real,allocatable,dimension(:,:)   :: WLPF          !< 
   
-  real(rkd),allocatable,dimension(:) :: WASPTIME     !< 
+  real(RKD),allocatable,dimension(:) :: WASPTIME     !< 
 
 #ifdef GNU  
   character(11) :: FMT_BINARY                        !< 'UNFORMATTED' file format

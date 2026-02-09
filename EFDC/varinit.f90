@@ -24,7 +24,7 @@ SUBROUTINE VARINIT
   implicit none
 
   integer :: NCSER1, NCSER2, NCSER3, NCSER4, NCSER5, NCSER6, NCSER7
-  integer :: MW, NS, M, MD, L, NGOTM
+  integer :: MW, NS, NT, M, MD, L, NGOTM
   character*3 :: NSTR
 
   integer :: ierr ! MPI error return value
@@ -154,14 +154,14 @@ SUBROUTINE VARINIT
   call AllocateDSI( MSVTOX,  NTXM,   0)
 
   M = 2             ! *** M = 1 (SALINITY), M = 2 (TEMPERATURE)
-  do NS = 1,NDYM      ! *** MUST use NDYM INSTEAD OF NDYE TO ENSURE THE BASE OF 4 FOR LEGACY MASS BALANCE ROUTINES
+  do MD = 1,NDYM      ! *** MUST use NDYM INSTEAD OF NDYE TO ENSURE THE BASE OF 4 FOR LEGACY MASS BALANCE ROUTINES
     M = M + 1
-    MSVDYE(NS) = M
+    MSVDYE(MD) = M
   enddo
   M = M + 1         ! *** SHELL FISH (SFL)
-  do NS = 1,NTOX
+  do NT = 1,NTOX
     M = M + 1
-    MSVTOX(NS) = M
+    MSVTOX(NT) = M
   enddo
   do NS = 1,NSED
     M = M + 1
@@ -305,14 +305,14 @@ SUBROUTINE VARINIT
     WCV(NACTIVEWC).WCLIMIT = 0.0
   endif
   if( ISTRAN(5) > 0 )then
-    do NS = 1,NTOX
+    do NT = 1,NTOX
       NACTIVEWC = NACTIVEWC + 1
       IACTIVEWC1(NACTIVEWC) = 5
-      IACTIVEWC2(NACTIVEWC) = MSVTOX(NS)
-      write(NSTR,'(I3.3)') NS
+      IACTIVEWC2(NACTIVEWC) = MSVTOX(NT)
+      write(NSTR,'(I3.3)') NT
       WCV(NACTIVEWC).ID = 'TOX'//NSTR
-      WCV(NACTIVEWC).VAL0 => TOX(:,:,NS)
-      WCV(NACTIVEWC).VAL1 => TOX1(:,:,NS)
+      WCV(NACTIVEWC).VAL0 => TOX(:,:,NT)
+      WCV(NACTIVEWC).VAL1 => TOX1(:,:,NT)
       WCV(NACTIVEWC).WCLIMIT = 0.0
     enddo
   endif

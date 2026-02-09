@@ -30,16 +30,16 @@
   
   integer :: ic_pos, jc_pos !< starting positions within the global array in each I/J direction
 
-  integer :: nincrmt_reduce
-  real    :: dtdyn_reduce
+  integer :: nincrmt_reduce  !< Reduced/collected nincrmt value across all processes
+  real    :: dtdyn_reduce    !< Reduced/collected dynamic timestep across all processes (s)
 
-  integer :: NPFOR_Readin
+  integer :: NPFOR_Readin    !< Number of processors used for reading input files
 
   integer, Allocatable, Dimension(:) :: recv_counts_3d !< Keeps track of the size of each processor is sending to the master for (L,K)
   integer, Allocatable, Dimension(:) :: recv_counts_1d !< Keeps track of the message size each process is sending (L) arrays
 
-  integer :: stride
-  integer :: send_size_1d !< size of the message for communicating the entire domain for (L) arrays
+  integer :: stride          !< MPI message stride for data transfers
+  integer :: send_size_1d    !< size of the message for communicating the entire domain for (L) arrays
 
 
   integer :: LA_global  !< Global value of LA - the total number of cells
@@ -55,7 +55,7 @@
   integer, Allocatable, Dimension(:) :: i_start_ghost_in_each
   integer, Allocatable, Dimension(:) :: j_start_ghost_in_each
 
-  character(12) :: filename_out
+  character(12) :: filename_out  !< Generic filename for MPI output files
 
   integer :: process_id                 !< ID of processor
   integer :: num_Processors             !< Total number of processors
@@ -67,15 +67,15 @@
   Character(24) :: mpi_error_file       !< EFDC+ ERROR log file name for each processor
   
   ! *** Unit numbers for MPI log files, will be = (unit num + process_id)
-  integer :: mpi_efdc_out_unit = 777    !< Unit so each process writes out its own EFDCLOG.OUT
-  integer :: mpi_log_unit = 100         !< General log unit
-  integer :: mpi_qdwaste_unit = 200     !< QDWASTE log unit
+  integer :: mpi_efdc_out_unit = 100    !< Unit so each process writes out its own EFDCLOG.OUT
+  integer :: mpi_log_unit = 200         !< General log unit
   integer :: mpi_comm_unit = 300        !< MPI setup debug file for the communication of ghost cell values
-  integer :: mpi_mapping_unit = 500     !< Log of global to local cell mapping per process
+  integer :: mpi_mapping_unit = 400     !< Log of global to local cell mapping per process
+  integer :: mpi_qdwaste_unit = 800     !< QDWASTE log unit
   integer :: mpi_error_unit = 900       !< Log of error messages per process
 
   logical :: MPI_DEBUG_FLAG = .FALSE.   !< Boolean that turns on some print statements for debugging MPI code. This flag should be an input option at some point.
-  logical :: MPI_Write_Flag = .FALSE.   
+  logical :: MPI_Write_Flag = .FALSE.   !< Flag to enable MPI-specific diagnostic output   
 
   integer, Allocatable, Dimension(:) :: displacements_L_index     !< Keeps track of displacements_L_index (in terms of MPI derived type) for ScatterV/GatherV processing
   integer, Allocatable, Dimension(:) :: recv_counts_array !< Counts the number of derived types each process recives
@@ -89,7 +89,7 @@
   integer :: DSIcomm                      !< New communicator for the MPI topology routines
 
   ! *** For new drifter routines
-  integer :: NPD_TOT
+  integer :: NPD_TOT  !< Total number of drifters across all processes
 
   ! *** DECOMP.inp related variables
   integer :: n_ghost_rows = 2             !< Number of ghost rows/cols on each side of domain
@@ -108,28 +108,28 @@
   integer, Allocatable, Dimension(:) :: IB_Decomp, IE_Decomp     !< Starting and Ending global I for each partition in the x-direction
   integer, Allocatable, Dimension(:) :: JB_Decomp, JE_Decomp     !< Starting and Ending global J for each partition in the y-direction
 
-  integer :: max_width_x                                         ! <== PNX
-  integer :: max_width_y                                         ! <== PNY
+  integer :: max_width_x  !< Maximum partition width in x-direction for this process (PNX)
+  integer :: max_width_y  !< Maximum partition height in y-direction for this process (PNY)
 
   integer :: ic_global                                           !< IC value for the entire domain, this is what is originally read in from efdc.inp
   integer :: jc_global                                           !< JC value for the entire domain, this is what is originally read in from efdc.inp
   integer :: lc_global                                           !< LC value for the entire domain, this is what is originally read in from efdc.inp
 
-  integer :: x_id
-  integer :: y_id
+  integer :: x_id  !< Process x-coordinate in Cartesian topology
+  integer :: y_id  !< Process y-coordinate in Cartesian topology
 
-  integer, Allocatable, Dimension(:) :: IL2IG
-  integer, Allocatable, Dimension(:) :: JL2JG
+  integer, Allocatable, Dimension(:) :: IL2IG  !< Local I to global I index mapping
+  integer, Allocatable, Dimension(:) :: JL2JG  !< Local J to global J index mapping
 
-  integer, Allocatable, Dimension(:) :: IG2IL
-  integer, Allocatable, Dimension(:) :: JG2JL
+  integer, Allocatable, Dimension(:) :: IG2IL  !< Global I to local I index mapping
+  integer, Allocatable, Dimension(:) :: JG2JL  !< Global J to local J index mapping
 
-  integer :: global_max_width_x ! <== GNX
-  integer :: global_max_width_y ! <== GNY
+  integer :: global_max_width_x  !< Maximum partition width in x-direction across all processes (GNX)
+  integer :: global_max_width_y  !< Maximum partition height in y-direction across all processes (GNY)
 
-  real(RKD), Allocatable, Dimension(:,:) :: XCOR_Global          !< 
-  real(RKD), Allocatable, Dimension(:,:) :: YCOR_Global          !< 
-  real(RKD), Allocatable, Dimension(:)   :: Area_Global          !< 
+  real(RKD), Allocatable, Dimension(:,:) :: XCOR_Global  !< X-coordinate for entire global domain (m or degrees)
+  real(RKD), Allocatable, Dimension(:,:) :: YCOR_Global  !< Y-coordinate for entire global domain (m or degrees)
+  real(RKD), Allocatable, Dimension(:)   :: Area_Global  !< Cell area for entire global domain (m2) 
   
   integer, Allocatable, Dimension(:,:,:) :: LWDIR_Global         !< L index list for cells along each fetch for all cells in the global domain
   integer, Allocatable, Dimension(:)     :: UMASK_Global         !< Flag for U face mask on
@@ -150,9 +150,9 @@
   type(mapping_lij), Allocatable, Dimension(:) :: Map2Global    !< Directly map L_local  to L_global
   type(mapping_lij), Allocatable, Dimension(:) :: Map2Local     !< Directly map L_global to L_local
 
-  integer, Allocatable, Dimension(:,:) :: LIJ_Global            !< Keeps track of global active cell index based on I,J mapping
-  integer, Allocatable, Dimension(:,:) :: IJCT_GLOBAL
-  integer, Allocatable, Dimension(:,:) :: IJCTLT_GLOBAL
+  integer, Allocatable, Dimension(:,:) :: LIJ_Global     !< Keeps track of global active cell index based on I,J mapping
+  integer, Allocatable, Dimension(:,:) :: IJCT_GLOBAL   !< Global cell type array
+  integer, Allocatable, Dimension(:,:) :: IJCTLT_GLOBAL !< Global cell type array for WQ interface
   
   !             nbr_north
   !          |-------------|
@@ -171,7 +171,7 @@
   integer, Allocatable, Dimension(:,:,:) :: Comm_Cells     !< Sub-Domain active cell interface list
   integer, Allocatable, Dimension(:,:)   :: nComm_Cells    !< Sub-Domain active cell interface count
 
-  integer :: lmap
+  integer :: lmap      !< Mapping index for MPI domain decomposition
   integer :: size_mpi  !< Number of MPI sub-domains a single domain is to write debugging information
 
   !------------------------------------------------------------------
@@ -192,6 +192,6 @@
   !***End no longer needed
   !------------------------------------------------------------------
   
-  logical :: DoublePrecision
+  logical :: DoublePrecision  !< Flag indicating if double precision is used for MPI data transfers
 
   End module Variables_MPI

@@ -90,10 +90,10 @@ SUBROUTINE AINIT
     HMV(L) = 0.5*(DXP(L)*DYP(L)*HMP(L)+DXP(LS)*DYP(LS)*HMP(LS))/(DXV(L)*DYV(L))
   enddo
 
-  HMU(1) = HMU(2)    ! *** PMC
-  HMV(1) = HMV(2)    ! *** PMC
-  HMU(LC) = HMU(LA)  ! *** PMC
-  HMV(LC) = HMV(LA)  ! *** PMC
+  HMU(1) = HMU(2)  
+  HMV(1) = HMV(2)  
+  HMU(LC) = HMU(LA)
+  HMV(LC) = HMV(LA)
   do L = 1,LC
     CC(L) = 1.
     CCC(L) = 1.

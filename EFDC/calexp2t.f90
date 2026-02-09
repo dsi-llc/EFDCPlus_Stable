@@ -188,32 +188,19 @@ SUBROUTINE CALEXP2T
   endif
 
   ! *** *******************************************************************!  
-  !$OMP PARALLEL DEFAULT(SHARED)
-
-  ! *** *******************************************************************!  
   !  
   ! ***  INITIALIZE EXTERNAL CORIOLIS-CURVATURE AND ADVECTIVE FLUX TERMS  
   !  
   !----------------------------------------------------------------------!  
-  !$OMP DO PRIVATE(ND,LF,LL,LP,L)
-  do ND = 1,NDM  
-    LF = (ND-1)*LDMWET+1  
-    LL = min(LF+LDMWET-1,LAWET)
-
-    do LP = LF,LL
-      L = LWET(LP)  
-      FCAXE(L) = 0.  
-      FCAYE(L) = 0.  
-      FXE(L) = 0.  
-      FYE(L) = 0.  
-    enddo  
-  enddo
-  !$OMP END DO
+  FCAXE = 0.0  
+  FCAYE = 0.0  
+  FXE   = 0.0  
+  FYE   = 0.0  
 
   !----------------------------------------------------------------------!  
   if( IS2LMC /= 1 )then 
     ! *** STANDARD CALCULATION. WITHOUT MOMENTUM-CURVATURE CORRECTION  
-    !$OMP DO PRIVATE(ND,K,L,LF,LL,LP,LE,LN,LS,LW,UHC,UHB,VHC,VHB)                
+    !$OMP PARALLEL DO PRIVATE(ND,K,L,LF,LL,LP,LE,LN,LS,LW,UHC,UHB,VHC,VHB)                
     do ND = 1,NDM 
       do K = 1,KC
         do LP = 1,LLWET(K,ND)
@@ -244,14 +231,10 @@ SUBROUTINE CALEXP2T
         enddo
       enddo  
     enddo
-    !$OMP END DO
+    !$OMP END PARALLEL DO
 
   elseif( IS2LMC == 1 .and. KC == 2 )then  
     ! *** CALCULATION FOR MOMENTUM-CURVATURE CORRECTION (TWO LAYER ONLY)
-    !$OMP DO PRIVATE(ND,K,L,LP,LF,LL,LE,LN,LS,LW,UHC1,UHB1,VHC1,VHB1) &
-    !$OMP    PRIVATE(UHC2,UHB2,VHC2,VHB2,UHB1MX,UHB1MN,VHC1MX)  &
-    !$OMP    PRIVATE(VHC1MN,UHC1MX,UHC1MN,VHB1MX,VHB1MN,UHB2MX,UHB2MN)  &
-    !$OMP    PRIVATE(VHC2MX,VHC2MN,UHC2MX,UHC2MN,VHB2MX,VHB2MN,BOTT) 
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
       LL = min(LF+LDMWET-1,LAWET)
@@ -335,11 +318,9 @@ SUBROUTINE CALEXP2T
         FVHJ(L,2) = 0.  
       enddo
     enddo  ! *** END OF DOMAIN
-    !$OMP END DO
 
   endif
   
-  !$OMP SINGLE
   ! *** ADD WITHDRAWAL/RETURN FLOW MOMENTUM FLUXES
   do NWR = 1,NQWR  
     if( ABS(WITH_RET(NWR).NQWRMFU) > 0 )then  
@@ -436,13 +417,12 @@ SUBROUTINE CALEXP2T
   if( ISPROPWASH == 2 .and. NACTIVESHIPS > 0 )then
     call add_ship_momentum(FUHJ, FVHJ)
   endif
-  !$OMP END SINGLE
 
   !----------------------------------------------------------------------!  
   !  
   ! *** COMPUTE VERTICAL ACCELERATIONS
   if( KC > 1 )then
-    !$OMP DO PRIVATE(ND,K,LP,L,LW,LS,WUU,WVV)
+    !$OMP PARALLEL DO PRIVATE(ND,K,LP,L,LW,LS,WUU,WVV)
     do ND = 1,NDM  
       do K = 1,KS
         do LP = 1,LLWET(K,ND)
@@ -456,10 +436,9 @@ SUBROUTINE CALEXP2T
         enddo  
       enddo
     enddo  
-    !$OMP END DO
+    !$OMP END PARALLEL DO
   
     ! *** APPLY OPEN BOUNDARYS
-    !$OMP SINGLE
     do LL = 1,NBCSOP2
       L = LOBCS2(LL)
       do K = 1,KS  
@@ -467,13 +446,12 @@ SUBROUTINE CALEXP2T
         FWV(L,K) = 0.0
       enddo  
     enddo 
-    !$OMP END SINGLE 
   endif
   
   ! **********************************************************************!  
   ! *** BLOCK MOMENTUM FLUX ON LAND SIDE OF TRIANGULAR CELLS  
   if( ITRICELL > 0 )then
-    !$OMP DO PRIVATE(ND,K,LP,L)
+    !$OMP PARALLEL DO PRIVATE(ND,K,LP,L)
     do ND = 1,NDM
       do K = 1,KC
         do LP = 1,LLWET(K,ND)
@@ -483,21 +461,19 @@ SUBROUTINE CALEXP2T
         enddo
       enddo
     enddo   ! ***  END OF DOMAIN
-    !$OMP END DO
+    !$OMP END PARALLEL DO
   endif
   
   ! *** *******************************************************************!  
   ! *** CALCULATE CORIOLIS AND CURVATURE ACCELERATION COEFFICIENTS  
-  !$OMP SINGLE
   CACSUM = 0. 
   CFMAX = CF  
-  !$OMP END SINGLE
   
   if( ISCURVATURE )then
 
     if( ISDCCA == 0 )then  
       ! *** STANDARD CALCULATIONS, NO DIAGNOSTICS
-      !$OMP DO PRIVATE(ND,K,LP,L,LE,LN)
+      !$OMP PARALLEL DO PRIVATE(ND,K,LP,L,LE,LN)
       do ND = 1,NDM  
 
         do K = 1,KC  
@@ -510,11 +486,10 @@ SUBROUTINE CALEXP2T
           enddo
         enddo
       enddo   ! ***  END OF DOMAIN
-      !$OMP END DO
+      !$OMP END PARALLEL DO
       
     else  
       ! *** STANDARD CALCULATIONS, WITH DIAGNOSTICS
-      !$OMP SINGLE
       IT = 1
       do K = 1,KC  
         do L = 2,LA
@@ -526,26 +501,14 @@ SUBROUTINE CALEXP2T
           CACSUM(IT) = CACSUM(IT)+CAC(L,K) 
         enddo  
       enddo  
-      !$OMP END SINGLE
     endif  
 
     ! *** ENSURE FCAY & FCAX ARE RESET
-    !$OMP SINGLE
     CACSUMT = ABS(SUM(CACSUM(:)))
-    !$OMP END SINGLE
     
     if( CACSUMT < 1.E-7 )then
-      !$OMP DO PRIVATE(ND,K,LP,L)
-      do ND = 1,NDM  
-        do K = 1,KC  
-          do LP = 1,LLWET(K,ND)
-            L = LKWET(LP,K,ND)  
-            FCAX(L,K) = 0.
-            FCAY(L,K) = 0.
-          enddo
-        enddo
-      enddo  
-      !$OMP END DO
+      FCAX = 0.0
+      FCAY = 0.0
     endif
         
   endif
@@ -558,7 +521,7 @@ SUBROUTINE CALEXP2T
 
   ! ***  STANDARD CALCULATION
   if( CACSUMT > 1.E-7 )then
-    !$OMP DO PRIVATE(ND,K,LP,L,LE,LN,LS,LW,LNW,LSE)
+    !$OMP PARALLEL DO PRIVATE(ND,K,LP,L,LE,LN,LS,LW,LNW,LSE)
     do ND = 1,NDM
       do K = 1,KC  
         do LP = 1,LLWET(K,ND)
@@ -574,7 +537,7 @@ SUBROUTINE CALEXP2T
         enddo
       enddo  
     enddo  
-    !$OMP END DO
+    !$OMP END PARALLEL DO
 
   endif
 
@@ -582,7 +545,6 @@ SUBROUTINE CALEXP2T
   !  
   ! *** CALCULATION FOR MOMENTUM-CURVATURE CORRECTION  
   if( IS2LMC == 1 .and. CACSUMT > 1.E-7 )then  
-    !$OMP SINGLE
     do LP = 1,LAWET
       L = LWET(LP)
       LE = LEC(L)
@@ -613,12 +575,10 @@ SUBROUTINE CALEXP2T
       FCAY(L,1) = 0.25*SCAY(L)*(CAC(L,1)*UNORT1+FCORN +CAC(LS,1)*USOUT1+FCORS)  
       FCAY(L,2) = 0.25*SCAY(L)*(CAC(L,2)*UNORT2+FCORN +CAC(LS,2)*USOUT2+FCORS)  
     enddo  
-    !$OMP END SINGLE
   endif  
   
   !----------------------------------------------------------------------!  
   ! ***  MODIFICATION FOR TYPE 2 OPEN BOUNDARIES  
-  !$OMP SINGLE
   do LL = 1,NPBW  
     if( ISPBW(LL) == 2 .or. ISPBW(LL) == 5 )then  
       L = LPBW(LL)+1  
@@ -658,11 +618,10 @@ SUBROUTINE CALEXP2T
       enddo  
     endif  
   enddo  
-  !$OMP END SINGLE
 
   !----------------------------------------------------------------------!  
   !  INITIALIZE EXTERNAL FORCINGS WITH GROSS MOMENTUM
-  !$OMP DO PRIVATE(ND,K,LP,L,LE,LN,LS,LW)
+  !$OMP PARALLEL DO PRIVATE(ND,K,LP,L,LE,LN,LS,LW)
   do ND = 1,NDM
     do K = 1,KC
       do LP = 1,LLWET(K,ND)
@@ -676,10 +635,9 @@ SUBROUTINE CALEXP2T
       enddo  
     enddo
   enddo
-  !$OMP END DO
+  !$OMP END PARALLEL DO
 
   ! *** TREAT BC'S NEAR EDGES
-  !$OMP SINGLE
   do LL = 1,NBCS
     ! *** BC CELL
     L = LBCS(LL)
@@ -723,8 +681,6 @@ SUBROUTINE CALEXP2T
       endif
     enddo
   endif
-  
-  !$OMP END SINGLE
       
   ! *** *******************************************************************!  
   !  
@@ -734,31 +690,27 @@ SUBROUTINE CALEXP2T
   if( ISVEG > 0 )then  
 
     ! *** ADD IN MHK DEVICES, IF NEEDED
-    !$OMP SINGLE
     if( LMHK ) CALL MHKPWRDIS
-    !$OMP END SINGLE
 
     if( ISDRY > 0 .and. LADRY > 0 )then
       ! *** UPDATE ACTIVE CELL BY LAYER LIST
-      !$OMP DO PRIVATE(ND,K,LN,LP,L)
       do ND = 1,NDM  
         do K = 1,KC  
           LN = 0
           do LP = 1,LLWET(K,ND)
             L = LKWET(LP,K,ND)  
             if( LVEG(L) )then
-              LN = LN+1
+              LN = LN + 1
               LKVEG(LN,K,ND) = L
             endif
           enddo
           LLVEG(K,ND) = LN
         enddo
       enddo
-      !$OMP END DO
     endif
     
-    !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,LW,LE,LS,LN,LNW,LSE) &
-    !$OMP    PRIVATE(UTMPATV,VTMPATU,UMAGTMP,VMAGTMP)
+    !$OMP PARALLEL DO PRIVATE(ND,LF,LL,K,LP,L,LW,LE,LS,LN,LNW,LSE) &
+    !$OMP             PRIVATE(UTMPATV,VTMPATU,UMAGTMP,VMAGTMP)
     do ND = 1,NDM  
       do LP = 1,LLVEG(KC,ND)
         L = LKVEG(LP,KC,ND) 
@@ -837,7 +789,7 @@ SUBROUTINE CALEXP2T
         enddo
       endif
     enddo  ! *** END OF DOMAIN
-    !$OMP END DO
+    !$OMP END PARALLEL DO
 
   endif  
 
@@ -849,7 +801,6 @@ SUBROUTINE CALEXP2T
   if( ISHDMF >= 1 )then
 
     ! *** Modification for open boundaries for large cell aspect ratios
-    !$OMP SINGLE
     do LL = 1,NPBW
       if( ISPBW(LL) == 0 .or. ISPBW(LL) == 1 .or. ISPBW(LL) == 4 )then
         L   = LEC(LPBW(LL))
@@ -925,9 +876,8 @@ SUBROUTINE CALEXP2T
         endif
       endif
     enddo
-    !$OMP END SINGLE
     
-    !$OMP DO PRIVATE(ND,K,LP,L) 
+    !$OMP PARALLEL DO PRIVATE(ND,K,LP,L) 
     do ND = 1,NDM  
       do K = 1,KC  
         do LP = 1,LLHDMF(K,ND)
@@ -937,7 +887,7 @@ SUBROUTINE CALEXP2T
         enddo  
       enddo
     enddo
-    !$OMP END DO
+    !$OMP END PARALLEL DO
 
   endif  
 
@@ -949,7 +899,7 @@ SUBROUTINE CALEXP2T
   !  
   !----------------------------------------------------------------------!  
   if( ISBODYF == 1 )then  
-    !$OMP DO PRIVATE(ND,K,LP,L)
+    !$OMP PARALLEL DO PRIVATE(ND,K,LP,L)
     do ND = 1,NDM  
       do K = 1,KC
         do LP = 1,LLWET(K,ND)
@@ -959,11 +909,11 @@ SUBROUTINE CALEXP2T
         enddo
       enddo
     enddo   ! *** END OF DOMAIN
-    !$OMP END DO
+    !$OMP END PARALLEL DO
   endif  
 
   if( ISBODYF == 2 )then  
-    !$OMP DO PRIVATE(ND,LF,LL,LP,L)
+    !$OMP PARALLEL DO PRIVATE(ND,LF,LL,LP,L)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
       LL = min(LF+LDMWET-1,LAWET)
@@ -973,12 +923,14 @@ SUBROUTINE CALEXP2T
         FY(L,KC) = FY(L,KC) - DZIC(L,KC)*DXV(L)*HV(L)*FBODYFY(L,KC)
       enddo
     enddo   ! *** END OF DOMAIN
-    !$OMP END DO
+    !$OMP END PARALLEL DO
   endif
 
   ! *** *******************************************************************!  
   ! *** ADD EXPLICIT NONHYDROSTATIC PRESSURE   
   if( KC > 1 .and. ISPNHYDS >= 1 )then  
+    !$OMP PARALLEL default(shared)
+  
     !$OMP DO PRIVATE(ND,L,LP,K,TMPVAL) 
     do ND = 1,NDM
       do LP = 1,LLWET(KC,ND)
@@ -1028,11 +980,13 @@ SUBROUTINE CALEXP2T
       enddo  
     enddo   ! *** END OF DOMAIN
     !$OMP END DO
+    
+    !$OMP END PARALLEL 
   endif
 
   if( IATMP > 0 .or. PRESS.IFLAG > 0 .or. ICYCLONE > 0 )then
     ! *** ADD AIR PRESSURE GRADIENT (PRESS.IFLAG ASSUMES A SPATIALLY VARYING PRESSURE FIELD)
-    !$OMP DO PRIVATE(ND,K,LP,L,LS,LW)
+    !$OMP PARALLEL DO PRIVATE(ND,K,LP,L,LS,LW)
     do ND = 1,NDM  
       do K = 1,KC
         do LP = 1,LLWET(K,ND)
@@ -1045,14 +999,14 @@ SUBROUTINE CALEXP2T
         enddo
       enddo
     enddo   ! *** END OF DOMAIN
-    !$OMP END DO
+    !$OMP END PARALLEL DO
   endif
 
   !----------------------------------------------------------------------!  
   ! ***  ADD NET WAVE REYNOLDS STRESSES TO EXTERNAL ADVECTIVE ACCEL.  
   if( ISWAVE == 2 .or. ISWAVE == 4 )then
 
-    !$OMP DO PRIVATE(ND,LF,LL,K,LP,L) 
+    !$OMP PARALLEL DO PRIVATE(ND,LF,LL,K,LP,L) 
     do ND = 1,NDM  
       LF = (ND-1)*NWVCELLS+1  
       LL = min(LF+NWVCELLS-1,NWVCELLS)
@@ -1066,7 +1020,7 @@ SUBROUTINE CALEXP2T
         enddo
       enddo
     enddo   ! *** END OF DOMAIN
-    !$OMP END DO
+    !$OMP END PARALLEL DO
   endif  
   
   
@@ -1091,7 +1045,7 @@ SUBROUTINE CALEXP2T
   
   ! *** *******************************************************************!  
   ! ***  CALCULATE TOTAL EXTERNAL ACCELERATIONS  
-  !$OMP DO PRIVATE(ND,L,K,LP)
+  !$OMP PARALLEL DO PRIVATE(ND,L,K,LP)
   do ND = 1,NDM  
     do K = 1,KC
       do LP = 1,LLWET(K,ND)
@@ -1103,12 +1057,14 @@ SUBROUTINE CALEXP2T
       enddo  
     enddo
   enddo   ! *** END OF DOMAIN
-  !$OMP END DO
+  !$OMP END PARALLEL DO
 
   ! *** *******************************************************************!  
   ! ***  COMPLETE CALCULATION OF INTERNAL MODE ADVECTIVE ACCELERATIONS  
   if( KC > 1 )then
 
+    !$OMP PARALLEL DEFAULT(SHARED)
+  
     ! *** *******************************************************************!  
     ! *** ADD VERTICAL MOMENTUM FLUX INTO HORIZONTAL MOMENTUM FLUX
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L)
@@ -1265,7 +1221,8 @@ SUBROUTINE CALEXP2T
       !$OMP END SINGLE
 
     endif  ! *** END OF CHANNEL MODIFIER SECTION
-    
+  
+      !$OMP END PARALLEL 
   endif    ! *** END OF KC > 1 SECTION
   
   ! *** *******************************************************************!  
@@ -1281,7 +1238,7 @@ SUBROUTINE CALEXP2T
 
     if( IGRIDV == 1 )then
       ! *** SIGMA-ZED BOUYANCY SHEARS
-      !$OMP DO PRIVATE(ND,K,LP,L,LS,LW) 
+      !$OMP PARALLEL DO PRIVATE(ND,K,LP,L,LS,LW) 
       do ND = 1,NDM  
         do K = 1,KS
           do LP = 1,LLWET(K,ND)
@@ -1292,17 +1249,15 @@ SUBROUTINE CALEXP2T
                                                     - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
             FBBY(L,K) = SVB3D(L,K)*SBY(L)*GP*HV(L)*( HV(L)*( (B(L,K+1)-B(LS,K+1))*SGZV(L,K+1) + (B(L,K)-B(LS,K))*SGZV(L,K) )                                &
                                                     - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) )  
-            FBBX(L,K) = SUBD(L)*FBBX(L,K)                                    
-            FBBY(L,K) = SVBD(L)*FBBY(L,K)                                    
           enddo  
         enddo  
       enddo
-      !$OMP END DO
+      !$OMP END PARALLEL DO
       
     elseif( IGRIDV > 1 )then
       ! *** SIGMA-ZED BOUYANCY SHEARS
       
-      !$OMP DO PRIVATE(ND,K,LP,L,LS,LW) 
+      !$OMP PARALLEL DO PRIVATE(ND,K,LP,L,LS,LW) 
       do ND = 1,NDM
         ! *** ALL LAYERS
         do K = 1,KS
@@ -1310,20 +1265,18 @@ SUBROUTINE CALEXP2T
             L = LKWET(LP,K,ND) 
             LS = LSC(L) 
             LW = LWC(L)
-            FBBX(L,K) = SUB3D(L,K)*SBX(L)*GP*HU(L)*( BW(L,K+1)*HPW(L)*SGZW(L,K+1) - BE(LW,K+1)*HPE(LW)*SGZE(LW,K+1) + BW(L,K)*HPW(L)*SGZW(L,K) - BE(LW,K)*HPE(LW)*SGZE(LW,K)   &
+            FBBX(L,K) = SUB3D(L,K)*SBX(L)*GP*HU(L)*( HU(L)*( (BW(L,K+1)-BE(LW,K+1))*SGZU(L,K+1) + (BW(L,K)-BE(LW,K))*SGZU(L,K) )   &
                                                   - (BW(L,K+1)-BW(L,K)+BE(LW,K+1) - BE(LW,K))*( BELVW(L)+ZW(L,K)*HPW(L) - (BELVE(LW)+ZE(LW,K)*HPE(LW)) ) )  
-            FBBY(L,K) = SVB3D(L,K)*SBY(L)*GP*HV(L)*( BS(L,K+1)*HPS(L)*SGZS(L,K+1) - BN(LS,K+1)*HPN(LS)*SGZN(LS,K+1) + BS(L,K)*HPS(L)*SGZS(L,K) - BN(LS,K)*HPN(LS)*SGZN(LS,K)   &
-                                                  - (BS(L,K+1)-BS(L,K)+BN(LS,K+1) - BN(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) )  
-            FBBX(L,K) = SUBD(L)*FBBX(L,K)                                    
-            FBBY(L,K) = SVBD(L)*FBBY(L,K)                                    
+            FBBY(L,K) = SVB3D(L,K)*SBY(L)*GP*HV(L)*( HV(L)*( (BS(L,K+1)-BN(LS,K+1))*SGZV(L,K+1) + (BS(L,K)-BN(LS,K))*SGZV(L,K) )   &
+                                                  - (BS(L,K+1)-BS(L,K)+BN(LS,K+1) - BN(LS,K))*( BELVS(L)+ZS(L,K)*HPS(L) - (BELVN(LS)+ZN(LS,K)*HPN(LS)) ) ) 
           enddo  
         enddo
       enddo
-      !$OMP END DO
+      !$OMP END PARALLEL DO
       
     elseif( IINTPG == 0 )then  
       ! *** IINTPG = 0  
-      !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,LS,LW) 
+      !$OMP PARALLEL DO PRIVATE(ND,LF,LL,K,LP,L,LS,LW) 
       do ND = 1,NDM  
         LF = (ND-1)*LDMWET+1  
         LL = min(LF+LDMWET-1,LAWET)
@@ -1335,142 +1288,24 @@ SUBROUTINE CALEXP2T
             LW = LWC(L)
             FBBX(L,K) = SBX(L)*GP*HU(L)*(HU(L)*( (B(L,K+1)-B(LW,K+1))*DZCK(K+1) + (B(L,K)-B(LW,K))*DZCK(K) ) - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*(BELV(L)-BELV(LW)+Z(L,K)*(HP(L)-HP(LW))) )  
             FBBY(L,K) = SBY(L)*GP*HV(L)*(HV(L)*( (B(L,K+1)-B(LS,K+1))*DZCK(K+1) + (B(L,K)-B(LS,K))*DZCK(K) ) - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*(BELV(L)-BELV(LS)+Z(L,K)*(HP(L)-HP(LS))) )  
-            FBBX(L,K) = SUBD(L)*FBBX(L,K)                                    
-            FBBY(L,K) = SVBD(L)*FBBY(L,K)                                    
           enddo  
         enddo  
       enddo
-      !$OMP END DO
+      !$OMP END PARALLEL DO
 
     elseif( IINTPG == 1. )then
       ! *** JACOBIAN
-      
-      if( KC <= 2 )then
-        ! *** KC  <= 2 LAYERS
-        
-        !$OMP DO PRIVATE(ND,LF,LL,L,LP,K,LS,LW) 
-        do ND = 1,NDM  
-          LF = (ND-1)*LDMWET+1  
-          LL = min(LF+LDMWET-1,LAWET)
-      
-          do K = 1,KS
-            do LP = 1,LLWET(K,ND)
-              L = LKWET(LP,K,ND)  
-              LS = LSC(L)
-              LW = LWC(L)
-              FBBX(L,K) = SBX(L)*GP*HU(L)*( HU(L)*( (B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+(B(L,K)-B(LW,K))*DZC(L,K) )-( B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K) )*(BELV(L)-BELV(LW)+Z(L,K)*(HP(L)-HP(LW))) )
-              FBBY(L,K) = SBY(L)*GP*HV(L)*( HV(L)*( (B(L,K+1)-B(LS,K+1))*DZC(L,K+1)+(B(L,K)-B(LS,K))*DZC(L,K) )-( B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K) )*(BELV(L)-BELV(LS)+Z(L,K)*(HP(L)-HP(LS))) )
-            enddo
-          enddo
-
-        enddo   ! *** END OF DOMAIN
-        !$OMP END DO
-      
-      else
-        ! *** KC  > 2 LAYERS
-        
-        ! *** BOTTOM LAYER
-        !$OMP DO PRIVATE(ND,LF,LL,L,LP,K,LS,LW) 
-        do ND = 1,NDM  
-          LF = (ND-1)*LDMWET+1  
-          LL = min(LF+LDMWET-1,LAWET)
-      
-          do LP = LF,LL
-            L = LWET(LP)  
-            LW = LWC(L)
-            LS = LSC(L)
-            K = KSZ(L)
-            FBBX(L,K) = SBX(L)*GP*HU(L)*( 0.5*HU(L)*( 0.5*(B(L,K+2)-B(LW,K+2))*DZC(L,K+2)+1.5*(B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+2.0*(B(L,K  )-B(LW,K  ))*DZC(L,K  ) )-0.25*(B(L,K+2)-B(L,K+1)+B(LW,K+2)-B(LW,K+1))  &
-                        *(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW)))-0.50*(B(L,K+2)-B(L,K+1)+B(LW,K+2)-B(LW,K+1))  &
-                        *(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW))) )
-                      
-            FBBY(L,K) = SBY(L)*GP*HV(L)*( 0.5*HV(L)*( 0.5*(B(L,K+2)-B(LS ,K+2))*DZC(L,K+2)+1.5*(B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+2.0*(B(L,K  )-B(LS ,K  ))*DZC(L,K  ) )-0.25*(B(L,K+2)-B(L,K+1)+B(LS ,K+2)-B(LS ,K+1))  &
-                        *(BELV(L)-BELV(LS)+Z(L,K+1)*(HP(L)-HP(LS)))  -0.50*(B(L,K+1)-B(L,K  )+B(LS ,K+1)-B(LS ,K  ))  &
-                        *(BELV(L)-BELV(LS)+Z(L,K+1)*(HP(L)-HP(LS))) )
-          enddo
-        enddo   ! *** END OF DOMAIN
-        !$OMP END DO
-      
-        ! *** LAYER AT KC-1
-        !$OMP DO PRIVATE(ND,LF,LL,L,LP,K,LS,LW) 
-        do ND = 1,NDM  
-          LF = (ND-1)*LDMWET+1  
-          LL = min(LF+LDMWET-1,LAWET)
-      
-          K = KS
-          do LP = LF,LL
-            L = LWET(LP)  
-            LW = LWC(L)
-            LS = LSC(L)
-            FBBX(L,K) = SBX(L)*GP*HU(L)*( 0.5*HU(L)*( 2.0*(B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+1.5*(B(L,K)-B(LW,K))*DZC(L,K)+0.5*(B(L,K-1)-B(LW,K-1))*DZC(L,K-1) )-0.50*(B(L,K+1)-B(L,K+1)+B(LW,K+1)-B(LW,K+1))  &
-                        *(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW))) - 0.25*(B(L,K)-B(L,K-1)+B(LW,K)-B(LW,K-1))  &
-                        *(BELV(L)-BELV(LW)+Z(L,K-1)*(HP(L)-HP(LW))) )
-                      
-            FBBY(L,K) = SBY(L)*GP*HV(L)*( 0.5*HV(L)*( 2.0*(B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+1.5*(B(L,K)-B(LS ,K))*DZC(L,K)+0.5*(B(L,K-1)-B(LS ,K-1))*DZC(L,K-1) )-0.50*(B(L,K+1)-B(L,K  )+B(LS ,K+1)-B(LS ,K  ))  &
-                        *(BELV(L)-BELV(LS)+Z(L,K  )*(HP(L)-HP(LS)))   - 0.25*(B(L,K)-B(L,K-1)+B(LS,K)-B(LS ,K-1))   &
-                        *(BELV(L)-BELV(LS)+Z(L,K-1)*(HP(L)-HP(LS))) )
-          enddo
-        enddo   ! *** END OF DOMAIN
-        !$OMP END DO
-
-        if( KC > 3 )then
-        
-          ! *** MIDDLE LAYERS
-
-          !$OMP DO PRIVATE(ND,K,LP,L,LS,LW) 
-          do ND = 1,NDM  
-            do K = 2,KS-1
-              do LP = 1,LLWET(K-1,ND)
-                L = LKWET(LP,K-1,ND) 
-                LW = LWC(L)
-                LS = LSC(L)
-                FBBX(L,K) = SBX(L)*GP*HU(L)*( 0.5*HU(L)*( 0.5*(B(L,K+2)-B(LW,K+2))*DZC(L,K+2)+1.5*(B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+1.5*(B(L,K)-B(LW,K))*DZC(L,K)+0.5*(B(L,K-1)-B(LW,K-1))*DZC(L,K-1) ) - 0.25*(B(L,K+2)-B(L,K+1)+B(LW,K+2)-B(LW,K+1))  &
-                           *(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW)))-0.50*(B(L,K+1)-B(L,K  )+B(LW,K+1)-B(LW,K  )) & 
-                           *(BELV(L)-BELV(LW)+Z(L,K  )*(HP(L)-HP(LW)))-0.25*(B(L,K  )-B(L,K-1)+B(LW,K  )-B(LW,K-1)) &
-                           *(BELV(L)-BELV(LW)+Z(L,K-1)*(HP(L)-HP(LW))) )
-                         
-                FBBY(L,K) = SBY(L)*GP*HV(L)*( 0.5*HV(L)*( 0.5*(B(L,K+2)-B(LS ,K+2))*DZC(L,K+2)+1.5*(B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+1.5*(B(L,K)-B(LS ,K))*DZC(L,K)+0.5*(B(L,K-1)-B(LS ,K-1))*DZC(L,K-1) )-0.25*(B(L,K+2)-B(L,K+1)+B(LS ,K+2)-B(LS ,K+1))    &
-                           *(BELV(L)-BELV(LS)+Z(L,K+1)*(HP(L)-HP(LS)))-0.50*(B(L,K+1)-B(L,K  )+B(LS ,K+1)-B(LS ,K  ))  &
-                           *(BELV(L)-BELV(LS)+Z(L,K  )*(HP(L)-HP(LS)))-0.25*(B(L,K  )-B(L,K-1)+B(LS ,K  )-B(LS ,K-1))  &
-                           *(BELV(L)-BELV(LS)+Z(L,K-1)*(HP(L)-HP(LS)))  )
-              enddo
-            enddo
-
-          enddo   ! *** END OF DOMAIN
-          !$OMP END DO
-
-        endif     ! *** END OF KC > 3
-      endif       ! *** END OF KC > 2
-      ! *** END OF JACOBIAN SECTION
-
+      pause    ! *** delme
+      stop
     elseif( IINTPG == 2 )then  
       ! *** FINITE VOLUME  
-      !$OMP DO PRIVATE(ND,K,LP,L,LS,LW) 
-      do ND = 1,NDM  
-        do K = 1,KS  
-          do LP = 1,LLWET(K-1,ND)
-            L = LKWET(LP,K-1,ND)  
-            LW = LWC(L)
-            LS = LSC(L)
-              
-            FBBX(L,K) = SBX(L)*GP*HU(L)*( ( HP(L)*B(L,K+1)-HP(LW)*B(LW,K+1) )*DZC(L,K+1)+( HP(L)*B(L,K  )-HP(LW)*B(LW,K  ) )*DZC(L,K  ) )  & 
-                       -SBX(L)*GP*(BELV(L)-BELV(LW))*( HP(L)*B(L,K+1)-HP(L)*B(L,K)+HP(LW)*B(LW,K+1)-HP(LW)*B(LW,K) )                  &
-                       -SBX(L)*GP*(HP(L)-HP(LW))*( HP(L)*ZZ(L,K+1)*B(L,K+1)-HP(L)*ZZ(L,K)*B(L,K)+HP(LW)*ZZ(L,K+1)*B(LW,K+1)-HP(LW)*ZZ(L,K)*B(LW,K) )
-                     
-            FBBY(L,K) = SBY(L)*GP*HV(L)*( ( HP(L)*B(L,K+1)-HP(LS )*B(LS ,K+1) )*DZC(L,K+1)+( HP(L)*B(L,K  )-HP(LS )*B(LS ,K  ) )*DZC(L,K  ) )  &
-                       -SBY(L)*GP*(BELV(L)-BELV(LS ))*( HP(L)*B(L,K+1)-HP(L)*B(L,K)+HP(LS)*B(LS ,K+1)-HP(LS)*B(LS ,K) )                    &
-                       -SBY(L)*GP*(HP(L)-HP(LS ))*( HP(L)*ZZ(L,K+1)*B(L,K+1)-HP(L)*ZZ(L,K)*B(L,K) +HP(LS)*ZZ(L,K+1)*B(LS ,K+1)-HP(LS)*ZZ(L,K)*B(LS ,K) )
-          enddo  
-        enddo  
-    
-      enddo   ! *** END OF DOMAIN
-      !$OMP END DO
-
+      pause   ! delme
+      stop
+      
     endif  
     
     ! *** BLOCKED LAYER FACE OPTION
     if( NBLOCKED > 0 .and. N > 1 )then 
-      !$OMP SINGLE
       do LP = 1,NBLOCKED
         L = LBLOCKED(LP)
         
@@ -1536,7 +1371,6 @@ SUBROUTINE CALEXP2T
           enddo  
         endif
       enddo
-      !$OMP END SINGLE
     endif
   
   endif  ! *** END OF BOUYANCY 
@@ -1547,6 +1381,8 @@ SUBROUTINE CALEXP2T
   !
   !----------------------------------------------------------------------!
   if( KC > 1 )then
+    !$OMP PARALLEL DEFAULT(SHARED)
+  
     !$OMP DO PRIVATE(ND,LF,LL,K,LP,L)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
@@ -1581,8 +1417,8 @@ SUBROUTINE CALEXP2T
     enddo    ! *** END OF DOMAIN
     !$OMP END DO
 
+    !$OMP END PARALLEL
   endif
-  !$OMP END PARALLEL
 
   ! *** *******************************************************************!
   return

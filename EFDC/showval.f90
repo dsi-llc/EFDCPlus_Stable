@@ -6,7 +6,7 @@
 ! Copyright 2021-2024 DSI, LLC
 ! Distributed under the GNU GPLv2 License.
 ! ----------------------------------------------------------------------
-SUBROUTINE SHOWVAL
+SUBROUTINE SHOWVAL(BSYNC)
 
   ! *** REWRITTEN BY PAUL M. CRAIG  ON DEC 2006
   ! ***
@@ -16,17 +16,22 @@ SUBROUTINE SHOWVAL
   use Variables_WQ
   
   use Variables_MPI
+  use Variables_MPI_Mapping
+  use Variables_MPI_Write_Out
+  use Mod_Map_Write_EE_Binary
   use INFOMOD,only:SKIPCOM,READSTR
 
   implicit none
 
-  integer :: ISREAD,NSKIP,JSHPRT,INFODT,L,LN,IZSURF,IVELEKC,IVELNKC,IAVKS,IABKS
-  integer :: IVELEKB,IVELNKB,IAVKB,IABKB,ICKC,ICKB,NINFO,IQLO(0:5),IQHI(0:5)
-  integer :: I, K, NWQ, LQ, LL, NOPEN
+  logical, intent(out) :: BSYNC
+  
+  integer :: ISREAD, NSKIP, JSHPRT, INFODT, IZSURF, IVELEKC, IVELNKC, IAVKS, IABKS
+  integer :: IVELEKB, IVELNKB, IAVKB, IABKB, ICKC, ICKB, NINFO, IQLO(0:5), IQHI(0:5)
+  integer :: I, J, K, L, LN, LE, LG, LQ, LL, NOPEN, NWQ
   integer, STATIC :: IPARAM,ISUB
 
-  real :: TIME,ZSURF,UTMP,VTMP,VELEKC,VELNKC,VELEKB,VELNKB,AVKS,AVKB,ABKS,ABKB,CKC,CKB
-  real :: T1,T2,TSPEED,ETA,QOUT,QIN,QOPEN,ETIME
+  real :: TIME, ZSURF, UTMP, VTMP, VELEKC, VELNKC, VELEKB, VELNKB, AVKS, AVKB, ABKS, ABKB, CKC, CKB
+  real :: T1, T2, TSPEED, ETA, QOUT, QIN, QOPEN, ETIME
 
   character UNITS*3, PARM*4, CSUB*1
   character*80 STR*200
@@ -40,9 +45,8 @@ SUBROUTINE SHOWVAL
   
   integer :: ICSHOW_DUM
   integer :: JCSHOW_DUM
-  integer :: i_tmp, j_tmp
-  real    :: tmp
-  logical :: show_val_inside
+  real    :: TMP
+  logical, save :: SHOW_VAL_INSIDE
   
   if( ISDYNSTP == 0 )then  
     DELT = DT  
@@ -54,28 +58,32 @@ SUBROUTINE SHOWVAL
     ISREAD = 1
     open(1,FILE = 'show.inp',STATUS = 'OLD')
     STR = READSTR(1)  ! *** SKIP OVER TITLE AND AND HEADER LINES 
-    read(1,*)NSHTYPE,NSHOWR,ICSHOW_DUM,JCSHOW_DUM,ISHPRT
+    read(1,*) NSHTYPE, NSHOWR, ICSHOW_DUM, JCSHOW_DUM, ISHPRT
     
-    ICSHOW = IG2IL(ICSHOW_DUM) !*** Remapping for domain decomposition
-    JCSHOW = JG2JL(JCSHOW_DUM) !*** Remapping for domain decomposition
+    !ICSHOW = IG2IL(ICSHOW_DUM) !*** Remapping for domain decomposition
+    !JCSHOW = JG2JL(JCSHOW_DUM) !*** Remapping for domain decomposition
+    ICSHOW = ICSHOW_DUM
+    JCSHOW = JCSHOW_DUM
     
-    read(1,*)ZSSMIN,ZSSMAX,tmp
+    read(1,*) ZSSMIN, ZSSMAX, TMP
     close(1)
     NSHOWR = 20
     NSHOWC = NSHOWR
-    if( ISHPRT < 1)ISHPRT = 1
+    if( ISHPRT < 1) ISHPRT = 1
     JSHPRT = ISHPRT
     NINFO = -1
     
     ! *** SET THE DISPLAY parameter
     if( NSHTYPE < 10 )then
+      ! *** Show parameter value or total of a group of sub-class
       IPARAM = NSHTYPE
       ISUB = 0
       CSUB = '0'
     else
+      ! *** Show a specific class
       IPARAM = NSHTYPE/100
-      ISUB= MOD(INT(NSHTYPE,4),100)
-      if( ISUB < 10)WRITE(CSUB,'(I1)')ISUB
+      ISUB   = MOD(INT(NSHTYPE,4),100)
+      if( ISUB < 10 ) WRITE(CSUB,'(I1)')ISUB
     endif
 
     UNITS = 'PPM'
@@ -129,32 +137,25 @@ SUBROUTINE SHOWVAL
   NITERAT = NITERAT + 1
   
   ! *** SETUP THE VARIABLES
-  SHOW_VAL_INSIDE = .FALSE.
-  I_TMP = IG2IL(ICSHOW)
-  J_TMP = JG2JL(JCSHOW)
-  
+  LG = LIJ_Global(ICSHOW, JCSHOW)
+  L = Map2Local(LG).LL
+
   ! *** CHECK IF THE CELL TO SHOW IS IN THE CURRENT DOMAIN
-  if( I_TMP > 0 .and. I_TMP < IC )then
-    if( J_TMP > 0 .and. J_TMP < JC )then
-      SHOW_VAL_INSIDE = .TRUE.
-      L = LIJ(I_TMP,J_TMP)
-    endif
-  endif
-  
-  ! *** Set L to a value that definitely will be inside so that we don't index arrays outside of domain
-  if(.NOT. SHOW_VAL_INSIDE )then  ! *** L is outside of domain
-    L = 2
+  SHOW_VAL_INSIDE = .FALSE.
+  if( L > 0 )then
+    SHOW_VAL_INSIDE = .TRUE.
   endif
   
   TIME = TIMESEC/86400.
-
+  BSYNC = .false.
+  
   ! *** DISPLAY THE HEADER
-  if( NSHOWC >= NSHOWR )then
+  if( process_id == master_id .and. NSHOWC >= NSHOWR )then
     NSHOWC = 0
     NINFO = NINFO + 1
     
     if( ISDYNSTP > 0 )then
-      INFODT = INFODT+1
+      INFODT = INFODT + 1
       if( INFODT > 10 .or. NITERAT == 1 )then
         if( DTSSDHDT > 0. )then
           write(6,9000) DTL1MN,L1LOC,DTL2MN,L2LOC,DTL3MN,L3LOC,DTL4MN,L4LOC
@@ -167,7 +168,7 @@ SUBROUTINE SHOWVAL
     endif
     
     ! *** MODEL DETAILS
-    if( NINFO == 0 .or. NINFO == 10 )then
+    if( SHOW_VAL_INSIDE .and. (NINFO == 0 .or. NINFO == 10) )then
       NINFO = 0
       
       QOUT = 0.
@@ -274,7 +275,7 @@ SUBROUTINE SHOWVAL
       write(*,'(A)')'-------------------------------------------------------------------------------'
       write(*,9300) TIME, INT(WINDST(L),4), INT(UTMP,4), INT(TATMT(L)+.5,4),INT(VTMP,4), INT(SOLSWRT(L),4),  & 
                           INT(RAINT(L)*86400000.,4), INT(EVAPT(L)*86400000.,4), INT(CKC,4),IQHI(0),IQLO(0)
-      NOPEN = NPBS+NPBW+NPBE+NPBN
+      NOPEN = NPBS + NPBW + NPBE + NPBN
       if( NOPEN > 0 )then
         write(*,9400)'OPEN: NORTH',IQHI(5),IQLO(5)
         write(*,9400)'OPEN: EAST ',IQHI(4),IQLO(4)
@@ -286,6 +287,9 @@ SUBROUTINE SHOWVAL
       endif
     endif
     
+    ! *** Report MPI subdomain
+    write(*,'(/,A,I8,A,I3,/)') 'Showing Runtime Status for Global Cell Index: ', LG, ', Which is in MPI Sub-Domain: ', sorted_loc_to_glob(LG).process
+
     ! *** ESTIMATE TIME TO COMPLETION
     if( N > 1 )then
       TCGRS = DSTIME(1)
@@ -295,9 +299,9 @@ SUBROUTINE SHOWVAL
       ETA = (T2 - TIMESEC)*TSPEED/3600.
       ETA = min(ETA,99999.989)
       T1 = TCGRS/3600.
-      write(*,'('' ** ELAPSED TIME: '',F8.2,'' (hr)   ESTIMATED TIME TO COMPLETION:'',F10.2,'' (hr)'')') T1,ETA
+      write(*,'('' ** ELAPSED TIME: '',F8.2,'' (hr)   ESTIMATED TIME TO COMPLETION:'',F10.2,'' (hr)'')') T1, ETA
     endif
-        
+    
     write(*,'(A)')'--------------------------------------------------------------------------------'
     if( ISDYNSTP > 0 )then
       write(*,'(A)')'    TIME     TIME   ELEV VELE VELN  '//PARM//'   AV    AB  VELE  VELN  '//PARM//'   AV      '
@@ -310,9 +314,9 @@ SUBROUTINE SHOWVAL
     endif
     write(*,'(A)')'--------------------------------------------------------------------------------'
     ETIME = DT*N/86400.
-    if( LMHK .and. ETIME > 0.01 )WRITE(*,'("SUPPORT ENERGY LOSS",F10.4," MW-hr")')SUM(ESUP(:,:))
-    if( LMHK .and. ETIME > 0.01 )WRITE(*,'("MHK ENERGY OUTPUT  ",F10.4," MW-hr")')SUM(EMHK(:,:))
-    if( LMHK .and. ETIME > 0.01 )WRITE(*,'("MHK POWER OUTPUT   ",F10.4," kW")')SUM(PMHK(:,:))*1E-3
+    if( LMHK .and. ETIME > 0.01 ) WRITE(*,'("SUPPORT ENERGY LOSS",F10.4," MW-hr")') SUM(ESUP(:,:))
+    if( LMHK .and. ETIME > 0.01 ) WRITE(*,'("MHK ENERGY OUTPUT  ",F10.4," MW-hr")') SUM(EMHK(:,:))
+    if( LMHK .and. ETIME > 0.01 ) WRITE(*,'("MHK POWER OUTPUT   ",F10.4," kW")') SUM(PMHK(:,:))*1E-3
     
   endif
 
@@ -322,25 +326,42 @@ SUBROUTINE SHOWVAL
   
   ! *** INCREMENT THE SCREEN COUNTER
   JSHPRT = 1
-  NSHOWC = NSHOWC+1
+  NSHOWC = NSHOWC + 1
 
-  LN = LNC(L)
-  ZSURF = (HP(L)+BELV(L))*100.
-  UTMP = 0.5*STCUV(L)*(U(LEC(L),KC)+U(L,KC))*100.
-  VTMP = 0.5*STCUV(L)*(V(LN,KC)+V(L,KC))*100.
-  VELEKC = CUE(L)*UTMP+CVE(L)*VTMP
+  ! *** Get the variables for all MPI subdomains
+  call Map_Write_WSOUT
+  call Map_Write_VELOUT
+  call Map_Write_WCOUT
+  BSYNC = .true.
+
+  if( process_id /= master_id ) return
+
+  LN = LNC_Global(LG)
+  LE = LNC_Global(LG)
+  ZSURF = (HP_Global(LG) + BELV_Global(LG))*100.
+  UTMP = 0.5*(U_Global(LE,KC) + U_Global(LG,KC))*100.
+  VTMP = 0.5*(V_Global(LN,KC) + V_Global(LG,KC))*100.
+  VELEKC = CUE_Global(LG)*UTMP + CVE_Global(LG)*VTMP
 
   
-  VELNKC = CUN(L)*UTMP+CVN(L)*VTMP
-  UTMP = 0.5*STCUV(L)*(U(LEC(L),KSZ(L))+U(L,KSZ(L)))*100.
-  VTMP = 0.5*STCUV(L)*(V(LN,KSZ(L))+V(L,KSZ(L)))*100.
-  VELEKB = CUE(L)*UTMP+CVE(L)*VTMP
-  VELNKB = CUN(L)*UTMP+CVN(L)*VTMP
-  AVKS = min(AV(L,KS)*10000.*HP(L),99999.)
-  AVKB = min(AV(L,KSZ(L))*10000.*HP(L),99999.)
-  ABKS = min(AB(L,KS)*10000.*HP(L),99999.)
-  ABKB = min(AB(L,KSZ(L))*10000.*HP(L),99999.)
-
+  VELNKC = CUN_Global(LG)*UTMP + CVN_Global(LG)*VTMP
+  UTMP = 0.5*(U_Global(LE,KSZ_Global(LG)) + U_Global(LG,KSZ_Global(LG)))*100.
+  VTMP = 0.5*(V_Global(LN,KSZ_Global(LG)) + V_Global(LG,KSZ_Global(LG)))*100.
+  VELEKB = CUE_Global(LG)*UTMP + CVE_Global(LG)*VTMP
+  VELNKB = CUN_Global(LG)*UTMP + CVN_Global(LG)*VTMP
+  
+  if( SHOW_VAL_INSIDE )then
+    AVKS = min(AV(L,KS)*10000.*HP(L),99999.)
+    AVKB = min(AV(L,KSZ(L))*10000.*HP(L),99999.)
+    ABKS = min(AB(L,KS)*10000.*HP(L),99999.)
+    ABKB = min(AB(L,KSZ(L))*10000.*HP(L),99999.)
+  else
+    AVKS = -999.
+    AVKB = -999.
+    ABKS = -999.
+    ABKB = -999.
+  endif
+  
   IZSURF = NINT(ZSURF)
   IVELEKC = NINT(VELEKC)
   IVELNKC = NINT(VELNKC)
@@ -361,66 +382,68 @@ SUBROUTINE SHOWVAL
   CKC = 0.
   CKB = 0.
   if( IPARAM == 1 .and. ISTRAN(1) > 0  )then
-    CKC = SAL(L,KC)
-    CKB = SAL(L,KSZ(L))
+    CKC = SAL_Global(LG,KC)
+    CKB = SAL_Global(LG,KSZ_Global(LG))
 
   elseif( IPARAM == 2 .and. ISTRAN(2) > 0  )then
-    CKC = TEM(L,KC)
-    CKB = TEM(L,KSZ(L))
+    CKC = TEM_Global(LG,KC)
+    CKB = TEM_Global(LG,KSZ_Global(LG))
 
   elseif( IPARAM == 3 .and. ISTRAN(3) > 0  )then
-    CKC = DYE(L,KC,1)
-    CKB = DYE(L,KSZ(L),1)
+    CKC = DYE_Global(LG,KC,1)
+    CKB = DYE_Global(LG,KSZ_Global(LG),1)
 
   elseif( IPARAM == 5 .and. ISTRAN(5) > 0 )then
     if( ISUB >0 .and. ISUB <= NTOX )then
-      CKC = TOX(L,KC,ISUB)
-      CKB = TOX(L,KSZ(L),ISUB)
+      CKC = TOX_Global(LG,KC,ISUB)
+      CKB = TOX_Global(LG,KSZ_Global(LG),ISUB)
     else
       CKC = 0.
       do I = 1,NTOX
-        CKC = CKC+TOX(L,KC,I)
+        CKC = CKC + TOX_Global(LG,KC,I)
       enddo
       CKB = 0.
       do I = 1,NTOX
-        CKB = CKB+TOX(L,KSZ(L),I)
+        CKB = CKB + TOX_Global(LG,KSZ_Global(LG),I)
       enddo
     endif
 
   elseif( IPARAM == 6 .and. ISTRAN(6) > 0 )then
-    if( ISUB >0 .and. ISUB <= NSED )then
-      CKC = SED(L,KC,ISUB)
-      CKB = SED(L,KSZ(L),ISUB)
+    if( ISUB > 0 .and. ISUB <= NSED )then
+      CKC = SED_Global(LG,KC,ISUB)
+      CKB = SED_Global(LG,KSZ_Global(LG),ISUB)
     else
-      CKC = SEDT(L,KC)
-      CKB = SEDT(L,KSZ(L))
+      CKC = sum(SED_Global(LG,KC,:)) 
+      CKB = sum(SED_Global(LG,KSZ_Global(LG),:))
     endif
 
   elseif( IPARAM == 7 .and. ISTRAN(7) > 0 )then
-    if( ISUB >0 .and. ISUB <= NSND )then
-      CKC = SND(L,KC,ISUB)
-      CKB = SND(L,KSZ(L),ISUB)
+    if( ISUB > 0 .and. ISUB <= NSND )then
+      CKC = SND_Global(LG,KC,ISUB) 
+      CKB = SND_Global(LG,KSZ_Global(LG),ISUB)
     else
-      CKC = SNDT(L,KC)
-      CKB = SNDT(L,KSZ(L))
+      CKC = sum(SND_Global(LG,KC,:)) 
+      CKB = sum(SND_Global(LG,KSZ_Global(LG),:))
     endif
 
   elseif( IPARAM == 0 .and. (ISTRAN(6) > 0 .or. ISTRAN(7) > 0 ) )then
-    CKC = (SEDT(L,KC)+SNDT(L,KC))
-    CKB = (SEDT(L,KSZ(L))+SNDT(L,KSZ(L)))
+    CKC = sum(SED_Global(LG,KC,:))
+    if( .not. LSEDZLJ ) CKC = CKC + sum(SND_Global(LG,KC,:)) 
+    CKB = sum(SED_Global(LG,KSZ_Global(LG),:))
+    if( .not. LSEDZLJ ) CKB = CKB + sum(SND_Global(LG,KSZ_Global(LG),:))
 
   elseif( IPARAM == 8 .and. ISTRAN(8) > 0 )then
-    CKC = WQV(L,KC,ISUB)
-    CKB = WQV(L,KSZ(L),ISUB)
+    CKC = WQV_Global(LG,KC,ISUB)
+    CKB = WQV_Global(LG,KSZ_Global(LG),ISUB)
 
   endif
 
   ICKC = min(NINT(CKC),99999)
   ICKB = min(NINT(CKB),99999)
   if( ISDYNSTP > 0 )then
-    write(*,9100)TIME,DELT,IZSURF,IVELEKC,IVELNKC,ICKC,IAVKS,IABKS,IVELEKB,IVELNKB,ICKB,IAVKB,LMINSTEP
+    write(*,9100) TIME, DELT, IZSURF, IVELEKC, IVELNKC, ICKC, IAVKS, IABKS, IVELEKB, IVELNKB, ICKB, IAVKB, LMINSTEP
   else
-    write(*,9100)TIME,DELT,IZSURF,IVELEKC,IVELNKC,ICKC,IAVKS,IABKS,IVELEKB,IVELNKB,ICKB,IAVKB,IABKB
+    write(*,9100) TIME, DELT, IZSURF, IVELEKC, IVELNKC, ICKC, IAVKS, IABKS, IVELEKB, IVELNKB, ICKB, IAVKB, IABKB
   endif
 
   return

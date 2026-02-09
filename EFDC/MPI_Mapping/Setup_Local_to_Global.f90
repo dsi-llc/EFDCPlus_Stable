@@ -128,62 +128,34 @@
     
 #ifdef GNU
   ! *** Gather all onto single global data structure.  Doing it piecemeal to avoid setting up MPI data structure
-  call MPI_AllGatherV(loc_to_glob.process, send_size, MPI_Integer4, &
-    all_loc_to_glob.process, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, ierr)
-  ! *** Gather local I index
-  call MPI_AllGatherV(loc_to_glob.local_i, send_size, MPI_Integer4, &
-    all_loc_to_glob.local_i, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, ierr)
-  ! *** Gather local J index
-  call MPI_AllGatherV(loc_to_glob.local_j, send_size, MPI_Integer4, &
-    all_loc_to_glob.local_j, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, ierr)
+  call MPI_AllGatherV(loc_to_glob.process,  send_size, MPI_Integer4, all_loc_to_glob.process,  recv_size_all, disps_all, MPI_Integer4, DSIcomm, ierr)
+  ! *** Gather local I index                
+  call MPI_AllGatherV(loc_to_glob.local_i,  send_size, MPI_Integer4, all_loc_to_glob.local_i,  recv_size_all, disps_all, MPI_Integer4, DSIcomm, ierr)
+  ! *** Gather local J index                                                                   
+  call MPI_AllGatherV(loc_to_glob.local_j,  send_size, MPI_Integer4, all_loc_to_glob.local_j,  recv_size_all, disps_all, MPI_Integer4, DSIcomm, ierr)
   ! *** Gather global I index
-  call MPI_AllGatherV(loc_to_glob.global_i, send_size, MPI_Integer4, &
-    all_loc_to_glob.global_i, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, ierr)
+  call MPI_AllGatherV(loc_to_glob.global_i, send_size, MPI_Integer4, all_loc_to_glob.global_i, recv_size_all, disps_all, MPI_Integer4, DSIcomm, ierr)
   ! *** Gather global J index
-  call MPI_AllGatherV(loc_to_glob.global_j, send_size, MPI_Integer4, &
-    all_loc_to_glob.global_j, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, ierr)
+  call MPI_AllGatherV(loc_to_glob.global_j, send_size, MPI_Integer4, all_loc_to_glob.global_j, recv_size_all, disps_all, MPI_Integer4, DSIcomm, ierr)
   ! *** Gather local L index
-  call MPI_AllGatherV(loc_to_glob.local_l, send_size, MPI_Integer4, &
-    all_loc_to_glob.local_l, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, ierr)
+  call MPI_AllGatherV(loc_to_glob.local_l,  send_size, MPI_Integer4, all_loc_to_glob.local_l,  recv_size_all, disps_all, MPI_Integer4, DSIcomm, ierr)
   ! *** Gather global L index
-  call MPI_AllGatherV(loc_to_glob.global_l, send_size, MPI_Integer4, &
-    all_loc_to_glob.global_l, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, ierr)
+  call MPI_AllGatherV(loc_to_glob.global_l, send_size, MPI_Integer4, all_loc_to_glob.global_l, recv_size_all, disps_all, MPI_Integer4, DSIcomm, ierr)
 #else
   ! *** Gather all onto single global data structure.  Doing it piecemeal to avoid setting up MPI data structure
-  call MPI_AllGatherV(loc_to_glob.process, send_size, MPI_Integer4, &
-    all_loc_to_glob.process, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, master_id, ierr)
-  ! *** Gather local I index
-  call MPI_AllGatherV(loc_to_glob.local_i, send_size, MPI_Integer4, &
-    all_loc_to_glob.local_i, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, master_id, ierr)
-  ! *** Gather local J index
-  call MPI_AllGatherV(loc_to_glob.local_j, send_size, MPI_Integer4, &
-    all_loc_to_glob.local_j, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, master_id, ierr)
+  call MPI_AllGatherV(loc_to_glob.process,  send_size, MPI_Integer4, all_loc_to_glob.process,  recv_size_all, disps_all, MPI_Integer4, DSIcomm, master_id, ierr)
+  ! *** Gather local I index                                                                   
+  call MPI_AllGatherV(loc_to_glob.local_i,  send_size, MPI_Integer4, all_loc_to_glob.local_i,  recv_size_all, disps_all, MPI_Integer4, DSIcomm, master_id, ierr)
+  ! *** Gather local J index                                                                   
+  call MPI_AllGatherV(loc_to_glob.local_j,  send_size, MPI_Integer4, all_loc_to_glob.local_j,  recv_size_all, disps_all, MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather global I index
-  call MPI_AllGatherV(loc_to_glob.global_i, send_size, MPI_Integer4, &
-    all_loc_to_glob.global_i, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, master_id, ierr)
+  call MPI_AllGatherV(loc_to_glob.global_i, send_size, MPI_Integer4, all_loc_to_glob.global_i, recv_size_all, disps_all, MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather global J index
-  call MPI_AllGatherV(loc_to_glob.global_j, send_size, MPI_Integer4, &
-    all_loc_to_glob.global_j, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, master_id, ierr)
+  call MPI_AllGatherV(loc_to_glob.global_j, send_size, MPI_Integer4, all_loc_to_glob.global_j, recv_size_all, disps_all, MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather local L index
-  call MPI_AllGatherV(loc_to_glob.local_l, send_size, MPI_Integer4, &
-    all_loc_to_glob.local_l, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, master_id, ierr)
+  call MPI_AllGatherV(loc_to_glob.local_l,  send_size, MPI_Integer4, all_loc_to_glob.local_l,  recv_size_all, disps_all, MPI_Integer4, DSIcomm, master_id, ierr)
   ! *** Gather global L index
-  call MPI_AllGatherV(loc_to_glob.global_l, send_size, MPI_Integer4, &
-    all_loc_to_glob.global_l, recv_size_all, disps_all, &
-    MPI_Integer4, DSIcomm, master_id, ierr)
+  call MPI_AllGatherV(loc_to_glob.global_l, send_size, MPI_Integer4, all_loc_to_glob.global_l, recv_size_all, disps_all, MPI_Integer4, DSIcomm, master_id, ierr)
 #endif  
   !---------------------------------------------------------------------------!
 

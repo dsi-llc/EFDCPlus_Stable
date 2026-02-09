@@ -189,6 +189,7 @@
       call AllocateDSI( D50AVG_Global,      LCM_Global, 0.0)
       call AllocateDSI( BULKDENS_Global,    KB,         LCM_Global, 0.0)
       call AllocateDSI( TSED_Global,        KB,         LCM_Global, 0.0)
+      call AllocateDSI( TSED0_Global,       KB,         LCM_Global, 0.0)
       call AllocateDSI( PERSED_Global,      NSEDS,      KB,         LCM_Global, 0.0)
       if( ICALC_BL > 0 )then                
         call AllocateDSI( CBL_Global,       LCM_Global, NSEDS, 0.0)

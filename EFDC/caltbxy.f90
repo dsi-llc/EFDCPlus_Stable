@@ -373,16 +373,16 @@ SUBROUTINE CALTBXY
           LW = LWC(L)
               
           ! *** Avg Velocities at U & V Faces
-          UTMP = 0.5*STCUV(L)*(U(LE,KSZ(LE)) + U(L,KSZ(L))) + 1.E-12  
-          VTMP = 0.5*STCUV(L)*(V(LN,KSZ(LN)) + V(L,KSZ(L)))  
+          UTMP = 0.5*STCUV(L)*(U(LE,KSZU(LE)) + U(L,KSZU(L))) + 1.E-12  
+          VTMP = 0.5*STCUV(L)*(V(LN,KSZV(LN)) + V(L,KSZV(L)))  
           CURANG = ATAN2(VTMP,UTMP)
             
           ! *** Cosine of the Current - Wave  
           COSWC = COS(CURANG-WV(L).DIR)
             
           ! *** Velocites at Corners  
-          UMAGTMP = SQRT( U1(L,KSZ(L))*U1(L,KSZ(L)) + V1U(L)      *V1U(L)      +1.E-12 )  
-          VMAGTMP = SQRT( U1V(L)      *U1V(L)       + V1(L,KSZ(L))*V1(L,KSZ(L)) + 1.E-12 )
+          UMAGTMP = SQRT( U1(L,KSZU(L))*U1(L,KSZU(L)) + V1U(L)      *V1U(L)      +1.E-12 )  
+          VMAGTMP = SQRT( U1V(L)      *U1V(L)       + V1(L,KSZV(L))*V1(L,KSZV(L)) + 1.E-12 )
             
           ! *** Set Initial Drag Coefficients  
           CDMAXU = STBXO(L)*H1U(L)/( 4.*DELT*UMAGTMP )  

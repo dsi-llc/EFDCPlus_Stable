@@ -76,7 +76,7 @@ SUBROUTINE HDMT2T
   logical, external :: KEY_PRESSED
   logical, external :: ISEXIT
 #endif
-  logical   :: RES
+  logical   :: RES, BSYNC
   real,save :: ADJC
   
   ! *** New variables for MPI
@@ -85,6 +85,8 @@ SUBROUTINE HDMT2T
   integer :: End_Local_LA
 
   real, dimension(2) :: DYN_IN, DYN_OUT
+  
+  logical :: lpmc = .false.
   
   ! *** ALLOCATE LOCAL ARRAYS
   if( .not. allocated(WCOREW) )then
@@ -339,9 +341,6 @@ SUBROUTINE HDMT2T
 
     if( ISCORTBC == 0 )then
       ! *** NO CORNER CORRECTIONS - STANDARD APPROACH
-      !$OMP PARALLEL DEFAULT(SHARED)
-
-      !$OMP DO PRIVATE(ND,LF,LL,LP,L)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
         LL = min(LF+LDMWET-1,LAWET)
@@ -353,10 +352,8 @@ SUBROUTINE HDMT2T
           TVAR3N(L) = TBY(LNC(L))
         enddo
       enddo
-      !$OMP END DO
 
       ! *** COMPUTE CELL CENTERED BOTTOM AND SURFACE
-      !$OMP DO PRIVATE(ND,LF,LL,LP,L)
       do ND = 1,NDM
         LF = (ND-1)*LDMWET+1
         LL = min(LF+LDMWET-1,LAWET)
@@ -366,8 +363,6 @@ SUBROUTINE HDMT2T
           QQ(L,KC) = 0.5*CTURB2*SQRT( (RSSBCE(L)*TVAR3W(L)+RSSBCW(L)*TSX(L))**2 + (RSSBCN(L)*TVAR3S(L)+RSSBCS(L)*TSY(L))**2 )
         enddo
       enddo
-      !$OMP END DO
-      !$OMP END PARALLEL
 
     else                             !IF(ISCORTBC >= 1 )then
 
@@ -458,7 +453,7 @@ SUBROUTINE HDMT2T
   TIMEDAY = DBLE(TCON)*DBLE(TBEGIN)/86400._8
 
   if( process_id == master_id )then
-    call TIMELOG(N,TIMEDAY,OUTDIR,0._8)
+    call TIMELOG(N, TIMEDAY, OUTDIR ,0._8)
   endif
 
   NTIMER = 1
@@ -530,6 +525,7 @@ SUBROUTINE HDMT2T
 
   ! *** *******************************************************************!
   ! *** UPDATE TIME VARIABLE VOLUME SOURCES AND SINKS
+  if( lpmc) print *, NIter, 'CALQVS'  ! delme
   call CALQVS
 
   ! *** *******************************************************************!
@@ -542,7 +538,6 @@ SUBROUTINE HDMT2T
                 
       ! *** Apply maximum value if required
       if( ISAVBMX >= 1 )then  
-        !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,KS,LLWET,LKWET,AVMX,ABMX,HPI,AV,AB) PRIVATE(ND,K,LP,L,AVTMP,ABTMP) 
         do ND = 1,NDM  
         
           do K = 1,KS  
@@ -555,12 +550,10 @@ SUBROUTINE HDMT2T
             enddo  
           enddo  
         enddo
-        !$OMP END PARALLEL DO
       endif
       
       ! *** Compute the inverse of the average AV at U and V interfaces
       if( IGRIDV == 0 )then
-        !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,KS,LWC,LSC,LLWET,LKWET,HPI,AV,AVUI,AVVI) PRIVATE(ND,K,LP,L)
         do ND = 1,NDM  
           do K = 1,KS  
             do LP = 1,LLWET(K,ND)
@@ -570,10 +563,7 @@ SUBROUTINE HDMT2T
             enddo  
           enddo 
         enddo
-        !$OMP END PARALLEL DO
       else
-        !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,KS,LWC,LSC,LLWET,LKWET,SUB,SVB,SVB3D,SUB3D,HP,HU,HV,AV,AVUI,AVVI)    &
-        !$OMP             PRIVATE(ND,K,LP,L)
         do ND = 1,NDM  
           do K = 1,KS  
             do LP = 1,LLWET(K,ND)
@@ -583,7 +573,6 @@ SUBROUTINE HDMT2T
             enddo  
           enddo 
         enddo
-        !$OMP END PARALLEL DO
       endif
     else
       ! *** ORIGINAL EFDC MELLOR-YAMADA TURBULENCE CLOSURE
@@ -608,21 +597,25 @@ SUBROUTINE HDMT2T
   ! *** UPDATE TIME VARIABLE SURFACE WIND STRESSES
   TTDS = DSTIME(0)
   TMPITMP = 0.
+  if( lpmc) print *, NIter, 'CALTSXY'  ! delme
   call CALTSXY(0)
   TTBXY = TTBXY + (DSTIME(0)-TTDS) - TMPITMP
   DSITIMING(9) = DSITIMING(9) + TMPITMP
 
   ! *** *******************************************************************!
   ! *** UPDATE TIME VARIABLE VEGETATION CHARACTERISTICS AND SURFACE ELEVATIONS
+  if( lpmc) print *, NIter, 'CALCSER'  ! delme
   call CALCSER
   call CALVEGSER
   
   PSERT(0) = 0.
+  if( lpmc) print *, NIter, 'CALPSER'  ! delme
   if( NPSER >= 1 ) CALL CALPSER
 
   ! *** *******************************************************************!
   ! *** CALCULATE EXPLICIT MOMENTUM EQUATION TERMS
   TTDS = DSTIME(0)
+  if( lpmc) print *, NIter, 'CALEXP2T'  ! delme
   call CALEXP2T
   TCEXP = TCEXP + (DSTIME(0)-TTDS)
 
@@ -630,31 +623,22 @@ SUBROUTINE HDMT2T
   ! *** SOLVE EXTERNAL MODE EQUATIONS FOR P, UHDYE, AND VHDXE
   TTDS = DSTIME(0)
   TMPITMP = 0.
+  if( lpmc) print *, NIter, 'CALPUV2C'  ! delme
   call CALPUV2C 
   TPUV = TPUV + (DSTIME(0)-TTDS) - TMPITMP - TTWAIT          ! *** Includes CONGRAD time (TTWAIT is the wait time)
   DSITIMING(2) = DSITIMING(2)    + TMPITMP
 
   ! *** *******************************************************************!
-  ! *** ADVANCE INTERNAL VARIABLES
-  !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,K, L)
-  do ND = 1,NDM
-    LF = 2 + (ND-1)*LDM
-    LL = min(LF+LDM-1,LA)
-    do K = 1,KC
-      do L = LF,LL
-        UHDYF1(L,K) = UHDYF(L,K)
-        VHDXF1(L,K) = VHDXF(L,K)
-        UHDY1(L,K)  = UHDY(L,K)
-        VHDX1(L,K)  = VHDX(L,K)
-        U1(L,K)     = U(L,K)
-        V1(L,K)     = V(L,K)
-        W1(L,K)     = W(L,K)
-        UCTR1(L,K)  = UCTR(L,K)
-        VCTR1(L,K)  = VCTR(L,K)
-      enddo
-    enddo
-  enddo
-  !$OMP END PARALLEL DO
+  ! *** Advance internal variables
+  UHDYF1 = UHDYF
+  VHDXF1 = VHDXF
+  UHDY1  = UHDY
+  VHDX1  = VHDX
+  U1     = U
+  V1     = V
+  W1     = W
+  UCTR1  = UCTR
+  VCTR1  = VCTR
   
   ! *** *******************************************************************!
   ! *** SOLVE INTERNAL SHEAR MODE EQUATIONS FOR U, UHDY, V, VHDX, AND W
@@ -662,24 +646,16 @@ SUBROUTINE HDMT2T
   TTDS = DSTIME(0)
   TMPITMP = 0.
   if( KC > 1 )then
+    if( lpmc) print *, NIter, 'CALUVW'  ! delme
     call CALUVW 
   else
-    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,LA,LDM,UHDYE,UHDYF,UHDY,HUI,DYIU,U,VHDXE,VHDXF,VHDX,HVI,DXIV,V,W) PRIVATE(ND,LF,LL,L)
-    do ND = 1,NDM
-      LF = 2+(ND-1)*LDM
-      LL = min(LF+LDM-1,LA)
-
-      do L = LF,LL
-        UHDYF(L,1) = UHDYE(L)
-        VHDXF(L,1) = VHDXE(L)
-        UHDY(L,1)  = UHDYE(L)
-        VHDX(L,1)  = VHDXE(L)
-        U(L,1)     = UHDYE(L)*HUI(L)*DYIU(L)
-        V(L,1)     = VHDXE(L)*HVI(L)*DXIV(L)
-        W(L,1)     = 0.
-      enddo
-    enddo
-    !$OMP END PARALLEL DO
+    UHDYF(:,1) = UHDYE(:)
+    VHDXF(:,1) = VHDXE(:)
+    UHDY(:,1)  = UHDYE(:)
+    VHDX(:,1)  = VHDXE(:)
+    U(:,1)     = UHDYE(:)*HUI(:)*DYIU(:)
+    V(:,1)     = VHDXE(:)*HVI(:)*DXIV(:)
+    W(:,1)     = 0.
 
     call CALUVW
   endif
@@ -704,6 +680,7 @@ SUBROUTINE HDMT2T
   ! *** CALCULATE SALINITY, TEMPERATURE, DYE AND SEDIMENT CONCENTRATIONS
   ! *** AT TIME LEVEL (iN+1)
   if( ISTRANACTIVE > 0 .or. ISGOTM > 0 )then
+    if( lpmc)  print *, NIter, 'CALCONC'  ! delme
     call CALCONC
   else
     ! *** Call Propwash module if that option is selected
@@ -777,27 +754,22 @@ SUBROUTINE HDMT2T
   ! *** *******************************************************************!
   ! ***  UPDATE BUOYANCY AND CALCULATE NEW BUOYANCY USING AN EQUATION OF STATE
   if( BSC > 1.E-6  )then
+    if( lpmc) print *, NIter, 'CALBUOY'  ! delme
     call CALBUOY(.TRUE.)
   endif
 
   ! *** *******************************************************************!
   ! *** CALCULATE U AT V AND V AT U AT TIME LEVEL (N+1)
   if( ICALTB == 0 )then
-    ! *** EFDC+ 10.0 AND LATER APPROACH TO COMPUTE THE SHEAR VELOCITIES AT THE U AND V FACES
+    ! *** EFDC+ 10.0 and later approach to compute the shear velocities at the U and V faces
 
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,LE,LS,LSE,LN,LW,LNW)
+    ! *** Advance UV and VU
+    U1V = UV
+    V1U = VU
+    
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
       LL = min(LF+LDMWET-1,LAWET)
-
-      ! *** ADVANCE THE VARIABLES
-      do LP = LF,LL
-        L = LWET(LP)
-        U1V(L) = UV(L)
-        V1U(L) = VU(L)
-      enddo
-      
-      !DIR$ NOFUSION
       do LP = LF,LL
         L = LWET(LP)
         LSE = LSEC(L)
@@ -807,14 +779,20 @@ SUBROUTINE HDMT2T
         LW  = LWC(L)
         LN  = LNC(L)
 
-        UV(L) = SVB(L)*( 0.5*HP(LS)*(U(LSE,KSZU(LSE)) + U(LS,KSZU(LS))) + 0.5*HP(L)*(U(LE,KSZU(LE)) + U(L,KSZU(L))) )*HVI(L)
-        VU(L) = SUB(L)*( 0.5*HP(LW)*(V(LNW,KSZV(LNW)) + V(LW,KSZV(LW))) + 0.5*HP(L)*(V(LN,KSZV(LN)) + V(L,KSZV(L))) )*HUI(L)
+        if( LKSZ(LS,KSZ(L)) )then
+          UV(L) = 0.5*( U(LE,KSZ(L)) + U(L,KSZ(L)) )
+        else
+          UV(L)= 0.25*( HP(LS)*( U(LSE,KSZU(LSE)) + U(LS,KSZU(LS)) ) + HP(L)*( U(LE,KSZU(LE)) + U(L,KSZU(L)) ) )*HVI(L)
+        endif
+        if( LKSZ(LW,KSZ(L)) )then
+          VU(L)= 0.5*( V(LN,KSZ(L)) + V(L,KSZ(L)) )
+        else
+          VU(L)= 0.25*( HP(LW)*( V(LNW,KSZV(LNW)) + V(LW,KSZV(LW)) ) + HP(L)*( V(LN,KSZV(LN)) + V(L,KSZV(L)) ) )*HUI(L)
+        endif
       enddo
     enddo
-    !$OMP END PARALLEL DO
   else
     ! *** LEGACY EFDC APPLICATIONS
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L,LE,LS,LSE,LN,LW,LNW)
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
       LL = min(LF+LDMWET-1,LAWET)
@@ -828,14 +806,10 @@ SUBROUTINE HDMT2T
         LW = LWC(L)
         LN = LNC(L)
 
-        U1V(L) = UV(L)
-        V1U(L) = VU(L)
-
         UV(L) = ( ( HP(LSE)*U(LSE,KSZU(LSE)) + HP(LS)*U(LS,KSZU(LS)) ) + ( HP(LE)*U(LE,KSZU(LE)) + HP(L)*U(L,KSZU(L)) ) )/( 1.0 + SUB(LE) + SUB(LS) + SUB(LSE) )*HVI(L)
         VU(L) = ( ( HP(LNW)*V(LNW,KSZV(LNW)) + HP(LW)*V(LW,KSZV(LW)) ) + ( HP(LN)*V(LN,KSZV(LN)) + HP(L)*V(L,KSZV(L)) ) )/( 1.0 + SVB(LN) + SVB(LW) + SVB(LNW) )*HUI(L)
       enddo
     enddo
-    !$OMP END PARALLEL DO
 
   endif
 
@@ -845,6 +819,7 @@ SUBROUTINE HDMT2T
   if( ISHDMF >= 1 )then
     TTDS = DSTIME(0)
 
+    if( lpmc) print *, NIter, 'CALHDMF'  ! delme
     call CALHDMF
     
     THMDF = THMDF + (DSTIME(0)-TTDS)
@@ -855,32 +830,19 @@ SUBROUTINE HDMT2T
   TTDS = DSTIME(0)
   call CALTBXY
 
-  !$OMP PARALLEL DO DEFAULT(NONE) PRIVATE(ND,LF,LL,LP,L,AVCON1,USGZ,VSGZ)       &
-  !$OMP             SHARED(ICALTB,ISAVCOMP,NDM,LDMWET,LAWET,LWET,KSZ,KSZU,KSZV) &
-  !$OMP             SHARED(HUI,HVI,TBX,STBX,VU,U,TBY,STBY,UV,V)
-  do ND = 1,NDM
-    LF = (ND-1)*LDMWET+1
-    LL = min(LF+LDMWET-1,LAWET)
-
-    if( ICALTB > 0 .and. ISAVCOMP == 0 )then
-      do LP = LF,LL
-        L = LWET(LP)
-        USGZ = U(L,KSZU(L))
-        VSGZ = V(L,KSZV(L))
-        TBX(L) = AVCON1*HUI(L)*USGZ
-        TBY(L) = AVCON1*HVI(L)*VSGZ
-      enddo
-    else
-      do LP = LF,LL
-        L = LWET(LP)
-        USGZ = U(L,KSZU(L))
-        VSGZ = V(L,KSZV(L))
-        TBX(L) = ( STBX(L)*SQRT(VU(L)*VU(L) + USGZ*USGZ) )*USGZ
-        TBY(L) = ( STBY(L)*SQRT(UV(L)*UV(L) + VSGZ*VSGZ) )*VSGZ
-      enddo
-    endif
+  ! *** Set U and V at the upstream interface layer
+  do L = 2,LA
+    TVAR3W(L) = U(L,KSZU(L))
+    TVAR3S(L) = V(L,KSZV(L))
   enddo
-  !$OMP END PARALLEL DO
+  
+  if( ICALTB > 0 .and. ISAVCOMP == 0 )then
+    TBX(:) = AVCON1*HUI(:)*TVAR3W(:)
+    TBY(:) = AVCON1*HVI(:)*TVAR3S(:)
+  else
+    TBX(:) = ( STBX(:)*SQRT(VU(:)*VU(:) + TVAR3W(:)*TVAR3W(:)) )*TVAR3W(:)
+    TBY(:) = ( STBY(:)*SQRT(UV(:)*UV(:) + TVAR3S(:)*TVAR3S(:)) )*TVAR3S(:)
+  endif
 
   TTBXY = TTBXY + (DSTIME(0)-TTDS)
   
@@ -914,40 +876,25 @@ SUBROUTINE HDMT2T
   TTDS = DSTIME(0)
   if( ISWAVE == 0 .or. LSEDZLJ )then
     if( ISCORTBC == 0 )then
-      ! ***  STANDARD CALCULATIONS - NO CORNER CORRECTS
-      !$OMP PARALLEL DO DEFAULT(NONE) PRIVATE(ND,L,K,LF,LL,LP,TMP)           &
-      !$OMP             SHARED(NDM,LDMWET,LAWET,LWET,KC,LEC,LNC)             &
-      !$OMP             SHARED(TVAR3S,TVAR3W,TVAR3E,TVAR3N,TBX,TBY,TSX,TSY)  &
-      !$OMP             SHARED(CTURB2,RSSBCE,RSSBCW,RSSBCN,RSSBCS,QQ)
-      do ND = 1,NDM
-        LF = (ND-1)*LDMWET+1
-        LL = min(LF+LDMWET-1,LAWET)
+      TVAR3W(:) = TSX(LEC(:))
+      TVAR3S(:) = TSY(LNC(:))
+      TVAR3E(:) = TBX(LEC(:))
+      TVAR3N(:) = TBY(LNC(:))
 
-        do LP = LF,LL
-          L = LWET(LP)
-          TVAR3W(L) = TSX(LEC(L))
-          TVAR3S(L) = TSY(LNC(L))
-          TVAR3E(L) = TBX(LEC(L))
-          TVAR3N(L) = TBY(LNC(L))
-        enddo
+      do L = 2,LA
+        TMP = ( RSSBCE(L)*TVAR3E(L) + RSSBCW(L)*TBX(L) )**2 + ( RSSBCN(L)*TVAR3N(L) + RSSBCS(L)*TBY(L) )**2
+        QQ(L,0)  = 0.5*CTURB2*SQRT(TMP)
 
-        do LP = LF,LL
-          L = LWET(LP)
-          TMP = ( RSSBCE(L)*TVAR3E(L) + RSSBCW(L)*TBX(L) )**2 + ( RSSBCN(L)*TVAR3N(L) + RSSBCS(L)*TBY(L) )**2
-          QQ(L,0)  = 0.5*CTURB2*SQRT(TMP)
-
-          TMP = ( RSSBCE(L)*TVAR3W(L) + RSSBCW(L)*TSX(L) )**2 + ( RSSBCN(L)*TVAR3S(L) + RSSBCS(L)*TSY(L) )**2
-          QQ(L,KC) = 0.5*CTURB2*SQRT(TMP)
-        enddo
+        TMP = ( RSSBCE(L)*TVAR3W(L) + RSSBCW(L)*TSX(L) )**2 + ( RSSBCN(L)*TVAR3S(L) + RSSBCS(L)*TSY(L) )**2
+        QQ(L,KC) = 0.5*CTURB2*SQRT(TMP)
       enddo
-      !$OMP END PARALLEL DO
 
     else    ! if( ISCORTBC >= 1 )then
       ! *** CORNER CORRECTIONS
       do L = 2,LA
         TVAR3S(L) = TSY(LNC(L))
         TVAR3W(L) = TSX(LEC(L))
-        TVAR3E(L) = TBX(LEC(L)   )
+        TVAR3E(L) = TBX(LEC(L))
         TVAR3N(L) = TBY(LNC(L))
       enddo
 
@@ -992,7 +939,6 @@ SUBROUTINE HDMT2T
   if( ISWAVE >= 1 .and. .not. LSEDZLJ )then
 
     ! ***  STANDARD WAVE CALCULATIONS
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,L,TMP,TAUBC2,TAUBC,UTMP,VTMP,CURANG,TAUB2)
     do ND = 1,NDM
       LF = 2+(ND-1)*LDM
       LL = min(LF+LDM-1,LA)
@@ -1026,7 +972,6 @@ SUBROUTINE HDMT2T
       enddo
 
     enddo  ! *** END OF DOMAIN
-    !$OMP END PARALLEL DO
 
   endif    ! *** END OF ISWAVE>0
 
@@ -1034,16 +979,14 @@ SUBROUTINE HDMT2T
   ! *** CALCULATE TURBULENT INTENSITY SQUARED
   if( KC > 1 )then
     if( ISGOTM > 0 )then 
-      !$OMP PARALLEL DO DEFAULT(NONE) SHARED(LA,KC,QQ,QQSQR,TKE3D,DML,GL3D,HP) PRIVATE(L)
       do L = 2,LA
         QQ(L,0:KC)  = 2.*tke3d(L,0:KC)
         QQSQR(L,0)  = SQRT(QQ(L,0))
         DML(L,0:KC) = GL3D(L,0:KC)/HP(L)
       enddo
-      !$OMP END PARALLEL DO
     else
-    
-      ! *** ORIGINAL EFDC TURBULENT INTENSITY
+      ! *** Original EFDC turbulent intensity
+      if( lpmc) print *, NIter, 'CALQQ2T'  ! delme
       call CALQQ2T
     endif
   endif
@@ -1063,8 +1006,8 @@ SUBROUTINE HDMT2T
   DSITIMING(7) = DSITIMING(7) + (DSTIME(0)-TTDS)
   ! ****************************************************************************
 
-  ! *** COMPUTE THE SQRT OF THE TURBULENCE (M/S)
-  !$OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,KS,LDMWET,LAWET,LWET,LLWET,LKWET,QQ,QQSQR) PRIVATE(ND,K,LF,LL,LP,L)
+  ! *** Compute the sqrt of the turbulence (m/s)
+  ! $OMP PARALLEL DO DEFAULT(NONE) SHARED(NDM,KS,LDMWET,LAWET,LWET,LLWET,LKWET,QQ,QQSQR) PRIVATE(ND,K,LF,LL,LP,L)
   do ND = 1,NDM  
     do K = 0,KS
       if( K == 0 )then
@@ -1082,7 +1025,7 @@ SUBROUTINE HDMT2T
       endif
     enddo
   enddo 
-  !$OMP END PARALLEL DO
+  ! $OMP END PARALLEL DO
 
   ! *** *******************************************************************!
   ! *** *******************************************************************!
@@ -1213,8 +1156,10 @@ SUBROUTINE HDMT2T
   endif
   
   ! *** *******************************************************************!
-  if( process_id == master_id )then
-    if( ISHOW > 0 ) CALL SHOWVAL
+  if( ISHOW > 0 )then
+    CALL SHOWVAL(BSYNC)
+
+    if( BSYNC ) call MPI_barrier(DSIcomm, ierr)
   endif
   ! *** *******************************************************************!
   

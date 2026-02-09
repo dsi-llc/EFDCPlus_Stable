@@ -15,7 +15,6 @@
 ! -----------------------------------------------------------------------------
 
 module yaml
-
    use yaml_types
 
    implicit none
@@ -35,25 +34,26 @@ module yaml
       integer                 :: iline  = 0
       character(error_length) :: error_message = ''
       logical                 :: has_error     = .false.
+#ifdef USE_YAML      
    contains
       procedure :: next_line
       procedure :: set_error
+#endif
    end type
 
-contains
+	contains
 
    function parse(path,unit,error) result(root)
       integer,                intent(in)  :: unit
       character(len = *),       intent(in)  :: path
       character(error_length),intent(out) :: error
       class (type_node),pointer           :: root
-
       type(type_file) :: file
       logical          :: already_open
 
       nullify(root)
       error = ''
-
+#ifdef USE_YAML      
       inquire(unit = unit, opened = already_open)
       if( .not.already_open) open(unit = unit,file = path,status = 'old',action = 'read',err = 90)
       file%unit = unit
@@ -80,12 +80,13 @@ contains
       endif
 
       if( associated(root)) call root%set_path('')
-
+#endif
       return
 
 90    error = 'Unable to open '//trim(path)//' for reading.'
    end function
 
+#ifdef USE_YAML      
    subroutine next_line(file)
       class (type_file),intent(inout) :: file
       integer                         :: i
@@ -316,5 +317,6 @@ contains
       file%error_message = error
       file%has_error = .true.
    end subroutine
+#endif
 
 end module yaml

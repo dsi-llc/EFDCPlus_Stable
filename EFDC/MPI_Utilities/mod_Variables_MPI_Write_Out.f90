@@ -181,6 +181,7 @@ Module Variables_MPI_Write_Out
   real(rkd),Target, Allocatable, Dimension(:)     :: D50AVG_Global
   real(rkd),Target, Allocatable, Dimension(:,:)   :: BULKDENS_Global
   real(rkd),Target, Allocatable, Dimension(:,:)   :: TSED_Global
+  real(rkd),Target, Allocatable, Dimension(:,:)   :: TSED0_Global
   real(rkd),Target, Allocatable, Dimension(:,:,:) :: PERSED_Global
   real(rkd),Target, Allocatable, Dimension(:,:)   :: ERO_SED_FLX_Global
   real(rkd),Target, Allocatable, Dimension(:,:)   :: DEP_SED_FLX_Global

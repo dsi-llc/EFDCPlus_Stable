@@ -44,7 +44,7 @@ MODULE GETSWANMOD
   
   integer(4),save :: SWAN_M1, SWAN_N1, SWAN_M2, SWAN_N2
   integer(4),save :: NHS, NPK, NRT, NWL, NHP, NDI, NCOL
-  real(RKD),save  :: VAL(20)
+  real(RKD)       :: VAL(20)
   
   real(RKD)   :: WDIR, WPRD, EDIS
   real(RKD)   :: WVDX, WVDY, WVCX, WVCY
@@ -77,10 +77,11 @@ MODULE GETSWANMOD
     call Broadcast_Scalar(SWAN_N1, master_id)
     call Broadcast_Scalar(SWAN_M2, master_id)
     call Broadcast_Scalar(SWAN_N2, master_id)
-    
-    if( process_id == master_id )then
-      write(*,'(A)')'READING SWAN_GRP.INP'
-      open(UGRP,FILE = 'swan_grp.inp',ACTION = 'READ')  !FRMFILE
+  endif
+  if( process_id == master_id )then
+    write(*,'(A)')'READING SWAN_GRP.INP'
+    open(UGRP,FILE = 'swan_grp.inp',ACTION = 'READ')  !FRMFILE
+    if( JSWAVE == 0 )then
       do NL = 1,5
         read(UGRP,'(A)',IOSTAT = ISO) STR
         if( ISO > 0 ) STOP 'SWAN_GRP.INP: READING ERROR'  
@@ -88,75 +89,78 @@ MODULE GETSWANMOD
       STR  = ADJUSTL(STR)
       TERM = ADJUSTL(STR(2:))
       STR = READSTR(UGRP)
-      NCOL = NUMCOL(STR)
-      
+      NCOL = NUMCOL(TERM)
+
+    
       NHS = FINDSTR(TERM,'Hsi',NCOL)   ! *** INCIDENT OFFSHORE SIGNIFICANT WAVE HEIGHT (m)
       NPK = FINDSTR(TERM,'PkD',NCOL)   ! *** WAVE ANGLE (DEG)
       NRT = FINDSTR(TERM,'RTp',NCOL)   ! *** TIME TO PEAK (SEC)
       NWL = FINDSTR(TERM,'Wle',NCOL)   ! *** WAVE LENGTH (M)
       NHP = FINDSTR(TERM,'Dep',NCOL)   ! *** WATER DEPTH (M)
       NDI = FINDSTR(TERM,'Dis',NCOL)   ! *** WAVE DISSIPATION (M)
-      
-      ! *** READ BUFFER DATA 
-      do NW = 1,IWVCOUNT-1
-        do J = 1,JC_Global
-          do I = 1,IC_Global
-            read(UGRP,*,IOSTAT = ISO) VAL(1:NCOL)
-            if( ISO > 0 ) STOP 'SWAN_GRP.INP: READING ERROR' 
-          enddo
-        enddo
-      enddo
-      
-      NWVCELLS = 0
-      LOOPJ: DO J = SWAN_N1+1, SWAN_N2+1
-        do I = SWAN_M1+1, SWAN_M2+1 
-          read(UGRP,*,IOSTAT = ISO) VAL(1:NCOL)   
-          if( ISO > 0 ) STOP 'SWAN_GRP.INP: READING ERROR'  
-      
-          LG = LIJ_GLOBAL(I,J)    
-          if( LG <= 1 .or. LG > LA_Global ) CYCLE
-        
-          NWVCELLS = NWVCELLS+1
-          LWVCELL_Global(NWVCELLS) = LG   ! *** PMC - 2015-12 - This was pointing to L-1 but LWVCELL is used as an L array reference.  This has to be L not L-1.
-          LWVMASK_Global(LG) = .TRUE.
-          
-          ! *** WAVE HEIGHT (M), THEN ZERO WAVE IMPACTS FOR VEGETATION
-          WV_Global(LG).HEISIG = VAL(NHS)
-          if( MVEG_Global(LG) /= MVEGOW  )then
-            WV_Global(LG).HEISIG = 0.
-          else
-            if( (MVEG_Global(LWC_Global(LG)) /= MVEGOW) .or. &
-                (MVEG_Global(LEC_Global(LG)) /= MVEGOW) .or. &
-                (MVEG_Global(LSC_Global(LG)) /= MVEGOW) .or. &
-                (MVEG_Global(LNC_Global(LG)) /= MVEGOW)      )  WV_Global(LG).HEISIG = 0.5*WV_Global(LG).HEISIG
-          endif
-          
-          WDIR    = VAL(NPK)                                ! *** WAVE ANGLE = (TRUE EAST,WAVE) ANTI-CLOCKWISE [0,360] [D]
-          WPRD    = VAL(NRT)                                ! *** WAVE PERIOD [S] 
-          WV_Global(LG).LENGTH  = VAL(NWL)                          ! *** WAVE LENGTH [M] 
-          EDIS    = VAL(NDI)                                ! *** WAVE DISSIPATION  [ W/m2 = Kg/s3]
-          !WV(L).DISSIPA(KC) = EDIS/RHO                     ! *** [M3/S3]   
-          
-          if( WV_Global(LG).HEISIG >= WHMI )then                       
-            WVDX= COS(WDIR*PI/180)
-            WVDY= SIN(WDIR*PI/180)
-            WVCX =  CVN_Global(LG)*WVDX - CVE_Global(LG)*WVDY               ! *** TO LOCAL CURVI-LINEAR SYSTEM
-            WVCY = -CUN_Global(LG)*WVDX + CUE_Global(LG)*WVDY
-            WV_Global(LG).DIR  = ATAN2(WVCY,WVCX)                   ! *** CELL-EAST,WAVE (COUNTER-CLOCKWISE [-pi,pi])
-            WV_Global(LG).FREQ = 2.*PI/WPRD
-            !WV_Global(LG).DISSIPA(KC) = 0.25*g*WV_Global(LG).HEISIG**2/WPRD ! *** Energy dissipation due to breaking wave  
-          else
-            WV_Global(LG).DIR  = 0.
-            WV_Global(LG).LENGTH     = 0.
-            WV_Global(LG).FREQ  = 1.
-            WV_Global(LG).HEISIG   = 0.
-            WV_Global(LG).DISSIPA(KC) = 0
-          endif
-        enddo
-      enddo LOOPJ
-      WV_Global(2:LA_Global).HEIGHT = WV_Global(2:LA_Global).HEISIG  ! *** ASSIGN INCIDENT SIGNIFICANT WAVE HEIGHT TO APPLIED WAVE HEIGHT
     endif
+    
+    ! *** delme - no need buffer data as the file is always open - DKT
+    ! *** READ BUFFER DATA
+    !do NW = 1,IWVCOUNT-1
+    !  do J = 1,JC_Global
+    !    do I = 1,IC_Global
+    !      read(UGRP,*,IOSTAT = ISO) VAL(1:NCOL)
+    !      if( ISO > 0 ) STOP 'SWAN_GRP.INP: READING ERROR' 
+    !    enddo
+    !  enddo
+    !enddo
+    
+    NWVCELLS = 0
+    LOOPJ: DO J = SWAN_N1+1, SWAN_N2+1
+      do I = SWAN_M1+1, SWAN_M2+1 
+        read(UGRP,*,IOSTAT = ISO) VAL(1:NCOL)   
+        if( ISO > 0 ) STOP 'SWAN_GRP.INP: READING ERROR'  
+    
+        LG = LIJ_GLOBAL(I,J)    
+        if( LG <= 1 .or. LG > LA_Global ) CYCLE
+      
+        NWVCELLS = NWVCELLS+1
+        LWVCELL_Global(NWVCELLS) = LG   ! *** PMC - 2015-12 - This was pointing to L-1 but LWVCELL is used as an L array reference.  This has to be L not L-1.
+        LWVMASK_Global(LG) = .TRUE.
+        
+        ! *** WAVE HEIGHT (M), THEN ZERO WAVE IMPACTS FOR VEGETATION
+        WV_Global(LG).HEISIG = VAL(NHS)
+        if( MVEG_Global(LG) /= MVEGOW  )then
+          WV_Global(LG).HEISIG = 0.
+        else
+          if( (MVEG_Global(LWC_Global(LG)) /= MVEGOW) .or. &
+              (MVEG_Global(LEC_Global(LG)) /= MVEGOW) .or. &
+              (MVEG_Global(LSC_Global(LG)) /= MVEGOW) .or. &
+              (MVEG_Global(LNC_Global(LG)) /= MVEGOW)      )  WV_Global(LG).HEISIG = 0.5*WV_Global(LG).HEISIG
+        endif
+        
+        WDIR    = VAL(NPK)                                ! *** WAVE ANGLE = (TRUE EAST,WAVE) ANTI-CLOCKWISE [0,360] [D]
+        WPRD    = VAL(NRT)                                ! *** WAVE PERIOD [S] 
+        WV_Global(LG).LENGTH  = VAL(NWL)                          ! *** WAVE LENGTH [M] 
+        EDIS    = VAL(NDI)                                ! *** WAVE DISSIPATION  [ W/m2 = Kg/s3]
+        !WV(L).DISSIPA(KC) = EDIS/RHO                     ! *** [M3/S3]   
+        
+        if( WV_Global(LG).HEISIG >= WHMI )then                       
+          WVDX= COS(WDIR*PI/180)
+          WVDY= SIN(WDIR*PI/180)
+          WVCX =  CVN_Global(LG)*WVDX - CVE_Global(LG)*WVDY               ! *** TO LOCAL CURVI-LINEAR SYSTEM
+          WVCY = -CUN_Global(LG)*WVDX + CUE_Global(LG)*WVDY
+          WV_Global(LG).DIR  = ATAN2(WVCY,WVCX)                   ! *** CELL-EAST,WAVE (COUNTER-CLOCKWISE [-pi,pi])
+          WV_Global(LG).FREQ = 2.*PI/WPRD
+          !WV_Global(LG).DISSIPA(KC) = 0.25*g*WV_Global(LG).HEISIG**2/WPRD ! *** Energy dissipation due to breaking wave  
+        else
+          WV_Global(LG).DIR  = 0.
+          WV_Global(LG).LENGTH     = 0.
+          WV_Global(LG).FREQ  = 1.
+          WV_Global(LG).HEISIG   = 0.
+          WV_Global(LG).DISSIPA(KC) = 0
+        endif
+      enddo
+    enddo LOOPJ
+    WV_Global(2:LA_Global).HEIGHT = WV_Global(2:LA_Global).HEISIG  ! *** ASSIGN INCIDENT SIGNIFICANT WAVE HEIGHT TO APPLIED WAVE HEIGHT
   endif
+  
   ! *** Broadcast wave cells properties
   Call Broadcast_Array(LWVCELL_Global,   master_id)
   Call Broadcast_Array(LWVMASK_Global,   master_id)

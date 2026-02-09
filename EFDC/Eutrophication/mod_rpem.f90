@@ -209,7 +209,7 @@ SUBROUTINE CAL_RPEM
     ! *** SET LIGHT LIMITATIONS                                                                                              
    
     ! *** NOTE THAT WQI0,WQI1,AND WQI2 ARE PHOTOSYNTHETIC SSW RADIATION                                                      
-    !    FROM CURRENT AND PREVIOUS TWO TIME INCREMENTS IN LANGLEY/DAY                                                       
+    !    FROM CURRENT AND PREVIOUS TWO TIME INCREMENTS IN LANGLEYS/DAY                                                       
     !    AND ARE PROVIDED BY THE WATER QUALITY MODEL                                                                        
     WQAVGIO = WQCIA*WQI0+WQCIB*WQI1+WQCIC*WQI2                          ! EQ. (12)
    

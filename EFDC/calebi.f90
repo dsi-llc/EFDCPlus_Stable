@@ -63,14 +63,25 @@ SUBROUTINE CALEBI
 
   if( IGRIDV > 0 )then               
     ! *** INTERPOLATE B ARRAYS MIDPOINT FOR EACH FACE
-    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND,LF,LL,LP,L)
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ND, LF, LL, LP, L, K)
     do ND = 1,NDM  
       LF = (ND-1)*LDMWET+1  
       LL = min(LF+LDMWET-1,LAWET)
       
       do LP = LF,LL
         L = LWET(LP)
-        if( .not. KSZFLAT(L) ) CALL INTERPB(L)
+        if( IGRIDV > 1 )then
+          CALL INTERPB(L)
+        else
+          ! *** Using B at cells layer center in SGZ-IVGRID 1 for consistency
+          ! *** in the implementation of external density gradient and buoyancy shears - DKT
+          do K = KSZ(L),KC
+            BW(L,K) = B(L,K)
+            BE(L,K) = B(L,K)
+            BS(L,K) = B(L,K)
+            BN(L,K) = B(L,K)
+          enddo
+        endif
       enddo
     enddo
     !$OMP END PARALLEL DO
@@ -470,33 +481,33 @@ SUBROUTINE INTERPB(L)
   LN = LNC(L)
   
   ! *** INTERPOLATE VARIN FOR THE WEST FACE
-  if( KSZ(LW) > KSZ(L) )then    
+  if( KSZ(LW) > KSZ(L) .OR. ( KSZ(LW) == KSZ(L) .AND. BELV(L) < BELV(LW) ) )then    
     do KF = KSZW(L),KC
-      ZF = BELVW(L) + HPW(L)*ZZW(KF,L)
+      ZF = BELVE(LW) + HPE(LW)*ZZE(KF,LW)
       call INTERPOL(NMAX,XDAT,YDAT,ZF,BW(L,KF))
     enddo
   endif
 
   ! *** INTERPOLATE VARIN FOR THE EAST FACE
-  if( KSZ(LE) > KSZ(L) )then
+  if( KSZ(LE) > KSZ(L) .OR. ( KSZ(LE) == KSZ(L) .AND. BELV(L) < BELV(LE) ) )then
     do KF = KSZE(L),KC
-      ZF = BELVE(L) + HPE(L)*ZZE(KF,L)
+      ZF = BELVW(LE) + HPW(LE)*ZZW(KF,LE)
       call INTERPOL(NMAX,XDAT,YDAT,ZF,BE(L,KF))
     enddo
   endif
 
   ! *** INTERPOLATE VARIN FOR THE SOUTH FACE
-  if( KSZ(LS) > KSZ(L) )then   
+  if( KSZ(LS) > KSZ(L) .OR. ( KSZ(LS) == KSZ(L) .AND. BELV(L) < BELV(LS) ) )then   
     do KF = KSZS(L),KC
-      ZF = BELVS(L) + HPS(L)*ZZS(KF,L)
+      ZF = BELVN(LS) + HPN(LS)*ZZN(KF,LS)
       call INTERPOL(NMAX,XDAT,YDAT,ZF,BS(L,KF))
     enddo
   endif
 
   ! *** INTERPOLATE VARIN FOR THE NORTH FACE
-  if( KSZ(LN) > KSZ(L) )then
+  if( KSZ(LN) > KSZ(L) .OR. ( KSZ(LN) == KSZ(L) .AND. BELV(L) < BELV(LN) ) )then
     do KF = KSZN(L),KC
-      ZF = BELVN(L) + HPN(L)*ZZN(KF,L)
+      ZF = BELVS(LN) + HPS(LN)*ZZS(KF,LN)
       call INTERPOL(NMAX,XDAT,YDAT,ZF,BN(L,KF))
     enddo
   endif

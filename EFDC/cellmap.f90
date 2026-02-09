@@ -81,7 +81,7 @@ SUBROUTINE CELLMAP
   enddo
   LA_Global = LG
 
-  ! *** SET 1D CELL INDEX SEQUENCE AND MAPPINGS
+  ! *** Set 1D cell index sequence and mappings
   ! *** When using domain decomposition this routine gives the local LA value
   L = 1
   do J = 1,JC
@@ -241,7 +241,7 @@ SUBROUTINE CELLMAP
   LSEC(LC) = 1
   LSWC(LC) = 1
 
-  ! *** BUILD CONNECTIONS IN THE 8 DIRECTIONS SURROUNDING CELL L
+  ! *** Build connections in the 8 directions surrounding cell L
   do L = 2,LA
     I = IL(L) 
     J = JL(L)

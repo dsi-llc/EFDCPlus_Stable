@@ -46,8 +46,10 @@ MODULE HYDSTRUCMOD
   type CONTROLRULES                 !< Operation rules for of gates/pumps
     integer :: PARAM                !< Mask for control parameters
     integer :: STATE                !< Structure State, 0 = OFF, 1 = ON
-    integer :: NTRGON, NTROFF  
-    type(OPERATIONDATA),allocatable :: TRGON(:), TROFF(:)
+    integer :: NTRGON               !< Number of trigger-on conditions
+    integer :: NTROFF               !< Number of trigger-off conditions
+    type(OPERATIONDATA),allocatable :: TRGON(:)  !< Trigger-on conditions array
+    type(OPERATIONDATA),allocatable :: TROFF(:)  !< Trigger-off conditions array
   end type   
   
   type CONTROLSERIES                !< Gate opening time-series
@@ -55,11 +57,16 @@ MODULE HYDSTRUCMOD
     integer :: COUNT                !< # Points
     integer :: IPOS = 1             !< Index of current time
     integer :: PARAM                !< Mask for control parameters
-    integer,allocatable :: ID(:)
-    
-    real, allocatable :: HEIGHT(:), WIDTH(:), SILL(:), FLOW(:), RATE(:) 
-    real(RKD) :: TMUL, TADD
-    real(RKD),allocatable :: TIME(:)
+    integer,allocatable :: ID(:)    !< ID array for rating curves
+
+    real, allocatable :: HEIGHT(:)  !< Opening height time-series (m)
+    real, allocatable :: WIDTH(:)   !< Opening width time-series (m)
+    real, allocatable :: SILL(:)    !< Sill elevation time-series (m)
+    real, allocatable :: FLOW(:)    !< Flow rate time-series (m3/s)
+    real, allocatable :: RATE(:)    !< Rate of change time-series
+    real(RKD) :: TMUL               !< Time multiplier for scaling
+    real(RKD) :: TADD               !< Time offset for shifting (s)
+    real(RKD),allocatable :: TIME(:)  !< Time array for time-series (days)
     !INTEGER,allocatable :: NUM(:)  ! NUMBER OF GATES/PUMP UNITS (NOT USED)
   end type 
   
@@ -81,8 +88,10 @@ MODULE HYDSTRUCMOD
     integer :: LUR                   !< Upstream   reference L Index
     integer :: LDR                   !< Downstream reference L Index
     integer :: SUBID                 !< Sub index of associated control data
-    real(RKD) :: TSTART, TOPEN
-    type(OPERATIONDATA) :: CUR, LIM  !< Initial condition (current value) & limit
+    real(RKD) :: TSTART              !< Time when operation started (s)
+    real(RKD) :: TOPEN               !< Time gate has been open (s)
+    type(OPERATIONDATA) :: CUR       !< Current operating condition
+    type(OPERATIONDATA) :: LIM       !< Limit (maximum) operating condition
     real :: PREV                     !< Previous control level
   end type   
 
@@ -91,33 +100,40 @@ MODULE HYDSTRUCMOD
   type(CONTROLSERIES),save,allocatable,dimension(:) :: QCTLSER   !< Control time-series
   type(CONTROLRULES),save,allocatable,dimension(:)  :: QCTRULES  !< Control rules
 
-  integer :: NQCTLSER, NQCTRULES
+  integer :: NQCTLSER                      !< Number of control time-series
+  integer :: NQCTRULES                     !< Number of control rule sets
 
   type(STRCONTROL),save,allocatable,dimension(:)        :: WITH_RET_CTL_GL    !< Withdrawal/return control (Global)
   type(STRCONTROL),save,allocatable,dimension(:)        :: WITH_RET_CTL       !< Withdrawal/return control (Local)
 
-  integer :: HSOPTION
-  integer,save,allocatable,dimension(:) :: USCELL    ! *** Save the original upstream cell
-  integer,save,allocatable,dimension(:) :: DSCELL    ! *** Save the original downstream cell
-    
+  integer :: HSOPTION                      !< Sluice gate calculation option
+  integer,save,allocatable,dimension(:) :: USCELL    !< Save the original upstream cell
+  integer,save,allocatable,dimension(:) :: DSCELL    !< Save the original downstream cell
+  
   contains 
 
   ! *** Determine the flows for the current time steps based on all approaches for flow contro
   SUBROUTINE COMPUTE_HSFLOW(NCTL)
   
-    integer,save,allocatable,dimension(:) :: NDIRCULV   ! *** Flow direction counter
-    integer,save,allocatable,dimension(:) :: NLIMITQ    ! *** Flow limitation counter
-    real,save,allocatable,dimension(:)    :: CULVQ      ! *** Last culvert flow rate
+    integer,save,allocatable,dimension(:) :: NDIRCULV   !< Flow direction counter for culverts
+    integer,save,allocatable,dimension(:) :: NLIMITQ    !< Flow limitation counter for culverts
+    real,save,allocatable,dimension(:)    :: CULVQ      !< Last culvert flow rate (m3/s)
 
-    integer, intent(IN) :: NCTL
-    integer             :: LU, LD, LUR, LDR, K, KM, IHYD, IBLOCK, ID, IFLAG, M1, M2, NWR, STATE
-    
-    real :: ZHU, ZHD, ZHUR, ZHDR, HUD, HDD, S, SCR, HCR, VCR, VN, QHS, QHS1, QHS2, USINV, DSINV, DIA, CDD
-    real :: QCR, YN, TOPZ, TOLZ, DELZ, CUMZ, HB, W, RATIO, Q1, Q2, QMAX
-    real :: FAREA, WETPER, HRAD, KCON, TWID, HVAL
-    real :: HOPEN, HOPEN2, WOPEN, WOPEN2, SOPEN, SOPEN2, TOPEN1, TOPEN2
-    real :: CVAL, LVAL, RVAL, FOPEN
-    real :: HSZ(KC)
+    integer, intent(IN) :: NCTL         !< Control structure index
+    integer             :: LU, LD, LUR, LDR, K, KM, IHYD, IBLOCK, ID, IFLAG, M1, M2, NWR, STATE  !< Indices and flags
+    integer ipmc   ! delme
+
+    real :: ZHU, ZHD, ZHUR, ZHDR        !< Water surface elevations upstream/downstream (m)
+    real :: HUD, HDD                    !< Depths upstream/downstream (m)
+    real :: S, SCR, HCR, VCR, VN        !< Slopes, critical values, velocities
+    real :: QHS, QHS1, QHS2             !< Hydraulic structure flows (m3/s)
+    real :: USINV, DSINV, DIA, CDD      !< Invert elevations, diameter, discharge coeff
+    real :: QCR, YN, TOPZ, TOLZ, DELZ, CUMZ, HB, W, RATIO, Q1, Q2, QMAX  !< Flow calc variables
+    real :: FAREA, WETPER, HRAD, KCON, TWID, HVAL  !< Cross-section properties
+    real :: HOPEN, HOPEN2, WOPEN, WOPEN2, SOPEN, SOPEN2, TOPEN1, TOPEN2  !< Gate openings (m)
+    real :: CVAL, LVAL, RVAL, FOPEN     !< Control and limit values
+    real :: HSZ(KC)                     !< Vertical distribution array
+    real :: SQRT2G
     
     if( .not. allocated(NDIRCULV) )then
       allocate(NDIRCULV(NQCTL))
@@ -133,7 +149,8 @@ MODULE HYDSTRUCMOD
     else
       DELT = DTDYN
     endif
-
+    SQRT2G = sqrt(2.0*G)
+    
     HSOPTION = 1                         ! *** Option for sluice gate, change later
                                          
     QCTLT(1:KC,NCTL,1:2) = 0             ! *** Reset for every time step
@@ -428,21 +445,22 @@ MODULE HYDSTRUCMOD
       CDD = HS_COEFF(IHYD,2)
       if( HS_XSTYPE(IHYD) == 5  )then
         ! *** Rectangular weir       
-        QHS = 2.0D0/3.0D0*CDD*WOPEN*SQRT(2.0*G)*HUD**1.5   ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
+        QHS = 2.0D0/3.0D0*CDD*WOPEN*SQRT2G*HUD**1.5
         
       elseif( HS_XSTYPE(IHYD) == 6  )then
         ! *** Triangle notch
-        QHS = 8.0D0/15.0D0*CDD*SQRT(2.0*G)*TAN(0.5*HS_ANGLE(IHYD))*HUD**2.5
+        QHS = 8.0D0/15.0D0*CDD*SQRT2G*TAN(0.5*HS_ANGLE(IHYD))*HUD**2.5
         
       elseif( HS_XSTYPE(IHYD) == 7  )then
         ! *** Trapezoidal 
-        QHS1 = 2.0D0/3.0D0*CDD*HS_WIDTH(IHYD)*SQRT(2.0*G)*HUD**1.5   ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
-        QHS2 = 8.0D0/15.0D0*CDD*SQRT(2.0*G)*TAN(0.5*HS_ANGLE(IHYD))*HUD**2.5
+        QHS1 = 2.0D0/3.0D0*CDD*HS_WIDTH(IHYD)*SQRT2G*HUD**1.5
+        QHS2 = 8.0D0/15.0D0*CDD*SQRT2G*TAN(0.5*HS_ANGLE(IHYD))*HUD**2.5
         QHS  = QHS1 + QHS2
 
       elseif( HS_XSTYPE(IHYD) == 8  )then
         ! *** Broad crested weir (CLH**1.5)
-        QHS = CDD*WOPEN*HUD**1.5        ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
+        ! QHS = CDD*WOPEN*HUD**1.5
+        QHS = CDD*WOPEN*SQRT2G*HUD**1.5
         
       else
         PRINT '(A29,2I4)', ' *** BAD CROSS-SECTION TYPE:',IHYD, HS_XSTYPE(IHYD)
@@ -458,8 +476,8 @@ MODULE HYDSTRUCMOD
     elseif( HYD_STR(NCTL).NQCTYP == 8  )then 
       ! *** ORIFICE
       HDD = ZHD - USINV
-      W  = WOPEN               ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
-      HB = HOPEN                ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
+      W  = WOPEN                ! Accounts for gate opening
+      HB = HOPEN                ! Accounts for gate opening
       CDD = HS_COEFF(IHYD,2)
       
       call CROSS_SECTION(IHYD,HUD,HOPEN,WOPEN,SOPEN,DIA,FAREA,WETPER,HRAD,TWID)       
@@ -486,22 +504,22 @@ MODULE HYDSTRUCMOD
         CDD = HS_COEFF(IHYD,1)
         if( HS_XSTYPE(IHYD) == 5  )then
           ! *** Rectangular weir       
-          QHS = 2.0D0/3.0D0*CDD*WOPEN*SQRT(2.0*G)*HUD**1.5                      ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
+          QHS = 2.0D0/3.0D0*CDD*WOPEN*SQRT2G*HUD**1.5                      ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
         
         elseif( HS_XSTYPE(IHYD) == 6  )then
           ! *** Triangle notch
-          QHS = 8.0D0/15.0D0*CDD*SQRT(2.0*G)*TAN(0.5*HS_ANGLE(IHYD))*HUD**2.5
+          QHS = 8.0D0/15.0D0*CDD*SQRT2G*TAN(0.5*HS_ANGLE(IHYD))*HUD**2.5
         
         elseif( HS_XSTYPE(IHYD) == 7  )then
           ! *** Trapezoidal 
-          QHS1 = 2.0D0/3.0D0*CDD*WOPEN*SQRT(2.0*G)*HUD**1.5                     ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
-          QHS2 = 8.0D0/15.0D0*CDD*SQRT(2.0*G)*TAN(0.5*HS_ANGLE(IHYD))*HUD**2.5
+          QHS1 = 2.0D0/3.0D0*CDD*WOPEN*SQRT2G*HUD**1.5                     ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
+          QHS2 = 8.0D0/15.0D0*CDD*SQRT2G*TAN(0.5*HS_ANGLE(IHYD))*HUD**2.5
           QHS  = QHS1 + QHS2
 
         else
           ! *** Catch all weir shapes (circles, half-circles, etc).  base on area.
           ! ***  CDD must include all geometric effects
-          QHS = CDD*FAREA*SQRT(2.0*G)*HUD**1.5
+          QHS = CDD*FAREA*SQRT2G*HUD**1.5
         endif
       
         ! *** Account for submergence (Villemonte_1947_Submerged_weir_discharge_studies)
@@ -513,6 +531,16 @@ MODULE HYDSTRUCMOD
     elseif( HYD_STR(NCTL).NQCTYP == 9  )then 
       ! *** Navigation Lock.  No hydraulic structure flow, just a toggle for masks
 
+          !! *** Sum flows
+          !TOPEN1 = 0.0
+          !do NWR = 1,NQWR
+          !  topen1 = topen1 + WITH_RET(NWR).QWR
+          !enddo
+          !if( topen1 > 0.0 )then
+          !  m1 = 0
+          !  print *, 'NITER = ', niter, '  QWR = ', topen1   ! delme
+          !endif
+          
       TOPEN1 = HOPEN  + WOPEN  + SOPEN                ! *** Current gate positions
         
       ! *** Lock filling/draining flows and timing (only apply after first iteration due to initializations)
@@ -560,27 +588,28 @@ MODULE HYDSTRUCMOD
           do NWR = 1,NQWR
             if( HYD_STR(NCTL).NWRGRP == WITH_RET(NWR).GROUPID )then
               WITH_RET(NWR).QWR = WITH_RET(NWR).QWR + HYD_STR(NCTL).QNWR*0.1   ! *** Rampup the flows
+              ipmc = nwr   ! delme
               if( WITH_RET(NWR).QWR >= HYD_STR(NCTL).QNWR )then
                 WITH_RET(NWR).QWR = HYD_STR(NCTL).QNWR
                 if( HYD_STR(NCTL).ICLOSEDDS == 1 )then
                   HYD_STR(NCTL).ISTATE = 1        ! *** Rising/Filling
-                else   !IF( ZHU <= (ZHD+0.001) )then
+                else
                   HYD_STR(NCTL).ISTATE = 2        ! *** Lowering/Draining
                 endif
               endif
             endif
           enddo
-
+          
           ! *** Check if need to close valves
           IFLAG = 0
           if( HYD_STR(NCTL).ISTATE == 1 )then         ! *** Rising/Filling
             ZHUR = HYD_STR(NCTL).ZHUR
-            if( ZHU >= (ZHUR-0.001) )then
+            if( ZHU >= (ZHUR - 0.001) )then
               IFLAG = 1
             endif
           endif
           if( HYD_STR(NCTL).ISTATE == 2 )then         ! *** Lowering/Draining
-            if( ZHU <= (ZHD+0.001) )then
+            if( ZHU <= (ZHD + 0.001) )then
               IFLAG = 1
             endif
           endif
@@ -598,6 +627,8 @@ MODULE HYDSTRUCMOD
             enddo
           endif
         
+          !print '(f15.5,7i5,10f10.4)', timeday, niter, nctl, lu, ld, HYD_STR(NCTL).LUR, HYD_STR(NCTL).LDR, ipmc, HYD_STR(NCTL).QNWR, WITH_RET(ipmc).QWR, zhu, zhd, HYD_STR(NCTL).ZHUR  ! delme
+          
         endif
        
       endif
@@ -615,6 +646,11 @@ MODULE HYDSTRUCMOD
         ! *** Lock gates are CLOSED, now OPEN the gates and activate flow between LU and LD
         FOPEN   = 1.0    ! *** Remove mask and activate flow
         PRINT '(" Lock Gate: ",I3, " @ ", F12.4," opened ",2F8.2,2F10.3)', NCTL, TIMEDAY, TOPEN1, TOPEN2, ZHU, ZHD
+        
+        if( abs(zhu - zhd) > 0.1 )then
+          m1 = 0     ! *** delme
+          !PAUSE      ! *** delme
+        endif
         HYD_STR(NCTL).ISTATE = 3        ! *** Fully open
         
         ! *** Ensure flows are turned off
@@ -631,6 +667,8 @@ MODULE HYDSTRUCMOD
         ! *** Lock gates are OPEN, now CLOSE the gates and deactivate any flow between LU and LD
         FOPEN   = 0.0    ! *** Add mask and deactivate flow
         PRINT '(" Lock Gate: ",I3, " @ ", F12.4," closed ",2F8.2,2F10.3)', NCTL, TIMEDAY, TOPEN1, TOPEN2, ZHU, ZHD
+        print *, 'NITER = ', niter   ! delme
+        
         HYD_STR(NCTL).ISTATE = 0        ! *** Fully Closed
       endif
       
@@ -672,7 +710,7 @@ MODULE HYDSTRUCMOD
       
     elseif( HYD_STR(NCTL).NQCTYP == 11  )then 
       ! *** Submerged weir
-      QHS = 2.0D0/3.0D0*CDD*WOPEN*SQRT(2.0*G)*HUD**1.5                        ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
+      QHS = 2.0D0/3.0D0*CDD*WOPEN*SQRT2G*HUD**1.5                        ! 2017-11-06, NTL: ACCOUNTS FOR GATE OPENING
 
     endif 
     HSCTL(NCTL).CUR.FLOW = QHS
@@ -753,14 +791,19 @@ MODULE HYDSTRUCMOD
     ! *** HOPEN  : OPENING HEIGHT       [M]
     ! *** WOPEN  : OPENING WIDTH        [M]
     ! *** SOPEN  : CHANGE IN SILL LEVEL [M]
-    integer(4),parameter   :: NMAX = 100
-    integer(4),intent(IN ) :: IHYD
-    real,      intent(IN ) :: HUD,HOPEN,WOPEN,SOPEN
-    real,      intent(OUT) :: FAREA,WETPER,HRAD,TWID,DIA
-    real,OPTIONAL,intent(OUT) :: KCON
-    real       :: RA,RB,XH,DEL,ALP,WETPER4,YH,A
-    integer(4) :: NN
-    real       :: X(NMAX),Y(NMAX)
+    integer(4),parameter   :: NMAX = 100             !< Maximum array size for cross-section calc
+    integer(4),intent(IN ) :: IHYD                   !< Hydraulic structure index
+    real,      intent(IN ) :: HUD                    !< Upstream depth (m)
+    real,      intent(IN ) :: HOPEN,WOPEN,SOPEN      !< Gate openings (m)
+    real,      intent(OUT) :: FAREA                  !< Flow area (m2)
+    real,      intent(OUT) :: WETPER                 !< Wetted perimeter (m)
+    real,      intent(OUT) :: HRAD                   !< Hydraulic radius (m)
+    real,      intent(OUT) :: TWID                   !< Top width (m)
+    real,      intent(OUT) :: DIA                    !< Diameter or height (m)
+    real,OPTIONAL,intent(OUT) :: KCON                !< Conveyance (m3/s)
+    real       :: RA,RB,XH,DEL,ALP,WETPER4,YH,A      !< Geometric calc variables
+    integer(4) :: NN                                 !< Loop index
+    real       :: X(NMAX),Y(NMAX)                    !< Coordinate arrays
   
     if( HS_XSTYPE(IHYD) == 1 .or.  HS_XSTYPE(IHYD) == 2  )then
       ! *** 1 - CIRCLE: RA = HS_WIDTH, RB IS NOT USED
@@ -923,12 +966,12 @@ MODULE HYDSTRUCMOD
   
   SUBROUTINE SWAP_USDS(NCTL,LU,LD,ZHU,ZHD,USINV,DSINV)
     ! *** BASED ON WATER SURFACE ELEVATIONS, SWAP UPSTREAM AND DOWNSTREAM CELLS FOR FLOW AND TRANSPORT
-    integer, intent(IN ) :: NCTL
-    integer, intent(OUT) :: LU,LD
-    real, intent(OUT)   :: ZHU,ZHD
-    real, intent(INOUT) :: USINV,DSINV
-    integer(4) :: ITMP,JTMP
-    real       :: TMP
+    integer, intent(IN ) :: NCTL         !< Control structure index
+    integer, intent(OUT) :: LU,LD        !< Upstream/downstream cell indices
+    real, intent(OUT)   :: ZHU,ZHD       !< Water surface elevations (m)
+    real, intent(INOUT) :: USINV,DSINV   !< Invert elevations (m)
+    integer(4) :: ITMP,JTMP              !< Temporary I,J indices
+    real       :: TMP                    !< Temporary real variable
     
     ! *** SWAP
     ITMP = HYD_STR(NCTL).IQCTLU
@@ -1025,12 +1068,14 @@ MODULE HYDSTRUCMOD
     ! *** HVAL - WATER LEVEL (HEAD) OF TRIGGER
     ! *** CVAL - OLD FLOWS
     ! *** RVAL - NEW FLOWS
-  
-    type(STRCONTROL), intent(INOUT) :: CTL
-    real, intent(IN) :: HVAL, CVAL
-    real, intent(OUT) :: RVAL
-    real(RKD) :: TSUM
-    integer :: K, ID
+
+    type(STRCONTROL), intent(INOUT) :: CTL  !< Structure control data
+    real, intent(IN) :: HVAL                !< Water level trigger (m)
+    real, intent(IN) :: CVAL                !< Current flow rate (m3/s)
+    real, intent(OUT) :: RVAL               !< New flow rate (m3/s)
+    real(RKD) :: TSUM                       !< Cumulative time (s)
+    integer :: K                            !< Loop index
+    integer :: ID                           !< Rule ID
 
     ID = CTL.ID
     CTL.SUBID = 0
@@ -1107,11 +1152,14 @@ MODULE HYDSTRUCMOD
     ! *** LVAL - TRIGGER LEVEL
     ! *** RVAL - NEW LEVEL
 
-    integer, intent(IN) :: NCTL
-    real, intent(IN) :: HVAL, CVAL, LVAL
-    real, intent(OUT) :: RVAL
-    real(RKD) :: TSUM
-    integer :: K, ID
+    integer, intent(IN) :: NCTL             !< Control structure index
+    real, intent(IN) :: HVAL                !< Water level trigger (m)
+    real, intent(IN) :: CVAL                !< Current opening (m)
+    real, intent(IN) :: LVAL                !< Limit opening (m)
+    real, intent(OUT) :: RVAL               !< New opening (m)
+    real(RKD) :: TSUM                       !< Cumulative time (s)
+    integer :: K                            !< Loop index
+    integer :: ID                           !< Rule ID
 
     ID = HSCTL(NCTL).ID
     HSCTL(NCTL).SUBID = 0
@@ -1209,13 +1257,15 @@ MODULE HYDSTRUCMOD
   END SUBROUTINE GATE_OPERATION_RULES
   
   SUBROUTINE GATE_OPENING_INTERP(TS, T, H, W, S, IBLOCK)
-  
-    type(CONTROLSERIES), intent(INOUT) :: TS
-    integer, intent(IN) :: IBLOCK
-    real(RKD), intent(IN) :: T
-    real, intent(OUT) :: H, W, S
-    real :: FACTOR
-    integer :: K
+
+    type(CONTROLSERIES), intent(INOUT) :: TS  !< Control time-series data
+    integer, intent(IN) :: IBLOCK         !< Block interpolation flag (0=linear, 1=block)
+    real(RKD), intent(IN) :: T            !< Current time (s)
+    real, intent(OUT) :: H                !< Interpolated height (m)
+    real, intent(OUT) :: W                !< Interpolated width (m)
+    real, intent(OUT) :: S                !< Interpolated sill (m)
+    real :: FACTOR                        !< Interpolation factor (0-1)
+    integer :: K                          !< Time index
 
     if( T < TS.TIME(1) )then
       K = 1

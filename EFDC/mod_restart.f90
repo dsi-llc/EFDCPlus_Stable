@@ -37,15 +37,14 @@ SUBROUTINE Restart_Out(TIME_RESTART, IRSTYP)
 
   ! *** GENERATE A RESTART FILE FOR use BY EFDC+
 
-  integer,intent(IN) :: IRSTYP
-  real(RKD), intent(IN) :: TIME_RESTART
+  integer,intent(IN) :: IRSTYP          !< Restart type: 0=normal, 1=crash
+  real(RKD), intent(IN) :: TIME_RESTART  !< Restart time (days)
 
-  
-  integer :: I, IDUM, JDUM, K, L, LG, LL, M, MD, NMAX, NMD, NP, NS, NT, NX, NHR, VER, NCTL, IMASK
-  integer :: NSCM0
+  integer :: I, IDUM, JDUM, K, L, LG, LL, M, MD, NMAX, NMD, NP, NS, NT, NX, NHR, VER, NCTL, IMASK  !< Loop indices and counters
+  integer :: NSCM0                       !< Temporary sediment class count
 
-  real :: RVAL, TMP1, TMP2, TMP3, TMP4, SURF, HB1, EL1
-  character(2) :: SNHR
+  real :: RVAL, TMP1, TMP2, TMP3, TMP4, SURF, HB1, EL1  !< Temporary real variables
+  character(2) :: SNHR                   !< Hour string for filename
 
   ! *** Build the global arrays needed for the RESTART.OUT file
   call Gather_Restart_Arrays
@@ -79,7 +78,7 @@ SUBROUTINE Restart_Out(TIME_RESTART, IRSTYP)
       
   ! *****************************************************************************************************
   ! *** BEGIN RESTART.OUT
-  VER = 1210                                      ! *** Changed for Version 12.1
+  VER = 1210                                      !< Restart file version number (changed for Version 12.1)
   write(99,'(I20,4X,F12.4,2I10)') N, TIME_RESTART, VER
   write(99,'(9I6)') ISCO(0:8)
   do LG = 2,LA_Global
@@ -269,11 +268,15 @@ SUBROUTINE Restart_Out(TIME_RESTART, IRSTYP)
     endif
     open(99,FILE = OUTDIR//TRIM(RSTFILE),FORM = 'FORMATTED',STATUS = 'REPLACE')
 
+    VER = 1240
+    write(99,'(F15.5,I10)') TIME_RESTART, VER
+
     write(99,34569) ((LAYERACTIVE_Global(K,LG),K = 1,KB),LG = 2,LA_Global)
     write(99,34569) (KBT_Global(LG),LG = 2,LA_Global)
     write(99,34567) (D50AVG_Global(LG),LG = 2,LA_Global)
     write(99,34568) ((BULKDENS_Global(K,LG),K = 1,KB),LG = 2,LA_Global)
     write(99,34568) ((TSED_Global(K,LG),K = 1,KB),LG = 2,LA_Global)
+    write(99,34568) ((TSED0_Global(K,LG),K = 1,KB),LG = 2,LA_Global)
     write(99,34568) (((PERSED_Global(NS,K,LG),NS = 1,NSEDS),K = 1,KB),LG = 2,LA_Global)
 
     if( ICALC_BL > 0 )then
@@ -480,29 +483,30 @@ SUBROUTINE Restart_In(OPT)
 
   use turbulence, only: eps_min,k_min
 
-  integer,intent(IN),OPTIONAL :: OPT
-  integer :: ISBELVC, I, K, M, MD, NMAX, NS, NT, NX, NMD, ITMP1, JTMP1, NCOL, NCTL, ISCOCHK(0:10), IMASK
-  integer :: INITFLAG, ITMP2, JTMP2, ITMP3, JTMP3, LS, LN, LW, LDUM, IDUM, JDUM, IDFLAG, ICORDRY, IU, JU
-  integer :: III, JJJ, L, LL, LG, LU, ID, JD, LD
+  integer,intent(IN),OPTIONAL :: OPT     !< Optional restart type flag
+  integer :: ISBELVC, I, K, M, MD, NMAX, NS, NT, NX, NMD, ITMP1, JTMP1, NCOL, NCTL, IMASK  !< Loop indices and counters
+  integer :: ISCOCHK(0:10)               !< Transport state check array
+  integer :: INITFLAG, ITMP2, JTMP2, ITMP3, JTMP3, LS, LN, LW, LDUM, IDUM, JDUM, IDFLAG, ICORDRY, IU, JU  !< Flags and temporary indices
+  integer :: III, JJJ, L, LL, LG, LU, ID, JD, LD  !< Cell indices
 
-  real :: BELTMP, TMPVAL, RDZC, HDRY2, DHPDT, SUBW, SUBE, SVBS, SVBN, RDRY, TF
-  real :: SUBL, SVBL
+  real :: BELTMP, TMPVAL, RDZC, HDRY2, DHPDT, SUBW, SUBE, SVBS, SVBN, RDRY, TF  !< Temporary real variables
+  real :: SUBL, SVBL                     !< Cell face mask values
 
-  real,allocatable,dimension(:) :: TDUMMY
-  character(100) :: STR
+  real,allocatable,dimension(:) :: TDUMMY  !< Temporary array for reading
+  character(100) :: STR                    !< String buffer for input
 
   allocate(TDUMMY(KCM))
   TDUMMY = 0.
 
-  RSTFIRST_WS  = 0
-  RSTFIRST_VEL = 0
-  RSTFIRST_WC  = 0
-  RSTFIRST_WQ  = 0
-  RSTFIRST_SEDZLJ = 0
-  RSTFIRST_RPEM = 0
-  RSTFIRST_BED  = 0
-  RSTFIRST_SD   = 0
-  RSTFIRST_BC   = 0
+  RSTFIRST_WS  = 0     !< Water surface restart flag
+  RSTFIRST_VEL = 0     !< Velocity restart flag
+  RSTFIRST_WC  = 0     !< Water column restart flag
+  RSTFIRST_WQ  = 0     !< Water quality restart flag
+  RSTFIRST_SEDZLJ = 0  !< SEDZLJ sediment restart flag
+  RSTFIRST_RPEM = 0    !< Rooted plant/epiphyte/macroalgae restart flag
+  RSTFIRST_BED  = 0    !< Bed restart flag
+  RSTFIRST_SD   = 0    !< Sediment diagenesis restart flag
+  RSTFIRST_BC   = 0    !< Boundary condition restart flag
 
   if( LSEDZLJ )then
     NMAX = NSEDS
@@ -520,10 +524,10 @@ SUBROUTINE Restart_In(OPT)
     read(UINP,'(A)',err = 1000) STR
     NCOL = NUMCOL(STR)
     if( NCOL == 3 )then
-      read(STR,*,err = 1000) NRESTART, TBEGINC, Restart_In_Ver
+      read(STR,*,err = 1000) NRESTART, TBEGINC, Restart_In_Ver  !< Restart iteration, time, and version
     else
-      read(STR,*,err = 1000) NRESTART, TBEGINC
-      Restart_In_Ver = 710
+      read(STR,*,err = 1000) NRESTART, TBEGINC                   !< Restart iteration and time (old format)
+      Restart_In_Ver = 710                                       !< Default to version 710
     endif
 
     if( PRESENT(OPT) )then
@@ -573,7 +577,7 @@ SUBROUTINE Restart_In(OPT)
       endif
       if( HP_Global(LG) < 0.0 .or. H1P_Global(LG) < 0.0 )then
         write(6,9696) LG, IL_GL(LG), JL_GL(LG), HP_Global(LG), H1P_Global(LG)
-        call STOPP('.')
+        call STOPP('', 1)
       elseif( HP_Global(LG) < 0.0001 .or. H1P_Global(LG) < 0.0001 )then
         write(6,9698) LG, IL(LG), JL(LG), HP_Global(LG), H1P_Global(LG)
         HP_Global(LG)    = HDRY*0.9
@@ -1633,112 +1637,112 @@ SUBROUTINE Restart_In(OPT)
 
   ! ***  WRITE READ ERRORS ON RESTART
 1000 WRITE(6,2000)
-  call STOPP('.')
+  call STOPP('', 1)
 
 1001 WRITE(6,2001)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1002 WRITE(6,2002)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1003 WRITE(6,2003)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1004 WRITE(6,2004)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1005 WRITE(6,2005)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1006 WRITE(6,2006)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1007 WRITE(6,2007)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1008 WRITE(6,2008)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1009 WRITE(6,2009)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1010 WRITE(6,2010)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1011 WRITE(6,2011)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1012 WRITE(6,2012)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1013 WRITE(6,2013)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1014 WRITE(6,2014)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1015 WRITE(6,2015)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1016 WRITE(6,2016)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1017 WRITE(6,2017)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1018 WRITE(6,2018)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1019 WRITE(6,2019)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1020 WRITE(6,2020)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1021 WRITE(6,2021)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1022 WRITE(6,2022)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1023 WRITE(6,2023)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1024 WRITE(6,2024)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1025 WRITE(6,2025)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1026 WRITE(6,2026)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1027 WRITE(6,2027)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1028 WRITE(6,2028)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1029 WRITE(6,2029)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1030 WRITE(6,2030)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1031 WRITE(6,2031)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1032 WRITE(6,2032)NMD
-  call STOPP('.')
+  call STOPP('', 1)
 
 1033 WRITE(6,2033)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 1034 WRITE(6,2034)NCTL
-  call STOPP('.')
+  call STOPP('', 1)
 
 1035 WRITE(6,2035)L
-  call STOPP('.')
+  call STOPP('', 1)
 
 600 FORMAT(2X,'I,J,BELVOLD,BELVNEW',2I5,2F12.2)
 2000 FORMAT('  READ ERROR ON FILE RESTART.INP ERR 1000')
@@ -2436,26 +2440,26 @@ SUBROUTINE Gather_Restart_Arrays
 
   ! *** Build local open boundary arrays
   if( NPBS_GL > 0 )then
-    call Communicate_Open_BC(NBBSM, NPBS_GL, NPBS, IPBS_GL, IPBS, JPBS_GL, JPBS, NLOS_Global, CLOS_Global, NLOS, CLOS)
+    call Gather_Open_BC(NBBSM, NPBS_GL, NPBS, IPBS_GL, IPBS, JPBS_GL, JPBS, NLOS_Global, CLOS_Global, NLOS, CLOS)
   endif
   if( NPBE_GL > 0 )then
-    call Communicate_Open_BC(NBBEM, NPBE_GL, NPBE, IPBE_GL, IPBE, JPBE_GL, JPBE, NLOE_Global, CLOE_Global, NLOE, CLOE)
+    call Gather_Open_BC(NBBEM, NPBE_GL, NPBE, IPBE_GL, IPBE, JPBE_GL, JPBE, NLOE_Global, CLOE_Global, NLOE, CLOE)
   endif
   if( NPBW_GL > 0 )then
-    call Communicate_Open_BC(NBBWM, NPBW_GL, NPBW, IPBW_GL, IPBW, JPBW_GL, JPBW, NLOW_Global, CLOW_Global, NLOW, CLOW)
+    call Gather_Open_BC(NBBWM, NPBW_GL, NPBW, IPBW_GL, IPBW, JPBW_GL, JPBW, NLOW_Global, CLOW_Global, NLOW, CLOW)
   endif
   if( NPBN_GL > 0 )then
-    call Communicate_Open_BC(NBBNM, NPBN_GL, NPBN, IPBN_GL, IPBN, JPBN_GL, JPBN, NLON_Global, CLON_Global, NLON, CLON)
+    call Gather_Open_BC(NBBNM, NPBN_GL, NPBN, IPBN_GL, IPBN, JPBN_GL, JPBN, NLON_Global, CLON_Global, NLON, CLON)
   endif
 
   ! *** SEDZLJ
   if( LSEDZLJ  )then
-    call Communicate_SEDZLJ
+    call Gather_SEDZLJ
   endif
 
 END SUBROUTINE Gather_Restart_Arrays
 
-SUBROUTINE Communicate_Open_BC(NBBM, NPB_GL, NPB, IPB_GL, IPB, JPB_GL, JPB, NLO_Global, CLO_Global, NLO, CLO)
+SUBROUTINE Gather_Open_BC(NBBM, NPB_GL, NPB, IPB_GL, IPB, JPB_GL, JPB, NLO_Global, CLO_Global, NLO, CLO)
   !------------------------------------------------------------------------------------!
   ! *** Communicates the open boundary concentration rate of change controls
   !------------------------------------------------------------------------------------!
@@ -2471,12 +2475,11 @@ SUBROUTINE Communicate_Open_BC(NBBM, NPB_GL, NPB, IPB_GL, IPB, JPB_GL, JPB, NLO_
   integer :: IERR, status_message(MPI_Status_Size)
 
   nDim = NBBM*KCM*NSTVM
-  allocate(I1D_Global(nDim))
-  call AllocateDSI(R1D_Global, nDim, 0.0)
+
+  call AllocateDSI(I1D_Global, nDim, -999)
+  call AllocateDSI(R1D_Global, nDim, -999.0)
 
   NLO_Global = -999      ! *** Initialize to missing
-  I1D_Global  = -999     ! *** Initialize to missing
-  R1D_Global  = -999.0   ! *** Initialize to missing
 
   ! *** Update global lists
   do j = 1,NPB_GL
@@ -2546,9 +2549,9 @@ SUBROUTINE Communicate_Open_BC(NBBM, NPB_GL, NPB, IPB_GL, IPB, JPB_GL, JPB, NLO_
   deallocate(I1D_Global)
   deallocate(R1D_Global)
 
-END SUBROUTINE Communicate_Open_BC
+END SUBROUTINE Gather_Open_BC
 
-Subroutine Communicate_SEDZLJ
+Subroutine Gather_SEDZLJ
   !------------------------------------------------------------------------------------!
   ! *** Communicates the open boundary concentration rate of change controls
   !------------------------------------------------------------------------------------!
@@ -2562,39 +2565,36 @@ Subroutine Communicate_SEDZLJ
   integer :: i, j, L, LG, k, nn
   integer,   Target, Allocatable, Dimension(:,:)   :: Reverse_Temp_2D_ActLay
   real(rkd), Target, Allocatable, Dimension(:,:)   :: Reverse_Temp_2D_TSED
+  real(rkd), Target, Allocatable, Dimension(:,:)   :: Reverse_Temp_2D_TSED0
   real(rkd), Target, Allocatable, Dimension(:,:)   :: Reverse_Temp_2D_BULKDENS
   real(rkd), Target, Allocatable, Dimension(:,:,:) :: Reverse_Temp_3D
 
   integer,   Target, Allocatable, Dimension(:,:)   :: Gl_Reverse_Temp_2D_ActLay
   real(rkd), Target, Allocatable, Dimension(:,:)   :: Gl_Reverse_Temp_2D_TSED
+  real(rkd), Target, Allocatable, Dimension(:,:)   :: Gl_Reverse_Temp_2D_TSED0
   real(rkd), Target, Allocatable, Dimension(:,:)   :: Gl_Reverse_Temp_2D_BULKDENS
   real(rkd), Target, Allocatable, Dimension(:,:,:) :: Gl_Reverse_Temp_3D
 
-  allocate(Reverse_Temp_2D_ActLay(LCM,KB))
-  allocate(Reverse_Temp_2D_TSED(LCM,KB))
-  allocate(Reverse_Temp_2D_BULKDENS(LCM,KB))
-  allocate(Reverse_Temp_3D(LCM,KB,NSEDS))
-
-  allocate(GL_Reverse_Temp_2D_ActLay(LCM_Global,KB))
-  allocate(Gl_Reverse_Temp_2D_TSED(LCM_Global,KB))
-  allocate(Gl_Reverse_Temp_2D_BULKDENS(LCM_Global,KB))
-  allocate(GL_Reverse_Temp_3D(LCM_Global,KB,NSEDS))
-
-  Reverse_Temp_2D_ActLay      = 0
-  Reverse_Temp_2D_TSED        = 0.0
-  Reverse_Temp_2D_BULKDENS    = 0.0
-  Reverse_Temp_3D             = 0.0
-  Gl_Reverse_Temp_2D_ActLay   = 0
-  Gl_Reverse_Temp_2D_TSED     = 0.0
-  Gl_Reverse_Temp_2D_BULKDENS = 0.0
-  Gl_Reverse_Temp_3D          = 0.0
+  ! *** Reversed order local arrays
+  call AllocateDSI(Reverse_Temp_2D_ActLay,    LCM, KB, 0)
+  call AllocateDSI(Reverse_Temp_2D_TSED,      LCM, KB, 0.0)
+  call AllocateDSI(Reverse_Temp_2D_TSED0,     LCM, KB, 0.0)
+  call AllocateDSI(Reverse_Temp_2D_BULKDENS,  LCM, KB, 0.0)
+  call AllocateDSI(Reverse_Temp_3D,           LCM, KB, NSEDS, 0.0)
+  
+  ! *** Reverse order global arrays
+  call AllocateDSI(GL_Reverse_Temp_2D_ActLay,   LCM_Global, KB, 0)
+  call AllocateDSI(Gl_Reverse_Temp_2D_TSED,     LCM_Global, KB, 0.0)
+  call AllocateDSI(Gl_Reverse_Temp_2D_TSED0,    LCM_Global, KB, 0.0)
+  call AllocateDSI(Gl_Reverse_Temp_2D_BULKDENS, LCM_Global, KB, 0.0)
+  call AllocateDSI(GL_Reverse_Temp_3D,          LCM_Global, KB, NSEDS, 0.0)
 
   j = 0
 
   ! ********************************************************************************************************************
   ! *** Integer
 
-  ! *** Reverse Order of Array (TSED)
+  ! *** Reverse Order of Array (LAYERACTIVE)
   do L = 2,LA
     do K = 1,KB
       Reverse_Temp_2D_ActLay(L,K) = LAYERACTIVE(K,L)
@@ -2618,6 +2618,17 @@ Subroutine Communicate_SEDZLJ
   j = j + 1
   call Assign_Loc_Glob_For_Write(j, size(Reverse_Temp_2D_TSED,1), size(Reverse_Temp_2D_TSED,2), Reverse_Temp_2D_TSED, &
     size(Gl_Reverse_Temp_2D_TSED,1),size(Gl_Reverse_Temp_2D_TSED,2), Gl_Reverse_Temp_2D_TSED)
+
+  ! *** Reverse Order of Array (TSED0)
+  do L = 2,LA
+    do K = 1,KB
+      Reverse_Temp_2D_TSED0(L,K) = TSED0(K,L)
+    enddo
+  enddo
+
+  j = j + 1
+  call Assign_Loc_Glob_For_Write(j, size(Reverse_Temp_2D_TSED0,1), size(Reverse_Temp_2D_TSED0,2), Reverse_Temp_2D_TSED0, &
+    size(Gl_Reverse_Temp_2D_TSED0,1),size(Gl_Reverse_Temp_2D_TSED0,2), Gl_Reverse_Temp_2D_TSED0)
 
   ! *** Reverse Order of Array (BULKDENS)
   do L = 2,LA
@@ -2679,6 +2690,13 @@ Subroutine Communicate_SEDZLJ
   ! *** Reverse global array order
   do LG = 2,LA_Global
     Do k = 1, KB
+      TSED0_Global(K,LG) = Gl_Reverse_Temp_2D_TSED0(LG,K)
+    enddo
+  enddo
+
+  ! *** Reverse global array order
+  do LG = 2,LA_Global
+    Do k = 1, KB
       BULKDENS_Global(K,LG) = Gl_Reverse_Temp_2D_BULKDENS(LG,K)
     enddo
   enddo
@@ -2694,13 +2712,15 @@ Subroutine Communicate_SEDZLJ
 
   deallocate(Reverse_Temp_2D_ActLay)
   deallocate(Reverse_Temp_2D_TSED)
+  deallocate(Reverse_Temp_2D_TSED0)
   deallocate(Reverse_Temp_2D_BULKDENS)
   deallocate(Reverse_Temp_3D)
   deallocate(Gl_Reverse_Temp_2D_ActLay)
   deallocate(Gl_Reverse_Temp_2D_TSED)
+  deallocate(Gl_Reverse_Temp_2D_TSED0)
   deallocate(Gl_Reverse_Temp_2D_BULKDENS)
   deallocate(Gl_Reverse_Temp_3D)
 
-End Subroutine Communicate_SEDZLJ
+End Subroutine Gather_SEDZLJ
 
 END MODULE
