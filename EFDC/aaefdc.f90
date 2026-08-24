@@ -19,7 +19,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !----------------------------------------------------------------------!
 !
-!  RELEASE:         EFDCPlus_12.4
+!  RELEASE:         EFDCPlus_12.5
 !                   Domain Decomposition with MPI
 !                   Propeller Wash 
 !                   New WQ kinetics with user defined algal groups and zooplankton
@@ -27,7 +27,7 @@
 !                   General Ocean Turbulence Model (GOTM)
 !                   SIGMA-Zed (SGZ) Vertical Layering
 !
-!  DATE:            2025-12-29
+!  DATE:            2026-05-26
 !  BY:              DSI, LLC
 !                   EDMONDS, WASHINGTON  98020
 !                   USA
@@ -251,7 +251,7 @@ PROGRAM EFDC
   Double Precision :: starting_time, ending_time  !< MPI wall-clock timing (seconds)
   
   ! *** When updating the version date also update the EXE date in the project settings
-  EFDC_VER = '2026-02-05'
+  EFDC_VER = '2026-08-06'
   
   ! *** GET START TIME OF ELAPSED TIME COUNTER
   TCPU = DTIME(CPUTIME)
@@ -260,7 +260,7 @@ PROGRAM EFDC
 
   IERR = 0
 #ifdef DEBUGGING
-  call sleep(10)
+  !call sleep(10)
 #endif
 
   ! ****************************************************************************
@@ -423,7 +423,7 @@ PROGRAM EFDC
   endif !***End calculation on master process
 
   ! *** Set time related parameters
-  ! *** The parameter ntc = number of time cycles, controls the length of run (number of time steps)
+  ! *** The parameter NTC = number of time cycles, controls the length of run (number of time steps)
   ! *** Starting and ending dates, in days
   TIMEDAY  = DBLE(TCON)*DBLE(TBEGIN)/86400._8
   TIMEEND  = TIMEDAY + (DBLE(TIDALP)*DBLE(NTC) + DBLE(DT))/86400._8
@@ -437,6 +437,7 @@ PROGRAM EFDC
   THDMT = 0.0
   TVDIF = 0.0
   TCGRS = 0.0
+  TTBXY = 0.0
   TTSED = 0.0
   TSSTX = 0.0
   TCONG = 0.0
@@ -749,14 +750,13 @@ PROGRAM EFDC
   if( ISPPH == 100 ) ISPPH = 1  !DHC: 2013-08-15
 
   if( process_id == master_id )then
-    if( MPI_DEBUG_FLAG )then
-      write(*,'(A,I8)')'NSNAPSHOTS = ',  NSNAPSHOTS
-      write(mpi_efdc_out_unit,*)'NSNAPSHOTS = ',  NSNAPSHOTS
-      do I = 1,NSNAPSHOTS
-        write(mpi_efdc_out_unit,*)'SNAPSHOT: ',I,SNAPSHOTS(I)
-      enddo
-    endif
-  endif !*** End calc on master process
+    write(*,'(A,I8)')'NSNAPSHOTS = ',  NSNAPSHOTS
+  endif
+  
+  write(mpi_efdc_out_unit,*)'NSNAPSHOTS = ',  NSNAPSHOTS
+  do I = 1,NSNAPSHOTS
+    write(mpi_efdc_out_unit,*)'SNAPSHOT: ',I,SNAPSHOTS(I)
+  enddo
 
   ! *** ENSURE LAST SNAPSHOT SPANS THE END OF THE MODEL RUN
   SNAPSHOTS(NSNAPSHOTS+1) = T2 + 1.
@@ -1068,6 +1068,7 @@ PROGRAM EFDC
 
   !---------------------------------------------------------------------------!
   ! *** SET BOUNDARY CONDITION SWITCHES
+  if( process_id == master_id ) write(*,'(A)')'CONFIGURING DISTRIBUTING BOUNDARY CONDITIONS FOR EACH MPI DOMAIN'
   call SETBCS
 
   ! ****************************************************************************
@@ -1301,10 +1302,11 @@ PROGRAM EFDC
   enddo
 
   ! ***************************************************************************
-  ! *** BEGIN SIGMA-Z VARIABLE INITIALIZATION (SGZ)
+  ! *** Begin Sigma-Z variable initialization (SGZ)
   ! ***
   ! *** Use ORIGINAL DEPTH FROM DXDY (HMP) SO KSZ'S ARE CONSISTENT FOR COLD START,
   ! ***   RESTART AND CONTINUATION RUNS
+  if( process_id == master_id ) write(*,'(A)')'CONFIGURING HYDRODYNAMIC VARIABLES'
   if( IGRIDV > 0 )then
     do L = 2,LA
       HMP(L) = HP(L) + SGZHPDELTA
@@ -2950,7 +2952,7 @@ PROGRAM EFDC
     enddo
   endif
 
-  TMPVAL = max(HMIN,.01)
+  TMPVAL = max(HMIN, 0.01)
   HPKI = 1./TMPVAL
   do K = 1,KC
     do L = 2,LA

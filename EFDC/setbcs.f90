@@ -446,34 +446,36 @@ SUBROUTINE SETBCS
     
   ! *** Set cell-face flag of external density gradient in external/internal mode solution 
   ! *** for two cell wide channels
-  IU = 0
-  JU = 0
-  do L = 2,LA
-    I = IL(L)
-    J = JL(L)
-    LE = LEC(L)
-    LW = LWC(L)
-    LN = LNC(L)
-    LS = LSC(L)
-    
-    ! *** Two cell flow channel - West face
-    if( SUB(L) > 0.5 .and. SUB(LW) < 0.5 )then
-      if( SUB(LE) < 0.5 )then
-        SUBD(L) = 0.0
-        IU = IU + 1
+  if( IINTPG == 0 )then
+    IU = 0
+    JU = 0
+    do L = 2,LA
+      I = IL(L)
+      J = JL(L)
+      LE = LEC(L)
+      LW = LWC(L)
+      LN = LNC(L)
+      LS = LSC(L)
+      
+      ! *** Two cell flow channel - West face
+      if( SUB(L) > 0.5 .and. SUB(LW) < 0.5 )then
+        if( SUB(LE) < 0.5 )then
+          SUBD(L) = 0.0
+          IU = IU + 1
+        endif
       endif
-    endif
-    
-    ! *** Two cell flow channel - South face
-    if( SVB(L) > 0.5 .and. SVB(LS) < 0.5 )then
-      if( SVB(LN) < 0.5 )then
-        SVBD(L) = 0.0
-        JU = JU + 1
+      
+      ! *** Two cell flow channel - South face
+      if( SVB(L) > 0.5 .and. SVB(LS) < 0.5 )then
+        if( SVB(LN) < 0.5 )then
+          SVBD(L) = 0.0
+          JU = JU + 1
+        endif
       endif
-    endif
-
-  enddo
-  PRINT "(' EDG Test: Number of West Faces: ',I6,', Number of South Faces:',I6 )", IU, JU
+    
+    enddo
+    if( debug ) PRINT "(' EDG Test: Number of West Faces: ',I6,', Number of South Faces:',I6 )", IU, JU
+  endif
   
   ! *** SET VOLUMETRIC & CONCENTRATION SOURCE LOCATIONS AND BED STRESS
   ! *** AND CELL CENTER BED STRESS AND VELOCITY MODIFERS
@@ -1116,27 +1118,17 @@ SUBROUTINE SETBCS
   enddo
 
   ! *** SET CHANNEL HOST AND GUEST LOCATION MAPPINGS
+  ! *** LMDCHH/LMDCHU/LMDCHV are local L's, already set from the local subdomain mapping in INPUT
   if( MDCHH >=  1 )then
     do NMD = 1,MDCHH
-      L = LIJ(IMDCHH(NMD),JMDCHH(NMD))
       ! *** HOST
-      LMDCHH(NMD) = L
+      L = LMDCHH(NMD)
       NBCS = NBCS + 1
       LBCS(NBCS) = L
 
       ! *** DOWNSTREAM
-      if( IMDCHU(NMD) == 1 .and. JMDCHU(NMD) == 1 )then
-        LMDCHU(NMD) = 1
-      else
-        L = LIJ(IMDCHU(NMD),JMDCHU(NMD))
-        LMDCHU(NMD) = L
-      endif
-      if( IMDCHV(NMD) == 1 .and. JMDCHV(NMD) == 1 )then
-        LMDCHV(NMD) = 1
-      else
-        L = LIJ(IMDCHV(NMD),JMDCHV(NMD))
-        LMDCHV(NMD) = L
-      endif
+      if( LMDCHU(NMD) > 1 ) L = LMDCHU(NMD)
+      if( LMDCHV(NMD) > 1 ) L = LMDCHV(NMD)
       NBCS = NBCS + 1
       LBCS(NBCS) = L
     enddo

@@ -240,6 +240,7 @@ SUBROUTINE VARINIT
   BETAVEG_D = 5.1
   CE4SUP = 0.9
   CE4VEG = 0.9
+  CE4MHK = 0.9
   
   if( ISICE > 0 )then
     MITLAST    = 0
@@ -252,7 +253,6 @@ SUBROUTINE VARINIT
     ICEVOL     = 0.0
     ICETEMP    = 0.
     RICECOVT   = 0.
-    RICETHKT   = 0.
     if( NISER > 1) RICEWHT = 1.0
   endif
   ICECELL  = .FALSE.

@@ -31,7 +31,7 @@ SUBROUTINE CALTOXB
   integer   :: NC, ND, LF, LL, LP, L, NT, K, KBTM1, NS
   integer   :: NFD, KM, KK, KBTP1, KBOT, KINC, KBOT2
   real      :: DEPINBED, DIFBWFAC, BETTMP, BSMALL
-  real      :: HBEDMIN0, SORBMIN, TOXTIMEI, GAMTOX(KBM)
+  real      :: SORBMIN, TOXTIMEI, GAMTOX(KBM)
   real(RKD) :: CELLMASS, ERRT, ERRB, ERRW
   real,save :: TOXTIME
   
@@ -80,12 +80,10 @@ SUBROUTINE CALTOXB
     KINC  = 1
     KBOT  = KB
     KBOT2 = KB-1
-    HBEDMIN0 = BSMALL  ! *** ACCOUNT FOR ACTIVE LAYERS
   else
     KINC  = -1
     KBOT  = 1
     KBOT2 = 2
-    HBEDMIN0 = BSMALL
   endif
   
   SORBMIN = 0.99
@@ -238,7 +236,7 @@ SUBROUTINE CALTOXB
       ! *** TRI-DIAGONAL SOLVER
       do LP = LF,LL
         L = LSED(LP)
-        
+        if( HBED(L,KBT(L)) <= HBEDMIN0 ) CYCLE
         KBTP1 = KBT(L)-KINC           ! *** Layer above the top layer
         BETTMP = BMNN(L,KBOT,NT) + BSMALL
         TOXTMP(L,KBOT,NT) = RRHS(L,KBOT,NT)/BETTMP
@@ -255,7 +253,7 @@ SUBROUTINE CALTOXB
       ! *** CONVERT SCALED SOLUTION VARIABLES AND CALCULATE FINAL MASS
       do LP = LF,LL
         L = LSED(LP)
-
+        if( HBED(L,KBT(L)) <= HBEDMIN0 ) CYCLE
         TOXBBALN(L,NT) = 0.0
         do K = KBOT,KBT(L),-KINC
           TOXB(L,K,NT) = HBED(L,K)*PORBED(L,K)*TOXTMP(L,K,NT)/(1.0-TOXPFTB(L,K,NT))
@@ -270,7 +268,7 @@ SUBROUTINE CALTOXB
       ! *** Correct mass error and determine net flux from bed to water column
       do LP = LF,LL
         L = LSED(LP)
-        
+        if( HBED(L,KBT(L)) <= HBEDMIN0 ) CYCLE
         CELLMASS = TOXBBALN(L,NT) + TOXWBALN(L,NT)
         ERRT     = CELLMASS - (TOXBBALO(L,NT) + TOXWBALO(L,NT))                     ! *** Difference in bed mass at the start and end of calculations
         ERRT     = ERRT - max(QWTRBED(L,0),0.)*CONGW(L,NC)*TOXTIME                  ! *** Remove the external mass loading
@@ -334,13 +332,8 @@ SUBROUTINE CALTOXB_FRACTIONS(LF,LL)
   integer, intent(IN) :: LL, LF
   integer             :: LP, L, K, NT, NS, NX, NFD
 
-  real                :: HBEDMIN0, TMPVAL,  PMC(10)
+  real                :: TMPVAL,  PMC(10)
 
-  if( LSEDZLJ )then
-      HBEDMIN0 = 1E-12
-  else
-      HBEDMIN0 = 1E-12
-  endif
   NFD = NSED2 + NSND + 1
 
   ! *** ZERO THE TOXIC SORBED FRACTIONS

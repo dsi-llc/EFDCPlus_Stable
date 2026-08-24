@@ -879,7 +879,7 @@ SUBROUTINE CALEXP
       if( ISPBE(LL) == 0 .or. ISPBE(LL) == 1 .or. ISPBE(LL) == 4 )then
         L   = LPBE(LL)
         LW  = LWC(L)
-        LWW = LEC(LW)
+        LWW = LWC(LW)
         ! *** Both adjacent and connected cell must both meet aspect criteria
         if( max(DXP(LW),DYP(LW)) / min(DXP(LW),DYP(LW)) > 4.0 )then
           if( max(DXP(LWW),DYP(LWW)) / min(DXP(LWW),DYP(LWW)) > 4.0 )then
@@ -898,7 +898,7 @@ SUBROUTINE CALEXP
       if( ISPBS(LL) == 0 .or. ISPBS(LL) == 1 .or. ISPBS(LL) == 4 )then
         L = LPBS(LL)
         LN = LNC(L)
-        LNN = LEC(LN)
+        LNN = LNC(LN)
         ! *** Both adjacent and connected cell must both meet aspect criteria
         if( max(DXP(LN),DYP(LN)) / min(DXP(LN),DYP(LN)) > 4.0 )then
           if( max(DXP(LNN),DYP(LNN)) / min(DXP(LNN),DYP(LNN)) > 4.0 )then
@@ -917,7 +917,7 @@ SUBROUTINE CALEXP
       if( ISPBN(LL) == 0 .or. ISPBN(LL) == 1 .or. ISPBN(LL) == 4 )then
         L = LPBN(LL)
         LS = LSC(L)
-        LSS = LEC(LS)
+        LSS = LSC(LS)
         ! *** Both adjacent and connected cell must both meet aspect criteria
         if( max(DXP(LS),DYP(LS)) / min(DXP(LS),DYP(LS)) > 4.0 )then
           if( max(DXP(LSS),DYP(LSS)) / min(DXP(LSS),DYP(LSS)) > 4.0 )then
@@ -1008,10 +1008,10 @@ SUBROUTINE CALEXP
   ! *** ADD EXPLICIT NONHYDROSTATIC PRESSURE
   !
   if( KC > 1 .and. ISPNHYDS >= 1 )then
-    !$OMP DO PRIVATE(ND,L,LP,K,TMPVAL) 
+    !$OMP DO PRIVATE(ND,L,LP,TMPVAL) 
     do ND = 1,NDM  
-      do LP = 1,LLWET(K,ND)
-        L = LKWET(LP,K,ND)  
+      do LP = 1,LLWET(KC,ND)
+        L = LKWET(LP,KC,ND)     ! Kien - I don't think this is valid but we don't have a test case to check
         TMPVAL    = 2./( DZC(L,KSZ(L)) + DZC(L,KSZ(L)+1) )
         DZPC(L,1) = TMPVAL*(PNHYDS(L,2)-PNHYDS(L,1))
       enddo
@@ -1020,8 +1020,8 @@ SUBROUTINE CALEXP
   
     !$OMP DO PRIVATE(ND,L,LP,TMPVAL) 
     do ND = 1,NDM  
-      do LP = 1,LLWET(K,ND)
-        L = LKWET(LP,K,ND)  
+      do LP = 1,LLWET(KC,ND)
+        L = LKWET(LP,KC,ND)  
         TMPVAL     = 2./( DZC(L,KC) + DZC(L,KC-1) )
         DZPC(L,KC) = TMPVAL*(PNHYDS(L,KC)-PNHYDS(L,KC-1))
       enddo
@@ -1203,9 +1203,8 @@ SUBROUTINE CALEXP
       enddo
       !$OMP END DO
       
-
-    elseif( IINTPG == 0 )then  
-      ! *** IINTPG = 0  
+    else
+      ! *** STANDARD-SIGMA BOUYANCY SHEARS
       !$OMP DO PRIVATE(ND,LF,LL,K,LP,L,LS,LW) 
       do ND = 1,NDM  
         do K = 1,KS  
@@ -1215,67 +1214,11 @@ SUBROUTINE CALEXP
             LW = LWC(L)
             FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( HU(L)*( (B(L,K+1)-B(LW,K+1))*DZCK(K+1) + (B(L,K)-B(LW,K))*DZCK(K) ) - (B(L,K+1)-B(L,K)+B(LW,K+1)-B(LW,K))*(BELV(L)-BELV(LW)+Z(L,K)*(HP(L)-HP(LW))) )
             FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( HV(L)*( (B(L,K+1)-B(LS,K+1))*DZCK(K+1) + (B(L,K)-B(LS,K))*DZCK(K) ) - (B(L,K+1)-B(L,K)+B(LS,K+1)-B(LS,K))*(BELV(L)-BELV(LS)+Z(L,K)*(HP(L)-HP(LS))) )
-            !FBBX(L,K) = SUBD(L)*FBBX(L,K)                                    
-            !FBBY(L,K) = SVBD(L)*FBBY(L,K)                                    
           enddo
         enddo
       enddo
       !$OMP END DO  
-  
-    elseif( IINTPG == 1 )then
-      ! *** JACOBIAN
-      !$OMP SINGLE
-      K = 1
-      do L = 2,LA
-        LW = LWC(L)
-        LS = LSC(L)
-        FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( 0.5*HU(L)*( (B(L,K+2)-B(LW,K+2))*DZC(L,K+2)+(B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+(B(L,K  )-B(LW,K  ))*DZC(L,K  )+(B(L,K  )-B(LW,K  ))*DZC(L,K  ) ) &
-                   -0.5*(B(L,K+2)-B(L,K+1)+B(LW,K+2)-B(LW,K+1))*(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW)))-0.5*(B(L,K  )-B(L,K  )+B(LW,K  )-B(LW,K  ))*(BELV(L)-BELV(LW)+Z(L,K-1)*(HP(L)-HP(LW))) )
-  
-        FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( 0.5*HV(L)*( (B(L,K+2)-B(LS ,K+2))*DZC(L,K+2)+(B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+(B(L,K  )-B(LS ,K  ))*DZC(L,K  )+(B(L,K  )-B(LS ,K  ))*DZC(L,K  ) ) &
-                   -0.5*(B(L,K+2)-B(L,K+1)+B(LS ,K+2)-B(LS ,K+1))*(BELV(L)-BELV(LS)+Z(L,K+1)*(HP(L)-HP(LS)))-0.5*(B(L,K  )-B(L,K  )+B(LS ,K  )-B(LS ,K  ))*(BELV(L)-BELV(LS )+Z(L,K-1)*(HP(L)-HP(LS ))) )
-      enddo
-  
-      if( KC > 2 )then
-        K = KS
-        do L = 2,LA
-          LW = LWC(L)
-          LS = LSC(L)
-          FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( 0.5*HU(L)*( (B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+(B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+(B(L,K  )-B(LW,K  ))*DZC(L,K  )+(B(L,K-1)-B(LW,K-1))*DZC(L,K-1) ) &
-                     -0.5*(B(L,K+1)-B(L,K+1)+B(LW,K+1)-B(LW,K+1))*(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW)))-0.5*(B(L,K  )-B(L,K-1)+B(LW,K  )-B(LW,K-1))*(BELV(L)-BELV(LW)+Z(L,K-1)*(HP(L)-HP(LW))) )
-          FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( 0.5*HV(L)*( (B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+(B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+(B(L,K  )-B(LS ,K  ))*DZC(L,K  )+(B(L,K-1)-B(LS ,K-1))*DZC(L,K-1) ) &
-                     -0.5*(B(L,K+1)-B(L,K+1)+B(LS ,K+1)-B(LS ,K+1))*(BELV(L)-BELV(LS)+Z(L,K+1)*(HP(L)-HP(LS)))-0.5*(B(L,K  )-B(L,K-1)+B(LS ,K  )-B(LS ,K-1))*(BELV(L)-BELV(LS )+Z(L,K-1)*(HP(L)-HP(LS ))) )
-        enddo
-      endif
-  
-      if( KC > 3 )then
-        do K = 1,KS
-          do L = 2,LA
-            LW = LWC(L)
-            LS = LSC(L)
-            FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( 0.5*HU(L)*( (B(L,K+2)-B(LW,K+2))*DZC(L,K+2)+(B(L,K+1)-B(LW,K+1))*DZC(L,K+1)+(B(L,K  )-B(LW,K  ))*DZC(L,K  )+(B(L,K-1)-B(LW,K-1))*DZC(L,K-1) ) &
-                       -0.5*(B(L,K+2)-B(L,K+1)+B(LW,K+2)-B(LW,K+1))*(BELV(L)-BELV(LW)+Z(L,K+1)*(HP(L)-HP(LW)))-0.5*(B(L,K  )-B(L,K-1)+B(LW,K  )-B(LW,K-1))*(BELV(L)-BELV(LW)+Z(L,K-1)*(HP(L)-HP(LW))) )
-            FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( 0.5*HV(L)*( (B(L,K+2)-B(LS ,K+2))*DZC(L,K+2)+(B(L,K+1)-B(LS ,K+1))*DZC(L,K+1)+(B(L,K  )-B(LS ,K  ))*DZC(L,K  )+(B(L,K-1)-B(LS ,K-1))*DZC(L,K-1) ) &
-                       -0.5*(B(L,K+2)-B(L,K+1)+B(LS ,K+2)-B(LS ,K+1))*(BELV(L)-BELV(LS)+Z(L,K+1)*(HP(L)-HP(LS)))-0.5*(B(L,K  )-B(L,K-1)+B(LS ,K  )-B(LS ,K-1))*(BELV(L)-BELV(LS )+Z(L,K-1)*(HP(L)-HP(LS ))) )
-          enddo
-        enddo
-      endif
-      !$OMP END SINGLE
-        
-    elseif( IINTPG == 2 )then
-      ! *** FINITE VOLUME
-      !$OMP SINGLE
-      do K = 1,KS
-        do L = 2,LA
-          LW = LWC(L)
-          LS = LSC(L)
-          FBBX(L,K) = ROLD*FBBX(L,K) + RNEW*SBX(L)*GP*HU(L)*( ( HP(L)*B(L,K+1)-HP(LW)*B(LW,K+1) )*DZC(L,K+1)+( HP(L)*B(L,K  )-HP(LW)*B(LW,K  ) )*DZC(L,K  ) )-RNEW*SBX(L)*GP*(BELV(L)-BELV(LW)) &
-                     *( HP(L)*B(L,K+1)-HP(L)*B(L,K)+HP(LW)*B(LW,K+1)-HP(LW)*B(LW,K) )   - RNEW*SBX(L)*GP*(HP(L)-HP(LW))*( HP(L)*ZZ(L,K+1)*B(L,K+1)-HP(L)*ZZ(L,K)*B(L,K)+HP(LW)*ZZ(L,K+1)*B(LW,K+1)-HP(LW)*ZZ(L,K)*B(LW,K) )
-          FBBY(L,K) = ROLD*FBBY(L,K) + RNEW*SBY(L)*GP*HV(L)*( ( HP(L)*B(L,K+1)-HP(LS )*B(LS ,K+1) )*DZC(L,K+1)+( HP(L)*B(L,K  )-HP(LS )*B(LS ,K  ) )*DZC(L,K  ) )-RNEW*SBY(L)*GP*(BELV(L)-BELV(LS )) &
-                     *( HP(L)*B(L,K+1)-HP(L)*B(L,K)+HP(LS)*B(LS ,K+1)-HP(LS)*B(LS ,K) ) - RNEW*SBY(L)*GP*(HP(L)-HP(LS ))*( HP(L)*ZZ(L,K+1)*B(L,K+1)-HP(L)*ZZ(L,K)*B(L,K)+HP(LS)*ZZ(L,K+1)*B(LS ,K+1)-HP(LS)*ZZ(L,K)*B(LS ,K) )
-        enddo
-      enddo
-      !$OMP END SINGLE
+
     endif
 
     ! *** BLOCKED LAYER FACE OPTION

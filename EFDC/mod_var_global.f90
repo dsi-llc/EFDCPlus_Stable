@@ -860,7 +860,7 @@ MODULE GLOBAL
   integer :: ICALTB      !< Bed Shear calculation option
   integer :: ICK2COR     !< Curvature-Coriolis correction option
   integer :: ICSHOW      !< I index for diagnostic output (SHOWVAL)
-  integer :: IINTPG      !< Internal pressure gradient option
+  integer :: IINTPG = 0  !< IINTPG = 0, Enable External Density Gradient Flags for 2-Cell Channels
   integer :: IOSWD       !< Flag for wind shear effect on oil spill movement
   integer :: IS2LMC      !< Two-layer mixing option
   integer :: ISAVBMX     !< Save maximum bottom velocity flag
@@ -885,6 +885,7 @@ MODULE GLOBAL
 
   integer :: ISHDMF      !< HMD
   integer :: ISHDMFILTER !< HMD
+  integer :: ISQUICK = 0 !< Constituent advective transport, 0 - Upwind, 1 - Ultimate-Quickest
   integer :: IHMDSUB     !< HMD flag: 0 - Use all cells, 1 - Use spatially subset of cells
   integer :: ISFAVB      !< Favorable pressure gradient option
   integer :: ISGWIE = 0  !< Groundwater interaction evaporation flag
@@ -992,8 +993,8 @@ MODULE GLOBAL
   real :: AHO      !< Initial horizontal eddy viscosity (m2/s)
   real :: XYRATIO  !< X-Y aspect ratio for horizontal eddy viscosity adjustment
 
-  real :: ABMAX    !< Maximum background horizontal diffusivity (m2/s)
-  real :: ABMIN    !< Minimum background horizontal diffusivity (m2/s)
+  real :: ABMAX    !< Maximum background vertical diffusivity (m2/s)
+  real :: ABMIN    !< Minimum background vertical diffusivity (m2/s)
   real :: ABMX     !< Maximum horizontal diffusivity from Smagorinsky (m2/s)
   real :: ABO      !< Initial horizontal diffusivity (m2/s)
   real :: AVCON    !< Constant vertical eddy viscosity (m2/s)
@@ -1035,7 +1036,7 @@ MODULE GLOBAL
   real :: ERR            !< Global read error code
   
   real :: FOURDPI        !< 4./PI
-  real :: FSCORTBC  !< Corner correction factor for bed shear stress
+  real :: FSCORTBC       !< Corner correction factor for bed shear stress
   real :: FSWRATF        !< Fraction of solar radiation attenuated fast
   real :: FSOLRADMIN     !< Minimum fraction of solar radiation absorbed in the top layer of the water column (dimensionless)
   
@@ -1049,29 +1050,29 @@ MODULE GLOBAL
   real :: HDRYMOVE       !< If ISDRY > 0, if this depth is > 0.0, then this is the minimum depth allowed for QSER inflows into a cell (m)
   real :: HDRYWAV
   real :: HDRYICE
-  real :: HMIN           !< Minimum water depth for initial conditions
+  real :: HMIN = 0.01    !< Minimum water depth for initial conditions
   real :: HWET           !< Minimum water depth to allow for QSER withdrawals
   
   real :: OSWDA          !< Wind speed dependent coefficient for oil spill wind shear (s/m)
   real :: OSWDB          !< Fixed coefficient for oil spill wind shear (dimensionless fraction)
   
-  real :: PI   !< Pi constant (3.14159...)
-  real :: PI2  !< 2*Pi constant (6.28318...)
+  real :: PI             !< Pi constant (3.14159...)
+  real :: PI2            !< 2*Pi constant (6.28318...)
   
-  real :: QQLMIN  !< Minimum turbulent intensity times length scale (m3/s2)
-  real :: QQMIN   !< Minimum turbulent intensity (m2/s2)
+  real :: QQLMIN         !< Minimum turbulent intensity times length scale (m3/s2)
+  real :: QQMIN          !< Minimum turbulent intensity (m2/s2)
   
   real :: RITB           !< Implicit factor
   real :: RITB1          !< Implicit factor
-  real :: RNEW    !< Conjugate gradient residual - new iteration
-  real :: ROLD    !< Conjugate gradient residual - old iteration
-  real :: RP      !< Conjugate gradient parameter
-  real :: RIQMAX  !< Maximum turbulent intensity squared (dimensionless) 
+  real :: RNEW           !< Conjugate gradient residual - new iteration
+  real :: ROLD           !< Conjugate gradient residual - old iteration
+  real :: RP             !< Conjugate gradient parameter
+  real :: RIQMAX         !< Maximum turbulent intensity squared (dimensionless) 
   real :: RSQM           !< Square of the maximum conjugate gradient error
   
   real :: S2TL           !< Time integration level real switch
   real :: S3TL           !< Time integration level real switch
-  real :: SNLT    !< Non-linear transition ramp factor (dimensionless) 
+  real :: SNLT           !< Non-linear transition ramp factor (dimensionless) 
   real :: SWRATNF        !< Solar radiation extinction coefficient - Fast (1/m)
   real :: SWRATNS        !< Solar radiation extinction coefficient - Slow (1/m)
   
@@ -1084,7 +1085,7 @@ MODULE GLOBAL
   
   real :: ZBRADJ         !< Bottom roughness - Offset
   real :: ZBRCVRT        !< Bottom roughness - Multiplier
-  real :: ZBRWALL  !< Wall roughness height for rigid boundaries (m) 
+  real :: ZBRWALL        !< Wall roughness height for rigid boundaries (m) 
   real :: ZSSMAX         !< SHOWVAL
   real :: ZSSMIN         !< SHOWVAL
   
@@ -1696,7 +1697,7 @@ MODULE GLOBAL
   
   ! *****************************************************************************************************************************
   !*** Temperature/Heat
-  logical :: LFRAZIL     !< FLAG IS TRUE OF FRAZIL ICE EXISTS
+  logical :: LFRAZIL = .FALSE.  !< FLAG IS TRUE OF FRAZIL ICE EXISTS
   logical :: LCHECKICE   !< FLAG TO DETERMINE IF ICE CONDITIONS MAY EXIST
 
   integer :: IASWRAD     !< Solar radiation absorption option
@@ -1706,10 +1707,10 @@ MODULE GLOBAL
   real :: HTBED1         !< Bed heat - convective heat transfer coefficient (no dim)
   real :: HTBED2         !< Bed heat - heat transfer coefficient (m/s)
 
-  real :: RAINTSUM1      !< Sum of previous rainfall
-  real :: RAINTSUM0      !< Sum of current rainfall
-  real :: RCHC           !< 1000*Convective heat transfer coefficient (sensible heat)
-  real :: REVC           !< 1000*Evaprative heat transfer coefficient (latent heat)
+  real :: RAINTSUM1 = 0.0      !< Sum of previous rainfall
+  real :: RAINTSUM0 = 0.0      !< Sum of current rainfall
+  real :: RCHC = 1.0           !< 1000*Convective heat transfer coefficient (sensible heat)
+  real :: REVC = 1.0           !< 1000*Evaprative heat transfer coefficient (latent heat)
 
   real :: TEMO    = 20.0 !< Constant initial conditions in the water (deg C)
   real :: TEMBO   = 0.0  !< Constant initial conditions for the bed  (deg C)
@@ -1803,7 +1804,6 @@ MODULE GLOBAL
   real,   allocatable :: ICEVOL(:)
   real,   allocatable :: RICEWHT(:,:,:)
   real,   allocatable :: RICECOVT(:)  
-  real,   allocatable :: RICETHKT(:)  
   
   logical(IK4), allocatable :: ICECELL(:)
   
@@ -1986,7 +1986,7 @@ MODULE GLOBAL
   real :: BMECH5
   real :: BMECH6
   
-  real :: COEFTSBL       !< SedTran
+  real :: COEFTSBL = 4.0 !< SedTran
   real :: COEHEFF        !< SedTran
   real :: COEHEFF2       !< SedTran
   real :: DIASED         !< Temporary sediment diameter
@@ -1997,11 +1997,12 @@ MODULE GLOBAL
   real :: HBEDALMN       !< Sedtran - sediment bed layer thickness
   real :: HBEDMAX        !< Sedtran - sediment bed layer thickness
   real :: HBEDMIN        !< Minimum bed layer thickness
+  real :: HBEDMIN0 = 1E-8 !< Minimum bed layer thickness for chemfate diffusion calculation (caltox, caltoxb)
 
   real :: SEDMDGM        !< Geometric mean
   real :: SEDMDMN        !< 
   real :: SEDMDMX        !< 
-  real :: SEDSTART       !< 
+  real :: SEDSTART = 0.0 !< 
   real :: SEDSTEP        !< 
   real :: SEDVDRD        !< 
   real :: SEDVDRM        !< 
@@ -2240,7 +2241,7 @@ MODULE GLOBAL
   real(RKD) :: DTSEDJ       !< SEDZLJ timestep in REAL(RKD) for better mass balance
   real(RKD) :: HPMIN        !< Minimum depth to compute shears for SEDZLJ
   real(RKD) :: MAXDEPLIMIT  !< The maximum limit of mass from 1st layer deposited on active bed layer.
-  real(RKD) :: RHO          !< EFDC variable in units of MKS 1000. kg/m^3
+  real(RKD) :: RHO = 1000.0     !< EFDC variable in units of MKS 1000. kg/m^3
   real(RKD) :: TACTM        !< Non-dimensional active layer thickness multiplier
   real(RKD) :: TAUCONST     
   real(RKD) :: WATERDENS    !< Add new parameter for water density rho_w

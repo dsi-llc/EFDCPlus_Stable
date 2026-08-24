@@ -169,8 +169,8 @@ SUBROUTINE CALHDMF
             if( FACES > 0.5 )then
               if( SUB3D(L,K) > 0.5 .XOR. SUB3D(LEC(L),K) > 0.5 )then
                 ! *** EAST OR WEST FACE IS A WALL
-                DY2DZBR = 1. + 0.5*DYP(L)/ZBRWALL
-                CSDRAG  = 0.16/((LOG(DY2DZBR))**2)
+                DX2DZBR = 1. + 0.5*DXP(L)/ZBRWALL
+                CSDRAG  = 0.16/((LOG(DX2DZBR))**2)
                 SLIPFAC  = SLIPCO*CSDRAG
                 DXV1(L,K) = SLIPFAC*V(L,K)/DXP(L)
               endif
@@ -245,7 +245,7 @@ SUBROUTINE CALHDMF
     ! ***  CALCULATE HORIZONTAL SMAG DIFFUSION DUE TO WAVE BREAKING
     if( ISWAVE == 2 .or. ISWAVE == 4 )then
       if( WVLSH > 0.0 .or. WVLSX > 0.0 )then
-        if( ISWAVE == 2 .and. N < NTSWV )then
+        if( N < NTSWV )then
           TMPVAL = FLOAT(N)/FLOAT(NTSWV)
           WVFACT = 0.5-0.5*COS(PI*TMPVAL)
         else

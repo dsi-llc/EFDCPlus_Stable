@@ -152,7 +152,6 @@ SUBROUTINE CALTSXY(INITFLAG)
       enddo
       
     endif
-    close(mpi_efdc_out_unit)
   endif
 
   ! *** *******************************************************************!

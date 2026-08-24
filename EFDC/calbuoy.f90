@@ -93,7 +93,7 @@
             L = LKWET(LP,K,ND)
             PSW = (1. - ZZ(L,K))*HP(L)        ! *** Pressue at the mid point of the layer [m]
             tm  = TEM(L,K)                    ! *** In-situ temperature [deg C]
-            sa  = max(SAL(L,K),0.)         ! *** Absolute Salinity [g/kg] (Prevent negative value)
+            sa  = max(SAL(L,K),0.)            ! *** Absolute Salinity [g/kg] (Prevent negative value)
             PTEM(L,K) = gsw_pt_from_t (sa, tm, PSW, p_ref)
           enddo
         enddo

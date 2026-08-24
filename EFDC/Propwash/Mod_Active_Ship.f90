@@ -435,7 +435,7 @@ subroutine setup_mesh(self, debug_)
       if( abs(self.subgrid_mesh(j,i).x_pos) > cone_max )then
         ! *** Deactivate points outside cone
         self.subgrid_mesh(j,i).x_pos = -9999.
-        self.subgrid_mesh(j,i).x_pos = -9999.
+        self.subgrid_mesh(j,i).y_pos = -9999.
         self.subgrid_mesh(j,i).area  = 0.
       endif
     enddo
@@ -487,7 +487,7 @@ subroutine setup_mesh(self, debug_)
       Llast = self.subgrid_mesh(j,i).cell
       self.subgrid_mesh(j,i).cell = get_cell(Llast, self.subgrid_mesh(j,i).x_pos, self.subgrid_mesh(j,i).y_pos)
       
-      self.mesh_count(self.subgrid_mesh(j,i).cell) = self.mesh_count(self.subgrid_mesh(j,i).cell) + 1
+      if( self.subgrid_mesh(j,i).cell > 0 ) self.mesh_count(self.subgrid_mesh(j,i).cell) = self.mesh_count(self.subgrid_mesh(j,i).cell) + 1
     enddo
   enddo
 
@@ -545,13 +545,21 @@ subroutine setup_mesh(self, debug_)
   endif
   
   ! *** Final pass to remove axial points that start after the blockage
+  ! *** Only deactivate an outer radial when its OWN first cell is already invalid (set by the
+  ! *** blocking/deactivation passes above).  Without this guard the loop cascades outward:
+  ! *** a single shallow bank cell on one inner radial propagates inward-to-outer and strips
+  ! *** every outer radial even when those radials have perfectly valid cells further out in
+  ! *** deeper water.  After the deactivation pass above, any surviving point with x_pos != -9999
+  ! *** is guaranteed to have cell > 0, so the x_pos sentinel is a reliable proxy for validity.
+  
   ! *** Lower side
   do j = num_radial_elems/2-2,1,-1
     i = first_axial(j)              ! *** First point in axial
     if( i < 1 .or. i > num_axial_elems )then
       cycle
     endif
-    if( abs(self.subgrid_mesh(j+1,i).x_pos + 9999.) < 1.0 )then
+    if( abs(self.subgrid_mesh(j+1,i).x_pos + 9999.) < 1.0 .and. &
+        abs(self.subgrid_mesh(j,  i).x_pos + 9999.) < 1.0 )then  ! *** outer radial itself is also invalid
       do i = first_axial(j), num_axial_elems
         self.subgrid_mesh(j,i).x_pos = -9999.
         self.subgrid_mesh(j,i).y_pos = -9999.
@@ -566,7 +574,8 @@ subroutine setup_mesh(self, debug_)
     if( i < 1 .or. i > num_axial_elems )then
       cycle
     endif
-    if( abs(self.subgrid_mesh(j-1,i).x_pos + 9999.) < 1.0  )then
+    if( abs(self.subgrid_mesh(j-1,i).x_pos + 9999.) < 1.0 .and. &
+        abs(self.subgrid_mesh(j,  i).x_pos + 9999.) < 1.0 )then  ! *** outer radial itself is also invalid
       do i = first_axial(j), num_axial_elems
         self.subgrid_mesh(j,i).x_pos = -9999.
         self.subgrid_mesh(j,i).y_pos = -9999.
@@ -837,7 +846,7 @@ subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
     !efflux_vel = 1.33 * self.rps * ship.prop_diam * sqrt(ship.thrust_coeff)               ! *** Hamill 1987
   else
     ! *** Based on applied horsepower
-    power = self.power / ship.num_props                                           ! *** Assume power is total ship power.  Calcs based on single prop
+    power = self.power / ship.num_props                                                ! *** Assume power is total ship power.  Calcs based on single prop
     if( ship.ducted == 0 )then
       ! *** Open propeller
       ! ***            HP              m/s   MPH/(m/s)
@@ -863,6 +872,7 @@ subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
     efflux_vel = 1.13/C1/ship.prop_diam * sqrt(EP/rho)
   endif
   self.efflux_vel = efflux_vel * efflux_mag_mult                                       ! *** efflux_mag_mult is a factor to account for subgrid turbulent losses
+  
   if( ieffluxonly > 0 )then
     bot_velocity = efflux_vel
     return                                                                            ! *** Used if current iteration only needs momentum impacts
@@ -872,8 +882,8 @@ subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
   bot_velocity = 0.0
 
   ! *** cutoff distances for each flow regime
-  zone0 = efflux_zone_mult * ship.prop_diam                ! *** Efflux zone
-  zone1 = flow_est_zone1_mult * ship.prop_diam             ! *** Zone of flow establishment
+  zone0 = efflux_zone_mult * ship.prop_diam                                           ! *** Efflux zone
+  zone1 = flow_est_zone1_mult * ship.prop_diam                                        ! *** Zone of flow establishment
 
   ! *** Velocities by Zone/Flow regime
   if( ax <= zone0 )then
@@ -892,7 +902,7 @@ subroutine calc_velocity(self, ax, radius, bot_velocity, ieffluxonly)
     vel_max_ax  = efflux_vel *(1.51 - 0.175 * (ax / ship.prop_diam) - 0.46 * ship.pitch_ratio)
 
     radius_prop = 0.5*ship.prop_diam
-    radius_vel_max = 0.67 * (radius_prop - 0.5*ship.prop_hub_diam)                                    ! *** Radius of max vel at efflux plane (Rm0)
+    radius_vel_max = 0.67 * (radius_prop - 0.5*ship.prop_hub_diam)                    ! *** Radius of max vel at efflux plane (Rm0)
 
     ! *** determine radial velocity
     if( ax < radius_prop )then
@@ -1082,7 +1092,11 @@ subroutine calc_erosive_flux(self, debug_)
 
         ! *** Determine erosion rate based on the shear stress
         if( ISTRAN(6)+ISTRAN(7) > 0 )then
-          if( LBED(cell_) ) CYCLE                                              ! *** Bypass hard bottom cells
+          if( LBED(cell_) )then                                                ! *** Bypass hard bottom cells
+            self.subgrid_mesh(j,i).ero(:) = 0.0                                ! *** Zero to prevent accumulating stale mass from a prior timestep
+            self.subgrid_mesh(j,i).var(3) = 0.0
+            CYCLE
+          endif
 
           ebld = 0.0
           elay = 0.0
@@ -1119,21 +1133,30 @@ subroutine calc_erosive_flux(self, debug_)
   !$OMP END PARALLEL DO
 
   ! *** Accumulate the global propwash erosion (moved outside OMP due to "racing")NSEDS
-  
-  do i = 1, num_axial_elems
-    do j = 1, num_radial_elems
-      if( self.subgrid_mesh(j,i).cell < 1 )then
-        cycle
-      endif
+  if( ISTRAN(6) + ISTRAN(7) > 0 )then
+    do i = 1, num_axial_elems
+      do j = 1, num_radial_elems
+        if( self.subgrid_mesh(j,i).cell < 1 )then
+          cycle
+        endif
 
-      cell_ = self.subgrid_mesh(j,i).cell          ! *** Gather erosion and put it into the cell the propwash component exists
-      prop_ero(cell_,1:NSEDS) = prop_ero(cell_,1:NSEDS) + self.subgrid_mesh(j,i).ero(:)                ! *** (g)
-      !prop_bld(cell_,1:NSEDS) = prop_bld(cell_,1:NSEDS) + ebld(1:NSEDS)/DBLE(self.mesh_count(cell_))   ! *** Average unit discharge (g/m/s)
+        cell_ = self.subgrid_mesh(j,i).cell          ! *** Gather erosion and put it into the cell the propwash component exists
+        prop_ero(cell_,1:NSEDS) = prop_ero(cell_,1:NSEDS) + self.subgrid_mesh(j,i).ero(:)                ! *** (g)
+        !prop_bld(cell_,1:NSEDS) = prop_bld(cell_,1:NSEDS) + ebld(1:NSEDS)/DBLE(self.mesh_count(cell_))   ! *** Average unit discharge (g/m/s)
+      enddo
     enddo
-  enddo
-  
+  endif
+
   self.max_bot_vel = 0.25 * vb_max          ! *** Fraction of maximum bottom velocity to be used to prevent double counting if ISPROPWASH = 2
 
+  !if( self.name == 'C-TRACTOR 13' )then
+  !  print '(a15,a5,3i5,f15.5,2I5,f10.4)', self.name, 'FLX', niter, istl, NCTBC, timeday, 999, self.pos.cell, self.efflux_vel   ! delme
+  !endif
+
+  !if( self.name == 'C-TRACTOR 13' )then
+  !  print '(a15,3i5,f15.5,f10.4)', self.name, niter, istl, NCTBC, timeday, self.efflux_vel   ! delme
+  !endif
+  
   ! *** Write pw_mesh files, one for each ship
   if( self.freq_out > 0. )then
     if( timeday >= self.timesnap )then
@@ -1165,17 +1188,19 @@ subroutine calc_erosive_flux(self, debug_)
           write(801) ((real(self.subgrid_mesh(j,i).y_pos - center_y, 4), j = 1, num_radial_elems), i = 1, num_axial_elems)
           write(801) ((real(self.subgrid_mesh(j,i).z_pos,4), j = 1, num_radial_elems), i = 1, num_axial_elems)
 
-          do i = 1, num_axial_elems
-            do j = 1, num_radial_elems
-              if( self.subgrid_mesh(j,i).cell < 1 ) cycle
-              erosion = sum(self.subgrid_mesh(j,i).ero(:))                                 ! *** Total mass eroded for subgrid area (g)
-              self.subgrid_mesh(j,i).var(3) = erosion/DTSEDJ/self.subgrid_mesh(j,i).area   ! *** Mass erosion rate:  LSEDZLJ: g/cm^2/s,  Orig: g/m^2/s
-              if( .not. LSEDZLJ )then
-                self.subgrid_mesh(j,i).var(3) = self.subgrid_mesh(j,i).var(3)/10000.       ! *** Convert g/m^2/s to g/cm^2/s
-              endif
+          if( DTSEDJ > 0.0 )then   ! *** Handle first snapshot when DTSEDJ is 0.0
+            do i = 1, num_axial_elems
+              do j = 1, num_radial_elems
+                if( self.subgrid_mesh(j,i).cell < 1 ) cycle
+                erosion = sum(self.subgrid_mesh(j,i).ero(:))                                 ! *** Total mass eroded for subgrid area (g)
+                self.subgrid_mesh(j,i).var(3) = erosion/DTSEDJ/self.subgrid_mesh(j,i).area   ! *** Mass erosion rate:  LSEDZLJ: g/cm^2/s,  Orig: g/m^2/s
+                if( .not. LSEDZLJ )then
+                  self.subgrid_mesh(j,i).var(3) = self.subgrid_mesh(j,i).var(3)/10000.       ! *** Convert g/m^2/s to g/cm^2/s
+                endif
+              enddo
             enddo
-          enddo
-
+          endif
+          
           do k = 1, 3
             write(801) ((real(self.subgrid_mesh(j,i).var(k),4), j = 1, num_radial_elems), i = 1, num_axial_elems)
           enddo

@@ -35,8 +35,8 @@ SUBROUTINE MHKPWRDIS
   logical,save :: FIRSTTIME = .FALSE.
 
   if( .not. allocated(FXTEMP) )then
-    allocate(FXTEMP(LCM,LCM))  
-    allocate(FYTEMP(LCM,LCM))  
+    allocate(FXTEMP(LCM,KCM))  
+    allocate(FYTEMP(LCM,KCM))  
     FXTEMP = 0.0
     FYTEMP = 0.0
   endif

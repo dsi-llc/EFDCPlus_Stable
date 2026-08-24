@@ -24,7 +24,7 @@ Subroutine Propwash_Calc_Sequence(ieffluxonly)
   implicit none
 
   ! *** Dummy variables
-  integer, intent(in) :: ieffluxonly                           !< Used to bypass field and erosion calculations if only need efflux velocities for momentum field
+  integer, intent(in) :: ieffluxonly                           !< If > 0, used to bypass field and erosion calculations if only need efflux velocities for momentum field
   
   ! *** Local variables
   integer :: i, l
@@ -95,8 +95,25 @@ Subroutine Propwash_Calc_Sequence(ieffluxonly)
         ! *** Determine the erosive flux from the propwash velocity field
         call all_ships(i).calc_erosive_flux(local_debug)
       else
-        ! *** Get the efflux velocity
+        ! *** Get the efflux velocity at the current ship position
         call all_ships(i).calc_velocity(10._RKD, 10._RKD, effvel, ieffluxonly)
+        !if( all_ships(i).name == 'C-TRACTOR 13' )then
+        !  print '(a15,a5,3i5,f15.5,2I5,f10.4)', all_ships(i).name, 'SEQ', niter, istl, NCTBC, timeday, ieffluxonly, all_ships(i).pos.cell, all_ships(i).efflux_vel   ! delme
+        !  l = 0  ! delme
+        !endif
+
+
+        ! *** Output PW_Mesh files.  Do calculations only for the time snapshots needed
+        if( all_ships(i).freq_out > 0. )then
+          if( timeday >= all_ships(i).timesnap )then
+            if( all_ships(i).power /= 0.0 .or. all_ships(i).nsnap == 0 )then          ! *** Setup 2d mesh for the velocity field
+              call all_ships(i).setup_mesh(.false.)
+
+              ! *** Determine the erosive flux from the propwash velocity field
+              call all_ships(i).calc_erosive_flux(.false.)
+            endif
+          endif
+        endif
       endif
     else
       ! *** Reset track counters

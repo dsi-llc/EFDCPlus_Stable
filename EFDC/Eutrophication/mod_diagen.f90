@@ -164,7 +164,6 @@
     call fson_get(json_data, "title", TITLE)
     call fson_get(json_data, "initial_condition_option", ISMICI)
     call fson_get(json_data, "number_of_spatial_zones", ISMZ)
-    call fson_get(json_data, "write_restart_option", ISMRST)
     call fson_get(json_data, "sediment_temperature_diffusion_coef", SMDIFT)
     call fson_get(json_data, "stoichiometric_coef_for_carbon_diagenesis.nitrification", SMO2NH4)
     call fson_get(json_data, "stoichiometric_coef_for_carbon_diagenesis.denitritrification", SMO2NO3)
@@ -336,7 +335,6 @@
   call Broadcast_Scalar(ISMZ,     master_id)
   call Broadcast_Scalar(NSMZ,     master_id)
   call Broadcast_Scalar(ISMICI,   master_id)
-  call Broadcast_Scalar(ISMRST,   master_id)
   call Broadcast_Scalar(ISMHYST,  master_id)
   call Broadcast_Scalar(ISMZB,    master_id)
 

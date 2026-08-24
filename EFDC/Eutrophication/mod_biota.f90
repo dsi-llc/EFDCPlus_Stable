@@ -144,7 +144,7 @@ SUBROUTINE ALGAECONTROL
       call fson_get(item, "predation.fraction_of_nitrogen.DON",             ALGAES(NAL).WQFNDP)         ! *** 
       call fson_get(item, "predation.fraction_of_nitrogen.NH4",             ALGAES(NAL).WQFNIP)         ! *** 
       call fson_get(item, "predation.fraction_of_silica.SU",                ALGAES(NAL).WQFSPP)         ! *** 
-      call fson_get(item, "predation.fraction_of_silica.SA",                ALGAES(NAL).WQFSID)         ! *** 
+      call fson_get(item, "predation.fraction_of_silica.SA",                ALGAES(NAL).WQFSIP)         ! *** 
            
       call fson_get(item, "growth_velocity_limitation_option",              ALGAES(NAL).IWQVLIM)      
 			CALL fson_get(item, "vel_lim.half_saturation_velocity",               ALGAES(NAL).WQKMV(1))       ! *** 

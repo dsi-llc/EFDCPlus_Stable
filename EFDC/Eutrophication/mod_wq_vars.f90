@@ -494,7 +494,6 @@ Module Variables_WQ
   integer :: ISMHYST
   integer :: ISMICI
   integer :: ISMORST
-  integer :: ISMRST
   integer :: ISMTS
   integer :: ISMTSB
   integer :: ISMTSDT

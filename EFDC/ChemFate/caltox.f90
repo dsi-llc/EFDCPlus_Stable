@@ -32,7 +32,7 @@ SUBROUTINE CALTOX
   
   real :: TMPEXP, TMPVAL, TMPTOXB, TMPTOXC, TMPTOXE, TMPTOXW, TMPTOXN, TMPTOXS, TOXFLUX, CBLTOXTMP
   real :: AA11, BB11, BB22, SNDFEFF, CLEFT, CRIGHT, WVEL
-  real :: FTPOS, FTNEG, HBEDMIN0, SORBMIN
+  real :: FTPOS, FTNEG, SORBMIN
   real,save,allocatable,dimension(:) :: TOXFPA
   
   if( .not. allocated(TOXFPA) )then
@@ -52,11 +52,6 @@ SUBROUTINE CALTOX
     
   endif
 
-  if( LSEDZLJ )then
-      HBEDMIN0 = 1E-9
-  else
-      HBEDMIN0 = 1E-4
-  endif
 
   !**********************************************************************CC
   ! ***  UPDATE FRACTION OF PARTICULATE ORGANIC CARBON IN BED

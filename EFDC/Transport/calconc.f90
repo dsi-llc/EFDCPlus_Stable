@@ -24,12 +24,13 @@ SUBROUTINE CALCONC
   !------------------------------------------------------------------------------------------------!
 
   use GLOBAL
-  use Allocate_Initialize      
+  use MOD_QUICKEST
+  use Allocate_Initialize
   use Variables_Propwash
   use turbulence, only: eps_min,k_min
   use OMP_LIB
   use HEAT_MODULE, only:CALHEAT
-  
+
   use MPI
   use Variables_MPI
   use Variables_MPI_Mapping
@@ -110,42 +111,46 @@ SUBROUTINE CALCONC
   TWAIT = 0.
   TMPITMP = 0.
 
-  ! *** PRESPECIFY THE UPWIND CELLS FOR 3D ADVECTION
-  !$OMP PARALLEL DO PRIVATE(ND,K,LP,L,LE,LN)
-  do ND = 1,NDM
-    do K = 1,KC
-      do LP = 1,LLWET(K,ND)
-        L = LKWET(LP,K,ND)
-        if( UHDY2(L,K) >= 0.0 )then
-          LUPU(L,K) = LWC(L)
-        else
-          LUPU(L,K) = L
-        endif
-        if( VHDX2(L,K) >= 0.0 )then
-          LUPV(L,K) = LSC(L)
-        else
-          LUPV(L,K) = L
-        endif
-      enddo
-    enddo
-
-    if( KC > 1 )then
-      do K = 1,KS
+  ! *** Prespecify the upwind cells for 3D advection
+  ! *** Upwind indices are also required by legacy CALTRAN calls that bypass the QUICKEST
+  ! *** dispatch: CALSFT (shellfish, ISTRAN(4)) and CALTRANICE (frazil ice, ISICE = 4)
+  if( ISQUICK == 0 .or. ISTRAN(4) > 0 .or. (ISTRAN(2) > 0 .and. ISICE == 4) )then  ! *** Upwind
+    !$OMP PARALLEL DO PRIVATE(ND,K,LP,L,LE,LN)
+    do ND = 1,NDM
+      do K = 1,KC
         do LP = 1,LLWET(K,ND)
           L = LKWET(LP,K,ND)
-          if( W2(L,K) >= 0. )then
-            KUPW(L,K) = K
+          if( UHDY2(L,K) >= 0.0 )then
+            LUPU(L,K) = LWC(L)
           else
-            KUPW(L,K) = K + 1
+            LUPU(L,K) = L
+          endif
+          if( VHDX2(L,K) >= 0.0 )then
+            LUPV(L,K) = LSC(L)
+          else
+            LUPV(L,K) = L
           endif
         enddo
       enddo
-    endif
-  enddo
-  !$OMP END PARALLEL DO
+    
+      if( KC > 1 )then
+        do K = 1,KS
+          do LP = 1,LLWET(K,ND)
+            L = LKWET(LP,K,ND)
+            if( W2(L,K) >= 0. )then
+              KUPW(L,K) = K
+            else
+              KUPW(L,K) = K + 1
+            endif
+          enddo
+        enddo
+      endif
+    enddo
+    !$OMP END PARALLEL DO
+  endif
   
-  ! *** EE7.2 - MUST ZERO ALL THREADS FOR EVERY INSTANCE DO TO POTENTIAL OF DIFFERENT THREADS MAY NOT BE ZEROED FOR CURRENT TIME
-  ! *** ZERO DRY CELL FLUXES
+  ! *** Must zero all threads for every instance do to potential of different threads may not be zeroed for current time
+  ! *** Zero dry cell fluxes
   if( LADRY > 0 )then
     do LP = 1,LADRY
       L = LDRY(LP)
@@ -153,8 +158,6 @@ SUBROUTINE CALCONC
       FVHUD(L,:,:) = 0.
       FWUU(L,:,:) = 0.0
 
-      LN = LNC(L)
-      LE = LEC(L)
       FUHUD(LEC(L),:,:) = 0.
       FVHUD(LNC(L),:,:) = 0.
     enddo
@@ -190,7 +193,15 @@ SUBROUTINE CALCONC
   !$OMP DO PRIVATE(IW,IT,L) SCHEDULE(STATIC,1)
   do IW = 1,NACTIVEWC
     !$  IT = OMP_GET_THREAD_NUM() + 1
-    call CALTRAN( IACTIVEWC1(IW), IACTIVEWC2(IW), WCV(IW).VAL0, WCV(IW).VAL1, IW, IT, WCV(IW).WCLIMIT, ISKIP(IW) )
+
+    ! *** Dispatch to appropriate transport scheme
+    if( ISQUICK == 1 )then
+      ! *** QUICKEST scheme with ULTIMATE limiter
+      call CALTRAN_QUICKEST( IACTIVEWC1(IW), IACTIVEWC2(IW), WCV(IW).VAL0, WCV(IW).VAL1, IW, IT, WCV(IW).WCLIMIT, ISKIP(IW) )
+    else
+      ! *** Original upwind scheme
+      call CALTRAN( IACTIVEWC1(IW), IACTIVEWC2(IW), WCV(IW).VAL0, WCV(IW).VAL1, IW, IT, WCV(IW).WCLIMIT, ISKIP(IW) )
+    endif
     
     if( ISICE > 2 .and. IACTIVEWC1(IW) == 8 .and. IACTIVEWC2(IW) == MSVDOX .and. ISKIP(IW) == 0 )then
       ! *** ZERO SURFACE MELT FLUX
@@ -211,9 +222,10 @@ SUBROUTINE CALCONC
   !$OMP END DO
 
   ! *** APPLY ANTI-DIFFUSION AND FLUX CORRECTOR
+  ! *** Skip for QUICKEST scheme (limiter is built-in)
   !$OMP DO PRIVATE(IW,IT) SCHEDULE(STATIC,1)
   do IW = 1,NACTIVEWC
-    if( ISKIP(IW) == 0 )then
+    if( ISKIP(IW) == 0 .AND. ISQUICK == 0 )then
       !$  IT = OMP_GET_THREAD_NUM() + 1
       call CALTRAN_AD( IACTIVEWC1(IW), IACTIVEWC2(IW), WCV(IW).VAL0, WCV(IW).VAL1, IW, IT )
     endif
@@ -235,7 +247,7 @@ SUBROUTINE CALCONC
 
   !$OMP DO PRIVATE(IW,K,LP,L,CDTMP) SCHEDULE(STATIC,1)
   do IW = 1,NACTIVEWC
-    if( ISADAC(IACTIVEWC1(IW)) == 1 )then 
+    if( ISADAC(IACTIVEWC1(IW)) == 1 .AND. ISQUICK == 0 )then 
       ! *** APPLY THE ANTI-DIFFUSIVE ADVECTION CALCULATION TO STANDARD DONOR CELL SCHEME
       if( ISKIP(IW) == 0 )then
         do K = 1,KC  
@@ -263,34 +275,34 @@ SUBROUTINE CALCONC
   ! *** Advection of the turbulence quantities
   if( ISGOTM > 0 )then
     
-    !$OMP SECTIONS PRIVATE(IT)  
+    !$OMP PARALLEL SECTIONS PRIVATE(IT) NUM_THREADS(min(2, NOPTIMAL(1)))
     !$OMP SECTION
     !$  IT = OMP_GET_THREAD_NUM() + 1
     ! *** TKE transport section
+    FQC(:,:,IT) = 0.0  ! *** No external source/sink for turbulence advection
     TKE_TEMP  = tke3d (1:LCM,1:KCM)
     TKE_TEMP1 = tke3d1(1:LCM,1:KCM)
     call CALTRAN(0, 0, tke_temp, tke_temp1, NACTIVEWC+1, IT, 0.0, ISKIP(NACTIVEWC+1))
-    
     tke3d (1:LCM,1:KCM) = TKE_TEMP
     if( IS2TIM == 0 .and. ISTL /= 2 )then
       tke3d1 (1:LCM,1:KCM) = TKE_TEMP1
     endif
     tke3d = max(k_min,tke3d)
-    
+
     ! *** EPS transport section
     !$OMP SECTION
     !$  IT = OMP_GET_THREAD_NUM() + 1
+    FQC(:,:,IT) = 0.0  ! *** No external source/sink for turbulence advection
     EPS_TEMP  = eps3d (1:LCM,1:KCM)
     EPS_TEMP1 = eps3d1(1:LCM,1:KCM)
     call CALTRAN(0, 0, eps_temp, eps_temp1, NACTIVEWC+2, IT, 0.0, ISKIP(NACTIVEWC+2))
-    
     eps3d (1:LCM,1:KCM) = EPS_TEMP
     if( IS2TIM == 0 .and. ISTL /= 2 )then
       eps3d1 (1:LCM,1:KCM) = EPS_TEMP1
     endif
     eps3d = max(eps_min,eps3d)
 
-    !$OMP END SECTIONS
+    !$OMP END PARALLEL SECTIONS
   endif
   
   if( ISICE == 4 .and. (IS2TL > 0 .or. (IS2TL == 0 .and. NCTBC /= NTSTBC)) )then
@@ -480,7 +492,12 @@ SUBROUTINE CALCONC
 
   if( ISPROPWASH == 2 )then
     ! *** If using propeller momentum, compute propeller velocities at every timestep, but skip if computing below
-    if( .not. ((SEDTIME+DELT) >= SEDSTEP .and. (ISTRAN(6) >= 1 .or. ISTRAN(7) >= 1 ) .and. TIMEDAY >= SEDSTART) )then
+    if( ISTRAN(6) + ISTRAN(7) == 0 )then
+      ! *** SedTran is off
+      if( IS2TIM > 0 .or. NCTBC /= 1 )then
+        call Propwash_Calc_Sequence(1)
+      endif
+    elseif( (SEDTIME+DELT) < SEDSTEP .or. TIMEDAY < SEDSTART )then       ! *** SedTran is on.  Check timing
       if( IS2TIM > 0 .or. NCTBC /= 1 )then
         call Propwash_Calc_Sequence(1)
       endif

@@ -56,7 +56,7 @@ SUBROUTINE CALEXP2T
   
   implicit none
   integer :: L, LP, K, LN, LS, ID, JD, KD, NWR, IU, JU, KU, LU, NS, LNW, LSE, LL, IT, I
-  integer :: LEE, LWW, LNN, LSS
+  integer :: LEE, LWW, LNN, LSS, LDMW
   integer :: LD, NMD, LHOST, LCHNU, LW, LE, LCHNV, ND, LF
   integer,save :: NSTB
 
@@ -131,7 +131,8 @@ SUBROUTINE CALEXP2T
       WVFACT = 0.5-0.5*COS(PI*TMPVAL)  
     else  
       WVFACT = 1.0  
-    endif  
+    endif 
+    LDMW = INT(FLOAT(NWVCELLS)/FLOAT(NDM)) + 1
   endif
   CACSUMT = 0.
 
@@ -182,6 +183,15 @@ SUBROUTINE CALEXP2T
           L = LDRY(LP)  
           FXVEG(L,K) = 0.0
           FYVEG(L,K) = 0.0
+        enddo
+      enddo
+    endif
+    if(  ISWAVE == 2 .or. ISWAVE == 4 )then
+      do K = 1,KC
+        do LP = 1,LADRY
+          L = LDRY(LP)  
+          FXWAVE(L,K) = 0.0
+          FYWAVE(L,K) = 0.0
         enddo
       enddo
     endif
@@ -824,7 +834,7 @@ SUBROUTINE CALEXP2T
       if( ISPBE(LL) == 0 .or. ISPBE(LL) == 1 .or. ISPBE(LL) == 4 )then
         L   = LPBE(LL)
         LW  = LWC(L)
-        LWW = LEC(LW)
+        LWW = LWC(LW)
         ! *** Both adjacent and connected cell must both meet aspect criteria
         if( max(DXP(LW),DYP(LW)) / min(DXP(LW),DYP(LW)) > 4.0 )then
           if( max(DXP(LWW),DYP(LWW)) / min(DXP(LWW),DYP(LWW)) > 4.0 )then
@@ -843,7 +853,7 @@ SUBROUTINE CALEXP2T
       if( ISPBS(LL) == 0 .or. ISPBS(LL) == 1 .or. ISPBS(LL) == 4 )then
         L = LPBS(LL)
         LN = LNC(L)
-        LNN = LEC(LN)
+        LNN = LNC(LN)
         ! *** Both adjacent and connected cell must both meet aspect criteria
         if( max(DXP(LN),DYP(LN)) / min(DXP(LN),DYP(LN)) > 4.0 )then
           if( max(DXP(LNN),DYP(LNN)) / min(DXP(LNN),DYP(LNN)) > 4.0 )then
@@ -862,7 +872,7 @@ SUBROUTINE CALEXP2T
       if( ISPBN(LL) == 0 .or. ISPBN(LL) == 1 .or. ISPBN(LL) == 4 )then
         L = LPBN(LL)
         LS = LSC(L)
-        LSS = LEC(LS)
+        LSS = LSC(LS)
         ! *** Both adjacent and connected cell must both meet aspect criteria
         if( max(DXP(LS),DYP(LS)) / min(DXP(LS),DYP(LS)) > 4.0 )then
           if( max(DXP(LSS),DYP(LSS)) / min(DXP(LSS),DYP(LSS)) > 4.0 )then
@@ -1008,9 +1018,8 @@ SUBROUTINE CALEXP2T
 
     !$OMP PARALLEL DO PRIVATE(ND,LF,LL,K,LP,L) 
     do ND = 1,NDM  
-      LF = (ND-1)*NWVCELLS+1  
-      LL = min(LF+NWVCELLS-1,NWVCELLS)
-      
+      LF = 1 + (ND-1)*LDMW  
+      LL = min(LF + LDMW-1,NWVCELLS)
       do K = 1,KC
         do LP = LF,LL
           L = LWVCELL(LP)  
@@ -1128,8 +1137,8 @@ SUBROUTINE CALEXP2T
         if( MDCHTYP(NMD) == 1 )then  
           if( QCHANU(NMD) > 0.0 )then  
             do K = 1,KC  
-              QMCSINKX(LCHNU,K) = QMCSINKX(LCHNU,K)-0.5*DZC(L,K)*QCHANU(NMD)*(U(LCHNU,K)+U(LCHNU+1,K))  
-              QMCSINKY(LCHNU,K) = QMCSINKY(LCHNU,K)-0.5*DZC(L,K)*QCHANU(NMD)*(V(LCHNU,K)+V(LNC(LCHNU),K))  
+              QMCSINKX(LCHNU,K) = QMCSINKX(LCHNU,K)-0.5*DZC(LCHNU,K)*QCHANU(NMD)*(U(LCHNU,K)+U(LCHNU+1,K))  
+              QMCSINKY(LCHNU,K) = QMCSINKY(LCHNU,K)-0.5*DZC(LCHNU,K)*QCHANU(NMD)*(V(LCHNU,K)+V(LNC(LCHNU),K))  
             enddo  
             do K = 1,KC  
               TMPVEC1(K) = CUE(LCHNU)*QMCSINKX(LCHNU,K)+CVE(LCHNU)*QMCSINKY(LCHNU,K)  
@@ -1141,12 +1150,12 @@ SUBROUTINE CALEXP2T
             enddo  
           else  
             do K = 1,KC  
-              QMCSINKX(LHOST,K) = QMCSINKX(LHOST,K)+0.5*DZC(L,K)*QCHANU(NMD)*(U(LHOST,K)+U(LHOST+1,K))  
-              QMCSINKY(LHOST,K) = QMCSINKY(LCHNU,K)+0.5*DZC(L,K)*QCHANU(NMD)*(V(LHOST,K)+V(LNC(LHOST),K))  
+              QMCSINKX(LHOST,K) = QMCSINKX(LHOST,K)+0.5*DZC(LHOST,K)*QCHANU(NMD)*(U(LHOST,K)+U(LHOST+1,K))  
+              QMCSINKY(LHOST,K) = QMCSINKY(LHOST,K)+0.5*DZC(LHOST,K)*QCHANU(NMD)*(V(LHOST,K)+V(LNC(LHOST),K))  
             enddo  
             do K = 1,KC  
               TMPVEC1(K) = CUE(LHOST)*QMCSINKX(LHOST,K)+CVE(LHOST)*QMCSINKY(LHOST,K)  
-              TMPVEC2(K) = CUN(LHOST)*QMCSINKX(LCHNU,K)+CVN(LHOST)*QMCSINKY(LHOST,K)  
+              TMPVEC2(K) = CUN(LHOST)*QMCSINKX(LHOST,K)+CVN(LHOST)*QMCSINKY(LHOST,K)  
             enddo  
             do K = 1,KC  
               QMCSOURX(LCHNU,K) = QMCSOURX(LCHNU,K)-CI11U*TMPVEC1(K)-CI12U*TMPVEC2(K)  
@@ -1159,8 +1168,8 @@ SUBROUTINE CALEXP2T
         if( MDCHTYP(NMD) == 2 )then  
           if( QCHANV(NMD) > 0.0 )then  
             do K = 1,KC  
-              QMCSINKX(LCHNV,K) = QMCSINKX(LCHNV,K)-0.5*DZC(L,K)*QCHANV(NMD)*(U(LCHNV,K)+U(LCHNV+1,K))  
-              QMCSINKY(LCHNV,K) = QMCSINKY(LCHNV,K)-0.5*DZC(L,K)*QCHANV(NMD)*(V(LCHNV,K)+V(LNC(LCHNV),K))  
+              QMCSINKX(LCHNV,K) = QMCSINKX(LCHNV,K)-0.5*DZC(LCHNV,K)*QCHANV(NMD)*(U(LCHNV,K)+U(LCHNV+1,K))  
+              QMCSINKY(LCHNV,K) = QMCSINKY(LCHNV,K)-0.5*DZC(LCHNV,K)*QCHANV(NMD)*(V(LCHNV,K)+V(LNC(LCHNV),K))  
             enddo  
             do K = 1,KC  
               TMPVEC1(K) = CUE(LCHNV)*QMCSINKX(LCHNV,K)+CVE(LCHNV)*QMCSINKY(LCHNV,K)  
@@ -1172,12 +1181,12 @@ SUBROUTINE CALEXP2T
             enddo  
           else  
             do K = 1,KC  
-              QMCSINKX(LHOST,K) = QMCSINKX(LHOST,K)+0.5*DZC(L,K)*QCHANV(NMD)*(U(LHOST,K)+U(LHOST+1,K))  
-              QMCSINKY(LHOST,K) = QMCSINKY(LCHNV,K)+0.5*DZC(L,K)*QCHANV(NMD)*(V(LHOST,K)+V(LNC(LHOST),K))  
+              QMCSINKX(LHOST,K) = QMCSINKX(LHOST,K)+0.5*DZC(LHOST,K)*QCHANV(NMD)*(U(LHOST,K)+U(LHOST+1,K))  
+              QMCSINKY(LHOST,K) = QMCSINKY(LHOST,K)+0.5*DZC(LHOST,K)*QCHANV(NMD)*(V(LHOST,K)+V(LNC(LHOST),K))  
             enddo  
             do K = 1,KC  
               TMPVEC1(K) = CUE(LHOST)*QMCSINKX(LHOST,K)+CVE(LHOST)*QMCSINKY(LHOST,K)  
-              TMPVEC2(K) = CUN(LHOST)*QMCSINKX(LCHNU,K)+CVN(LHOST)*QMCSINKY(LHOST,K)  
+              TMPVEC2(K) = CUN(LHOST)*QMCSINKX(LHOST,K)+CVN(LHOST)*QMCSINKY(LHOST,K)  
             enddo  
             do K = 1,KC  
               QMCSOURX(LCHNV,K) = QMCSOURX(LCHNV,K)-CI11V*TMPVEC1(K)-CI12V*TMPVEC2(K)  
@@ -1195,14 +1204,14 @@ SUBROUTINE CALEXP2T
           if( QMCSOURX(L,K) /= 0.0 )then  
             TMPVAL = SUB3D(L,K)+SUB(LE)  
             TMPVAL = max(TMPVAL,1.0)  
-            FX(L,K)  = FX(L,K)  - SUB3D(L,K)*QMCSOURX(L,K)/TMPVAL  
+            FX(L,K)  = FX(L,K)  - SUB3D(L ,K)*QMCSOURX(L,K)/TMPVAL  
             FX(LE,K) = FX(LE,K) - SUB3D(LE,K)*QMCSOURX(L,K)/TMPVAL  
           endif  
           if( QMCSOURY(L,K) /= 0.0 )then  
             TMPVAL = SVB(L)+SVB(LN)  
             TMPVAL = max(TMPVAL,1.0)  
-            FY(L,K)  = FY(L,K)  - SVB3D(L ,K)*QMCSOURX(L,K)/TMPVAL  
-            FY(LN,K) = FY(LN,K) - SVB3D(LN,K)*QMCSOURX(L,K)/TMPVAL  
+            FY(L,K)  = FY(L,K)  - SVB3D(L ,K)*QMCSOURY(L,K)/TMPVAL  
+            FY(LN,K) = FY(LN,K) - SVB3D(LN,K)*QMCSOURy(L,K)/TMPVAL  
           endif  
           if( QMCSINKX(L,K) /= 0.0 )then  
             TMPVAL = SUB3D(L,K)+SUB(LE)  
@@ -1213,8 +1222,8 @@ SUBROUTINE CALEXP2T
           if( QMCSINKY(L,K) /= 0.0 )then  
             TMPVAL = SVB(L)+SVB(LNC(L))  
             TMPVAL = max(TMPVAL,1.0)  
-            FY(L,K)  = FY(L,K)  - SVB3D(L,K)*QMCSINKX(L,K)/TMPVAL  
-            FY(LN,K) = FY(LN,K) - SVB3D(LN,K)*QMCSINKX(L,K)/TMPVAL  
+            FY(L,K)  = FY(L,K)  - SVB3D(L, K)*QMCSINKY(L,K)/TMPVAL  
+            FY(LN,K) = FY(LN,K) - SVB3D(LN,K)*QMCSINKY(L,K)/TMPVAL  
           endif  
         enddo  
       enddo  
@@ -1274,8 +1283,8 @@ SUBROUTINE CALEXP2T
       enddo
       !$OMP END PARALLEL DO
       
-    elseif( IINTPG == 0 )then  
-      ! *** IINTPG = 0  
+    else
+      ! *** STANDARD-SIGMA BOUYANCY SHEARS
       !$OMP PARALLEL DO PRIVATE(ND,LF,LL,K,LP,L,LS,LW) 
       do ND = 1,NDM  
         LF = (ND-1)*LDMWET+1  
@@ -1292,15 +1301,6 @@ SUBROUTINE CALEXP2T
         enddo  
       enddo
       !$OMP END PARALLEL DO
-
-    elseif( IINTPG == 1. )then
-      ! *** JACOBIAN
-      pause    ! *** delme
-      stop
-    elseif( IINTPG == 2 )then  
-      ! *** FINITE VOLUME  
-      pause   ! delme
-      stop
       
     endif  
     

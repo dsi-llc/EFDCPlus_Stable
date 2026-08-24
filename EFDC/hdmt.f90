@@ -815,7 +815,7 @@
     else
       ! *** Call Propwash module if that option is selected
       if( propwash_on .and. ISTL == 3 )then
-        call Propwash_Calc_Sequence(0)
+        call Propwash_Calc_Sequence(1)
       endif
     endif
 

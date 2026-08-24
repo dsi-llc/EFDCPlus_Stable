@@ -700,6 +700,11 @@ subroutine add_ship_momentum(FUHJ, FVHJ)
         if( ip > all_ships(i).ship.num_fixed_cells ) exit
       enddo
     endif
+    !if( all_ships(i).name == 'C-TRACTOR 13' )then
+    !  print '(a15,a5,4i5,f15.5,f10.4,10e16.8)', all_ships(i).name, 'MOM', niter, istl, NCTBC, L, timeday, all_ships(i).efflux_vel, FUHJ(LEC(L),5), FVHJ(L,5)   ! delme
+    !endif
+  
+    
   enddo        ! *** Vessel Loop
 
 end subroutine add_ship_momentum

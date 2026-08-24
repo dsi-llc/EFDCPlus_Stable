@@ -2025,7 +2025,6 @@ SUBROUTINE SCANWQ
 
       call fson_get(json_data, "initial_condition_option", ISMICI)
       call fson_get(json_data, "number_of_spatial_zones", ISMZ)
-      call fson_get(json_data, "write_restart_option", ISMRST)
       call fson_get(json_data, "benthic_stress.activate_hysteresis_in_benthic_mixing", ISMHYST)
       call fson_get(json_data, "activate_diagnostic_output", ISMZB)
       
@@ -2034,7 +2033,6 @@ SUBROUTINE SCANWQ
 
     call Broadcast_Scalar(ISMICI,  master_id)
     call Broadcast_Scalar(ISMZ,    master_id)
-    call Broadcast_Scalar(ISMRST,  master_id)
     call Broadcast_Scalar(ISMHYST, master_id)
     call Broadcast_Scalar(ISMZB,   master_id)
     call Broadcast_Scalar(ISMTS,   master_id)

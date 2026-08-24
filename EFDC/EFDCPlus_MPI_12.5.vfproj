@@ -5,29 +5,7 @@
 		<Platform Name="x64"/>
 	</Platforms>
 	<Configurations>
-		<Configuration Name="SP_Release|Win32" UseCompiler="ifortCompiler">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true"/>
-			<Tool Name="VFLinkerTool" SuppressStartupBanner="true"/>
-			<Tool Name="VFResourceCompilerTool"/>
-			<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
-			<Tool Name="VFCustomBuildTool"/>
-			<Tool Name="VFPreLinkEventTool"/>
-			<Tool Name="VFPreBuildEventTool"/>
-			<Tool Name="VFPostBuildEventTool"/>
-			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
-		</Configuration>
-		<Configuration Name="SP_Release|x64" UseCompiler="ifortCompiler" OutputDirectory="../bin/$(ConfigurationName)" IntermediateDirectory="../bin/$(ConfigurationName)" TargetName="$(ProjectName)_251229sp_IFORT">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)\include\NetCDF;$(SolutionDir)\include\mpi;$(SolutionDir)\include\compiler" PreprocessorDefinitions="_WIN64;_WIN;WASPOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" EnableOpenMPSupport="OpenMPParallelCodeIFX" ArrayAlignment="alignArray64Bytes" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" ComplexLimitedRange="true" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" RuntimeLibrary="rtMultiThreadedDLL" UsePortlib="true"/>
-			<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="..\lib\compiler;..\lib\mpi;..\lib\NetCDF;..\lib\WASP;..\lib\compiler" IgnoreDefaultLibraryNames="libifcoremt.lib;libcmt.lib;mscvrt.lib;libfabric.lib;libcurl.lib;zlib1.lib;uuid.lib;svml_dispmt.lib" GenerateManifest="false" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
-			<Tool Name="VFResourceCompilerTool"/>
-			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
-			<Tool Name="VFCustomBuildTool" CommandLine="xcopy /c /q /s /y /e &quot;$(SolutionDir)\lib\WASP\Distribute\*.dll&quot; &quot;$(OutDir)&quot;" Outputs="hydrolink.dll libwinpthread-1.dll"/>
-			<Tool Name="VFPreLinkEventTool"/>
-			<Tool Name="VFPreBuildEventTool"/>
-			<Tool Name="VFPostBuildEventTool"/>
-			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
-		</Configuration>
-		<Configuration Name="SP_Debug|Win32" UseCompiler="ifortCompiler">
+		<Configuration Name="SP_Debug|Win32" UseCompiler="ifxCompiler">
 			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" LocalSavedScalarsZero="true" InitArrays="true"/>
 			<Tool Name="VFLinkerTool" SuppressStartupBanner="true"/>
 			<Tool Name="VFResourceCompilerTool"/>
@@ -39,7 +17,7 @@
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
 		<Configuration Name="SP_Debug|x64" UseCompiler="ifxCompiler" OutputDirectory="../bin/$(ConfigurationName)" IntermediateDirectory="../bin/$(ConfigurationName)">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" MultiProcessorCompilation="true" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)\include\NetCDF;$(SolutionDir)\include\mpi\debug;$(SolutionDir)\include\compiler" PreprocessorDefinitions="_WIN64;_WIN;WASPOUT;DEBUGGING" UndefinePreprocessorDefinitions="_WIN32" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" BuildDependencies="true" EmitBuildDependencies="true" Traceback="true" RuntimeChecks="rtChecksAll" NullPointerCheck="true" BoundsCheck="true" ArrayShapeCheck="true" UninitializedVariablesCheck="true" DescriptorDataTypeCheck="true" DescriptorDataSizeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL" UsePortlib="true"/>
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" MultiProcessorCompilation="true" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)\include\NetCDF;$(SolutionDir)\include\mpi\debug;$(SolutionDir)\include\compiler" PreprocessorDefinitions="_WIN64;_WIN;WASPOUT;DEBUGGING" UndefinePreprocessorDefinitions="_WIN32" LocalSavedScalarsSNaN="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" BuildDependencies="true" EmitBuildDependencies="true" Traceback="true" RuntimeChecks="rtChecksAll" NullPointerCheck="true" BoundsCheck="true" ArrayShapeCheck="true" UninitializedVariablesCheck="true" DescriptorDataTypeCheck="true" DescriptorDataSizeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL" UsePortlib="true"/>
 			<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" ShowProgress="linkProgressLibs" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="..\lib\compiler;..\lib\mpi\debug;..\lib\NetCDF;..\lib\WASP;..\lib\compiler" IgnoreDefaultLibraryNames="libcmtd.lib;mscvrtd.lib" GenerateDebugInformation="true" GenerateMapFile="true" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
 			<Tool Name="VFResourceCompilerTool"/>
 			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -50,7 +28,7 @@
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
 		<Configuration Name="DP_Debug|x64" UseCompiler="ifxCompiler" OutputDirectory="../bin/$(ConfigurationName)" IntermediateDirectory="../bin/$(ConfigurationName)">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" MultiProcessorCompilation="true" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)\include\NetCDF;$(SolutionDir)\include\mpi;$(SolutionDir)\include\compiler" PreprocessorDefinitions="_WIN64;_WIN;DEBUGGING" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" RealKIND="realKIND8" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksAll" NullPointerCheck="true" BoundsCheck="true" ArrayShapeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL"/>
+			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" MultiProcessorCompilation="true" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)\include\NetCDF;$(SolutionDir)\include\mpi;$(SolutionDir)\include\compiler" PreprocessorDefinitions="_WIN64;_WIN;DEBUGGING" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" RealKIND="realKIND8" LocalSavedScalarsSNaN="true" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksAll" NullPointerCheck="true" BoundsCheck="true" ArrayShapeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebugDLL"/>
 			<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="..\lib\compiler;..\lib\mpi\debug;..\lib\NetCDF;..\lib\WASP;..\lib\compiler" IgnoreDefaultLibraryNames="libcmtd.lib;mscvrtd.lib" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
 			<Tool Name="VFResourceCompilerTool"/>
 			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
@@ -60,7 +38,7 @@
 			<Tool Name="VFPostBuildEventTool"/>
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
-		<Configuration Name="DP_Debug|Win32" UseCompiler="ifortCompiler">
+		<Configuration Name="DP_Debug|Win32" UseCompiler="ifxCompiler">
 			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" LocalSavedScalarsZero="true" InitArrays="true"/>
 			<Tool Name="VFLinkerTool" SuppressStartupBanner="true"/>
 			<Tool Name="VFResourceCompilerTool"/>
@@ -71,29 +49,7 @@
 			<Tool Name="VFPostBuildEventTool"/>
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
-		<Configuration Name="DP_Release|x64" UseCompiler="ifortCompiler" OutputDirectory="../bin/$(ConfigurationName)" IntermediateDirectory="../bin/$(ConfigurationName)" TargetName="$(ProjectName)_251229dp_IFORT">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)\include\NetCDF;$(SolutionDir)\include\mpi;$(SolutionDir)\include\compiler" PreprocessorDefinitions="_WIN64;_WIN" UndefinePreprocessorDefinitions="_WIN32" EnableEnhancedInstructionSet="codeArchAVX" OpenMP="OpenMPParallelCode" RealKIND="realKIND8" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" BoundsCheck="true" ArrayShapeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDLL" UsePortlib="true"/>
-			<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="..\lib\compiler;..\lib\mpi;..\lib\NetCDF;..\lib\WASP;..\lib\compiler" IgnoreDefaultLibraryNames="libifcoremt.lib;libcmt.lib;mscvrt.lib;libfabric.lib;libcurl.lib;zlib1.lib;uuid.lib;svml_dispmt.lib" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
-			<Tool Name="VFResourceCompilerTool"/>
-			<Tool Name="VFMidlTool" SuppressStartupBanner="true" TargetEnvironment="midlTargetAMD64"/>
-			<Tool Name="VFCustomBuildTool" CommandLine="xcopy /c /q /s /y /e &quot;$(SolutionDir)\lib\WASP\Distribute\*.dll&quot; &quot;$(OutDir)&quot;" Outputs="hydrolink.dll libwinpthread-1.dll"/>
-			<Tool Name="VFPreLinkEventTool"/>
-			<Tool Name="VFPreBuildEventTool"/>
-			<Tool Name="VFPostBuildEventTool"/>
-			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
-		</Configuration>
-		<Configuration Name="DP_Release|Win32" UseCompiler="ifortCompiler">
-			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" LocalSavedScalarsZero="true" InitArrays="true"/>
-			<Tool Name="VFLinkerTool" SuppressStartupBanner="true"/>
-			<Tool Name="VFResourceCompilerTool"/>
-			<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
-			<Tool Name="VFCustomBuildTool"/>
-			<Tool Name="VFPreLinkEventTool"/>
-			<Tool Name="VFPreBuildEventTool"/>
-			<Tool Name="VFPostBuildEventTool"/>
-			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
-		</Configuration>
-		<Configuration Name="SP_Release_IFX|Win32" UseCompiler="ifortCompiler">
+		<Configuration Name="SP_Release|Win32" UseCompiler="ifxCompiler">
 			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true"/>
 			<Tool Name="VFLinkerTool" SuppressStartupBanner="true"/>
 			<Tool Name="VFResourceCompilerTool"/>
@@ -104,7 +60,7 @@
 			<Tool Name="VFPostBuildEventTool"/>
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
-		<Configuration Name="SP_Release_IFX|x64" UseCompiler="ifxCompiler" OutputDirectory="../bin/$(ConfigurationName)" IntermediateDirectory="../bin/$(ConfigurationName)" TargetName="$(ProjectName)_251229sp_IFX">
+		<Configuration Name="SP_Release|x64" UseCompiler="ifxCompiler" OutputDirectory="../bin/$(ConfigurationName)" IntermediateDirectory="../bin/$(ConfigurationName)" TargetName="$(ProjectName)_260526sp">
 			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)\include\NetCDF;$(SolutionDir)\include\mpi;$(SolutionDir)\include\compiler" PreprocessorDefinitions="_WIN64;_WIN;WASPOUT" UndefinePreprocessorDefinitions="_WIN32" OpenMP="OpenMPParallelCode" EnableOpenMPSupport="OpenMPParallelCodeIFX" ArrayAlignment="alignArray64Bytes" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" ComplexLimitedRange="true" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" BuildDependencies="true" EmitBuildDependencies="true" Traceback="true" RuntimeChecks="rtChecksNone" RuntimeLibrary="rtMultiThreadedDLL" UsePortlib="true"/>
 			<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" ShowProgress="linkProgressLibs" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="..\lib\compiler;..\lib\mpi;..\lib\NetCDF;..\lib\WASP;..\lib\compiler" IgnoreDefaultLibraryNames="libifcoremt.lib;libcmt.lib;mscvrt.lib;libfabric.lib;libcurl.lib;zlib1.lib;uuid.lib;svml_dispmt.lib" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
 			<Tool Name="VFResourceCompilerTool"/>
@@ -115,7 +71,7 @@
 			<Tool Name="VFPostBuildEventTool"/>
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
-		<Configuration Name="DP_Release_IFX|Win32" UseCompiler="ifortCompiler">
+		<Configuration Name="DP_Release|Win32" UseCompiler="ifxCompiler">
 			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" LocalSavedScalarsZero="true" InitArrays="true"/>
 			<Tool Name="VFLinkerTool" SuppressStartupBanner="true"/>
 			<Tool Name="VFResourceCompilerTool"/>
@@ -126,7 +82,7 @@
 			<Tool Name="VFPostBuildEventTool"/>
 			<Tool Name="VFManifestTool" SuppressStartupBanner="true"/>
 		</Configuration>
-		<Configuration Name="DP_Release_IFX|x64" UseCompiler="ifxCompiler" OutputDirectory="../bin/$(ConfigurationName)" IntermediateDirectory="../bin/$(ConfigurationName)" TargetName="$(ProjectName)_251229dp_IFX">
+		<Configuration Name="DP_Release|x64" UseCompiler="ifxCompiler" OutputDirectory="../bin/$(ConfigurationName)" IntermediateDirectory="../bin/$(ConfigurationName)" TargetName="$(ProjectName)_260806dp">
 			<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" MultiProcessorCompilation="true" Optimization="optimizeFull" GenAlternateCodePaths="codeForAVX2" Parallelization="true" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(SolutionDir)\include\NetCDF;$(SolutionDir)\include\mpi;$(SolutionDir)\include\compiler" PreprocessorDefinitions="_WIN64;_WIN;WASPOUT" UndefinePreprocessorDefinitions="_WIN32" EnableEnhancedInstructionSet="codeArchAVX" OpenMP="OpenMPParallelCode" RealKIND="realKIND8" FloatingPointExceptionHandling="fpe0" FloatingPointModel="source" FloatingPointSpeculation="fpSpeculationSafe" CallingConvention="callConventionCRef" Traceback="true" RuntimeChecks="rtChecksNone" BoundsCheck="true" ArrayShapeCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDLL" UsePortlib="true"/>
 			<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(TargetName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="..\lib\compiler;..\lib\mpi;..\lib\NetCDF;..\lib\WASP;..\lib\compiler" IgnoreDefaultLibraryNames="libifcoremt.lib;libcmt.lib;mscvrt.lib;libfabric.lib;libcurl.lib;zlib1.lib;uuid.lib;svml_dispmt.lib" SubSystem="subSystemConsole" StackReserveSize="10000000" InterproceduralOptimizations="false" AdditionalDependencies="impi.lib netcdf4.lib netcdf_f.lib netcdf.lib hydrolink.lib"/>
 			<Tool Name="VFResourceCompilerTool"/>
@@ -182,8 +138,7 @@
 				<File RelativePath=".\GOTM_Turbulence\ispralength.f90"/>
 				<File RelativePath=".\GOTM_Turbulence\kbalgebraic.f90"/>
 				<File RelativePath=".\GOTM_Turbulence\kbeq.f90"/>
-				<File RelativePath=".\GOTM_Turbulence\lengthscaleeq.f90">
-				</File>
+				<File RelativePath=".\GOTM_Turbulence\lengthscaleeq.f90"/>
 				<File RelativePath=".\GOTM_Turbulence\mod_gotm.f90"/>
 				<File RelativePath=".\GOTM_Turbulence\mod_gsw.f90"/>
 				<File RelativePath=".\GOTM_Turbulence\mod_turbulence.f90"/>
@@ -191,8 +146,7 @@
 				<File RelativePath=".\GOTM_Turbulence\production.f90"/>
 				<File RelativePath=".\GOTM_Turbulence\q2over2eq.F90"/>
 				<File RelativePath=".\GOTM_Turbulence\tkealgebraic.f90"/>
-				<File RelativePath=".\GOTM_Turbulence\tkeeq.f90">
-				</File>
+				<File RelativePath=".\GOTM_Turbulence\tkeeq.f90"/>
 			</Filter>
 			<Filter Name="GOTM_Util">
 				<File RelativePath=".\GOTM_Util\adv_center.f90"/>
@@ -267,9 +221,6 @@
 				<File RelativePath=".\MPI_Domain_Decomp\child_grid.f90"/>
 				<File RelativePath=".\MPI_Domain_Decomp\congrad_mpi.f90">
 					<FileConfiguration Name="SP_Release|x64">
-						<Tool Name="VFFortranCompilerTool" OptDiagLevel="odlLevel2"/>
-					</FileConfiguration>
-					<FileConfiguration Name="SP_Release_IFX|x64">
 						<Tool Name="VFFortranCompilerTool" OptDiagLevel="odlLevel2"/>
 					</FileConfiguration>
 				</File>
@@ -387,14 +338,11 @@
 				<File RelativePath=".\Transport\caldiff.f90"/>
 				<File RelativePath=".\Transport\caldye.f90"/>
 				<File RelativePath=".\Transport\calfqc.f90"/>
-				<File RelativePath=".\Transport\calqvs.f90">
-					<FileConfiguration Name="SP_Release_IFX|x64">
-						<Tool Name="VFFortranCompilerTool" OpenMP="OpenMPDisabled" EnableOpenMPSupport="OpenMPDisabled"/>
-					</FileConfiguration>
-				</File>
+				<File RelativePath=".\Transport\calqvs.f90"/>
 				<File RelativePath=".\Transport\calsft.f90"/>
 				<File RelativePath=".\Transport\caltran.f90"/>
 				<File RelativePath=".\Transport\caltran_ad.f90"/>
+				<File RelativePath=".\Transport\caltran_quickest.f90"/>
 				<File RelativePath=".\Transport\caltranice.f90"/>
 				<File RelativePath=".\Transport\calvolterm.f90"/>
 				<File RelativePath=".\Transport\coare36.f90"/>
@@ -405,6 +353,7 @@
 						<Tool Name="VFFortranCompilerTool" OpenMP="OpenMPDisabled"/>
 					</FileConfiguration>
 				</File>
+				<File RelativePath=".\Transport\mod_quickest.f90"/>
 			</Filter>
 			<Filter Name="Utilities">
 				<File RelativePath=".\Utilities\dstime.f90"/>
@@ -427,15 +376,9 @@
 				<FileConfiguration Name="SP_Release|x64">
 					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
 				</FileConfiguration>
-				<FileConfiguration Name="SP_Release_IFX|x64">
-					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
-				</FileConfiguration>
 			</File>
 			<File RelativePath=".\ainit.f90">
 				<FileConfiguration Name="SP_Release|x64">
-					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
-				</FileConfiguration>
-				<FileConfiguration Name="SP_Release_IFX|x64">
 					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
 				</FileConfiguration>
 			</File>
@@ -464,19 +407,9 @@
 			<File RelativePath=".\cppdefs.h"/>
 			<File RelativePath=".\csedvis.f90"/>
 			<File RelativePath=".\hdmt.f90"/>
-			<File RelativePath=".\hdmt2t.f90">
-				<FileConfiguration Name="DP_Release_IFX|x64">
-					<Tool Name="VFFortranCompilerTool" GenAlternateCodePaths="codeForAVX2"/>
-				</FileConfiguration>
-			</File>
+			<File RelativePath=".\hdmt2t.f90"/>
 			<File RelativePath=".\input.f90">
 				<FileConfiguration Name="SP_Release|x64">
-					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
-				</FileConfiguration>
-				<FileConfiguration Name="SP_Release_IFX|x64">
-					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
-				</FileConfiguration>
-				<FileConfiguration Name="DP_Release_IFX|x64">
 					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
 				</FileConfiguration>
 				<FileConfiguration Name="DP_Release|x64">
@@ -487,9 +420,6 @@
 			<File RelativePath=".\mod_cyclone.f90"/>
 			<File RelativePath=".\mod_fields.f90"/>
 			<File RelativePath=".\mod_hydstructure.f90">
-				<FileConfiguration Name="SP_Release_IFX|x64">
-					<Tool Name="VFFortranCompilerTool" OpenMP="OpenMPDisabled" EnableOpenMPSupport="OpenMPDisabled"/>
-				</FileConfiguration>
 				<FileConfiguration Name="DP_Debug|x64">
 					<Tool Name="VFFortranCompilerTool" OpenMP="OpenMPDisabled"/>
 				</FileConfiguration>
@@ -510,12 +440,6 @@
 				<FileConfiguration Name="SP_Release|x64">
 					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
 				</FileConfiguration>
-				<FileConfiguration Name="SP_Release_IFX|x64">
-					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
-				</FileConfiguration>
-				<FileConfiguration Name="DP_Release_IFX|x64">
-					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
-				</FileConfiguration>
 				<FileConfiguration Name="DP_Release|x64">
 					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
 				</FileConfiguration>
@@ -524,18 +448,11 @@
 				<FileConfiguration Name="SP_Release|x64">
 					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
 				</FileConfiguration>
-				<FileConfiguration Name="SP_Release_IFX|x64">
-					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
-				</FileConfiguration>
-				<FileConfiguration Name="DP_Release_IFX|x64">
-					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
-				</FileConfiguration>
 				<FileConfiguration Name="DP_Release|x64">
 					<Tool Name="VFFortranCompilerTool" Optimization="optimizeDisabled"/>
 				</FileConfiguration>
 			</File>
-			<File RelativePath=".\welcome.f90">
-			</File>
+			<File RelativePath=".\welcome.f90"/>
 		</Filter>
 	</Files>
 	<Globals/>

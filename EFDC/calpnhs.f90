@@ -82,7 +82,7 @@ SUBROUTINE CALPNHS
       PNHYDSS(L,K) = PNHYDS(L,K)
       FUHU(L,K) = 0.
       FVHU(L,K) = 0.
-      FWQQ(L,KC) = 0.
+      FWQQ(L,K) = 0.
     enddo
   enddo
   do K = 1,KS

@@ -34,6 +34,7 @@
   use Variables_MPI_Write_Out
   use Broadcast_Routines
   use Mod_GOTM
+  use MOD_QUICKEST
   ! *** End new for MPI
 
 #ifndef GNU  
@@ -67,7 +68,7 @@
   integer :: MTMP
   integer :: MMAX, MS, MMIN, NJP
   integer :: JSFDCH, IDUMMY, NPP, MD, MU
-  integer :: MTSSS, IACROSS, JCTMP, JACROSS, JT, JF, JLAST, NMD
+  integer :: MTSSS, IACROSS, JCTMP, JACROSS, JT, JF, JLAST, NMD, MDCHH_GL
   integer :: IFIRST, ILAST, IT, NP, LT, MVEGIJT, NMDXDY, INITTEMP
   integer :: ITMP, JTMP, LTMP, LL, ITMPU, JTMPU, ITMPD, JTMPD, ID, JD, NSEEPCLASSES
   integer :: IZONE, LDUM, JDUM, IVAL, ISALTYP, IREAD, KBINPUT, ISCOLD
@@ -91,7 +92,7 @@
   real   :: TDELTA, TMPCVT, WSEL, TMP, TOFFSET
 
   real,external :: SETSTVEL, PARSE_REAL
-  logical :: BFLAG
+  logical :: BFLAG, ISSKIP, INHOST, INCHNU, INCHNV
   logical(4) :: RES
 
   integer :: RI_GLOBAL, RJ_GLOBAL
@@ -108,6 +109,10 @@
   real,allocatable,dimension(:,:) :: SPFAM0
   real,allocatable,dimension(:,:) :: SPFAM1
   real,allocatable,dimension(:,:) :: SPFAM2
+
+  ! *** Echoing input
+  character*5 :: CECHO(100)
+  integer     :: IECHO(100)
 
   call AllocateDSI( RMULADS,  NSTM2,  0.0)
   call AllocateDSI( ADDADS,   NSTM2,  0.0)
@@ -303,11 +308,20 @@
   if( process_id == master_id )then
     call SEEK('C6',0)
     do NS = 0,8
-      read(1,*,IOSTAT = ISO) ISTRAN(NS), ISTOPT(NS), ldum, ISADAC(NS), ISFCT(NS), ldum, ldum, ldum, ISCI(NS), ISCO(NS)
-      write(mpi_efdc_out_unit,1002) NCARD
-      write(mpi_efdc_out_unit,*) ISTRAN(NS), ISTOPT(NS), ldum, ISADAC(NS), ISFCT(NS), ldum, ldum, ldum, ISCI(NS), ISCO(NS)
+      read(1,*,IOSTAT = ISO) ISTRAN(NS), ISTOPT(NS), ISQUICK, ISADAC(NS), ISFCT(NS), ldum, ldum, ldum, ISCI(NS), ISCO(NS)
       if( ISO > 0 ) GOTO 100
     enddo
+  endif
+  
+  call Broadcast_Scalar(ISQUICK, master_id)   ! *** Using a scalar var for ISQUICK in EFDC+ 12.x - DKT
+
+  ! *** Sanitize ISQUICK: this C6 column was unused prior to EFDC+ 12.x and legacy decks may contain other values
+  if( ISQUICK /= 0 .and. ISQUICK /= 1 )then
+    if( process_id == master_id )then
+      PRINT *,'*** WARNING: INVALID ISQUICK ON CARD C6.  RESETTING TO 0 (UPWIND SCHEME)'
+      write(mpi_efdc_out_unit,*) '*** WARNING: INVALID ISQUICK ON CARD C6.  RESETTING TO 0 (UPWIND SCHEME):', ISQUICK
+    endif
+    ISQUICK = 0
   endif
 
   call Broadcast_Array(ISTRAN, master_id)
@@ -318,6 +332,11 @@
   call Broadcast_Array(ISCO  , master_id)
   NFLTMT = 1
 
+  do NS = 0,8
+    write(mpi_efdc_out_unit,1002) NCARD
+    write(mpi_efdc_out_unit,*) ISTRAN(NS), ISTOPT(NS), ISQUICK, ISADAC(NS), ISFCT(NS), ldum, ldum, ldum, ISCI(NS), ISCO(NS)
+  enddo
+  
   if( ISTRAN(8) >= 1 .and. ISTRAN(2) == 0 )then
     PRINT *,'*** WARNING: TEMPERATURE SHOULD BE ACTIVATED FOR WQ CALCULATIONS!'
 #ifdef GNU  
@@ -355,11 +374,6 @@
   if( process_id == master_id )then
     call SEEK('C7',0)
     read(1,*,IOSTAT = ISO) NTC, NTSPTC, NLTC, NTTC, ldum, NTSTBC, ldum, NTCVB, NTSMMT, ldum, NDRYSTP, NRAMPUP, NUPSTEP
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) NTC, NTSPTC, NLTC, NTTC, ldum, NTSTBC, ldum, NTCVB, NTSMMT, ldum, NDRYSTP, NRAMPUP, NUPSTEP
-    ! *** Not Used:  NTCPP
-    ! *** Not Used:  NTCNB
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -374,6 +388,9 @@
   call Broadcast_Scalar(NRAMPUP, master_id)
   call Broadcast_Scalar(NUPSTEP, master_id)
 
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) NTC, NTSPTC, NLTC, NTTC, ldum, NTSTBC, ldum, NTCVB, NTSMMT, ldum, NDRYSTP, NRAMPUP, NUPSTEP
+
   if( NRAMPUP < 1 ) NRAMPUP = 1
   if( NUPSTEP < 2 ) NUPSTEP = 2
 
@@ -385,6 +402,7 @@
   if( process_id == master_id )then
     call SEEK('C8',0)
     read(1,*,IOSTAT = ISO) TCON, TBEGIN, TIDALP, CF, ISCORV, ISDCCA, ISCFL, ISCFLM, DTSSFAC, DTSSDHDT, DTMAX
+    if( ISO > 0 ) GOTO 100
   endif
 
   call Broadcast_Scalar(ISO     , master_id)
@@ -402,7 +420,6 @@
 
   write(mpi_efdc_out_unit,1002) NCARD
   write(mpi_efdc_out_unit,*) TCON, TBEGIN, TIDALP, CF, ISCORV, ISDCCA, ISCFL, ISCFLM, DTSSFAC, DTSSDHDT, DTMAX
-  if( ISO > 0 ) GOTO 100
 
   if( ISRESTI == 1 .and. ICONTINUE == 1 )then
     ! *** FOR CONTINUATION MODE (TBEGINC IS SET FROM THE RESTART FILE)
@@ -418,7 +435,12 @@
     ISDYNSTP = 0
   endif
   if( IS2TIM == 0 ) ISDYNSTP = 0
-
+  
+  ! *** Initialize time for initial condition computations
+  DTDYN = DT
+  TIMESEC = DBLE(TCON)*DBLE(TBEGIN)
+  TIMEDAY = TIMESEC/86400._8               ! *** Needed by TIMEEND calc in aaefdc before HDMT/HDMT2T sets it
+  
   ! *** Calculating number of WASP outputs and snapshot time
   if( RESSTEP > 0 )then
     NWASPOUT = NTC*TIDALP/RESSTEP + 1
@@ -434,6 +456,7 @@
   if( process_id == master_id )then
     call SEEK('C9',0)
     read(1,*,IOSTAT = ISO) IC_GLOBAL, JC_GLOBAL, LC_GLOBAL, LVC, ldum, NDM, LDM, ISMASK, NBLOCKED, ISCONNECT, ldum, ldum, tmp, tmp
+    if( ISO > 0 ) GOTO 100
   endif
 
   call Broadcast_Scalar(IC_GLOBAL, master_id)
@@ -450,7 +473,6 @@
 
   write(mpi_efdc_out_unit,1002) NCARD
   write(mpi_efdc_out_unit,*) IC_GLOBAL, JC_GLOBAL, LC_GLOBAL, LVC, ldum, NDM, LDM, ISMASK, NBLOCKED, ISCONNECT, ldum, ldum, tmp, tmp
-  if( ISO > 0 ) GOTO 100
 
   LA_Global = LC_Global - 1
 
@@ -514,6 +536,7 @@
   if( process_id == master_id )then
     call SEEK('C9A',0)
     read(1,*,IOSTAT = ISO) KC, ldum, ldum, tmp, tmp, ldum
+    if( ISO > 0 ) GOTO 100
   endif
 
   call Broadcast_Scalar(ISO    , master_id)
@@ -521,7 +544,6 @@
 
   write(mpi_efdc_out_unit,1002) NCARD
   write(mpi_efdc_out_unit,*) KC, ldum, ldum, tmp, tmp, ldum
-  if( ISO > 0 ) GOTO 100
 
   !C10*  READ LAYER THICKNESS IN VERTICAL
   NCARD = '10'
@@ -530,6 +552,7 @@
     call SEEK('C10',0)
     do K = 1,KC
       read(1,*,IOSTAT = ISO) KDUM, DZCK(K)
+      if( ISO > 0 ) GOTO 100
     enddo
   endif
 
@@ -538,7 +561,6 @@
 
   write(mpi_efdc_out_unit,1002) NCARD
   write(mpi_efdc_out_unit,*) (DZCK(K),K = 1,KC)
-  if( ISO > 0 ) GOTO 100
 
   !C11*  READ GRID, ROUGHNESS, MASKING AND DEPTH parameterS
   NCARD = '11'
@@ -546,6 +568,7 @@
   if( process_id == master_id )then
     call SEEK('C11',0)
     read(1,*,IOSTAT = ISO) DX, DY, DXYCVT, IMDXDY, ZBRADJ, ZBRCVRT, HMIN, HADADJ, HCVRT, HDRY, HWET, BELADJ, BELCVRT, HDRYMOVE
+    if( ISO > 0 ) GOTO 100
   endif
 
   call Broadcast_Scalar(DX     ,  master_id)
@@ -565,7 +588,6 @@
 
   write(mpi_efdc_out_unit,1002) NCARD
   write(mpi_efdc_out_unit,*) DX, DY, DXYCVT, IMDXDY, ZBRADJ, ZBRCVRT, HMIN, HADADJ, HCVRT, HDRY, HWET, BELADJ, BELCVRT, HDRYMOVE
-  if( ISO > 0 ) GOTO 100
 
   HDRYICE = 0.91*HDRY
   HDRYWAV = 1.2*HWET
@@ -577,9 +599,6 @@
   if( process_id == master_id )then
     call SEEK('C11A',0)
     read(1,*,IOSTAT = ISO) ICK2COR, CK2UUM, CK2VVM, CK2UVM, CK2UUC, CK2VVC, CK2UVC, CK2FCX, CK2FCY
-    write(mpi_efdc_out_unit,1002) NCARD
-
-    write(mpi_efdc_out_unit,*) ICK2COR, CK2UUM, CK2VVM, CK2UVM, CK2UUC, CK2VVC, CK2UVC, CK2FCX, CK2FCY
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -593,6 +612,9 @@
   call Broadcast_Scalar(CK2FCX , master_id)
   call Broadcast_Scalar(CK2FCY , master_id)
 
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) ICK2COR, CK2UUM, CK2VVM, CK2UVM, CK2UUC, CK2VVC, CK2UVC, CK2FCX, CK2FCY
+  
   if( ICK2COR >= 1 )then
     IS2LMC = ICK2COR
   endif
@@ -603,9 +625,6 @@
   if( process_id == master_id )then
     call SEEK('C11B',0)
     read(1,*,IOSTAT = ISO) ISCORTBC, ISCORTBCD, FSCORTBC
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) ISCORTBC,ISCORTBCD,FSCORTBC
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -613,15 +632,15 @@
   call Broadcast_Scalar(ISCORTBCD,master_id)
   call Broadcast_Scalar(FSCORTBC, master_id)
 
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) ISCORTBC,ISCORTBCD,FSCORTBC
+  
   !C12*  READ TURBULENT DIFFUSION parameterS
   NCARD = '12'
   ! *** ********************************************************
   if( process_id == master_id )then
     call SEEK('C12',0)
     read(1,*,IOSTAT = ISO) AHO, AHD, AVO, ABO, AVMX, ABMX, VISMUD, AVCON, ZBRWALL
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) AHO, AHD, AVO, ABO, AVMX, ABMX, VISMUD, AVCON, ZBRWALL
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -635,6 +654,10 @@
   call Broadcast_Scalar(AVCON  , master_id)
   call Broadcast_Scalar(ZBRWALL, master_id)
 
+
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) AHO, AHD, AVO, ABO, AVMX, ABMX, VISMUD, AVCON, ZBRWALL
+
   ISAVCOMP = 1
   if( AVCON == 0. ) ISAVCOMP = 0
 
@@ -644,9 +667,6 @@
   if( process_id == master_id )then
     call SEEK('C12A',0)
     read(1,*,IOSTAT = ISO) ISTOPT(0), ISSQL, ISAVBMX, ISFAVB, ISINWV, ISLLIM, IFPROX, XYRATIO, BC_EDGEFACTOR
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) ISTOPT(0), ISSQL, ISAVBMX, ISFAVB, ISINWV, ISLLIM, IFPROX, XYRATIO, BC_EDGEFACTOR
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -660,6 +680,9 @@
   call Broadcast_Scalar(XYRATIO      , master_id)
   call Broadcast_Scalar(BC_EDGEFACTOR, master_id)
 
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) ISTOPT(0), ISSQL, ISAVBMX, ISFAVB, ISINWV, ISLLIM, IFPROX, XYRATIO, BC_EDGEFACTOR
+
   if( BC_EDGEFACTOR < 0 ) BC_EDGEFACTOR = 0.0
   if( BC_EDGEFACTOR > 1 ) BC_EDGEFACTOR = 1.0
 
@@ -669,9 +692,6 @@
   if( process_id == master_id )then
     call SEEK('C12B',0)
     read(1,*,IOSTAT = ISO) ISGOTM, IFRICTION, ICALNN, ICALSS, CHARNOCK
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*)  ISGOTM, IFRICTION, ICALNN, ICALSS, CHARNOCK
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -681,6 +701,9 @@
   call Broadcast_Scalar(ICALSS,        master_id)
   call Broadcast_Scalar(CHARNOCK,      master_id)
 
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*)  ISGOTM, IFRICTION, ICALNN, ICALSS, CHARNOCK
+  
   ! *** Initialize GOTM variables
   if( ISGOTM > 0 ) CALL Init_GOTM
 
@@ -710,9 +733,6 @@
     call SEEK('C13',0)
     ! *** PMC - CTE2 NOT USED
     read(1,*,IOSTAT = ISO) VKC, CTURB, CTURB2B, CTE1, CTE2, CTE3, CTE4, CTE5, RIQMAX, QQMIN, QQLMIN, DMLMIN
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) VKC, CTURB, CTURB2B, CTE1, CTE2, CTE3, CTE4, CTE5, RIQMAX, QQMIN, QQLMIN, DMLMIN
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -729,15 +749,15 @@
   call Broadcast_Scalar(QQLMIN   , master_id)
   call Broadcast_Scalar(DMLMIN   , master_id)
 
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) VKC, CTURB, CTURB2B, CTE1, CTE2, CTE3, CTE4, CTE5, RIQMAX, QQMIN, QQLMIN, DMLMIN
+
   !C14*  READ TIDAL & ATMOSPHERIC FORCING, GROUND WATER AND SUBGRID CHANNEL parameterS
   NCARD = '14'
   ! *** ********************************************************
   if( process_id == master_id )then
     call SEEK('C14',0)
     read(1,*,IOSTAT = ISO) MTIDE, NWSER, NASER, ISGWIT, ISCHAN, ISWAVE, ITIDASM, ISPERC, ISBODYF, ISPNHYDS, ISPROPWASH
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) MTIDE, NWSER, NASER, ISGWIT, ISCHAN, ISWAVE, ITIDASM, ISPERC, ISBODYF, ISPNHYDS, ISPROPWASH
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -751,6 +771,10 @@
   call Broadcast_Scalar(ISPERC    , master_id)
   call Broadcast_Scalar(ISBODYF   , master_id)
   call Broadcast_Scalar(ISPNHYDS  , master_id)
+
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) MTIDE, NWSER, NASER, ISGWIT, ISCHAN, ISWAVE, ITIDASM, ISPERC, ISBODYF, ISPNHYDS, ISPROPWASH
+
   call Broadcast_Scalar(ISPROPWASH, master_id)
 
   ISWCBL = 0
@@ -777,6 +801,9 @@
     call Broadcast_Scalar(SWANGRP    , master_id)
     call Broadcast_Scalar(ISSTEAD    , master_id)
 
+    write(mpi_efdc_out_unit,1002) NCARD
+    write(mpi_efdc_out_unit,*) KSW, IUSEWVCELLS, IFWAVE, SWANGRP, ISSTEAD
+
     if( ISWAVE == 1 .or. ISWAVE == 2 .or. ISWAVE == 4 )then
       NCARD = '14B'
       if( process_id == master_id )then
@@ -796,6 +823,9 @@
       call Broadcast_Scalar(ISWCBL, master_id)
       call Broadcast_Scalar(ISDZBR, master_id)
 
+      write(mpi_efdc_out_unit,1002) NCARD
+      write(mpi_efdc_out_unit,*) ISWRSR, ISWRSI, WVDISV, WVLSH, WVLSX, ISWVSD, WVLCAL, NTSWV, ISWCBL, ISDZBR
+
       NTSWV = max(NTSWV,1)
     endif
   endif
@@ -808,11 +838,7 @@
     read(1,*,IOSTAT = ISO) BATHY.IFLAG, ROUGH.IFLAG, VEGE.IFLAG,  GWSP.IFLAG,  WIND.IFLAG, PRESS.IFLAG,  &
       RAIN.IFLAG,  EVAP.IFLAG,  SHELT.IFLAG, SHADE.IFLAG, SNOW.IFLAG, ICETHK.IFLAG, &
       SEDZLJER.IFLAG
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) BATHY.IFLAG, ROUGH.IFLAG, VEGE.IFLAG,  GWSP.IFLAG,  WIND.IFLAG, PRESS.IFLAG,  &
-      RAIN.IFLAG,  EVAP.IFLAG,  SHELT.IFLAG, SHADE.IFLAG, SNOW.IFLAG, ICETHK.IFLAG, &
-      SEDZLJER.IFLAG
+      if( ISO > 0 ) GOTO 100
   endif
 
   call Broadcast_Scalar(BATHY.IFLAG  , master_id)
@@ -829,15 +855,18 @@
   call Broadcast_Scalar(ICETHK.IFLAG, master_id)
   call Broadcast_Scalar(SEDZLJER.IFLAG, master_id)
 
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) BATHY.IFLAG, ROUGH.IFLAG, VEGE.IFLAG,  GWSP.IFLAG,  WIND.IFLAG, PRESS.IFLAG,  &
+    RAIN.IFLAG,  EVAP.IFLAG,  SHELT.IFLAG, SHADE.IFLAG, SNOW.IFLAG, ICETHK.IFLAG, &
+    SEDZLJER.IFLAG
+      
   !C14C  PARAMETRIC CYCLONE TIME & SPACE VARYING FORCING     2021-04-23, NTL:
   NCARD = '14D'
   ! *** ********************************************************
   if( process_id == master_id )then
     call SEEK('C14D',0)
     read(1,*,IOSTAT = ISO) ICYCLONE, RHO_A, PINF, THETAMAX, WDRAG1, WDRAG2, CDRAG1, CDRAG2
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) ICYCLONE, RHO_A, PINF, THETAMAX, WDRAG1, WDRAG2, CDRAG1, CDRAG2
+    if( ISO > 0 ) GOTO 100
   endif
 
   call Broadcast_Scalar(ICYCLONE, master_id)
@@ -849,6 +878,9 @@
   call Broadcast_Scalar(CDRAG1,   master_id)
   call Broadcast_Scalar(CDRAG2,   master_id)
 
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) ICYCLONE, RHO_A, PINF, THETAMAX    !, WDRAG1, WDRAG2, CDRAG1, CDRAG2
+
   if( MTIDE > 0 )then
     !C15*  READ PERIODIC FORCING (TIDAL) CONSTITUENT SYMBOLS AND PERIODS
     NCARD = '15'
@@ -856,15 +888,16 @@
       call SEEK('C15',0)
       do M = 1,MTIDE
         read(1,*,IOSTAT = ISO) SYMBOL(M),TCP(M)
-
-        write(mpi_efdc_out_unit,1002) NCARD
-        write(mpi_efdc_out_unit,*) SYMBOL(M),TCP(M)
         if( ISO > 0 ) GOTO 100
       enddo
     endif
     call Broadcast_Array(SYMBOL, master_id)
     call Broadcast_Array(TCP,    master_id)
 
+    do M = 1,MTIDE
+      write(mpi_efdc_out_unit,1002) NCARD
+      write(mpi_efdc_out_unit,*) SYMBOL(M),TCP(M)
+    enddo
   endif
 
   !C16*  READ SURFACE ELEVATION OR PRESSURE BOUNDARY CONDITION parameterS
@@ -873,9 +906,6 @@
   if( process_id == master_id )then
     call SEEK('C16',0)
     read(1,*,IOSTAT = ISO) NPBS, NPBW, NPBE, NPBN, NPFOR_Readin, NPFORT, NPSER, PDGINIT
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) NPBS, NPBW, NPBE, NPBN, NPFOR_Readin, NPFORT, NPSER, PDGINIT
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -887,6 +917,9 @@
   call Broadcast_Scalar(NPFORT      , master_id)
   call Broadcast_Scalar(NPSER       , master_id)
   call Broadcast_Scalar(PDGINIT     , master_id)
+
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) NPBS, NPBW, NPBE, NPBN, NPFOR_Readin, NPFORT, NPSER, PDGINIT
 
   if( NPFOR_Readin > 0 )then
     ! ***  READ PERIODIC FORCING (TIDAL) SURFACE ELEVATION OR
@@ -904,28 +937,22 @@
       do NP = 1,NPFOR_Readin
         do M = 1,MTIDE
           if( NPFORT == 0 )then
-            read(1,*,IOSTAT = ISO)NDUM,CDUM,PFAM(NP,M),PFPH(NP,M)
-            write(mpi_efdc_out_unit,1002) NCARD
-            write(mpi_efdc_out_unit,*) NDUM, CDUM, PFAM(NP,M), PFPH(NP,M)
+            read(1,*,IOSTAT = ISO) IECHO(M), CECHO(M),PFAM(NP,M),PFPH(NP,M)
             if( ISO > 0 ) GOTO 100
           elseif( NPFORT >= 1 )then
-            read(1,*,IOSTAT = ISO) NDUM, CDUM, PFAM(NP,M), PFPH(NP,M)
+            read(1,*,IOSTAT = ISO) IECHO(M), CECHO(M), PFAM(NP,M), PFPH(NP,M)
             RAD = PI2*PFPH(NP,M)/TCP(M)
             CPFAM0(NP,M) = PFAM(NP,M)*COS(RAD)
             SPFAM0(NP,M) = PFAM(NP,M)*SIN(RAD)
-            write(mpi_efdc_out_unit,1002) NCARD
-            write(mpi_efdc_out_unit,*) NDUM, CDUM, PFAM(NP,M), PFPH(NP,M), CPFAM0(NP,M), SPFAM0(NP,M)
             if( ISO > 0 ) GOTO 100
-            read(1,*,IOSTAT = ISO) NDUM, CDUM, PFAM(NP,M), PFPH(NP,M)
+            read(1,*,IOSTAT = ISO) IECHO(M), CECHO(M), PFAM(NP,M), PFPH(NP,M)
             RAD = PI2*PFPH(NP,M)/TCP(M)
             CPFAM1(NP,M) = PFAM(NP,M)*COS(RAD)-CPFAM0(NP,M)
             SPFAM1(NP,M) = PFAM(NP,M)*SIN(RAD)-SPFAM0(NP,M)
-            write(mpi_efdc_out_unit,1002) NCARD
-            write(mpi_efdc_out_unit,*) NDUM, CDUM, PFAM(NP,M), PFPH(NP,M), CPFAM1(NP,M), SPFAM1(NP,M)
             CPFAM2(NP,M) = 0.0
             SPFAM2(NP,M) = 0.0
           elseif( NPFORT == 2 )then
-            read(1,*,IOSTAT = ISO)NDUM,CDUM,PFAM(NP,M),PFPH(NP,M),PFX2(NP,M)
+            read(1,*,IOSTAT = ISO) IECHO(M), CECHO(M),PFAM(NP,M),PFPH(NP,M),PFX2(NP,M)
             RAD = PI2*PFPH(NP,M)/TCP(M)
             if( PFX2(NP,M)>0.0 )then
               CPFAM2(NP,M) = PFAM(NP,M)*COS(RAD)-CPFAM0(NP,M)
@@ -961,6 +988,22 @@
       call Broadcast_Array(SPFAM2, master_id)
     endif
 
+    do NP = 1,NPFOR_Readin
+      do M = 1,MTIDE
+        if( NPFORT == 0 )then
+          write(mpi_efdc_out_unit,1002) NCARD
+          write(mpi_efdc_out_unit,*) IECHO(M), CECHO(M), PFAM(NP,M), PFPH(NP,M)
+        elseif( NPFORT >= 1 )then
+          write(mpi_efdc_out_unit,1002) NCARD
+          write(mpi_efdc_out_unit,*) IECHO(M), CECHO(M), PFAM(NP,M), PFPH(NP,M), CPFAM0(NP,M), SPFAM0(NP,M)
+          write(mpi_efdc_out_unit,1002) NCARD
+          write(mpi_efdc_out_unit,*) IECHO(M), CECHO(M), PFAM(NP,M), PFPH(NP,M), CPFAM1(NP,M), SPFAM1(NP,M)
+        elseif( NPFORT == 2 )then
+          write(mpi_efdc_out_unit,1002) NCARD
+          write(mpi_efdc_out_unit,*) IECHO(M), CECHO(M), PFAM(NP,M), PFPH(NP,M), CPFAM2(NP,M), SPFAM2(NP,M), PFX2(NP,M)
+        endif
+      enddo
+    enddo
   endif
 
   if( NPBS > 0 )then
@@ -973,8 +1016,6 @@
         do L = 1,NPBS
           ! *** Added global arrays for MPI
           read(1,*,IOSTAT = ISO) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L)
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L)
           if( ISO > 0 ) GOTO 100
 
           do M = 1,MTIDE
@@ -989,10 +1030,8 @@
       elseif( NPFORT == 1 )then
         do L = 1,NPBS
           read(1,*,IOSTAT = ISO) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
           if( ISO > 0 ) GOTO 100
+          
           do M = 1,MTIDE
             if( NPFORS == 0) exit
             PCBS_GL(L,M) = CPFAM0(NPFORS,M)+TPCOORDS_GL(L)*CPFAM1(NPFORS,M) + TPCOORDS_GL(L)*TPCOORDS_GL(L)*CPFAM2(NPFORS,M)
@@ -1009,10 +1048,8 @@
       elseif( NPFORT == 2 )then
         do L = 1,NPBS
           read(1,*,IOSTAT = ISO) IPBS_GL(L),JPBS_GL(L),ISPBS_GL(L), ISPRS_GL(L), NPFORS,NPSERS_GL(L),NPSERS1_GL(L), TPCOORDS_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
           if( ISO > 0 ) GOTO 100
+
           do M = 1,MTIDE
             if( NPFORS == 0) exit
             BOTTOM = PFX2(NPFORS,M)*(1.0-PFX2(NPFORS,M))
@@ -1036,9 +1073,6 @@
           enddo
         enddo
       endif
-2068  FORMAT(I4,3X,A2,5X,E14.4,3E14.5,5X,2I5)
-2069  FORMAT(I4,3X,A2,5X,2E14.4,5X,2I5)
-
     endif
 
     call Broadcast_Array(IPBS_GL,     master_id)
@@ -1052,6 +1086,26 @@
       call Broadcast_Array(NPSERS1_GL,  master_id)
       call Broadcast_Array(TPCOORDS_GL, master_id)
     endif
+
+    if( NPFORT == 0 )then
+      do L = 1,NPBS
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L)
+      enddo
+
+    elseif( NPFORT == 1 )then
+      do L = 1,NPBS
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
+      enddo
+
+    elseif( NPFORT == 2 )then
+      do L = 1,NPBS
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBS_GL(L), JPBS_GL(L), ISPBS_GL(L), ISPRS_GL(L), NPFORS, NPSERS_GL(L), NPSERS1_GL(L), TPCOORDS_GL(L)
+      enddo
+    endif
+    
   endif
 
   if( NPBW > 0 )then
@@ -1064,8 +1118,6 @@
       if( NPFORT == 0 )then
         do L = 1,NPBW
           read(1,*,IOSTAT = ISO) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L)
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L)
           if( ISO > 0 ) GOTO 100
           do M = 1,MTIDE
             if( NPFORW == 0) exit
@@ -1079,10 +1131,8 @@
       elseif( NPFORT == 1 )then
         do L = 1,NPBW
           read(1,*,IOSTAT = ISO) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
           if( ISO > 0 ) GOTO 100
+
           do M = 1,MTIDE
             if( NPFORW == 0) exit
             PCBW_GL(L,M) = CPFAM0(NPFORW,M)+TPCOORDW_GL(L)*CPFAM1(NPFORW,M)+TPCOORDW_GL(L)*TPCOORDW_GL(L)*CPFAM2(NPFORW,M)
@@ -1100,10 +1150,8 @@
       elseif( NPFORT == 2 )then
         do L = 1,NPBW
           read(1,*,IOSTAT = ISO) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
           if( ISO > 0 ) GOTO 100
+
           do M = 1,MTIDE
             if( NPFORW == 0) exit
             BOTTOM = PFX2(NPFORW,M)*(1.0-PFX2(NPFORW,M))
@@ -1141,6 +1189,25 @@
       call Broadcast_Array(NPSERW1_GL,  master_id)
       call Broadcast_Array(TPCOORDW_GL, master_id)
     endif
+
+    if( NPFORT == 0 )then
+      do L = 1,NPBW
+          write(mpi_efdc_out_unit,1002) NCARD
+          write(mpi_efdc_out_unit,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L)
+      enddo
+
+    elseif( NPFORT == 1 )then
+      do L = 1,NPBW
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
+      enddo
+
+    elseif( NPFORT == 2 )then
+      do L = 1,NPBW
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBW_GL(L), JPBW_GL(L), ISPBW_GL(L), ISPRW_GL(L), NPFORW, NPSERW_GL(L), NPSERW1_GL(L), TPCOORDW_GL(L)
+      enddo
+    endif
   endif
 
   if( NPBE > 0 )then
@@ -1152,10 +1219,8 @@
       if( NPFORT == 0 )then
         do L = 1,NPBE
           read(1,*,IOSTAT = ISO) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L)
           if( ISO > 0 ) GOTO 100
+
           do M = 1,MTIDE
             if( NPFORE == 0) exit
             RAD = PI2*PFPH(NPFORE,M)/TCP(M)
@@ -1168,10 +1233,8 @@
       elseif( NPFORT == 1 )then
         do L = 1,NPBE
           read(1,*,IOSTAT = ISO) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
           if( ISO > 0 ) GOTO 100
+
           do M = 1,MTIDE
             if( NPFORE == 0) exit
             PCBE_GL(L,M) = CPFAM0(NPFORE,M)+TPCOORDE_GL(L)*CPFAM1(NPFORE,M)+TPCOORDE_GL(L)*TPCOORDE_GL(L)*CPFAM2(NPFORE,M)
@@ -1189,10 +1252,8 @@
       elseif( NPFORT == 2 )then
         do L = 1,NPBE
           read(1,*,IOSTAT = ISO) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
           if( ISO > 0 ) GOTO 100
+
           do M = 1,MTIDE
             if( NPFORE == 0) exit
             BOTTOM = PFX2(NPFORE,M)*(1.0-PFX2(NPFORE,M))
@@ -1230,6 +1291,25 @@
       call Broadcast_Array(NPSERE1_GL,  master_id)
       call Broadcast_Array(TPCOORDE_GL, master_id)
     endif
+
+    if( NPFORT == 0 )then
+      do L = 1,NPBE
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L)
+      enddo
+
+    elseif( NPFORT == 1 )then
+      do L = 1,NPBE
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
+      enddo
+
+    elseif( NPFORT == 2 )then
+      do L = 1,NPBE
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBE_GL(L), JPBE_GL(L), ISPBE_GL(L), ISPRE_GL(L), NPFORE, NPSERE_GL(L), NPSERE1_GL(L), TPCOORDE_GL(L)
+      enddo
+    endif
   endif
 
   if( NPBN > 0 )then
@@ -1242,10 +1322,8 @@
       if( NPFORT == 0 )then
         do L = 1,NPBN
           read(1,*,IOSTAT = ISO) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L)
           if( ISO > 0 ) GOTO 100
+
           do M = 1,MTIDE
             if( NPFORN == 0) exit
             RAD = PI2*PFPH(NPFORN,M)/TCP(M)
@@ -1258,10 +1336,8 @@
       elseif( NPFORT >= 1 )then
         do L = 1,NPBN
           read(1,*,IOSTAT = ISO) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
           if( ISO > 0 ) GOTO 100
+
           do M = 1,MTIDE
             if( NPFORN == 0) exit
             PCBN_GL(L,M) = CPFAM0(NPFORN,M)+TPCOORDN_GL(L)*CPFAM1(NPFORN,M)+TPCOORDN_GL(L)*TPCOORDN_GL(L)*CPFAM2(NPFORN,M)
@@ -1279,10 +1355,8 @@
       elseif( NPFORT == 2 )then
         do L = 1,NPBN
           read(1,*,IOSTAT = ISO) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
-
-          write(mpi_efdc_out_unit,1002) NCARD
-          write(mpi_efdc_out_unit,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
           if( ISO > 0 ) GOTO 100
+
           do M = 1,MTIDE
             if( NPFORN == 0) exit
             BOTTOM = PFX2(NPFORN,M)*(1.0-PFX2(NPFORN,M))
@@ -1320,6 +1394,25 @@
       call Broadcast_Array(NPSERN1_GL,  master_id)
       call Broadcast_Array(TPCOORDN_GL, master_id)
     endif
+    
+    if( NPFORT == 0 )then
+      do L = 1,NPBN
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L)
+      enddo
+
+    elseif( NPFORT >= 1 )then
+      do L = 1,NPBN
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
+      enddo
+
+    elseif( NPFORT == 2 )then
+      do L = 1,NPBN
+        write(mpi_efdc_out_unit,1002) NCARD
+        write(mpi_efdc_out_unit,*) IPBN_GL(L), JPBN_GL(L), ISPBN_GL(L), ISPRN_GL(L), NPFORN, NPSERN_GL(L), NPSERN1_GL(L), TPCOORDN_GL(L)
+      enddo
+    endif
   endif
 
   !22*  READ NUM OF SEDIMENT AMD TOXICS AND NUM OF CONCENTRATION TIME SERIES
@@ -1328,9 +1421,6 @@
   if( process_id == master_id )then
     call SEEK('C22',0)
     read(1,*,IOSTAT = ISO) NDYE,NTOX,NSED,NSND,NCSER(1),NCSER(2),NCSER(3),NCSER(4),NCSER(5),NCSER(6),NCSER(7),ldum
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) NDYE,NTOX,NSED,NSND,NCSER(1),NCSER(2),NCSER(3),NCSER(4),NCSER(5),NCSER(6),NCSER(7),ldum
     if( ISO > 0 ) GOTO 100
   endif
 
@@ -1340,6 +1430,9 @@
   call Broadcast_Scalar(NSND  , master_id)
   call Broadcast_Array(NCSER(1:7), master_id)
 
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) NDYE,NTOX,NSED,NSND,NCSER(1),NCSER(2),NCSER(3),NCSER(4),NCSER(5),NCSER(6),NCSER(7),ldum
+    
   ! *** REMOVE UNUSED SETTINGS TO ALLOW FOR SELECTIVE ALLOCATIONS
   if( ISTRAN(6) < 1)  NSED = 0
   if( ISTRAN(7) < 1 ) NSND = 0
@@ -1355,12 +1448,11 @@
   if( process_id == master_id )then
     call SEEK('C23',0)
     read(1,*,IOSTAT = ISO) NQSIJ, NQJPIJ, NQSER, NQCTL, NQCTLT, NHYDST, NQWR, NQWRSR, ISDIQ, NQCTLSER, NQCTRULES
-
-    write(mpi_efdc_out_unit,1002) NCARD
-    write(mpi_efdc_out_unit,*) NQSIJ, NQJPIJ, NQSER, NQCTL, NQCTLT, NHYDST, NQWR, NQWRSR, ISDIQ, NQCTLSER, NQCTRULES
     if( ISO > 0 ) GOTO 100
   endif
-  ! *** Broadcast in Scan_EFDC
+
+  write(mpi_efdc_out_unit,1002) NCARD
+  write(mpi_efdc_out_unit,*) NQSIJ, NQJPIJ, NQSER, NQCTL, NQCTLT, NHYDST, NQWR, NQWRSR, ISDIQ, NQCTLSER, NQCTRULES
 
   NGRPID = 0
   if( NQSIJ > 0 )then
@@ -1438,15 +1530,17 @@
         read(1,*,IOSTAT = ISO) IDUM, JET_PLM_GL(NJP).ICALJP, JET_PLM_GL(NJP).IQJP,  JET_PLM_GL(NJP).JQJP, JET_PLM_GL(NJP).KQJP,  JET_PLM_GL(NJP).NPORTJP,   &
           JET_PLM_GL(NJP).XJETL,  JET_PLM_GL(NJP).YJETL, JET_PLM_GL(NJP).ZJET, JET_PLM_GL(NJP).PHJET, JET_PLM_GL(NJP).THJET,     &
           JET_PLM_GL(NJP).DJET,   JET_PLM_GL(NJP).CFRD,  JET_PLM_GL(NJP).DJPER
-
-        write(mpi_efdc_out_unit,1002) NCARD
-        write(mpi_efdc_out_unit,*) IDUM, JET_PLM_GL(NJP).ICALJP, JET_PLM_GL(NJP).IQJP,  JET_PLM_GL(NJP).JQJP, JET_PLM_GL(NJP).KQJP,  JET_PLM_GL(NJP).NPORTJP,   &
-          JET_PLM_GL(NJP).XJETL,  JET_PLM_GL(NJP).YJETL, JET_PLM_GL(NJP).ZJET, JET_PLM_GL(NJP).PHJET, JET_PLM_GL(NJP).THJET,     &
-          JET_PLM_GL(NJP).DJET,   JET_PLM_GL(NJP).CFRD,  JET_PLM_GL(NJP).DJPER
         if( ISO > 0 ) GOTO 100
       enddo
     endif
 
+    do NJP = 1,NQJPIJ
+      write(mpi_efdc_out_unit,1002) NCARD
+      write(mpi_efdc_out_unit,*) IDUM, JET_PLM_GL(NJP).ICALJP, JET_PLM_GL(NJP).IQJP,  JET_PLM_GL(NJP).JQJP, JET_PLM_GL(NJP).KQJP,  JET_PLM_GL(NJP).NPORTJP,   &
+        JET_PLM_GL(NJP).XJETL,  JET_PLM_GL(NJP).YJETL, JET_PLM_GL(NJP).ZJET, JET_PLM_GL(NJP).PHJET, JET_PLM_GL(NJP).THJET,     &
+        JET_PLM_GL(NJP).DJET,   JET_PLM_GL(NJP).CFRD,  JET_PLM_GL(NJP).DJPER
+    enddo
+  
     !C28*  READ JET-PLUME SOURCE LOCATIONS AND parameterS
     NCARD = '28'
     if( process_id == master_id )then
@@ -1455,15 +1549,17 @@
       do NJP = 1,NQJPIJ
         read(1,*,IOSTAT = ISO) IDUM, JET_PLM_GL(NJP).NJEL,   JET_PLM_GL(NJP).NJPMX, JET_PLM_GL(NJP).ISENT,  JET_PLM_GL(NJP).ISTJP,  NDUM, JET_PLM_GL(NJP).IOUTJP,  &
           JET_PLM_GL(NJP).NZPRJP, JET_PLM_GL(NJP).ISDJP, JET_PLM_GL(NJP).IUPCJP, JET_PLM_GL(NJP).JUPCJP, JET_PLM_GL(NJP).KUPCJP
-
-        write(mpi_efdc_out_unit,1002) NCARD
-        write(mpi_efdc_out_unit,*) IDUM, JET_PLM_GL(NJP).NJEL,   JET_PLM_GL(NJP).NJPMX, JET_PLM_GL(NJP).ISENT,  JET_PLM_GL(NJP).ISTJP,  NDUM, JET_PLM_GL(NJP).IOUTJP,  &
-          JET_PLM_GL(NJP).NZPRJP, JET_PLM_GL(NJP).ISDJP, JET_PLM_GL(NJP).IUPCJP, JET_PLM_GL(NJP).JUPCJP, JET_PLM_GL(NJP).KUPCJP
         if( ISO > 0 ) GOTO 100
         if( NJP == 1 ) NUDJP = NDUM
       enddo
-
     endif
+
+    do NJP = 1,NQJPIJ
+      write(mpi_efdc_out_unit,1002) NCARD
+      write(mpi_efdc_out_unit,*) IDUM, JET_PLM_GL(NJP).NJEL,   JET_PLM_GL(NJP).NJPMX, JET_PLM_GL(NJP).ISENT,  JET_PLM_GL(NJP).ISTJP,  NDUM, JET_PLM_GL(NJP).IOUTJP,  &
+        JET_PLM_GL(NJP).NZPRJP, JET_PLM_GL(NJP).ISDJP, JET_PLM_GL(NJP).IUPCJP, JET_PLM_GL(NJP).JUPCJP, JET_PLM_GL(NJP).KUPCJP
+    enddo
+  
 
     !C29*  READ ADDITIONAL JET-PLUME parameterS
     NCARD = '29'
@@ -1472,10 +1568,6 @@
       do NJP = 1,NQJPIJ
         read(1,*,IOSTAT = ISO) IDUM, JET_PLM_GL(NJP).QQCJP,      JET_PLM_GL(NJP).NQSERJP,    JET_PLM_GL(NJP).NQWRSERJP,  JET_PLM_GL(NJP).NCSERJP(1), JET_PLM_GL(NJP).NCSERJP(2),   &
           JET_PLM_GL(NJP).NCSERJP(3), JET_PLM_GL(NJP).NCSERJP(4), JET_PLM_GL(NJP).NCSERJP(5), JET_PLM_GL(NJP).NCSERJP(6), JET_PLM_GL(NJP).NCSERJP(7)
-
-        write(mpi_efdc_out_unit,1002) NCARD
-        write(mpi_efdc_out_unit,*) IDUM, JET_PLM_GL(NJP).QQCJP, JET_PLM_GL(NJP).NQSERJP, JET_PLM_GL(NJP).NQWRSERJP, JET_PLM_GL(NJP).NCSERJP(1:7)
-
         if( ISO > 0 ) GOTO 100
 
         if( JET_PLM_GL(NJP).ICALJP == 2 )then
@@ -1487,6 +1579,11 @@
       enddo
     endif
 
+    do NJP = 1,NQJPIJ
+      write(mpi_efdc_out_unit,1002) NCARD
+      write(mpi_efdc_out_unit,*) IDUM, JET_PLM_GL(NJP).QQCJP, JET_PLM_GL(NJP).NQSERJP, JET_PLM_GL(NJP).NQWRSERJP, JET_PLM_GL(NJP).NCSERJP(1:7)
+    enddo
+  
     !C30*  READ TIME CONSTANT INFLOW CONCENTRATIONS FOR TIME CONSTANT
     !     JET-PLUME SOURCES SAL,TEM,DYE,SFL,TOX(1 TO NOTX)
     NCARD = '30'
@@ -1875,9 +1972,6 @@
     if( process_id == master_id )then
       call SEEK('C36',0)
       read(1,*,IOSTAT = ISO)ISEDINT,ISEDBINT,NSEDFLUME,ISMUD,ISBEDMAP,ISEDVW,ISNDVW,KB,ISDTXBUG
-
-      write(mpi_efdc_out_unit,1002) NCARD
-      write(mpi_efdc_out_unit,*)ISEDINT,ISEDBINT,NSEDFLUME,ISMUD,ISBEDMAP,ISEDVW,ISNDVW,KB,ISDTXBUG
       if( ISO > 0 ) GOTO 100
     endif
 
@@ -1891,6 +1985,9 @@
     call Broadcast_Scalar(KB       , master_id)
     call Broadcast_Scalar(ISDTXBUG , master_id)
 
+    write(mpi_efdc_out_unit,1002) NCARD
+    write(mpi_efdc_out_unit,*)ISEDINT,ISEDBINT,NSEDFLUME,ISMUD,ISBEDMAP,ISEDVW,ISNDVW,KB,ISDTXBUG
+
     ! *** FORCE READ IF SPATIALLY VARYING SEDIMENTS
     if( NSEDFLUME == 3 .and. ISEDINT < 2 ) ISEDINT = 3
 
@@ -1899,9 +1996,6 @@
     if( process_id == master_id )then
       call SEEK('C36A',0)
       read(1,*,IOSTAT = ISO)ISBEDSTR,ISBSDIAM,ISBSDFUF,COEFTSBL,VISMUDST,ISBKERO
-
-      write(mpi_efdc_out_unit,1002) NCARD
-      write(mpi_efdc_out_unit,*)ISBEDSTR,ISBSDIAM,ISBSDFUF,COEFTSBL,VISMUDST,ISBKERO
       if( ISO > 0 ) GOTO 100
     endif
 
@@ -1912,15 +2006,15 @@
     call Broadcast_Scalar(VISMUDST , master_id)
     call Broadcast_Scalar(ISBKERO  , master_id)
 
+    write(mpi_efdc_out_unit,1002) NCARD
+    write(mpi_efdc_out_unit,*)ISBEDSTR,ISBSDIAM,ISBSDFUF,COEFTSBL,VISMUDST,ISBKERO
+
     !C36B*  SEDIMENT INITIALIZATION AND WATER COLUMN/BED REPRESENTATION OPTIONS
     NCARD = '36B'
     if( process_id == master_id )then
       call SEEK('C36B',0)
       if( NSED>0 .or. NSND > 0 )then
         read(1,*,IOSTAT = ISO) ldum,ISNDAL,IALTYP,IALSTUP,ISEDEFF,HBEDAL,COEHEFF,COEHEFF2
-
-        write(mpi_efdc_out_unit,1002) NCARD
-        write(mpi_efdc_out_unit,*) ldum,ISNDAL,IALTYP,IALSTUP,ISEDEFF,HBEDAL,COEHEFF,COEHEFF2
         if( ISO > 0 ) GOTO 100
       endif
       ! *** FORCE BED ARMORING OPTION "INITIALIZATION AT STARTUP" TO BE OFF
@@ -1934,6 +2028,9 @@
     call Broadcast_Scalar(HBEDAL   , master_id)
     call Broadcast_Scalar(COEHEFF  , master_id)
     call Broadcast_Scalar(COEHEFF2 , master_id)
+
+    write(mpi_efdc_out_unit,1002) NCARD
+    write(mpi_efdc_out_unit,*) ldum,ISNDAL,IALTYP,IALSTUP,ISEDEFF,HBEDAL,COEHEFF,COEHEFF2
 
     !C37*  BED MECHANICAL PROPERTIES parameter SET 1
     NCARD = '37'
@@ -3668,10 +3765,6 @@
         if( MDCHH >= 1 )then
           do NMD = 1,MDCHH
             read(1,*)MDCHTYP(NMD),IMDCHH(NMD),JMDCHH(NMD),IMDCHU(NMD),JMDCHU(NMD),IMDCHV(NMD),JMDCHV(NMD)
-            QCHANU(NMD) = 0.
-            QCHANUN(NMD) = 0.
-            QCHANV(NMD) = 0.
-            QCHANVN(NMD) = 0.
           enddo
         endif
       endif
@@ -3681,31 +3774,14 @@
         if( MDCHH >= 1 )then
           do NMD = 1,MDCHH
             read(1,*)MDCHTYP(NMD),IMDCHH(NMD),JMDCHH(NMD),IMDCHU(NMD),JMDCHU(NMD),IMDCHV(NMD),JMDCHV(NMD),CHANLEN(NMD),PMDCH(NMD)
-            QCHANU(NMD) = 0.
-            QCHANUN(NMD) = 0.
-            QCHANV(NMD) = 0.
-            QCHANVN(NMD) = 0.
           enddo
         endif
       endif
       close(1)
-      if( MDCHH >= 1 )then
-        do NMD = 1,MDCHH
-          LMDCHH(NMD) = LIJ(IMDCHH(NMD),JMDCHH(NMD))
-          if( IMDCHU(NMD) == 1 .and. JMDCHU(NMD) == 1 )then
-            LMDCHU(NMD) = 1
-          else
-            LMDCHU(NMD) = LIJ(IMDCHU(NMD),JMDCHU(NMD))
-          endif
-          if( IMDCHV(NMD) == 1 .and. JMDCHV(NMD) == 1 )then
-            LMDCHV(NMD) = 1
-          else
-            LMDCHV(NMD) = LIJ(IMDCHV(NMD),JMDCHV(NMD))
-          endif
-        enddo
-      endif
-
     endif
+
+    call Broadcast_Scalar(MDCHH  , master_id)
+    call Broadcast_Scalar(QCHERR , master_id)
 
     call Broadcast_Array(MDCHTYP , master_id)
     call Broadcast_Array(IMDCHH  , master_id)
@@ -3716,6 +3792,85 @@
     call Broadcast_Array(JMDCHV  , master_id)
     call Broadcast_Array(CHANLEN , master_id)
     call Broadcast_Array(PMDCH   , master_id)
+
+    ! *** Map the global channel data to the local subdomain
+    MDCHH_GL = MDCHH
+    MDCHH = 0
+    do NMD = 1,MDCHH_GL
+      if( LIJ_Global(IMDCHH(NMD),JMDCHH(NMD)) < 2 )then
+        if( process_id == master_id )then
+          write(6,*) 'ERROR!  HOST CELL IS NOT IN THE GLOBAL DOMAIN FOR SUBGRID CHANNEL: ',NMD
+        endif
+        call STOPP('', 1)
+      endif
+
+      ! *** Local host cell indices
+      ITMP = IG2IL(IMDCHH(NMD))
+      JTMP = JG2JL(JMDCHH(NMD))
+      INHOST = ITMP > 0 .and. ITMP <= IC .and. JTMP > 0 .and. JTMP <= JC
+
+      ! *** Local X-direction channel cell indices
+      INCHNU = .false.
+      ITMPU = 1
+      JTMPU = 1
+      if( .not. (IMDCHU(NMD) == 1 .and. JMDCHU(NMD) == 1) )then
+        ITMPU = IG2IL(IMDCHU(NMD))
+        JTMPU = JG2JL(JMDCHU(NMD))
+        INCHNU = ITMPU > 0 .and. ITMPU <= IC .and. JTMPU > 0 .and. JTMPU <= JC
+        if( INHOST .neqv. INCHNU )then
+          write(6,*) 'ERROR!  HOST AND U CHANNEL CELLS ARE NOT IN THE SAME SUBDOMAIN FOR SUBGRID CHANNEL: ',NMD
+          call STOPP('', 1)
+        endif
+      endif
+
+      ! *** Local Y-direction channel cell indices
+      INCHNV = .false.
+      ITMPD = 1
+      JTMPD = 1
+      if( .not. (IMDCHV(NMD) == 1 .and. JMDCHV(NMD) == 1) )then
+        ITMPD = IG2IL(IMDCHV(NMD))
+        JTMPD = JG2JL(JMDCHV(NMD))
+        INCHNV = ITMPD > 0 .and. ITMPD <= IC .and. JTMPD > 0 .and. JTMPD <= JC
+        if( INHOST .neqv. INCHNV )then
+          write(6,*) 'ERROR!  HOST AND V CHANNEL CELLS ARE NOT IN THE SAME SUBDOMAIN FOR SUBGRID CHANNEL: ',NMD
+          call STOPP('', 1)
+        endif
+      endif
+
+      ! *** Keep the channels in the current subdomain
+      if( INHOST )then
+        MDCHH = MDCHH + 1
+
+        MDCHTYP(MDCHH) = MDCHTYP(NMD)
+        CHANLEN(MDCHH) = CHANLEN(NMD)
+        PMDCH(MDCHH)   = PMDCH(NMD)
+
+        IMDCHH(MDCHH) = ITMP
+        JMDCHH(MDCHH) = JTMP
+        LMDCHH(MDCHH) = LIJ(ITMP,JTMP)
+
+        IMDCHU(MDCHH) = ITMPU
+        JMDCHU(MDCHH) = JTMPU
+        if( INCHNU )then
+          LMDCHU(MDCHH) = LIJ(ITMPU,JTMPU)
+        else
+          LMDCHU(MDCHH) = 1
+        endif
+
+        IMDCHV(MDCHH) = ITMPD
+        JMDCHV(MDCHH) = JTMPD
+        if( INCHNV )then
+          LMDCHV(MDCHH) = LIJ(ITMPD,JTMPD)
+        else
+          LMDCHV(MDCHH) = 1
+        endif
+
+        QCHANU (MDCHH) = 0.
+        QCHANUN(MDCHH) = 0.
+        QCHANV (MDCHH) = 0.
+        QCHANVN(MDCHH) = 0.
+      endif
+    enddo
 
   endif
 
@@ -3789,7 +3944,9 @@
     deallocate(R2D_Global)
 
     AHD = ABS(AHD)
-    PRINT '(A,4E12.4)','VARIABLE AHO & AHD USED (MIN,MAX): ',AHMIN,AHMAX,ADMIN,ADMAX
+    if( process_id == master_id )then
+      PRINT '(A,4E12.4)','VARIABLE AHO & AHD USED (MIN,MAX): ',AHMIN,AHMAX,ADMIN,ADMAX
+    endif
   else
     AHDXY = AHD       ! *** Constant value
   endif
@@ -3869,6 +4026,7 @@
       close(1)
     endif
 
+    call Broadcast_Scalar(ISGWIE,master_id)
     call Broadcast_Scalar(DAGWZ, master_id)
     call Broadcast_Scalar(RNPOR, master_id)
     call Broadcast_Scalar(RIFTRM,master_id)
@@ -3885,43 +4043,38 @@
       ! *** SKIP OVER TITLE AND AND HEADER LINES
       STR = READSTR(1)
       read(1,*)CVTFACX,CVTFACY
-    endif
 
-    call Broadcast_Scalar(CVTFACX, master_id)
-    call Broadcast_Scalar(CVTFACY, master_id)
-
-    do LL = 2,LA_Global
-      if( process_id == master_id )then
+      do LL = 2,LA_Global
         read(1,*)ITMP,JTMP,FBODY1,FBODY2
-      endif
+        
+        LG = LIJ_Global(ITMP,JTMP)
+        R2D_Global(LG,1) = FBODY1
+        R2D_Global(LG,2) = FBODY2
+      enddo
+      close(1)
+    endif
+    
+    call Broadcast_Scalar(CVTFACX,    master_id)
+    call Broadcast_Scalar(CVTFACY,    master_id)
+    call Broadcast_Array (R2D_Global, master_id)
 
-      call Broadcast_Scalar(ITMP,   master_id)
-      call Broadcast_Scalar(JTMP,   master_id)
-      call Broadcast_Scalar(FBODY1, master_id)
-      call Broadcast_Scalar(FBODY2, master_id)
-
-      ! *** Get local i,j
-      ID = IG2IL(ITMP)
-      JD = JG2JL(JTMP)
-
-      if(id > 0 .and. id <= ic )then
-        if(jd > 0 .and. jd <= jc )then
-
-          L = LIJ(id, jd)
-          if( ISBODYF == 1 )then
-            do K = 1,KC
-              FBODYFX(L,K) = CVTFACX*FBODY1
-              FBODYFY(L,K) = CVTFACY*FBODY2
-            enddo
-          endif
-          if( ISBODYF == 2 )then
-            do K = 1,KC-1
-              FBODYFX(L,K) = 0.0
-              FBODYFY(L,K) = 0.0
-            enddo
-            FBODYFX(L,KC) = CVTFACX*FBODY1
-            FBODYFY(L,KC) = CVTFACY*FBODY2
-          endif
+    ! *** Map to Local Domain
+    do LG = 2,LA_GLOBAL
+      L = Map2Local(LG).LL
+      if( L > 1 )then
+        if( ISBODYF == 1 )then
+          do K = 1,KC
+            FBODYFX(L,K) = CVTFACX*R2D_Global(LG,1)
+            FBODYFY(L,K) = CVTFACY*R2D_Global(LG,2)
+          enddo
+        endif
+        if( ISBODYF == 2 )then
+          do K = 1,KC-1
+            FBODYFX(L,K) = 0.0
+            FBODYFY(L,K) = 0.0
+          enddo
+          FBODYFX(L,KC) = CVTFACX*R2D_Global(LG,1)
+          FBODYFY(L,KC) = CVTFACY*R2D_Global(LG,2)
         endif
       endif
     enddo
@@ -3931,11 +4084,7 @@
       FBODYFX(LC,K) = 0.0
       FBODYFY(LC,K) = 0.0
     enddo
-
-    if( process_id == master_id )then
-      close(1)
-    endif
-
+    deallocate(R2D_Global)
   endif
 
   ! *** Read shellfish farm configuration
@@ -4027,7 +4176,7 @@
         do LG = 2, LA_Global ! @todo make sure this is global
           read(1,*) LDUM, IDUM, JDUM, R1D_Global(LG)                    ! *** ZBRSED
           if( R1D_Global(LG) <= 0.0 )then
-            STOP ' BAD SEDIMENT ROUGHNESS IN SEDROUGH.INP'
+            Call STOPP('BAD SEDIMENT ROUGHNESS IN SEDROUGH.INP')
           endif
         enddo
         close(1)
@@ -4148,7 +4297,7 @@
       ! *** Spatially constant
       do NT = 1,NTOX
         do NS = 1,NSEDS
-          TOXPARW(2:LA,NS,NT) = ABS(TOXPARW(1,NS,NT))
+          TOXPARB(2:LA,NS,NT) = ABS(TOXPARB(1,NS,NT))
         enddo
       enddo
     endif
@@ -4344,12 +4493,12 @@
         if( IREAD == 1 )then
           if( ISALTYP == 0 )then
             do L = 2,LA_Global
-              read(1,*,IOSTAT = ISO) (R2D_Global(L,K),K = 1,KB)                        ! *** STDOCB
+              read(1,*,IOSTAT = ISO) (R2D_Global(L,K),K = 1,KB)                     ! *** STDOCB
               if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE DOCB.INP')
             enddo
           else
             do L = 2,LA_Global
-              read(1,*,IOSTAT = ISO) LDUM, IDUM, JDUM, (R2D_Global(LDUM,K),K = 1,KB)   ! *** STDOCB
+              read(1,*,IOSTAT = ISO) LDUM, IDUM, JDUM, (R2D_Global(L,K),K = 1,KB)   ! *** STDOCB
               if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE DOCB.INP')
             enddo
           endif
@@ -4377,7 +4526,8 @@
 
         close(1)
       endif
-
+      
+      call Broadcast_Scalar(KBINPUT,    master_id)
       call Broadcast_Array(R2D_Global, master_id)
 
       ! *** Map to Local Domain
@@ -4411,7 +4561,7 @@
       call Broadcast_Scalar(KBINPUT, master_id)
 
 
-      STPOCB(L,K) = 0.0
+      STPOCB(:,:) = 0.0
 
       if( IREAD == 0 )then
         ! ***
@@ -4573,7 +4723,7 @@
               enddo
             else
               do L = 2,LA_Global
-                read(1,*,IOSTAT = ISO)LDUM,IDUM,JDUM,(STFPOCB(L,K,NS),K = 1,KBINPUT,NS)
+                read(1,*,IOSTAT = ISO)LDUM,IDUM,JDUM,(STFPOCB(L,K,NS),K = 1,KBINPUT)
                 if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE FPOCB.INP')
                 do K = KBINPUT,KB
                   STFPOCB(L,K,NS) = STFPOCB(L,KBINPUT,NS)
@@ -4653,6 +4803,7 @@
       close(1)
     endif
 
+    call Broadcast_Scalar(KBINPUT,    master_id)
     call Broadcast_Array(R2D_Global, master_id)
 
     ! *** Map to Local Domain
@@ -4724,12 +4875,6 @@
     enddo
 
     deallocate(R2D_Global)
-
-    call Broadcast_Array(LSVHTWINDE , master_id)
-    call Broadcast_Array(LSVHTWINDC , master_id)
-    call Broadcast_Array(SVREVC     , master_id)
-    call Broadcast_Array(SVRCHC     , master_id)
-    call Broadcast_Array(SVKEBACK   , master_id)
 
   endif
 
@@ -4811,7 +4956,8 @@
             else
               do L = 2,LA_Global
                 read(1,*,IOSTAT = ISO) LDUM, IDUM, JDUM, (CONINIT(K),K = 1,KC)
-
+                if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE TEMP.INP')
+                
                 LG = LIJ_Global(IDUM,JDUM)
                 TEM_Global(LG,:) = CONINIT(:)
               enddo
@@ -4847,8 +4993,8 @@
             read(1,*)ISALTYP
 
             if( ISALTYP == 0 )then
-              do L = LG,LA_Global
-                read(1,*,IOSTAT = ISO) (DYE_Global(LG,K,MD),K = 1,KC)
+              do L = 2,LA_Global
+                read(1,*,IOSTAT = ISO) (DYE_Global(L,K,MD),K = 1,KC)
                 if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE DYE.INP')
               enddo
             else
@@ -4910,7 +5056,8 @@
         else
           do L = 2,LA_Global
             read(1,*,IOSTAT = ISO) LDUM, IDUM, JDUM, (CONINIT(K),K = 1,KC)
-
+            if( ISO > 0 ) CALL STOPP('READ ERROR FOR FILE SFL.INP')
+            
             LG = LIJ_Global(IDUM,JDUM)
             SFL_Global(LG,:) = CONINIT(:)
           enddo
@@ -5015,7 +5162,9 @@
         allocate(IBLTMP(5,NDUM))
         IBLTMP = 0
       endif
-      call Broadcast_Array(IBLTMP, master_id)
+      
+      call Broadcast_Scalar(NDUM,   master_id)
+      call Broadcast_Array (IBLTMP, master_id)
 
       do NS = 1,NDUM
         ! *** Check if in current node
@@ -5151,8 +5300,10 @@
             endif
 
             ! *** FILL ANY MISSING LAYERS
-            do K = KBINPUT+1,KB
-              TOXB_Global(LG,K,NT) = TOXB_Global(LG,KBINPUT,NT)
+            do L = 2,LA_Global
+              do K = KBINPUT+1,KB
+                TOXB_Global(LG,K,NT) = TOXB_Global(LG,KBINPUT,NT)
+              enddo
             enddo
           enddo
           close(1)
@@ -6788,6 +6939,7 @@
       close(1)
     endif
 
+    call Broadcast_Scalar(IEVAP,    master_id)
     call Broadcast_Scalar(IASERVER, master_id)
 
     if( IASERVER < 7300 )then
@@ -7006,7 +7158,6 @@
 
       do NS = 1,NISER
         RICECOVT(NS) = 0.
-        RICETHKT(NS) = 0.
         MITLAST(NS)  = 2
 
         read(1,*,IOSTAT = ISO) M,TSICE(NS).TMULT,TOFFSET,RMULADJCOV
@@ -7034,7 +7185,19 @@
 
       close(1)
     endif
+    
+    ! *** send to all other processes
+    call Broadcast_Array(MITLAST,   master_id)
+    call Broadcast_Array(RICECOVT,  master_id)
+    
+    do NS = 1, NISER
+      call Broadcast_Scalar(TSICE(NS).NREC    , master_id)
+      call Broadcast_Scalar(TSICE(NS).TMULT   , master_id)
 
+      call Broadcast_Array(TSICE(NS).TIM, master_id)
+      call Broadcast_Array(TSICE(NS).VAL, master_id)
+    enddo
+    
   elseif( ISICE == 2 )then
     if( process_id == master_id )then
       write(*,'(A)')'READING ISTAT.INP'

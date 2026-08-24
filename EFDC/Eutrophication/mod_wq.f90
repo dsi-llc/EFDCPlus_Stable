@@ -1884,9 +1884,9 @@ MODULE WATERQUALITY
   ! *** Loop over cells and assign layers
   do LG = 2,LA_Global
     read(1,*) I, J, (WQVDA(NW),NW = 1,NWQV)
-    L = LIJ(I,J)
+    L = LIJ_Global(I,J)
     do NW = 1,NWQV
-      do KG = KSZ(L),KC
+      do KG = KSZ_Global(L),KC
         WQV_Global(L,KG,NW) = WQVDA(NW)
       enddo
     enddo
@@ -2399,7 +2399,7 @@ MODULE WATERQUALITY
   
   real,intent(IN) :: TIMTMP
   integer :: M,MM,IBENZ,I,L,IZM,IZS
-  real    :: XBSFAD,BDAY,XM
+  real    :: BDAY,XM
   
   character TITLE_(3)*79, CCMRM*1
   integer,save,allocatable,dimension(:) :: IZONE
@@ -2424,7 +2424,7 @@ MODULE WATERQUALITY
     XBFNO3 = 0.0
     XBFO2 = 0.0
     XBFPO4D = 0.0
-    XBSFAD = 0.0
+    XBFSAD = 0.0
   endif
 
   if( process_id == master_id )then
@@ -5726,7 +5726,7 @@ MODULE WATERQUALITY
         ! *** Chapra (1997) pg. 3
       TVAL = 1./(TWQ(L) + 273.15)
       RLNSAT1 = ((((-8.621949e11 * TVAL + 1.2438e10)*TVAL -6.642308e7)*TVAL + 1.575701e5)*TVAL -139.34411)
-      RLNSAT2 = -SWQ(L)*((-2140.7 * TVAL + 10.754)*TVAL + 1.7674e-2)
+      RLNSAT2 = -SWQ(L)*(( 2140.7 * TVAL - 10.754)*TVAL + 1.7674e-2)   ! *** Salinity correction: -S*(1.7674e-2 - 10.754/Ta + 2140.7/Ta^2)
       DO_SAT = RLNSAT3 * EXP(RLNSAT1 + RLNSAT2)
     else
       ! *** DO Saturation, Modified by SCJ, see Garcia and Gordon, Limnology and Oceanography 37(6), 1992, Eqn. 8 and Table 1

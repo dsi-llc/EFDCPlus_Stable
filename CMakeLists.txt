@@ -100,7 +100,7 @@ else()
     else()
         # Release flags - MODIFIED for SUSE compatibility
         set(SAFETY_FLAGS "-traceback -fp-model=source -fp-speculation=safe -fpe0")
-        set(PERFORMANCE_FLAGS "-O3 -xSSE4.2 -ipo -unroll -no-prec-div")
+        set(PERFORMANCE_FLAGS "-O3 -axCORE-AVX2,CORE-AVX512 -mavx2 -ipo -unroll -no-prec-div")
         set(PROCESS_FLAGS "-multiple-processes=12")
         
         # UPDATED: More conservative static linking for Intel on SUSE

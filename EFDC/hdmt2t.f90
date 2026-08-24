@@ -78,7 +78,7 @@ SUBROUTINE HDMT2T
 #endif
   logical   :: RES, BSYNC
   real,save :: ADJC
-  
+
   ! *** New variables for MPI
   integer :: ierr, i, j
   integer :: Start_Local_LA
@@ -411,7 +411,7 @@ SUBROUTINE HDMT2T
     do L = 2,LA
       TVAR3S(L) = TSY(LNC(L))
       TVAR3W(L) = TSX(LEC(L))
-      TVAR3E(L) = TBX(LEC(L)   )
+      TVAR3E(L) = TBX(LEC(L))
       TVAR3N(L) = TBY(LNC(L))
     enddo
 
@@ -420,7 +420,7 @@ SUBROUTINE HDMT2T
       TAUBC = 0.5*SQRT(TAUBC2)   ! *** CURRENT ONLY
       CTAUC(L) = TAUBC
       UTMP = 0.5*STCUV(L)*(U(LEC(L),KSZU(LEC(L))) + U(L,KSZU(L)))+1.E-12
-      VTMP = 0.5*STCUV(L)*(V(LN ,KSZV(LN )) + V(L,KSZV(L)))
+      VTMP = 0.5*STCUV(L)*(V(LNC(L),KSZV(LNC(L))) + V(L,KSZV(L)))
       CURANG = ATAN2(VTMP,UTMP)
       TAUB2 = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
       TAUB2 = max(TAUB2,0.)          ! *** CURRENT & WAVE
@@ -685,7 +685,7 @@ SUBROUTINE HDMT2T
   else
     ! *** Call Propwash module if that option is selected
     if( propwash_on )then
-      call Propwash_Calc_Sequence(0)
+      call Propwash_Calc_Sequence(1)
     endif
   endif
 
@@ -793,6 +793,10 @@ SUBROUTINE HDMT2T
     enddo
   else
     ! *** LEGACY EFDC APPLICATIONS
+    ! *** Advance UV and VU
+    U1V = UV
+    V1U = VU
+    
     do ND = 1,NDM
       LF = (ND-1)*LDMWET+1
       LL = min(LF+LDMWET-1,LAWET)

@@ -494,20 +494,15 @@ SUBROUTINE SSEDTOX
         ! *** WITH WAVE INTERACTIONS
         do LP = LF,LL
           L = LSED(LP)
-          if( LWVMASK(L) )then
-            TAUBC = QQ(L,0)/CTURB2  ! *** CURRENT PLUS BOTTOM SHEAR FROM QQWV1
-            UTMP = 0.5*STCUV(L)*(U(LEC(L),KSZ(L)) + U(L,KSZ(L)))+1.E-12
-            VTMP = 0.5*STCUV(L)*(V(LNC(L),KSZ(L)) + V(L,KSZ(L)))
-            CURANG = ATAN2(VTMP,UTMP)
-            TAUB2 = TAUBC*TAUBC + (QQWV3(L)*QQWV3(L)) + 2.*TAUBC*QQWV3(L)*COS(CURANG-WV(L).DIR)
-            TAUB2 = max(TAUB2,0.)
-            TAUB(L)  = SQRT(TAUB2)
-            USTAR(L) = SQRT(TAUB(L))
-          else
-            TAUBC = QQ(L,0)/CTURB2
-            TAUB(L)  = TAUBC
-            USTAR(L) = SQRT(TAUB(L))
-          endif
+          ! *** QQ(L,0) ALREADY CONTAINS THE COMBINED WAVE + CURRENT BED SHEAR.
+          ! *** FOR ISWAVE = 2/4 IT IS SET IN HDMT/HDMT2T AS
+          ! ***   QQ(L,0) = CTURB2*SQRT(TAUBC^2 + QQWV3^2 + 2*TAUBC*QQWV3*cos(CURANG-WV.DIR))
+          ! *** RE-COMBINING WITH QQWV3 HERE DOUBLE-COUNTED THE WAVE STRESS (C + 2W WHEN THE
+          ! *** CURRENT AND WAVES ARE ALIGNED, ~C WHEN OPPOSED).  USE THE ALREADY-COMBINED VALUE
+          ! *** DIRECTLY SO WAVE CELLS MATCH THE NON-WAVE BRANCH AND TAUB IS CONTINUOUS AT SEDSTART.
+          TAUBC    = QQ(L,0)/CTURB2
+          TAUB(L)  = TAUBC
+          USTAR(L) = SQRT(TAUB(L))
         enddo
       else
         ! *** WITHOUT WAVE INTERACTIONS
@@ -1031,18 +1026,16 @@ SUBROUTINE SSEDTOX
         endif
       endif
 
-      if( K == 1 )then
-        if( HBED(L,K) < MINTHICK )then
-          ! *** ZERO NEGATIVE THICKNESSES
-          HBED(L,K) = 0.0
-          VDRBED(L,K) = SNDVDRD
-          PORBED(L,K) = BEDPORC
-          STDOCB(L,K) = 0.0
-          STPOCB(L,K) = 0.0
-          
-          SEDB(L,K,:) = 0.0
-          SNDB(L,K,:) = 0.0
-        endif
+      if( HBED(L,K) < MINTHICK )then
+        ! *** ZERO NEGATIVE THICKNESSES
+        HBED(L,K) = 0.0
+        VDRBED(L,K) = SNDVDRD
+        PORBED(L,K) = BEDPORC
+        STDOCB(L,K) = 0.0
+        STPOCB(L,K) = 0.0
+        
+        SEDB(L,K,:) = 0.0
+        SNDB(L,K,:) = 0.0
       endif
       
       ! *** Update void ratio with the depositing sediment mass, using the last layer thickness.
@@ -1052,11 +1045,9 @@ SUBROUTINE SSEDTOX
       if( TMPVAL > 0.0 )then
         if( HBED(L,K) > 0.0 )then        
           VDRBED(L,K) = (HBED(L,K)/TMPVAL)-1.
-          if( K == 1 )then
-            ! *** LIMIT VOID RATIOS TO 0.01 >= N <= 99
-            if( VDRBED(L,K) < 0.01 .or. VDRBED(L,K) > 99. )then
-              VDRBED(L,K) = SNDVDRD  
-            endif
+          ! *** LIMIT VOID RATIOS TO 0.01 >= N <= 99
+          if( VDRBED(L,K) < 0.01 .or. VDRBED(L,K) > 99. )then
+            VDRBED(L,K) = SNDVDRD  
           endif
         else
           ! *** Bed thickness is zero.  Initialize to depositing sediment mass
@@ -1078,21 +1069,21 @@ SUBROUTINE SSEDTOX
           HBED1(L,K) = HBED(L,K)
           VDRBED1(L,K) = VDRBED(L,K)
           HBED(L,K) = HBED(L,K) - DTSED*(QSSDPA(L)+QWATPA(L))
-
-          if( K == 1 )then
-            if( HBED(L,K) < 0.0 )then
-              ! *** ZERO NEGATIVE THICKNESSES
-              HBED(L,K) = 0.0
-              VDRBED(L,K) = SNDVDRD
-              PORBED(L,K) = BEDPORC
-              STDOCB(L,K) = 0.0
-              STPOCB(L,K) = 0.0
-            endif
+          if( HBED(L,K) < 0.0 )then
+            ! *** ZERO NEGATIVE THICKNESSES
+            HBED(L,K) = 0.0
+            VDRBED(L,K) = SNDVDRD
+            PORBED(L,K) = BEDPORC
+            STDOCB(L,K) = 0.0
+            STPOCB(L,K) = 0.0
           endif
           TMPVAL = HBED1(L,K)/(1. + VDRBED1(L,K))
           TMPVAL = TMPVAL - DTSED*QSSDPA(L)
           if( TMPVAL > 0.0 )then
             VDRBED(L,K) = (HBED(L,K)/TMPVAL) - 1.
+            if( VDRBED(L,K) < 0.01 .or. VDRBED(L,K) > 99. )then
+              VDRBED(L,K) = SNDVDRD  
+            endif
           else
             VDRBED(L,K) = SNDVDRD
           endif

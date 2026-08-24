@@ -84,10 +84,12 @@ SUBROUTINE WINDWAVETUR
             UWVSQ(L) = 0.
             QQWV1(L) = 0.
             QQWV2(L) = 0.
+            WV(L).TWX = 0.
+            WV(L).TWY = 0.
             CYCLE
           endif
 
-          if( ISWAVE == 3 )then
+          if( ISWAVE == 3 .OR. ISWAVE == 4 )then
             VISMUDD = 1.36D-6
             if( ISMUD  >= 1 ) VISMUDD = CSEDVIS(SED(L,KSZ(L),1))
             REYWAVE = UWORBIT*AEXTMP/VISMUDD
@@ -107,8 +109,8 @@ SUBROUTINE WINDWAVETUR
             endif
             CDTMP = 0.5*WVFF
             QQWV1(L) = min(CDTMP*UWORBIT*UWORBIT,QQMAX)
-
-          elseif( ISWAVE == 4 )then
+          endif
+          if( ISWAVE == 4 )then
             ! *** CHECK FOR NON-COHESIVE TRANSPORT
             if( ISTRAN(7) > 0 )then
               TMPVAL = UWORBIT*SQRT( AEXTMP/(30.*ZBRE(L)) )
@@ -273,6 +275,7 @@ SUBROUTINE WINDWAVECAL
           WV(L).UDEL   = 0.0
           WV(L).PERIOD = 0.0
           WV(L).K      = 0.01
+          WV(L).KHP    = 0.0
         endif
       endif  ! *** END OF VALID WAVE CELL
 
@@ -691,6 +694,12 @@ SUBROUTINE ZEROWAVE
     WV(L).HEIGHT = 0.
     WV(L).K = 0.
     WV(L).DIR = 0.
+    WV(L).HEISIG = 0.0
+    WV(L).FREQ   = 0.0
+    WV(L).LENGTH = 0.0
+    WV(L).UDEL   = 0.0
+    WV(L).PERIOD = 0.0
+    WV(L).KHP    = 0.0
   enddo
   do K = 1,KC
     do L = 1,LC

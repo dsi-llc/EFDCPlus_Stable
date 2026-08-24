@@ -1395,7 +1395,6 @@ SUBROUTINE VARALLOC
     call AllocateDSI( ICETEMP,     LCM,     0.0)         ! *** ISICE>0 ICE TEMPERATURE OF EACH CELL (M)
     call AllocateDSI( ICEVOL,      LCM,     0.0)         ! *** ISICE>0 INCREMENTAL WATER VOLUMES FOR ICE FORMATION/MELT (M3)
     call AllocateDSI( RICECOVT,    NISER,   0.0)         ! *** ISICE = 1  INPUT ICE COVER AT CURRENT TIME
-    call AllocateDSI( RICETHKT,    NISER,   0.0)         ! *** ISICE = 1  INPUT ICE THICKNESS AT CURRENT TIME
   endif
   call AllocateDSI( ICECELL,   LCM,  .false.)            ! *** ISICE>0  PERFORM ICE COMPUTATIONS
   call AllocateDSI( RHOW,      LCM,  KCM,   0.0)         ! *** DENSITY OF WATER KG/M3, FROM CALBUOY

@@ -410,13 +410,11 @@ SUBROUTINE CALHEAT
         enddo
       enddo
       
-      ! *** ZERO SURFACE RADIATION (ONLY ONCE PER ITERATION)
-      if( ND == 1 )then
-        do LP = LF,LL
-          L = LWET(LP)
-          RADTOP(L,0) = 0.
-        enddo
-      endif
+      ! *** ZERO BED SURFACE RADIATION
+      do LP = LF,LL
+        L = LWET(LP)
+        RADTOP(L,0) = 0.
+      enddo
     else
       ! *** ALWAYS ZERO TOP NET RADIATION
       K = KC
