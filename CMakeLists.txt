@@ -29,8 +29,8 @@ if(USE_GFORTRAN)
     set(CMAKE_C_COMPILER "gcc")
     set(CMAKE_Fortran_COMPILER "gfortran")
     
-    # GFortran base flags
-    set(BASE_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -freal-4-real-8")
+    # GFortran base flags (-cpp: sources are lowercase .f90, which gfortran does not preprocess by default)
+    set(BASE_FLAGS "-cpp -fopenmp -ffree-form -ffree-line-length-none -freal-4-real-8")
     set(PARALLEL_FLAGS "-DENABLE_MPI -D_MPI -DLINUX")
     
     # Build-type specific flags for GFortran
